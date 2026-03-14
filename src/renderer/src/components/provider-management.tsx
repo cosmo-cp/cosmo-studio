@@ -269,6 +269,9 @@ export function ProviderManagement() {
     const capabilityClassName = (isPresent: boolean) =>
         isPresent ? "text-green-600" : "text-red-600";
 
+    const formatModality = (modality: string) =>
+        modality.toUpperCase() === 'PDF' ? 'PDF' : modality.charAt(0).toUpperCase() + modality.slice(1);
+
     const renderCapabilityIcon = ({
         label,
         isPresent,
@@ -489,7 +492,7 @@ export function ProviderManagement() {
                                         models.map((model) => (
                                             <div
                                                 key={model.modelId}
-                                                className="flex items-center justify-between gap-3 p-2"
+                                                className="flex items-start justify-between gap-3 p-2"
                                             >
                                                 <div className="flex items-center space-x-2 min-w-0">
                                                     <input
@@ -506,27 +509,33 @@ export function ProviderManagement() {
                                                         {model.name}
                                                     </label>
                                                 </div>
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    {renderCapabilityIcon({
-                                                        label: "Tool call",
-                                                        isPresent: Boolean(model.toolCall),
-                                                        icon: <Wrench className="size-4" aria-hidden="true" />,
-                                                    })}
-                                                    {renderCapabilityIcon({
-                                                        label: "Reasoning",
-                                                        isPresent: Boolean(model.reasoning),
-                                                        icon: <Brain className="size-4" aria-hidden="true" />,
-                                                    })}
-                                                    {renderCapabilityIcon({
-                                                        label: "Input modalities",
-                                                        isPresent: model.inputModalities.length > 0,
-                                                        icon: <ArrowDownToLine className="size-4" aria-hidden="true" />,
-                                                    })}
-                                                    {renderCapabilityIcon({
-                                                        label: "Output modalities",
-                                                        isPresent: model.outputModalities.length > 0,
-                                                        icon: <ArrowUpFromLine className="size-4" aria-hidden="true" />,
-                                                    })}
+                                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                                    <div className="flex items-center gap-2">
+                                                        {renderCapabilityIcon({
+                                                            label: "Tool call",
+                                                            isPresent: Boolean(model.toolCall),
+                                                            icon: <Wrench className="size-4" aria-hidden="true" />,
+                                                        })}
+                                                        {renderCapabilityIcon({
+                                                            label: "Reasoning",
+                                                            isPresent: Boolean(model.reasoning),
+                                                            icon: <Brain className="size-4" aria-hidden="true" />,
+                                                        })}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-xs">
+                                                        <span className={`inline-flex items-center gap-1 ${capabilityClassName(model.inputModalities.length > 0)}`}>
+                                                            <ArrowDownToLine className="size-3.5" aria-hidden="true" />
+                                                            {model.inputModalities.length > 0
+                                                                ? model.inputModalities.map(formatModality).join(', ')
+                                                                : 'None'}
+                                                        </span>
+                                                        <span className={`inline-flex items-center gap-1 ${capabilityClassName(model.outputModalities.length > 0)}`}>
+                                                            <ArrowUpFromLine className="size-3.5" aria-hidden="true" />
+                                                            {model.outputModalities.length > 0
+                                                                ? model.outputModalities.map(formatModality).join(', ')
+                                                                : 'None'}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
