@@ -280,12 +280,13 @@ export function ProviderManagement() {
     }) => (
         <Tooltip>
             <TooltipTrigger asChild>
-                <span
+                <button
+                    type="button"
                     aria-label={`${label}: ${isPresent ? "present" : "absent"}`}
-                    className={capabilityClassName(isPresent)}
+                    className={`${capabilityClassName(isPresent)} inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring`}
                 >
                     {icon}
-                </span>
+                </button>
             </TooltipTrigger>
             <TooltipContent>
                 <p>{label}</p>
