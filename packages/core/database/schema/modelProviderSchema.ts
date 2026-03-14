@@ -1,5 +1,5 @@
 import {relations} from "drizzle-orm";
-import {boolean, pgEnum, pgTable, text, timestamp, uuid} from "drizzle-orm/pg-core";
+import { boolean, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 // --- ENUM and Base Fields ---
 export enum ModelProviderTypeEnum {
@@ -12,21 +12,17 @@ export enum ModelProviderTypeEnum {
     DEEPSEEK = 'deepseek',
     OLLAMA = 'ollama',
     MOONSHOT = 'moonshotai',
+    PERPLEXITY = 'perplexity',
+    // BEDROCK = 'amazon-bedrock',
+    COHERE = 'cohere',
+    LMSTUDIO = 'lmstudio',
+    HUGGINGFACE = 'huggingface',
     CUSTOM = 'custom',
 }
 
-export const providerTypeEnum = pgEnum('provider_type', [
-    ModelProviderTypeEnum.OPENAI,
-    ModelProviderTypeEnum.ANTHROPIC,
-    ModelProviderTypeEnum.GOOGLE,
-    ModelProviderTypeEnum.XAI,
-    ModelProviderTypeEnum.GROQ,
-    ModelProviderTypeEnum.MISTRAL,
-    ModelProviderTypeEnum.DEEPSEEK,
-    ModelProviderTypeEnum.OLLAMA,
-    ModelProviderTypeEnum.MOONSHOT,
-    ModelProviderTypeEnum.CUSTOM,
-]);
+// providerTypeEnum removed — provider_type is now stored as plain TEXT.
+// This means new providers never require an ALTER TYPE migration.
+// The TypeScript enum above still enforces type-safety at the application level.
 
 export const modelProvider = pgTable("ModelProvider", {
     // Service-set fields
@@ -35,7 +31,7 @@ export const modelProvider = pgTable("ModelProvider", {
     updatedAt: timestamp("updatedAt"),
 
     // Discriminator
-    type: providerTypeEnum("type").notNull(),
+    type: text("type").$type<ModelProviderTypeEnum>().notNull(),
 
     // User-editable fields
     name: text("name").notNull().unique(),

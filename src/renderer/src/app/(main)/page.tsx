@@ -39,7 +39,8 @@ export default function Page(): JSX.Element {
         status,
         regenerate,
         setMessages,
-        addToolApprovalResponse
+        addToolApprovalResponse,
+        stop
     } = useChat<UIMessage>({
         id: selectedChat?.id,
         transport,
@@ -314,6 +315,7 @@ export default function Page(): JSX.Element {
                                     sendMessage={sendMessage}
                                     onModelChange={handleModelChange}
                                     onPersonaChange={handlePersonaChange}
+                                    stop={stop}
                                 />
                             </div>
                         </>) : (

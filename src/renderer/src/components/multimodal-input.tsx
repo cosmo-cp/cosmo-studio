@@ -68,7 +68,8 @@ export function MultimodalInput({
                                     sendMessage,
                                     onModelChange,
                                     onPersonaChange,
-                                }: {
+                                    stop,
+}: {
     chat: Chat;
     status: UseChatHelpers<UIMessage>['status'];
     messages: Array<UIMessage>;
@@ -77,6 +78,7 @@ export function MultimodalInput({
     stillAnswering?: boolean,
     onModelChange: (providerName: string, modelId: string) => void;
     onPersonaChange: (personaId: string | null) => void;
+    stop?: UseChatHelpers<UIMessage>['stop'];
 }) {
     const [input, setInput] = useState<string>('');
     const [providers, setProviders] = useState<ProviderWithModels[]>([]);
@@ -183,6 +185,7 @@ export function MultimodalInput({
                 setModelSelectorOpen={setModelSelectorOpen}
                 status={status}
                 submitForm={submitForm}
+                stop={stop}
             />
         </PromptInputProvider>
     );
@@ -203,6 +206,7 @@ function PromptInputContent({
                                 setModelSelectorOpen,
                                 status,
                                 submitForm,
+                                stop
                             }: {
     chat: Chat;
     handlePersonaSelection: (personaId: string | null) => void;
@@ -216,7 +220,8 @@ function PromptInputContent({
     setInput: (value: string) => void;
     setModelSelectorOpen: (value: boolean) => void;
     status: UseChatHelpers<UIMessage>['status'];
-    submitForm: (message: PromptInputMessage) => void;
+    submitForm: (message: PromptInputMessage) => Promise<void>;
+    stop?: UseChatHelpers<UIMessage>['stop'];
 }) {
     const attachments = usePromptInputAttachments();
     const [personaSelectorOpen, setPersonaSelectorOpen] = useState(false);
@@ -391,8 +396,9 @@ function PromptInputContent({
                     </PromptInputSelect>
                 </PromptInputTools>
                 <PromptInputSubmit
-                    disabled={!input || !chat.selectedModelId || status !== 'ready'}
+                    disabled={!chat.selectedModelId || (!input && status !== 'submitted' && status !== 'streaming')}
                     status={status}
+                    onStop={stop}
                 />
             </PromptInputFooter>
         </PromptInput>
