@@ -10,11 +10,12 @@ import {NewModel, ProviderWithModels} from 'core/dto';
 import {ModelProviderTypeEnum} from 'core/database/schema/modelProviderSchema';
 import {ProviderCatalog} from 'core/providerCatalog';
 import {useTheme} from 'next-themes';
-import {Edit, Trash2} from 'lucide-react';
+import {ArrowDownToLine, ArrowUpFromLine, Brain, Edit, Trash2, Wrench} from 'lucide-react';
 import {defineStepper} from "@stepperize/react";
 import {ScrollArea} from "@/components/ui/scroll-area";
 import {Loader} from "@/components/ai-elements/loader";
 import {ConfirmDialog} from "@/components/confirm-dialog";
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {logger} from "../../logger";
 
 export function ProviderManagement() {
@@ -268,6 +269,37 @@ export function ProviderManagement() {
         );
     });
 
+    const capabilityClassName = (isPresent: boolean) =>
+        isPresent ? "text-green-600" : "text-red-600";
+
+    const formatModality = (modality: string) =>
+        modality.toUpperCase() === 'PDF' ? 'PDF' : modality.charAt(0).toUpperCase() + modality.slice(1);
+
+    const renderCapabilityIcon = ({
+        label,
+        isPresent,
+        icon,
+    }: {
+        label: string;
+        isPresent: boolean;
+        icon: React.ReactNode;
+    }) => (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    type="button"
+                    aria-label={`${label}: ${isPresent ? "present" : "absent"}`}
+                    className={`${capabilityClassName(isPresent)} inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring`}
+                >
+                    {icon}
+                </button>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>{label}</p>
+            </TooltipContent>
+        </Tooltip>
+    );
+
     if (loading) {
         return <div className="text-sm text-muted-foreground">Loading providers...</div>;
     }
@@ -463,18 +495,53 @@ export function ProviderManagement() {
                                         <div className="p-3 text-sm text-muted-foreground">No models available.</div>
                                     ) :
                                         models.map((model) => (
-                                            <div key={model.modelId} className="flex items-center space-x-2 p-2">
-                                                <input
-                                                    type="checkbox"
-                                                    id={model.modelId}
-                                                    name={model.modelId}
-                                                    checked={selectedModels.some(m => m.modelId === model.modelId)}
-                                                    onChange={() => handleModelToggle(model.modelId)}
-                                                />
-                                                <label htmlFor={model.modelId}
-                                                    className="text-sm font-medium cursor-pointer">
-                                                    {model.name}
-                                                </label>
+                                            <div
+                                                key={model.modelId}
+                                                className="flex items-start justify-between gap-3 p-2"
+                                            >
+                                                <div className="flex items-center space-x-2 min-w-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        id={model.modelId}
+                                                        name={model.modelId}
+                                                        checked={selectedModels.some(m => m.modelId === model.modelId)}
+                                                        onChange={() => handleModelToggle(model.modelId)}
+                                                    />
+                                                    <label
+                                                        htmlFor={model.modelId}
+                                                        className="text-sm font-medium cursor-pointer truncate"
+                                                    >
+                                                        {model.name}
+                                                    </label>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                                    <div className="flex items-center gap-2">
+                                                        {renderCapabilityIcon({
+                                                            label: "Tool call",
+                                                            isPresent: Boolean(model.toolCall),
+                                                            icon: <Wrench className="size-4" aria-hidden="true" />,
+                                                        })}
+                                                        {renderCapabilityIcon({
+                                                            label: "Reasoning",
+                                                            isPresent: Boolean(model.reasoning),
+                                                            icon: <Brain className="size-4" aria-hidden="true" />,
+                                                        })}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-xs">
+                                                        <span className={`inline-flex items-center gap-1 ${capabilityClassName(model.inputModalities.length > 0)}`}>
+                                                            <ArrowDownToLine className="size-3.5" aria-hidden="true" />
+                                                            {model.inputModalities.length > 0
+                                                                ? model.inputModalities.map(formatModality).join(', ')
+                                                                : 'None'}
+                                                        </span>
+                                                        <span className={`inline-flex items-center gap-1 ${capabilityClassName(model.outputModalities.length > 0)}`}>
+                                                            <ArrowUpFromLine className="size-3.5" aria-hidden="true" />
+                                                            {model.outputModalities.length > 0
+                                                                ? model.outputModalities.map(formatModality).join(', ')
+                                                                : 'None'}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
                                 </ScrollArea>
