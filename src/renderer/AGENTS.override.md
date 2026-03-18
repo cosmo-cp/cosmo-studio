@@ -17,7 +17,10 @@ This file applies to changes under `src/renderer/`.
 ## Process boundary rules
 
 - Renderer must not import Node/Electron APIs.
-- All privileged operations go through `window.api` (preload).
+- All privileged operations go through preload-backed capabilities.
+- Renderer components should not call `window.api` directly:
+  - Use the root Redux store, selectors, and thunks for cached request/response flows.
+  - Keep direct preload usage isolated to renderer adapters such as `src/renderer/src/lib/app-data-source.ts` and streaming transport code such as `src/renderer/src/chat-transport.ts`.
 - Prefer `import type` when consuming `core/dto` types to avoid bundling heavy runtime code:
   - Example: `import type {Chat} from "core/dto";`
 
@@ -64,9 +67,11 @@ Apply the highest-impact rules first:
 
 ## Data flow conventions
 
-- Prefer a single “source of truth” for cached UI state.
+- Prefer a single renderer-wide Redux store as the source of truth for cached UI state.
+- Keep side effects in Redux thunks or adapter modules, not in reducers or presentation components.
 - Keep renderer logic focused on presentation + orchestration:
   - DB queries, encryption, provider registries belong in `packages/core` and/or main controllers.
+- Resolve backend-specific data access behind `src/renderer/src/lib/app-data-source.ts` so the same thunk layer can talk to Electron preload today and HTTP tomorrow.
 - For streaming chat:
   - Renderer uses `@ai-sdk/react` + `IpcChatTransport` (`src/renderer/src/chat-transport.ts`).
   - Ensure stream channels are stable (`chat-stream-${chatId}`) and all listeners are cleaned up.

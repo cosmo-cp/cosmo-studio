@@ -16,12 +16,15 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';
 import { ModelModalityEnum } from "core/database/schema/modelProviderSchema";
-import type { Chat, Persona, ProviderWithModels } from "core/dto";
+import type { Chat, ProviderWithModels } from "core/dto";
 import { CheckIcon } from "lucide-react";
 import type { FocusEvent, KeyboardEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { logger } from "../../logger";
+import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
+import {executeCommand} from "@/lib/store/commands-store";
+import {loadPersonas} from "@/lib/store/personas-store";
+import {loadProviders} from "@/lib/store/providers-store";
 import { Attachment, AttachmentPreview, AttachmentRemove, Attachments, } from './ai-elements/attachments';
 import {
     PromptInput,
@@ -80,22 +83,25 @@ export function MultimodalInput({
     onPersonaChange: (personaId: string | null) => void;
     stop?: UseChatHelpers<UIMessage>['stop'];
 }) {
+    const dispatch = useAppDispatch();
+    const providers = useAppSelector((state) => state.providers.items);
+    const providersStatus = useAppSelector((state) => state.providers.status);
+    const personas = useAppSelector((state) => state.personas.items);
+    const personasStatus = useAppSelector((state) => state.personas.status);
     const [input, setInput] = useState<string>('');
-    const [providers, setProviders] = useState<ProviderWithModels[]>([]);
     const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
-    const [personas, setPersonas] = useState<Persona[]>([]);
 
     useEffect(() => {
-        window.api.modelProvider.getProvidersWithModels()
-            .then(fetchedProviders => setProviders(fetchedProviders))
-            .catch(error => logger.error(error));
-    }, []);
+        if (providersStatus === "idle") {
+            void dispatch(loadProviders());
+        }
+    }, [dispatch, providersStatus]);
 
     useEffect(() => {
-        window.api.persona.getAll()
-            .then(fetchedPersonas => setPersonas(fetchedPersonas))
-            .catch(error => logger.error(error));
-    }, []);
+        if (personasStatus === "idle") {
+            void dispatch(loadPersonas());
+        }
+    }, [dispatch, personasStatus]);
 
     const selectedModelInfo = useMemo(() => {
         if (providers.length === 0) return undefined;
@@ -135,7 +141,7 @@ export function MultimodalInput({
 
         if (cleanedText.trim().startsWith("/")) {
             try {
-                const result = await window.api.command.execute({input: cleanedText});
+                const result = await dispatch(executeCommand({input: cleanedText})).unwrap();
                 resolvedText = result.resolvedText;
             } catch (error) {
                 const message = error instanceof Error ? error.message : "Failed to execute command.";
@@ -154,7 +160,7 @@ export function MultimodalInput({
         }).finally(() => {
             setInput('');
         })
-    }, [chat.selectedModelId, chat.selectedProvider, chat.selectedPersonaId, sendMessage]);
+    }, [chat.selectedModelId, chat.selectedProvider, chat.selectedPersonaId, dispatch, sendMessage]);
 
     const handlePersonaSelection = useCallback((personaId: string | null) => {
         onPersonaChange(personaId);

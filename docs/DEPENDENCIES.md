@@ -63,6 +63,8 @@ This document maps `package.json` dependencies to their official documentation (
 |---|---|---|
 | `next` | Next.js App Router | https://nextjs.org/docs |
 | `react` / `react-dom` | UI runtime | https://react.dev/ |
+| `@reduxjs/toolkit` | Renderer-wide state management and async thunks | https://redux-toolkit.js.org/ |
+| `react-redux` | React bindings for Redux state | https://react-redux.js.org/ |
 | `next-themes` | Theme switching | https://github.com/pacocoursey/next-themes#readme |
 | `tailwindcss` | Styling | https://tailwindcss.com/docs |
 | `@tailwindcss/postcss` | Tailwind PostCSS integration | https://tailwindcss.com/docs/installation/using-postcss |
@@ -123,4 +125,3 @@ This document maps `package.json` dependencies to their official documentation (
 | `typescript` | TS compiler | https://www.typescriptlang.org/docs/ |
 | `tw-animate-css` | Tailwind animation helpers | https://www.npmjs.com/package/tw-animate-css |
 | `@types/*` | Type definitions (DefinitelyTyped) | https://github.com/DefinitelyTyped/DefinitelyTyped |
-

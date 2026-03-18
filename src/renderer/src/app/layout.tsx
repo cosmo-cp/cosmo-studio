@@ -1,23 +1,27 @@
-'use client'
-import React from "react";
+import type {ReactNode} from "react";
 import "./globals.css";
 import {ThemeProvider} from "next-themes";
+import {StoreProvider} from "@/lib/store/store-provider";
 
 export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
-    children: React.ReactNode;
+    children,
+}: Readonly<{
+    children: ReactNode;
 }>) {
     return (
-        <body>
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-        >
-            {children}
-        </ThemeProvider>
-        </body>
+        <html lang="en">
+            <body>
+                <StoreProvider>
+                    <ThemeProvider
+                        attribute="class"
+                        defaultTheme="system"
+                        enableSystem
+                        disableTransitionOnChange
+                    >
+                        {children}
+                    </ThemeProvider>
+                </StoreProvider>
+            </body>
+        </html>
     );
 }

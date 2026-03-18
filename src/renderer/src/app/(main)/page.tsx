@@ -1,7 +1,7 @@
 'use client'
-import { JSX, useCallback, useEffect, useMemo, useState } from "react";
+import {JSX, useCallback, useEffect, useMemo} from "react";
 import { ChatHistory } from "@/components/chat-history";
-import { Chat } from "core/dto";
+import type {Chat} from "core/dto";
 import { ChatHeader } from "@/components/chat-header";
 import { Messages } from "@/components/messages";
 import { MultimodalInput } from "@/components/multimodal-input";
@@ -13,31 +13,46 @@ import { Button } from "@/components/ui/button";
 import { lastAssistantMessageIsCompleteWithApprovalResponses, UIMessage } from "ai";
 import { toast } from "sonner"
 import { logger } from "../../../logger";
+import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
+import {
+    clearConversationSearch,
+    setChatHistorySearchQuery,
+    setConversationSearchQuery,
+    setCurrentMatchIndex,
+    setTotalMatches,
+    updateChatInHistory as updateChatInHistoryAction,
+} from "@/lib/store/main-chat-page-slice";
+import {
+    createChat,
+    deleteChat,
+    loadChatHistory,
+    loadChatMessages,
+    selectChat,
+    togglePinnedChat,
+    updateSelectedModel,
+    updateSelectedPersona,
+} from "@/lib/store/main-chat-page-thunks";
 
-export default function Page(): JSX.Element {
-    const [chatHistory, setChatHistory] = useState<Chat[]>([]);
-    const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
-    const [refreshHistory, setRefreshHistory] = useState(false);
-    const [searchHistoryQuery, setSearchHistoryQuery] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
-    const [totalMatches, setTotalMatches] = useState(0);
+function MainChatPage(): JSX.Element {
+    const dispatch = useAppDispatch();
+    const {
+        chatHistory,
+        selectedChat,
+        searchHistoryQuery,
+        searchQuery,
+        currentMatchIndex,
+        totalMatches,
+    } = useAppSelector((state) => state.mainChatPage);
     const transport = useMemo(() => new IpcChatTransport(), []);
 
-    const updateChatInHistory = useCallback((chatId: string, updates: Partial<Chat>) => {
-        setChatHistory(prev =>
-            prev.map(c => c.id === chatId ? { ...c, ...updates } : c)
-        );
-        setSelectedChat(prev =>
-            prev && prev.id === chatId ? { ...prev, ...updates } : prev
-        );
-    }, []);
+    const syncChatInStore = useCallback((chatId: string, updates: Partial<Chat>) => {
+        dispatch(updateChatInHistoryAction({chatId, updates}));
+    }, [dispatch]);
 
     const {
         messages,
         sendMessage,
         status,
-        regenerate,
         setMessages,
         addToolApprovalResponse,
         stop
@@ -62,7 +77,7 @@ export default function Page(): JSX.Element {
                     updates.title = userTextPart.text.slice(0, 50);
                 }
             }
-            updateChatInHistory(selectedChat.id, updates);
+            syncChatInStore(selectedChat.id, updates);
         },
         onError: (error) => {
             toast.error("Failed to Stream Data", {
@@ -73,33 +88,28 @@ export default function Page(): JSX.Element {
 
     useEffect(() => {
         let active = true;
-        window.api.chat.getAllChats(searchHistoryQuery)
+        dispatch(loadChatHistory(searchHistoryQuery))
+            .unwrap()
             .then((chats) => {
-                if (!active) {
+                if (!active || chats.length > 0) {
                     return;
                 }
-                setChatHistory(chats);
-                if (chats.length > 0) {
-                    setSelectedChat(chats.find(chat => chat.selected) ?? chats[0]);
-                } else {
-                    setSelectedChat(null);
-                    setMessages([]);
-                }
-                setRefreshHistory(false);
+                setMessages([]);
             })
             .catch((error) => {
                 if (!active) {
                     return;
                 }
                 logger.error(error);
-                toast.error("Failed to load chats");
-                setRefreshHistory(false);
+                toast.error("Failed to load chats", {
+                    description: typeof error === "string" ? error : undefined,
+                });
             });
 
         return () => {
             active = false;
         };
-    }, [refreshHistory, searchHistoryQuery, setMessages]);
+    }, [dispatch, searchHistoryQuery, setMessages]);
 
     useEffect(() => {
         if (!selectedChat?.id) {
@@ -109,7 +119,8 @@ export default function Page(): JSX.Element {
 
         let active = true;
         const chatId = selectedChat.id;
-        window.api.message.getByChat(chatId)
+        dispatch(loadChatMessages(chatId))
+            .unwrap()
             .then((chat) => {
                 if (!active || selectedChat.id !== chatId) {
                     return;
@@ -123,148 +134,148 @@ export default function Page(): JSX.Element {
                     return;
                 }
                 logger.error(error);
-                toast.error("Failed to load chat messages");
+                toast.error("Failed to load chat messages", {
+                    description: typeof error === "string" ? error : undefined,
+                });
             });
 
         return () => {
             active = false;
         };
-    }, [selectedChat?.id, setMessages]);
+    }, [dispatch, selectedChat?.id, setMessages]);
 
     const handleNewChat = useCallback(async () => {
         try {
-            await window.api.chat.createChat({title: "New Chat"});
-            setRefreshHistory(true);
+            await dispatch(createChat({title: "New Chat"})).unwrap();
         } catch (error) {
             logger.error(error);
-            toast.error("Failed to create chat");
+            toast.error("Failed to create chat", {
+                description: typeof error === "string" ? error : undefined,
+            });
         }
-    }, []);
+    }, [dispatch]);
 
     const searchFromChatHistory = useCallback((searchQuery: string) => {
-        setSearchHistoryQuery(searchQuery);
-        setRefreshHistory(true);
-    }, []);
+        dispatch(setChatHistorySearchQuery(searchQuery || null));
+    }, [dispatch]);
 
     const handleSelectChat = useCallback(async (chat: Chat) => {
         try {
-            await window.api.chat.updateSelectedChat(chat.id);
-            setSelectedChat(chat);
+            await dispatch(selectChat(chat)).unwrap();
         } catch (error) {
             logger.error(error);
-            toast.error("Failed to select chat");
+            toast.error("Failed to select chat", {
+                description: typeof error === "string" ? error : undefined,
+            });
         }
-    }, []);
+    }, [dispatch]);
 
     const handleDeleteChat = useCallback(async (chat: Chat) => {
         try {
-            await window.api.chat.deleteChat(chat.id);
-            setRefreshHistory(true);
+            await dispatch(deleteChat(chat.id)).unwrap();
         } catch (error) {
             logger.error(error);
-            toast.error("Failed to delete chat");
+            toast.error("Failed to delete chat", {
+                description: typeof error === "string" ? error : undefined,
+            });
         }
-    }, []);
+    }, [dispatch]);
 
     const handlePinChat = useCallback(async (chat: Chat) => {
         try {
-            await window.api.chat.updatePinnedStatusForChat(chat.id, !chat.pinned);
-            setRefreshHistory(true);
+            await dispatch(togglePinnedChat({chatId: chat.id, pinned: !chat.pinned})).unwrap();
         } catch (error) {
             logger.error(error);
-            toast.error("Failed to update chat pin status");
+            toast.error("Failed to update chat pin status", {
+                description: typeof error === "string" ? error : undefined,
+            });
         }
-    }, []);
+    }, [dispatch]);
 
     const handleSearch = useCallback((query: string) => {
-        setSearchQuery(query);
         if (!query) {
-            setCurrentMatchIndex(0);
-            setTotalMatches(0);
+            dispatch(clearConversationSearch());
+            return;
         }
-    }, []);
+        dispatch(setConversationSearchQuery(query));
+    }, [dispatch]);
 
     const handleMatchesFound = useCallback((count: number) => {
-        setTotalMatches(count);
+        dispatch(setTotalMatches(count));
         if (count > 0) {
-            setCurrentMatchIndex(prev => {
-                if (prev === 0) return 1;
-                if (prev > count) return count;
-                return prev;
-            });
+            if (currentMatchIndex === 0) {
+                dispatch(setCurrentMatchIndex(1));
+                return;
+            }
+            if (currentMatchIndex > count) {
+                dispatch(setCurrentMatchIndex(count));
+            }
         } else {
-            setCurrentMatchIndex(0);
+            dispatch(setCurrentMatchIndex(0));
         }
-    }, []);
+    }, [currentMatchIndex, dispatch]);
 
     const handleNextMatch = useCallback(() => {
         if (totalMatches > 0) {
-            setCurrentMatchIndex(prev => (prev < totalMatches ? prev + 1 : 1));
+            dispatch(setCurrentMatchIndex(currentMatchIndex < totalMatches ? currentMatchIndex + 1 : 1));
         }
-    }, [totalMatches]);
+    }, [currentMatchIndex, dispatch, totalMatches]);
 
     const handlePrevMatch = useCallback(() => {
         if (totalMatches > 0) {
-            setCurrentMatchIndex(prev => (prev > 1 ? prev - 1 : totalMatches));
+            dispatch(setCurrentMatchIndex(currentMatchIndex > 1 ? currentMatchIndex - 1 : totalMatches));
         }
-    }, [totalMatches]);
+    }, [currentMatchIndex, dispatch, totalMatches]);
 
     const handleClearSearch = useCallback(() => {
-        setSearchQuery("");
-        setCurrentMatchIndex(0);
-        setTotalMatches(0);
-    }, []);
+        dispatch(clearConversationSearch());
+    }, [dispatch]);
 
     const handleModelChange = useCallback((providerName: string, modelId: string) => {
         if (!selectedChat) return;
 
-        const updatedChat = {
-            ...selectedChat,
+        const updates: Partial<Chat> = {
             selectedProvider: providerName,
             selectedModelId: modelId
         };
 
-        setSelectedChat(updatedChat);
+        dispatch(updateChatInHistoryAction({chatId: selectedChat.id, updates}));
 
-        // update local chat history state
-        setChatHistory(prev =>
-            prev.map(chat => (chat.id === selectedChat.id ? updatedChat : chat))
-        );
-
-        window.api.chat
-            .updateSelectedModelForChat(selectedChat.id, {
-                selectedProvider: providerName,
-                selectedModelId: modelId,
-            })
+        dispatch(updateSelectedModel({
+            chatId: selectedChat.id,
+            selectedProvider: providerName,
+            selectedModelId: modelId,
+        }))
+            .unwrap()
             .catch((error) => {
                 logger.error(error);
-                setRefreshHistory(true);
+                toast.error("Failed to update chat model", {
+                    description: typeof error === "string" ? error : undefined,
+                });
             });
-    }, [selectedChat]);
+    }, [dispatch, selectedChat]);
 
     const handlePersonaChange = useCallback((personaId: string | null) => {
         if (!selectedChat) return;
 
-        const updatedChat = {
-            ...selectedChat,
+        const updates: Partial<Chat> = {
             selectedPersonaId: personaId
         };
 
-        setSelectedChat(updatedChat);
+        dispatch(updateChatInHistoryAction({chatId: selectedChat.id, updates}));
 
-        setChatHistory(prev =>
-            prev.map(chat => (chat.id === selectedChat.id ? updatedChat : chat))
-        );
-
-        window.api.chat
-            .updateSelectedPersonaForChat(selectedChat.id, {
-                selectedPersonaId: personaId,
-            })
+        dispatch(updateSelectedPersona({
+            chatId: selectedChat.id,
+            selectedPersonaId: personaId,
+        }))
+            .unwrap()
             .catch((error) => {
                 logger.error(error);
-                setRefreshHistory(true);
+                toast.error("Failed to update chat persona", {
+                    description: typeof error === "string" ? error : undefined,
+                });
             });
-    }, [selectedChat]);
+    }, [dispatch, selectedChat]);
 
     return (
         <div
@@ -300,7 +311,6 @@ export default function Page(): JSX.Element {
                                     chatId={selectedChat.id}
                                     status={status}
                                     messages={messages}
-                                    regenerate={regenerate}
                                     searchQuery={searchQuery}
                                     currentMatchIndex={currentMatchIndex}
                                     onMatchesFound={handleMatchesFound}
@@ -342,4 +352,8 @@ export default function Page(): JSX.Element {
             </div>
         </div>
     );
+}
+
+export default function Page(): JSX.Element {
+    return <MainChatPage />;
 }

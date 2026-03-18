@@ -10,8 +10,10 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/c
 import {Textarea} from "@/components/ui/textarea";
 import type {CommandCreateInput, CommandDefinition, CommandUpdateInput} from "core/dto";
 import {Edit, Trash2} from "lucide-react";
-import {useCallback, useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import {toast} from "sonner";
+import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
+import {deleteCommand, loadCommands, saveCommand} from "@/lib/store/commands-store";
 import {logger} from "../../logger";
 
 type ArgumentMode = "none" | "optional";
@@ -26,8 +28,10 @@ const buildDefaultFormState = () => ({
 });
 
 export function CommandManagement() {
-    const [commands, setCommands] = useState<CommandDefinition[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const dispatch = useAppDispatch();
+    const commands = useAppSelector((state) => state.commands.items);
+    const commandsStatus = useAppSelector((state) => state.commands.status);
+    const commandsError = useAppSelector((state) => state.commands.errorMessage);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [editingCommand, setEditingCommand] = useState<CommandDefinition | null>(null);
@@ -37,22 +41,11 @@ export function CommandManagement() {
     });
     const [formState, setFormState] = useState(buildDefaultFormState());
 
-    // Refresh the list so UI reflects newly created or updated commands.
-    const loadCommands = useCallback(async () => {
-        try {
-            const list = await window.api.command.listAll();
-            setCommands(list);
-        } catch (error) {
-            logger.error("Failed to load commands", error);
-            toast.error("Failed to load commands");
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
     useEffect(() => {
-        loadCommands();
-    }, [loadCommands]);
+        if (commandsStatus === "idle") {
+            void dispatch(loadCommands());
+        }
+    }, [commandsStatus, dispatch]);
 
     // Reset state before opening the create dialog.
     const handleOpenDialog = () => {
@@ -104,13 +97,14 @@ export function CommandManagement() {
                 const updatePayload: CommandUpdateInput = {
                     ...payloadBase,
                 };
-                const updated = await window.api.command.update(editingCommand.id as string, updatePayload);
-                setCommands((prev) => prev.map((command) => (command.id === updated.id ? updated : command)));
+                await dispatch(saveCommand({
+                    commandId: editingCommand.id as string,
+                    input: updatePayload as CommandCreateInput,
+                })).unwrap();
                 toast.success("Command updated");
             } else {
                 const createPayload: CommandCreateInput = payloadBase;
-                const created = await window.api.command.create(createPayload);
-                setCommands((prev) => [...prev, created]);
+                await dispatch(saveCommand({input: createPayload})).unwrap();
                 toast.success("Command created");
             }
             handleCloseDialog();
@@ -136,8 +130,7 @@ export function CommandManagement() {
         const commandId = deleteConfirmation.commandId;
         setDeleteConfirmation({isOpen: false, commandId: null});
         try {
-            await window.api.command.delete(commandId);
-            setCommands((prev) => prev.filter((command) => command.id !== commandId));
+            await dispatch(deleteCommand(commandId)).unwrap();
             toast.success("Command deleted");
         } catch (error) {
             const message = error instanceof Error ? error.message : "Failed to delete command.";
@@ -148,12 +141,17 @@ export function CommandManagement() {
 
     const hasCommands = commands.length > 0;
 
-    if (isLoading) {
+    if (commandsStatus === "loading" && !hasCommands) {
         return <div className="text-sm text-muted-foreground">Loading commands...</div>;
     }
 
     return (
         <div className="space-y-4">
+            {commandsError ? (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    {commandsError}
+                </div>
+            ) : null}
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-medium">Commands</h2>

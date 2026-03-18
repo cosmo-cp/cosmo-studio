@@ -49,8 +49,11 @@ Cosmo Studio is an Electron desktop application with a static-exported Next.js U
 ### Renderer (`src/renderer`)
 
 - Next.js App Router UI.
-- Must use `window.api` for all privileged/data operations.
+- Owns a single root Redux store for renderer state.
+- Renderer components should dispatch thunks/selectors instead of calling preload APIs directly.
 - Production output is static (`next.config.ts` uses `output: "export"`), written to `src/renderer/out/`.
+- Request/response data flows resolve a renderer-side app data source adapter first, so the same thunk layer can talk to Electron preload today and an HTTP client later.
+- Direct `window.api` usage should stay isolated to renderer adapter/transport modules such as `src/renderer/src/lib/app-data-source.ts` and `src/renderer/src/chat-transport.ts`.
 
 ### Core package (`packages/core`)
 
@@ -63,10 +66,11 @@ Cosmo Studio is an Electron desktop application with a static-exported Next.js U
 
 ### Command flow (high-level)
 
-1. Renderer gathers commands for UI (settings + dropdown) via `window.api.command.listAll()`.
+1. Renderer dispatches command thunks from the root Redux store.
 2. User submits a command (typed or selected).
-3. Main resolves the command through `CommandController` → `CommandService`.
-4. The resolved prompt is sent through the normal chat streaming pipeline.
+3. The thunk resolves through the shared app data source adapter to preload today, or HTTP later.
+4. Main resolves the command through `CommandController` → `CommandService` when the Electron backend is active.
+5. The resolved prompt is sent through the normal chat streaming pipeline.
 
 ## Build pipeline (how packaging works)
 

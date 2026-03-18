@@ -7,7 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Persona } from 'core/dto';
 import { Edit, Plus, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
+import {deletePersona, loadPersonas, savePersona} from "@/lib/store/personas-store";
 
 const getErrorMessage = (error: unknown) => {
     if (error instanceof Error) {
@@ -27,7 +29,10 @@ const isUniqueNameError = (message: string) => {
 };
 
 export function PersonaList() {
-    const [personas, setPersonas] = useState<Persona[]>([]);
+    const dispatch = useAppDispatch();
+    const personas = useAppSelector((state) => state.personas.items);
+    const personasStatus = useAppSelector((state) => state.personas.status);
+    const personasError = useAppSelector((state) => state.personas.errorMessage);
     const [isOpen, setIsOpen] = useState(false);
     const [name, setName] = useState('');
     const [details, setDetails] = useState('');
@@ -37,19 +42,11 @@ export function PersonaList() {
     const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
     const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
 
-    const loadPersonas = useCallback(async () => {
-        try {
-            const list = await window.api.persona.getAll();
-            setPersonas(list);
-            setListError(null);
-        } catch (error) {
-            setListError(getErrorMessage(error));
-        }
-    }, []);
-
     useEffect(() => {
-        loadPersonas();
-    }, [loadPersonas]);
+        if (personasStatus === 'idle') {
+            void dispatch(loadPersonas());
+        }
+    }, [dispatch, personasStatus]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -95,17 +92,21 @@ export function PersonaList() {
 
         try {
             if (editingPersona) {
-                await window.api.persona.update(editingPersona.id, {
+                await dispatch(savePersona({
+                    personaId: editingPersona.id,
+                    input: {
                     name: trimmedName,
                     details: trimmedDetails
-                });
+                    },
+                })).unwrap();
             } else {
-                await window.api.persona.create({
+                await dispatch(savePersona({
+                    input: {
                     name: trimmedName,
                     details: trimmedDetails
-                });
+                    },
+                })).unwrap();
             }
-            await loadPersonas();
             setIsOpen(false);
         } catch (error) {
             const message = getErrorMessage(error);
@@ -142,8 +143,7 @@ export function PersonaList() {
         setListError(null);
 
         try {
-            await window.api.persona.delete(persona.id);
-            await loadPersonas();
+            await dispatch(deletePersona(persona.id)).unwrap();
         } catch (error) {
             setListError(getErrorMessage(error));
         } finally {
@@ -166,12 +166,16 @@ export function PersonaList() {
                         <span>Add persona</span>
                     </Button>
                 </div>
-                {listError ? (
+                {listError ?? (personasStatus === 'failed' ? personasError : null) ? (
                     <p className="text-sm text-destructive" role="alert">
-                        {listError}
+                        {listError ?? personasError}
                     </p>
                 ) : null}
-                {hasPersonas ? (
+                {personasStatus === 'loading' && !hasPersonas ? (
+                    <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+                        Loading personas...
+                    </div>
+                ) : hasPersonas ? (
                     <div className="rounded-md border">
                         <Table>
                             <TableHeader>

@@ -16,6 +16,7 @@ Cosmo Studio is an Electron desktop app with a static-exported Next.js UI.
 - **Renderer (Next.js UI)**: `src/renderer/` (Next app: `src/renderer/src/`)
   - Runs in the BrowserWindow, talks to main **only** via `window.api`.
   - Next config is `output: "export"` (static build to `src/renderer/out/`).
+  - Uses a single root Redux store; renderer components should dispatch thunks/selectors instead of calling preload APIs directly.
 - **Core package (domain + DB + AI)**: `packages/core/` (workspace package name: `core`)
   - Drizzle schema, repositories/services, DTOs shared across processes.
   - Imported as `core/...` from main/renderer/preload.
@@ -87,7 +88,7 @@ We use a declarative IPC pattern:
 3. Bind the controller in `src/main/inversify.config.ts`.
 4. Bind Every new controller in `src/main/inversify.config.ts` with the same ServiceIdentifier type `TYPES.Controller`
 4. Run `npm run generate-api` (root) to regenerate `src/preload/api.ts`.
-5. Ensure the renderer uses `window.api.<group>.<method>()` only.
+5. Ensure renderer components use the shared Redux store/thunks for request-response flows, and keep any direct `window.api` calls isolated to renderer adapter/transport modules.
 6. Add tests (unit + integration) for the new behavior.
 
 ### Generated files policy

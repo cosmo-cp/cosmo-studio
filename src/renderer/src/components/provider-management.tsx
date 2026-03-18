@@ -16,16 +16,25 @@ import {ScrollArea} from "@/components/ui/scroll-area";
 import {Loader} from "@/components/ai-elements/loader";
 import {ConfirmDialog} from "@/components/confirm-dialog";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
+import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
+import {
+    deleteProvider,
+    loadAvailableModelsForProvider,
+    loadProviders,
+    saveProvider,
+} from "@/lib/store/providers-store";
 import {logger} from "../../logger";
 
 export function ProviderManagement() {
+    const dispatch = useAppDispatch();
     const {resolvedTheme} = useTheme();
-    const [providers, setProviders] = useState<ProviderWithModels[]>([]);
+    const providers = useAppSelector((state) => state.providers.items);
+    const providersStatus = useAppSelector((state) => state.providers.status);
+    const providersError = useAppSelector((state) => state.providers.errorMessage);
     const [models, setModels] = useState<NewModel[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
     const [isLoadingModels, setIsLoadingModels] = useState(false);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [deleteConfirmation, setDeleteConfirmation] = useState<{isOpen: boolean, providerId: string | null}>({
@@ -54,22 +63,11 @@ export function ProviderManagement() {
 
     const methods = useStepper();
 
-    // Load providers on mount
     useEffect(() => {
-        async function loadProviders() {
-            try {
-                const list = await window.api.modelProvider.getProvidersWithModels();
-                setProviders(list);
-            } catch (e) {
-                logger.error('Failed to load providers', e);
-                setError('Failed to load providers');
-            } finally {
-                setLoading(false);
-            }
+        if (providersStatus === "idle") {
+            void dispatch(loadProviders());
         }
-
-        loadProviders();
-    }, []);
+    }, [dispatch, providersStatus]);
 
     const handleOpenDialog = () => {
         setEditingProvider(null);
@@ -86,6 +84,7 @@ export function ProviderManagement() {
 
     const handleCloseDialog = () => {
         setIsOpen(false);
+        setModels([]);
     };
 
     const handleDialogOpenChange = (open: boolean) => {
@@ -146,12 +145,12 @@ export function ProviderManagement() {
         setError(null);
         setModels([]);
         try {
-            const values = await window.api.modelProvider.getAvailableModelsFromProviders({
+            const values = await dispatch(loadAvailableModelsForProvider({
                 type: selectedProviderType,
                 apiKey,
                 apiUrl,
                 name
-            });
+            })).unwrap();
             setModels(values);
             if (values.length === 0) {
                 setError("No models found for this provider.");
@@ -184,21 +183,21 @@ export function ProviderManagement() {
                 name: name.trim(),
                 apiKey: apiKey.trim(),
                 apiUrl: apiUrl.trim() || (isCustomProvider ? '' : undefined),
-            };
+            } as const;
 
             if (editingProvider) {
-                // Update existing provider
-                const updatedProvider = await window.api.modelProvider.updateProvider(editingProvider.id, providerData, selectedModels);
-                if (updatedProvider) {
-                    setProviders((prev) => prev.map(p => p.id === editingProvider.id ? updatedProvider : p));
-                    handleCloseDialog();
-                }
+                await dispatch(saveProvider({
+                    providerId: editingProvider.id,
+                    providerData,
+                    models: selectedModels,
+                })).unwrap();
+                handleCloseDialog();
             } else {
-                const newProvider = await window.api.modelProvider.addProvider(providerData, selectedModels);
-                if (newProvider) {
-                    setProviders((prev) => [...prev, newProvider]);
-                    handleCloseDialog();
-                }
+                await dispatch(saveProvider({
+                    providerData,
+                    models: selectedModels,
+                })).unwrap();
+                handleCloseDialog();
             }
         } catch (err) {
             const errorMessage = getErrorMessage(err);
@@ -233,8 +232,7 @@ export function ProviderManagement() {
         setDeleteConfirmation({ isOpen: false, providerId: null });
 
         try {
-            await window.api.modelProvider.deleteProvider(providerId);
-            setProviders((prev) => prev.filter(p => p.id !== providerId));
+            await dispatch(deleteProvider(providerId)).unwrap();
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to delete provider';
             logger.error('Failed to delete provider:', err);
@@ -300,7 +298,7 @@ export function ProviderManagement() {
         </Tooltip>
     );
 
-    if (loading) {
+    if (providersStatus === "loading" && providers.length === 0) {
         return <div className="text-sm text-muted-foreground">Loading providers...</div>;
     }
 
@@ -549,10 +547,10 @@ export function ProviderManagement() {
                         ))}
                     </div>
                     <div className="mt-2 space-y-4">
-                        {error && (
+                        {(error ?? providersError) && (
                             <div
                                 className="p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-600">
-                                {error}
+                                {error ?? providersError}
                             </div>
                         )}
                         <DialogFooter>

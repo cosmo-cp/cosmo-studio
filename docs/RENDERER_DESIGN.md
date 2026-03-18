@@ -26,6 +26,8 @@ This document captures UI/UX conventions so new features match the existing Cosm
 - shadcn/ui component primitives + Radix for accessibility.
 - Icons via `lucide-react`.
 - Theme switching via `next-themes`.
+- Renderer-wide shared state lives in a single Redux Toolkit store at the app root.
+- Async renderer data flows should use Redux thunks that resolve the shared app data source adapter.
 
 ## Guidelines
 
@@ -53,6 +55,10 @@ This document captures UI/UX conventions so new features match the existing Cosm
 - Streaming chat:
   - Always handle failure states (toast + recoverable UI).
   - Clean up IPC listeners when streams end/cancel.
+- Chat page state:
+  - Keep chat history, selected chat, and conversation search state in the root Redux store so sibling panels and settings screens share one source of truth.
+- Settings/stateful resources:
+  - Commands, personas, providers, and MCP servers should load through Redux thunks instead of calling preload APIs directly from components.
 - Commands:
   - List commands dynamically (built-ins + custom).
   - Allow optional single-argument input and show hints in the UI.

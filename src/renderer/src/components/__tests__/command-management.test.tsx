@@ -1,5 +1,7 @@
 import {describe, expect, it, vi} from "vitest";
 import {render, screen, waitFor} from "@testing-library/react";
+import {StoreProvider} from "@/lib/store/store-provider";
+import {createMockAppDataSource} from "@/test/mock-app-data-source";
 import {CommandManagement} from "../command-management";
 
 vi.mock("electron-log/renderer", () => ({
@@ -24,19 +26,17 @@ describe("CommandManagement", () => {
             },
         ]);
 
-        Object.defineProperty(window, "api", {
-            value: {
-                command: {
-                    listAll,
-                    create: vi.fn(),
-                    update: vi.fn(),
-                    delete: vi.fn(),
-                },
-            },
-            writable: true,
-        });
-
-        render(<CommandManagement/>);
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    command: {
+                        listAll,
+                    },
+                })}
+            >
+                <CommandManagement/>
+            </StoreProvider>
+        );
 
         await waitFor(() => {
             expect(listAll).toHaveBeenCalled();
