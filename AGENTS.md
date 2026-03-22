@@ -9,24 +9,25 @@ If you change architecture, workflows, scripts, or conventions, **update this fi
 Cosmo Studio is an Electron desktop app with a static-exported Next.js UI.
 
 - **Electron main process**: `src/main/` (entry: `src/main/index.ts`)
-  - Owns windows, app lifecycle, database initialization, IPC registration.
+    - Owns windows, app lifecycle, database initialization, IPC registration.
 - **Preload (security boundary)**: `src/preload/` (entry: `src/preload/index.ts`)
-  - Exposes a minimal, typed `window.api` via `contextBridge`.
-  - `src/preload/api.ts` is generated (see “IPC & API generation”).
+    - Exposes a minimal, typed `window.api` via `contextBridge`.
+    - `src/preload/api.ts` is generated (see “IPC & API generation”).
 - **Renderer (Next.js UI)**: `src/renderer/` (Next app: `src/renderer/src/`)
-  - Runs in the BrowserWindow, talks to main **only** via `window.api`.
-  - Next config is `output: "export"` (static build to `src/renderer/out/`).
+    - Runs in the BrowserWindow, talks to main **only** via `window.api`.
+    - Next config is `output: "export"` (static build to `src/renderer/out/`).
 - **Core package (domain + DB + AI)**: `packages/core/` (workspace package name: `core`)
-  - Drizzle schema, repositories/services, DTOs shared across processes.
-  - Imported as `core/...` from main/renderer/preload.
+    - Drizzle schema, repositories/services, DTOs shared across processes.
+    - Imported as `core/...` from main/renderer/preload.
 - **Tooling/scripts**: `scripts/` (currently: `scripts/generate-api.ts`)
-  - Generates the preload API surface from main IPC controllers.
+    - Generates the preload API surface from main IPC controllers.
 - **Database**: Drizzle ORM + PGlite
-  - Schema: `packages/core/database/schema/`
-  - Migrations output: `migrations/`
-  - Drizzle config: `drizzle.config.ts`
+    - Schema: `packages/core/database/schema/`
+    - Migrations output: `migrations/`
+    - Drizzle config: `drizzle.config.ts`
 
 Internal docs live in `docs/` (keep them updated):
+
 - `docs/ARCHITECTURE.md`
 - `docs/IPC.md`
 - `docs/DATABASE.md`
@@ -48,8 +49,8 @@ Before coding, decide **where the feature belongs**. Default to keeping the rend
    If the renderer needs it, expose a minimal IPC API via preload (see below).
 
 3. **Database work (schema/repository/service) or cross-process domain logic**  
-   → `packages/core/...`  
-   - Schema changes → also create migrations (`npm run db:generate`) and validate (`npm run db:check`).
+   → `packages/core/...`
+    - Schema changes → also create migrations (`npm run db:generate`) and validate (`npm run db:check`).
 
 4. **AI/model provider logic** (providers, streaming, prompt assembly, tool calls)  
    → Prefer `packages/core/...` for provider registry + model selection logic.  
@@ -72,23 +73,23 @@ Before coding, decide **where the feature belongs**. Default to keeping the rend
 We use a declarative IPC pattern:
 
 - Decorators live in `src/main/ipc/Decorators.ts`
-  - `@IpcController("prefix")` on controller classes
-  - `@IpcHandler("method")` for `ipcMain.handle` request/response APIs
-  - `@IpcOn("event")` for `ipcMain.on` fire-and-forget events (used for streaming)
+    - `@IpcController("prefix")` on controller classes
+    - `@IpcHandler("method")` for `ipcMain.handle` request/response APIs
+    - `@IpcOn("event")` for `ipcMain.on` fire-and-forget events (used for streaming)
 - Controllers live in `src/main/controllers/*` and are bound in `src/main/inversify.config.ts`.
 - IPC registration happens in `src/main/ipc/index.ts` via `IpcHandlerRegistry`.
 
 ### Adding a new IPC API (checklist)
 
 1. Add method to an existing controller (or create a new controller):
-   - File: `src/main/controllers/<Something>Controller.ts`
-   - Add `@IpcHandler("...")` (for invoke) or `@IpcOn("...")` (for send).
+    - File: `src/main/controllers/<Something>Controller.ts`
+    - Add `@IpcHandler("...")` (for invoke) or `@IpcOn("...")` (for send).
 2. Validate input with `zod` **inside** the controller (or at the first boundary layer).
 3. Bind the controller in `src/main/inversify.config.ts`.
 4. Bind Every new controller in `src/main/inversify.config.ts` with the same ServiceIdentifier type `TYPES.Controller`
-4. Run `npm run generate-api` (root) to regenerate `src/preload/api.ts`.
-5. Ensure the renderer uses `window.api.<group>.<method>()` only.
-6. Add tests (unit + integration) for the new behavior.
+5. Run `npm run generate-api` (root) to regenerate `src/preload/api.ts`.
+6. Ensure the renderer uses `window.api.<group>.<method>()` only.
+7. Add tests (unit + integration) for the new behavior.
 
 ### Generated files policy
 
@@ -98,6 +99,7 @@ We use a declarative IPC pattern:
 ## 3) Frontend design guidelines (intuitive, accessible, mobile‑first)
 
 The current UI (see screenshots in the PR description / repository) establishes:
+
 - A **left app sidebar** (Cosmo logo + primary nav + Settings).
 - A **content header** with utility actions (e.g., “Give us a Star on GitHub”, theme toggle).
 - Card-based panels, neutral palette, rounded corners, soft borders.
@@ -107,8 +109,8 @@ The current UI (see screenshots in the PR description / repository) establishes:
 - Use the existing Shadcn/Radix component primitives in `src/renderer/src/components/ui/`.
 - Styling is Tailwind v4 + CSS variables in `src/renderer/src/app/globals.css` (neutral base, light/dark).
 - Prefer consistent spacing/radius:
-  - Outer containers use `rounded-lg`, `border`, `bg-background`.
-  - Content widths: follow existing patterns like `max-w-3xl mx-auto` for inputs.
+    - Outer containers use `rounded-lg`, `border`, `bg-background`.
+    - Content widths: follow existing patterns like `max-w-3xl mx-auto` for inputs.
 - Icons: `lucide-react` only.
 - Theme: use `next-themes` and do not hardcode colors; use semantic tokens (e.g., `bg-background`, `text-foreground`, `border-border`).
 
@@ -157,6 +159,7 @@ For renderer-specific implementation conventions, see `src/renderer/AGENTS.overr
 ### CI mindset (even locally)
 
 When you change code, always run:
+
 1. Lints: `npm run lint` (root) and `npm run lint` in `src/renderer`
 2. Tests: add/run targeted tests first, then full suite(`npm run test`) and Coverage(`npm run test:coverage`)
 3. Build check (after every major change): Full build(`npm run package`) and start(`npm run dev`)
@@ -187,14 +190,14 @@ If a test harness is missing for an area, create it as part of the change. If yo
 - Keep `contextIsolation: true`, `nodeIntegration: false`.
 - Never log secrets (API keys, tokens, full prompt content if it contains sensitive data).
 - Run dependency audits regularly:
-  - `npm audit` at repo root
-  - `npm audit` in `src/renderer`
+    - `npm audit` at repo root
+    - `npm audit` in `src/renderer`
 
 ## 7) Documentation policy (code + docs folder + README)
 
 Documentation is part of the feature, not an afterthought.
 
-- **Code-level docs**: add short comments *before each method* explaining **why** it exists (not what the code literally does).
+- **Code-level docs**: add short comments _before each method_ explaining **why** it exists (not what the code literally does).
 - **Docs folder**: architectural decisions, flows, and boundaries go in `docs/`.
 - **README**: keep “getting started”, scripts, and release steps accurate.
 - **This file**: update `AGENTS.md`/overrides when conventions change.
@@ -209,9 +212,10 @@ Follow these rules:
 - Avoid globals; remove dead code.
 
 Logging:
+
 - Use `electron-log` scopes:
-  - main: `src/main/logger.ts` (`logger = log.scope("main")`)
-  - renderer: `src/renderer/logger.ts` (`logger = log.scope("renderer")`)
+    - main: `src/main/logger.ts` (`logger = log.scope("main")`)
+    - renderer: `src/renderer/logger.ts` (`logger = log.scope("renderer")`)
 - Log at critical steps (startup, DB init/migrations, IPC entry/exit, AI stream start/end/error).
 - Include stable identifiers (chatId, providerId) but never include secrets.
 
@@ -222,6 +226,7 @@ Prefer official docs when changing behavior:
 For an exhaustive per-package link list (from `package.json` files), see `docs/DEPENDENCIES.md`.
 
 ### App/runtime
+
 - Electron: https://www.electronjs.org/docs/latest
 - Electron Forge: https://www.electronforge.io/
 - Vite: https://vite.dev/
@@ -229,6 +234,7 @@ For an exhaustive per-package link list (from `package.json` files), see `docs/D
 - React: https://react.dev/
 
 ### AI stack
+
 - Vercel AI SDK (`ai`, `@ai-sdk/*`): https://sdk.vercel.ai/docs
 - Anthropic provider: https://sdk.vercel.ai/providers/anthropic
 - OpenAI provider: https://sdk.vercel.ai/providers/openai
@@ -237,12 +243,14 @@ For an exhaustive per-package link list (from `package.json` files), see `docs/D
 - models.dev registry: https://models.dev/
 
 ### Data layer
+
 - Drizzle ORM: https://orm.drizzle.team/
 - Drizzle Kit: https://orm.drizzle.team/kit-docs/overview
 - PGlite: https://pglite.dev/
 - Zod: https://zod.dev/
 
 ### UI
+
 - Tailwind CSS v4: https://tailwindcss.com/docs
 - Radix UI: https://www.radix-ui.com/primitives/docs/overview/introduction
 - shadcn/ui: https://ui.shadcn.com/

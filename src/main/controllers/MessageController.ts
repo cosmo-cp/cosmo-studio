@@ -1,32 +1,31 @@
-import {inject, injectable} from "inversify";
-import {CORETYPES} from "../../../packages/core/types/types";
-import {MessageService} from "../../../packages/core/services/MessageService";
-import {Message, NewMessage} from "../../../packages/core/dto";
-import {IpcController, IpcHandler} from "../ipc/Decorators";
-import {UIMessage} from "ai";
+import { inject, injectable } from 'inversify';
+import { CORETYPES } from '../../../packages/core/types/types';
+import { MessageService } from '../../../packages/core/services/MessageService';
+import { Message, NewMessage } from '../../../packages/core/dto';
+import { IpcController, IpcHandler } from '../ipc/Decorators';
+import { UIMessage } from 'ai';
 
 @injectable()
-@IpcController("message")
+@IpcController('message')
 export class MessageController {
-    constructor(@inject(CORETYPES.MessageService) private messageService: MessageService) {
-    }
+    constructor(@inject(CORETYPES.MessageService) private messageService: MessageService) {}
 
-    @IpcHandler("getByChat")
+    @IpcHandler('getByChat')
     public async getByChat(chatId: string): Promise<UIMessage[]> {
         return this.messageService.getMessagesByChatId(chatId);
     }
 
-    @IpcHandler("save")
+    @IpcHandler('save')
     public async save(newMessage: NewMessage): Promise<Message> {
         return this.messageService.createMessage(newMessage);
     }
 
-    @IpcHandler("update")
+    @IpcHandler('update')
     public async update(id: string, updates: Partial<NewMessage>) {
         return this.messageService.updateMessage(id, updates);
     }
 
-    @IpcHandler("delete")
+    @IpcHandler('delete')
     public async delete(id: string) {
         return this.messageService.deleteMessage(id);
     }

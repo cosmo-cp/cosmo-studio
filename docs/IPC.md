@@ -5,19 +5,19 @@ Cosmo Studio uses a decorator-based IPC pattern so the preload API can be genera
 ## Building blocks
 
 - Decorators: `src/main/ipc/Decorators.ts`
-  - `@IpcController("prefix")`
-  - `@IpcHandler("name")` → request/response (`ipcMain.handle`)
-  - `@IpcOn("name")` → fire-and-forget (`ipcMain.on`)
+    - `@IpcController("prefix")`
+    - `@IpcHandler("name")` → request/response (`ipcMain.handle`)
+    - `@IpcOn("name")` → fire-and-forget (`ipcMain.on`)
 - Registry: `src/main/ipc/index.ts` (`IpcHandlerRegistry`)
-  - Discovers controller metadata and registers channels.
-  - Channel naming: `${prefix}:${name}`
+    - Discovers controller metadata and registers channels.
+    - Channel naming: `${prefix}:${name}`
 
 ## Controller pattern
 
 - Controllers live in `src/main/controllers/*`.
 - Controllers are bound via DI in `src/main/inversify.config.ts` and injected into `IpcHandlerRegistry`.
 - The registry passes the Electron event object as the **last** argument when calling controller methods.
-  - If you need `event.sender` or `webContents`, declare an `event` parameter at the end.
+    - If you need `event.sender` or `webContents`, declare an `event` parameter at the end.
 
 ## Generated preload API
 
@@ -25,28 +25,29 @@ Cosmo Studio uses a decorator-based IPC pattern so the preload API can be genera
 - Output: `src/preload/api.ts`
 
 The generator:
+
 - Reads controller decorator metadata via `reflect-metadata`.
 - Uses a regex on controller source files to infer method signatures.
 - Emits a typed `api` object that calls:
-  - `ipcRenderer.invoke(...)` for `@IpcHandler`
-  - `ipcRenderer.send(...)` for `@IpcOn`
+    - `ipcRenderer.invoke(...)` for `@IpcHandler`
+    - `ipcRenderer.send(...)` for `@IpcOn`
 
 ### Streaming conventions
 
 Streaming uses fire-and-forget channels plus renderer subscriptions:
 
 - Main emits to renderer:
-  - `${streamChannel}-data`
-  - `${streamChannel}-end`
-  - `${streamChannel}-error`
+    - `${streamChannel}-data`
+    - `${streamChannel}-end`
+    - `${streamChannel}-error`
 - Renderer wiring lives in:
-  - `src/renderer/src/chat-transport.ts` (AI SDK transport)
-  - `src/preload/api.ts` (subscription helpers)
+    - `src/renderer/src/chat-transport.ts` (AI SDK transport)
+    - `src/preload/api.ts` (subscription helpers)
 
 ## Adding/changing an IPC API (required steps)
 
 1. Implement the new handler in a controller:
-   - Add `@IpcHandler(...)` or `@IpcOn(...)` to a public method.
+    - Add `@IpcHandler(...)` or `@IpcOn(...)` to a public method.
 2. Validate inputs (prefer `zod`) at the boundary.
 3. Bind the controller (if new) in `src/main/inversify.config.ts`.
 4. Run `npm run generate-api`.

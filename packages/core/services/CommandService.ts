@@ -1,19 +1,10 @@
-import {inject, injectable} from "inversify";
-import {CORETYPES} from "../types/types";
-import {CommandRepository} from "../repositories/CommandRepository";
-import {
-    Command,
-    CommandCreateInput,
-    CommandDefinition,
-    CommandExecution,
-    CommandUpdateInput,
-} from "../dto";
-import {
-    findCommand,
-    mergeCommands,
-} from "../commands/registry";
-import {normalizeCommandName, parseCommandInput} from "../commands/parser";
-import {renderCommandTemplate} from "../commands/template";
+import { inject, injectable } from 'inversify';
+import { CORETYPES } from '../types/types';
+import { CommandRepository } from '../repositories/CommandRepository';
+import { Command, CommandCreateInput, CommandDefinition, CommandExecution, CommandUpdateInput } from '../dto';
+import { findCommand, mergeCommands } from '../commands/registry';
+import { normalizeCommandName, parseCommandInput } from '../commands/parser';
+import { renderCommandTemplate } from '../commands/template';
 
 // Ensure required text inputs are present before persistence.
 const normalizeRequired = (value: string | null | undefined, field: string) => {
@@ -28,9 +19,8 @@ const normalizeRequired = (value: string | null | undefined, field: string) => {
 export class CommandService {
     constructor(
         @inject(CORETYPES.CommandRepository)
-        private commandRepository: CommandRepository
-    ) {
-    }
+        private commandRepository: CommandRepository,
+    ) {}
 
     // Provide a combined list of built-in and user-defined commands.
     public async listAll(): Promise<CommandDefinition[]> {
@@ -40,13 +30,13 @@ export class CommandService {
 
     // Persist a new user-defined command with validation and normalization.
     public async create(input: CommandCreateInput): Promise<CommandDefinition> {
-        const name = normalizeCommandName(normalizeRequired(input.name, "Name"));
+        const name = normalizeCommandName(normalizeRequired(input.name, 'Name'));
         if (name.length < 2) {
-            throw new Error("Command name must start with / and include at least one character.");
+            throw new Error('Command name must start with / and include at least one character.');
         }
 
-        const description = normalizeRequired(input.description, "Description");
-        const template = normalizeRequired(input.template, "Template");
+        const description = normalizeRequired(input.description, 'Description');
+        const template = normalizeRequired(input.template, 'Template');
         const argumentLabel = input.argumentLabel?.trim() || null;
 
         const allCommands = await this.listAll();
@@ -76,7 +66,7 @@ export class CommandService {
     public async update(id: string, updates: CommandUpdateInput): Promise<CommandDefinition> {
         const existing = await this.commandRepository.getById(id);
         if (!existing) {
-            throw new Error("Command not found.");
+            throw new Error('Command not found.');
         }
 
         const normalizedUpdates: CommandUpdateInput = {
@@ -84,7 +74,7 @@ export class CommandService {
         };
 
         if (updates.name !== undefined) {
-            const name = normalizeCommandName(normalizeRequired(updates.name, "Name"));
+            const name = normalizeCommandName(normalizeRequired(updates.name, 'Name'));
             normalizedUpdates.name = name;
             const allCommands = await this.listAll();
             const match = findCommand(allCommands, name);
@@ -94,11 +84,11 @@ export class CommandService {
         }
 
         if (updates.description !== undefined) {
-            normalizedUpdates.description = normalizeRequired(updates.description, "Description");
+            normalizedUpdates.description = normalizeRequired(updates.description, 'Description');
         }
 
         if (updates.template !== undefined) {
-            normalizedUpdates.template = normalizeRequired(updates.template, "Template");
+            normalizedUpdates.template = normalizeRequired(updates.template, 'Template');
         }
 
         if (updates.argumentLabel !== undefined) {
@@ -121,7 +111,7 @@ export class CommandService {
     public async delete(id: string): Promise<void> {
         const existing = await this.commandRepository.getById(id);
         if (!existing) {
-            throw new Error("Command not found.");
+            throw new Error('Command not found.');
         }
         await this.commandRepository.delete(id);
     }
@@ -130,7 +120,7 @@ export class CommandService {
     public async execute(input: string): Promise<CommandExecution> {
         const parsed = parseCommandInput(input);
         if (!parsed) {
-            throw new Error("Invalid command.");
+            throw new Error('Invalid command.');
         }
 
         const allCommands = await this.listAll();
