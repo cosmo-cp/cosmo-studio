@@ -254,15 +254,11 @@ function PromptInputContent({
 }) {
     const attachments = usePromptInputAttachments();
     const controller = usePromptInputController();
-    const [mentionMenuOpen, setMentionMenuOpen] = useState(false);
-    const [mentionSearch, setMentionSearch] = useState('');
+    // @ mention is for personas, / is for commands
+    const [dropdownType, setDropdownType] = useState<'mention' | 'command' | null>(null);
+    const [dropdownSearch, setDropdownSearch] = useState('');
     const [selectedIndex, setSelectedIndex] = useState(0);
-    const mentionTriggerIndexRef = useRef<number>(-1);
-
-    const [commandMenuOpen, setCommandMenuOpen] = useState(false);
-    const [commandSearch, setCommandSearch] = useState('');
-    const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
-    const commandTriggerIndexRef = useRef<number>(-1);
+    const triggerIndexRef = useRef<number>(-1);
 
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -272,80 +268,62 @@ function PromptInputContent({
         });
     }, []);
 
-    const filteredPersonas = useMemo(() => {
-        if (!mentionSearch) return personaOptions;
-        const lower = mentionSearch.toLowerCase();
-        return personaOptions.filter((p) => p.name.toLowerCase().includes(lower));
-    }, [personaOptions, mentionSearch]);
+    const filteredOptions = useMemo(() => {
+        if (dropdownType === 'mention') {
+            if (!dropdownSearch) return personaOptions;
+            const lower = dropdownSearch.toLowerCase();
+            return personaOptions.filter((p) => p.name.toLowerCase().includes(lower));
+        } else if (dropdownType === 'command') {
+            if (!dropdownSearch) return commandOptions;
+            const lower = dropdownSearch.toLowerCase();
+            return commandOptions.filter((c) => c.name.toLowerCase().includes(lower));
+        }
+        return [];
+    }, [dropdownType, dropdownSearch, personaOptions, commandOptions]) as Array<{
+        id: string;
+        name: string;
+        description?: string;
+    }>;
 
-    const filteredCommands = useMemo(() => {
-        if (!commandSearch) return commandOptions;
-        const lower = commandSearch.toLowerCase();
-        return commandOptions.filter((c) => c.name.toLowerCase().includes(lower));
-    }, [commandOptions, commandSearch]);
+    const handleSelectOption = useCallback(
+        (option: { id: string; name: string; description?: string }) => {
+            if (dropdownType === 'mention') {
+                handlePersonaSelection(option.id);
+            }
+            const beforeTrigger = input.slice(0, triggerIndexRef.current);
+            const afterTrigger = input.slice(textareaRef.current?.selectionStart ?? triggerIndexRef.current + 1);
 
-    const handleSelectMention = useCallback(
-        (id: string) => {
-            handlePersonaSelection(id);
-            setMentionMenuOpen(false);
-            const beforeMention = input.slice(0, mentionTriggerIndexRef.current);
-            const afterMention = input.slice(textareaRef.current?.selectionStart ?? mentionTriggerIndexRef.current + 1);
-            const newText = beforeMention + afterMention;
+            const insertValue = dropdownType === 'mention' ? '' : option.name + ' ';
+            const newText = beforeTrigger + insertValue + afterTrigger;
+
             setInput(newText);
             controller.textInput.setInput(newText);
+            setDropdownType(null);
             focusTextarea();
         },
-        [handlePersonaSelection, input, focusTextarea, setInput, controller],
-    );
-
-    const handleSelectCommand = useCallback(
-        (name: string) => {
-            setCommandMenuOpen(false);
-            const beforeCommand = input.slice(0, commandTriggerIndexRef.current);
-            const afterCommand = input.slice(textareaRef.current?.selectionStart ?? commandTriggerIndexRef.current + 1);
-            const newText = beforeCommand + name + ' ' + afterCommand;
-            setInput(newText);
-            controller.textInput.setInput(newText);
-            focusTextarea();
-        },
-        [input, focusTextarea, setInput, controller],
+        [dropdownType, handlePersonaSelection, input, focusTextarea, setInput, controller],
     );
 
     const handleInputTextChange = useCallback(
         (newValue: string) => {
             setInput(newValue);
-            if (mentionMenuOpen) {
+            if (dropdownType) {
                 const cursor = textareaRef.current?.selectionStart ?? 0;
-                // Handle deleting the @ symbol
-                if (cursor <= mentionTriggerIndexRef.current) {
-                    setMentionMenuOpen(false);
+                // Handle deleting the trigger symbol
+                if (cursor <= triggerIndexRef.current) {
+                    setDropdownType(null);
                 } else {
-                    const search = newValue.slice(mentionTriggerIndexRef.current + 1, cursor);
+                    const search = newValue.slice(triggerIndexRef.current + 1, cursor);
                     if (/\s/.test(search)) {
-                        setMentionMenuOpen(false);
+                        setDropdownType(null);
                     } else {
-                        setMentionSearch(search);
+                        setDropdownSearch(search);
                         setSelectedIndex(0);
                     }
                 }
             }
-            if (commandMenuOpen) {
-                const cursor = textareaRef.current?.selectionStart ?? 0;
-                // Handle deleting the / symbol
-                if (cursor <= commandTriggerIndexRef.current) {
-                    setCommandMenuOpen(false);
-                } else {
-                    const search = newValue.slice(commandTriggerIndexRef.current + 1, cursor);
-                    if (/\s/.test(search)) {
-                        setCommandMenuOpen(false);
-                    } else {
-                        setCommandSearch(search);
-                        setSelectedCommandIndex(0);
-                    }
-                }
-            }
         },
-        [mentionMenuOpen, commandMenuOpen, setInput],
+        [dropdownType, setInput],
     );
 
     const handleTextareaFocus = useCallback((event: FocusEvent<HTMLTextAreaElement>) => {
@@ -356,50 +334,27 @@ function PromptInputContent({
         (event: KeyboardEvent<HTMLTextAreaElement>) => {
             textareaRef.current = event.currentTarget;
 
-            if (mentionMenuOpen) {
+            if (dropdownType) {
                 if (event.key === 'ArrowDown') {
                     event.preventDefault();
-                    setSelectedIndex((s) => (s + 1) % (filteredPersonas.length || 1));
+                    setSelectedIndex((s) => (s + 1) % (filteredOptions.length || 1));
                     return;
                 }
                 if (event.key === 'ArrowUp') {
                     event.preventDefault();
-                    setSelectedIndex((s) => (s - 1 + filteredPersonas.length) % (filteredPersonas.length || 1));
+                    setSelectedIndex((s) => (s - 1 + filteredOptions.length) % (filteredOptions.length || 1));
                     return;
                 }
                 if (event.key === 'Enter') {
                     event.preventDefault();
-                    if (filteredPersonas.length > 0) {
-                        handleSelectMention(filteredPersonas[selectedIndex].id);
+                    if (filteredOptions.length > 0) {
+                        handleSelectOption(filteredOptions[selectedIndex]);
                     }
                     return;
                 }
                 if (event.key === 'Escape') {
                     event.preventDefault();
-                    setMentionMenuOpen(false);
-                    return;
-                }
-            } else if (commandMenuOpen) {
-                if (event.key === 'ArrowDown') {
-                    event.preventDefault();
-                    setSelectedCommandIndex((s) => (s + 1) % (filteredCommands.length || 1));
-                    return;
-                }
-                if (event.key === 'ArrowUp') {
-                    event.preventDefault();
-                    setSelectedCommandIndex((s) => (s - 1 + filteredCommands.length) % (filteredCommands.length || 1));
-                    return;
-                }
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    if (filteredCommands.length > 0) {
-                        handleSelectCommand(filteredCommands[selectedCommandIndex].name);
-                    }
-                    return;
-                }
-                if (event.key === 'Escape') {
-                    event.preventDefault();
-                    setCommandMenuOpen(false);
+                    setDropdownType(null);
                     return;
                 }
             } else {
@@ -425,26 +380,22 @@ function PromptInputContent({
             }
 
             if (isPersonaShortcut) {
-                mentionTriggerIndexRef.current = selectionStart;
-                setMentionSearch('');
+                triggerIndexRef.current = selectionStart;
+                setDropdownSearch('');
                 setSelectedIndex(0);
-                setMentionMenuOpen(true);
+                setDropdownType('mention');
             } else if (isCommandShortcut) {
-                commandTriggerIndexRef.current = selectionStart;
-                setCommandSearch('');
-                setSelectedCommandIndex(0);
-                setCommandMenuOpen(true);
+                triggerIndexRef.current = selectionStart;
+                setDropdownSearch('');
+                setSelectedIndex(0);
+                setDropdownType('command');
             }
         },
         [
-            mentionMenuOpen,
-            commandMenuOpen,
-            filteredPersonas,
-            filteredCommands,
+            dropdownType,
+            filteredOptions,
             selectedIndex,
-            selectedCommandIndex,
-            handleSelectMention,
-            handleSelectCommand,
+            handleSelectOption,
             input,
             selectedPersonaId,
             handlePersonaSelection,
@@ -453,41 +404,26 @@ function PromptInputContent({
 
     return (
         <div className="relative w-full">
-            {mentionMenuOpen && filteredPersonas.length > 0 && (
-                <div className="absolute z-50 mb-2 bottom-full left-4 min-w-[250px] overflow-hidden rounded-xl border bg-popover p-1 text-popover-foreground shadow-lg outline-none">
-                    {filteredPersonas.map((p, i) => (
+            {dropdownType && filteredOptions.length > 0 && (
+                <div className="absolute z-50 mb-2 bottom-full left-4 min-w-[250px] overflow-hidden rounded-xl border bg-popover p-1 text-popover-foreground shadow-lg outline-none max-h-[300px] overflow-y-auto">
+                    {filteredOptions.map((option, i) => (
                         <div
-                            key={p.id}
+                            key={option.id}
                             className={cn(
-                                'relative flex cursor-pointer select-none items-center rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors',
+                                'flex flex-col cursor-pointer select-none rounded-md px-3 py-2 text-sm outline-none transition-colors',
                                 i === selectedIndex
                                     ? 'bg-accent text-accent-foreground'
                                     : 'text-foreground/80 hover:bg-accent/50',
                             )}
-                            onClick={() => handleSelectMention(p.id)}
+                            onClick={() => handleSelectOption(option)}
                             onMouseEnter={() => setSelectedIndex(i)}
                         >
-                            @{p.name}
-                        </div>
-                    ))}
-                </div>
-            )}
-            {commandMenuOpen && filteredCommands.length > 0 && (
-                <div className="absolute z-50 mb-2 bottom-full left-4 min-w-[250px] overflow-hidden rounded-xl border bg-popover p-1 text-popover-foreground shadow-lg outline-none max-h-[300px] overflow-y-auto">
-                    {filteredCommands.map((c, i) => (
-                        <div
-                            key={c.id}
-                            className={cn(
-                                'flex flex-col cursor-pointer select-none rounded-md px-3 py-2 text-sm outline-none transition-colors',
-                                i === selectedCommandIndex
-                                    ? 'bg-accent text-accent-foreground'
-                                    : 'text-foreground/80 hover:bg-accent/50',
+                            <span className="font-medium flex items-center gap-2">
+                                {dropdownType === 'mention' ? `@${option.name}` : option.name}
+                            </span>
+                            {option.description && (
+                                <span className="text-xs text-muted-foreground">{option.description}</span>
                             )}
-                            onClick={() => handleSelectCommand(c.name)}
-                            onMouseEnter={() => setSelectedCommandIndex(i)}
-                        >
-                            <span className="font-medium flex items-center gap-2">{c.name}</span>
-                            {c.description && <span className="text-xs text-muted-foreground">{c.description}</span>}
                         </div>
                     ))}
                 </div>
