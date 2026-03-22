@@ -1,4 +1,12 @@
-import {convertToModelMessages, ModelMessage, RetryError, smoothStream, streamText} from 'ai';
+import {
+    convertToModelMessages,
+    ModelMessage,
+    RetryError,
+    smoothStream,
+    stepCountIs,
+    streamText,
+    type ToolSet,
+} from 'ai';
 import {IpcMainEvent, WebContents} from "electron";
 import {inject, injectable} from "inversify";
 import {IpcController, IpcOn, IpcRendererOn} from "../ipc/Decorators";
@@ -9,6 +17,7 @@ import {ModelProviderService} from "core/services/ModelProviderService";
 import {MessageService} from "core/services/MessageService";
 import {PersonaService} from "core/services/PersonaService";
 import {McpClientManager} from "core/services/McpClientManager";
+import {WebSearchConfigService} from "core/services/WebSearchConfigService";
 import {logger} from "../logger";
 
 @injectable()
@@ -24,12 +33,35 @@ export class StreamingChatController implements Controller {
         @inject(CORETYPES.PersonaService)
         private personaService: PersonaService,
         @inject(CORETYPES.McpClientManager)
-        private mcpClientManager: McpClientManager) {
+        private mcpClientManager: McpClientManager,
+        @inject(CORETYPES.WebSearchConfigService)
+        private webSearchConfigService: WebSearchConfigService) {
+    }
+
+    // Merge MCP tools with the optional Exa web-search tool for chat turns that need fresh web data.
+    private async buildTools(): Promise<ToolSet> {
+        const tools = await this.mcpClientManager.getAllTools();
+        const exaConfig = await this.webSearchConfigService.getEnabledExaConfig();
+
+        if (!exaConfig) {
+            return tools;
+        }
+
+        const {webSearch} = await import("@exalabs/ai-sdk");
+
+        return {
+            ...tools,
+            webSearch: webSearch({
+                apiKey: exaConfig.apiKey,
+            }),
+        };
     }
 
     @IpcOn("sendMessage")
     public async sendMessage(args: ChatSendMessageArgs, event: IpcMainEvent) {
         const modelProviderRegistry = await this.modelProviderService.getModelProviderRegistry();
+        const tools = await this.buildTools();
+        const hasTools = Object.keys(tools).length > 0;
         const webContents = event.sender as WebContents;
         const modelMessages: ModelMessage[] = await convertToModelMessages(args.messages);
         const persona = args.personaId
@@ -74,7 +106,8 @@ export class StreamingChatController implements Controller {
                 // @ts-expect-error/type-does-not-exist
                 model: modelProviderRegistry.languageModel(args.modelIdentifier),
                 messages: modelMessages,
-                tools: await this.mcpClientManager.getAllTools(),
+                tools,
+                stopWhen: hasTools ? stepCountIs(5) : undefined,
                 abortSignal: controller.signal,
                 experimental_transform: smoothStream({delayInMs: 30}),
                 onFinish: (result) => {

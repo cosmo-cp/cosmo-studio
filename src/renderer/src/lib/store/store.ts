@@ -5,6 +5,7 @@ import {mainChatPageReducer} from "@/lib/store/main-chat-page-slice";
 import {mcpServersReducer} from "@/lib/store/mcp-servers-store";
 import {personasReducer} from "@/lib/store/personas-store";
 import {providersReducer} from "@/lib/store/providers-store";
+import {webSearchReducer} from "@/lib/store/web-search-store";
 
 export interface AppThunkExtra {
     appDataSource: AppDataSource;
@@ -27,6 +28,7 @@ export function makeStore(options: MakeStoreOptions = {}) {
             commands: commandsReducer,
             personas: personasReducer,
             providers: providersReducer,
+            webSearch: webSearchReducer,
             mcpServers: mcpServersReducer,
         },
         middleware: (getDefaultMiddleware) =>

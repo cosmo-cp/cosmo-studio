@@ -6,6 +6,7 @@ type AppDataSourceOverrides = {
     command?: Partial<AppDataSource["command"]>;
     persona?: Partial<AppDataSource["persona"]>;
     modelProvider?: Partial<AppDataSource["modelProvider"]>;
+    webSearch?: Partial<AppDataSource["webSearch"]>;
     mcpServer?: Partial<AppDataSource["mcpServer"]>;
 };
 
@@ -62,6 +63,14 @@ export function createMockAppDataSource(
             },
             deleteProvider: async () => undefined,
             ...overrides.modelProvider,
+        },
+        webSearch: {
+            getConfig: async () => null,
+            saveConfig: async () => {
+                throw new Error("webSearch.saveConfig not mocked");
+            },
+            deleteConfig: async () => undefined,
+            ...overrides.webSearch,
         },
         mcpServer: {
             getAll: async () => [],

@@ -1,434 +1,485 @@
-import {beforeEach, describe, expect, it, vi} from "vitest"
-import type {ChatAbortArgs, ChatSendMessageArgs} from "core/dto"
-import type {McpClientManager} from "core/services/McpClientManager"
-import type {MessageService} from "core/services/MessageService"
-import type {ModelProviderService} from "core/services/ModelProviderService"
-import type {PersonaService} from "core/services/PersonaService"
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import type {ChatAbortArgs, ChatSendMessageArgs} from "core/dto";
+import type {McpClientManager} from "core/services/McpClientManager";
+import type {MessageService} from "core/services/MessageService";
+import type {ModelProviderService} from "core/services/ModelProviderService";
+import type {PersonaService} from "core/services/PersonaService";
+import type {WebSearchConfigService} from "core/services/WebSearchConfigService";
 
 const logger = vi.hoisted(() => ({
-  info: vi.fn(),
-  error: vi.fn(),
-}))
+    info: vi.fn(),
+    error: vi.fn(),
+}));
 
 const ai = vi.hoisted(() => ({
-  convertToModelMessages: vi.fn(),
-  smoothStream: vi.fn(),
-  streamText: vi.fn(),
-  RetryError: {
-    isInstance: vi.fn(() => false),
-  },
-}))
+    convertToModelMessages: vi.fn(),
+    smoothStream: vi.fn(),
+    stepCountIs: vi.fn((count: number) => `step:${count}`),
+    streamText: vi.fn(),
+    RetryError: {
+        isInstance: vi.fn(() => false),
+    },
+}));
+
+const exa = vi.hoisted(() => ({
+    webSearch: vi.fn(() => "exa-tool"),
+}));
 
 vi.mock("../logger", () => ({
-  logger,
-}))
+    logger,
+}));
 
 vi.mock("ai", () => ({
-  convertToModelMessages: ai.convertToModelMessages,
-  smoothStream: ai.smoothStream,
-  streamText: ai.streamText,
-  RetryError: ai.RetryError,
-}))
+    convertToModelMessages: ai.convertToModelMessages,
+    smoothStream: ai.smoothStream,
+    stepCountIs: ai.stepCountIs,
+    streamText: ai.streamText,
+    RetryError: ai.RetryError,
+}));
 
-import {StreamingChatController} from "./StreamingChatController"
+vi.mock("@exalabs/ai-sdk", () => ({
+    webSearch: exa.webSearch,
+}));
 
-type SendMessageEvent = Parameters<StreamingChatController["sendMessage"]>[1]
+import {StreamingChatController} from "./StreamingChatController";
+
+type SendMessageEvent = Parameters<StreamingChatController["sendMessage"]>[1];
 type WebContentsMock = {
-  isDestroyed: () => boolean
-  send: (...args: unknown[]) => void
-}
-type MessagePart = ChatSendMessageArgs["messages"][number]["parts"]
+    isDestroyed: () => boolean;
+    send: (...args: unknown[]) => void;
+};
+type MessagePart = ChatSendMessageArgs["messages"][number]["parts"];
 type StreamTextOnFinishEvent = {
-  text?: string
-  reasoningText?: string
-}
+    text?: string;
+    reasoningText?: string;
+};
 type StreamTextOnErrorEvent = {
-  error: unknown
-  lastError?: unknown
-}
+    error: unknown;
+    lastError?: unknown;
+};
 type StreamTextOnAbortEvent = {
-  steps: unknown[]
-}
+    steps: unknown[];
+};
 
 interface StreamTextMockOptions {
-  abortSignal: AbortSignal
-  onFinish?: (event: StreamTextOnFinishEvent) => void | Promise<void>
-  onError?: (event: StreamTextOnErrorEvent) => void | Promise<void>
-  onAbort?: (event: StreamTextOnAbortEvent) => void | Promise<void>
+    abortSignal: AbortSignal;
+    onFinish?: (event: StreamTextOnFinishEvent) => void | Promise<void>;
+    onError?: (event: StreamTextOnErrorEvent) => void | Promise<void>;
+    onAbort?: (event: StreamTextOnAbortEvent) => void | Promise<void>;
 }
 
-const createUserMessage = (
-  parts: MessagePart
-): ChatSendMessageArgs["messages"][number] => ({
-  id: "m1",
-  role: "user",
-  parts,
-})
+function createUserMessage(
+    parts: MessagePart
+): ChatSendMessageArgs["messages"][number] {
+    return {
+        id: "m1",
+        role: "user",
+        parts,
+    };
+}
 
-const createIpcEvent = (webContents: WebContentsMock): SendMessageEvent =>
-  ({sender: webContents} as unknown as SendMessageEvent)
+function createIpcEvent(webContents: WebContentsMock): SendMessageEvent {
+    return {sender: webContents} as unknown as SendMessageEvent;
+}
 
-const createAsyncIterable = <T,>(items: T[]): AsyncIterable<T> => ({
-  async *[Symbol.asyncIterator]() {
-    for (const item of items) {
-      yield item
-    }
-  },
-})
+function createAsyncIterable<T>(items: T[]): AsyncIterable<T> {
+    return {
+        async *[Symbol.asyncIterator]() {
+            for (const item of items) {
+                yield item;
+            }
+        },
+    };
+}
+
+function createControllerDependencies(overrides: {
+    getById?: PersonaService["getById"];
+    getByName?: PersonaService["getByName"];
+    getAllTools?: McpClientManager["getAllTools"];
+    getEnabledExaConfig?: WebSearchConfigService["getEnabledExaConfig"];
+} = {}) {
+    const registry = {languageModel: vi.fn(() => "lm")};
+    const modelProviderService = {
+        getModelProviderRegistry: vi.fn().mockResolvedValue(registry),
+    } as unknown as ModelProviderService;
+    const messageService = {
+        createMessage: vi.fn().mockResolvedValue(undefined),
+    } as unknown as MessageService;
+    const personaService = {
+        getById: overrides.getById ?? vi.fn().mockResolvedValue(undefined),
+        getByName: overrides.getByName ?? vi.fn().mockResolvedValue(undefined),
+    } as unknown as PersonaService;
+    const mcpClientManager = {
+        getAllTools: overrides.getAllTools ?? vi.fn().mockResolvedValue({}),
+    } as unknown as McpClientManager;
+    const webSearchConfigService = {
+        getEnabledExaConfig: overrides.getEnabledExaConfig ?? vi.fn().mockResolvedValue(null),
+    } as unknown as WebSearchConfigService;
+
+    const controller = new StreamingChatController(
+        modelProviderService,
+        messageService,
+        personaService,
+        mcpClientManager,
+        webSearchConfigService
+    );
+
+    return {
+        controller,
+        registry,
+        modelProviderService,
+        messageService,
+        personaService,
+        mcpClientManager,
+        webSearchConfigService,
+    };
+}
 
 describe("StreamingChatController", () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    ai.convertToModelMessages.mockResolvedValue([])
-    ai.smoothStream.mockReturnValue("transform")
-    ai.RetryError.isInstance.mockReturnValue(false)
-  })
+    beforeEach(() => {
+        vi.clearAllMocks();
+        ai.convertToModelMessages.mockResolvedValue([]);
+        ai.smoothStream.mockReturnValue("transform");
+        ai.RetryError.isInstance.mockReturnValue(false);
+    });
 
-  it("aborts an active stream and logs the action", () => {
-    const controller = new StreamingChatController(
-      {} as unknown as ModelProviderService,
-      {} as unknown as MessageService,
-      {} as unknown as PersonaService,
-      {} as unknown as McpClientManager
-    )
+    it("aborts an active stream and logs the action", () => {
+        const {controller} = createControllerDependencies();
+        const abortController = new AbortController();
+        const abortSpy = vi.spyOn(abortController, "abort");
+        (controller as unknown as {activeStreams: Map<string, AbortController>})
+            .activeStreams
+            .set("chan", abortController);
 
-    const abortController = new AbortController()
-    const abortSpy = vi.spyOn(abortController, "abort")
-    ;(controller as unknown as {activeStreams: Map<string, AbortController>}).activeStreams.set(
-      "chan",
-      abortController
-    )
+        controller.abortMessage({streamChannel: "chan"} satisfies ChatAbortArgs);
 
-    controller.abortMessage({streamChannel: "chan"} satisfies ChatAbortArgs)
+        expect(abortSpy).toHaveBeenCalledTimes(1);
+        expect(
+            (controller as unknown as {activeStreams: Map<string, AbortController>})
+                .activeStreams
+                .has("chan")
+        ).toBe(false);
+        expect(logger.info).toHaveBeenCalledWith("Aborted stream for channel: chan");
+    });
 
-    expect(abortSpy).toHaveBeenCalledTimes(1)
-    expect(
-      (controller as unknown as {activeStreams: Map<string, AbortController>}).activeStreams.has("chan")
-    ).toBe(false)
-    expect(logger.info).toHaveBeenCalledWith("Aborted stream for channel: chan")
-  })
+    it("streams chunks, persists messages, and emits end event on finish", async () => {
+        const {
+            controller,
+            registry,
+            messageService,
+            personaService,
+            mcpClientManager,
+        } = createControllerDependencies({
+            getById: vi.fn().mockResolvedValue({details: "persona-details"}),
+        });
 
-  it("streams chunks, persists messages, and emits end event on finish", async () => {
-    const registry = {languageModel: vi.fn(() => "lm")}
-    const modelProviderService = {
-      getModelProviderRegistry: vi.fn().mockResolvedValue(registry),
-    } as unknown as ModelProviderService
-    const messageService = {
-      createMessage: vi.fn().mockResolvedValue(undefined),
-    } as unknown as MessageService
-    const personaService = {
-      getById: vi.fn().mockResolvedValue({details: "persona-details"}),
-    } as unknown as PersonaService
-    const mcpClientManager = {
-      getAllTools: vi.fn().mockResolvedValue({}),
-    } as unknown as McpClientManager
+        ai.convertToModelMessages.mockResolvedValue([{role: "user", content: "hi"}]);
+        ai.streamText.mockImplementation((options: StreamTextMockOptions) => ({
+            toUIMessageStream: async function* () {
+                yield {chunk: 1};
+                yield {chunk: 2};
+                await options.onFinish?.({text: "assistant", reasoningText: "reasoning"});
+            },
+        }));
 
-    ai.convertToModelMessages.mockResolvedValue([{role: "user", content: "hi"}])
+        const webContents = {
+            isDestroyed: vi.fn(() => false),
+            send: vi.fn(),
+        };
+        const event = createIpcEvent(webContents);
 
-    ai.streamText.mockImplementation((options: StreamTextMockOptions) => ({
-      toUIMessageStream: async function* () {
-        yield {chunk: 1}
-        yield {chunk: 2}
-        await options.onFinish?.({text: "assistant", reasoningText: "reasoning"})
-      },
-    }))
+        await controller.sendMessage(
+            {
+                chatId: "chat-id",
+                streamChannel: "chan",
+                modelIdentifier: "provider:model" as never,
+                personaId: "persona-id",
+                messages: [
+                    createUserMessage([
+                        {type: "text", text: "Hello"},
+                        {type: "reasoning", text: "Think"},
+                    ]),
+                ],
+            },
+            event
+        );
 
-    const controller = new StreamingChatController(
-      modelProviderService,
-      messageService,
-      personaService,
-      mcpClientManager
-    )
+        expect(ai.smoothStream).toHaveBeenCalledWith({delayInMs: 30});
+        expect(registry.languageModel).toHaveBeenCalledWith("provider:model");
+        expect(personaService.getById).toHaveBeenCalledWith("persona-id");
+        expect(mcpClientManager.getAllTools).toHaveBeenCalledTimes(1);
+        expect(ai.stepCountIs).not.toHaveBeenCalled();
+        expect(exa.webSearch).not.toHaveBeenCalled();
 
-    const webContents = {
-      isDestroyed: vi.fn(() => false),
-      send: vi.fn(),
-    }
-    const event = createIpcEvent(webContents)
+        const streamOptions = ai.streamText.mock.calls[0][0];
+        expect(streamOptions.experimental_transform).toBe("transform");
+        expect(streamOptions.messages[0]).toEqual({role: "system", content: "persona-details"});
+        expect(streamOptions.stopWhen).toBeUndefined();
 
-    const args: ChatSendMessageArgs = {
-      chatId: "chat-id",
-      streamChannel: "chan",
-      modelIdentifier: "provider:model" as never,
-      personaId: "persona-id",
-      messages: [
-        createUserMessage([
-          {type: "text", text: "Hello"},
-          {type: "reasoning", text: "Think"},
-        ]),
-      ],
-    }
+        expect(messageService.createMessage).toHaveBeenCalledWith({
+            chatId: "chat-id",
+            role: "user",
+            text: "Hello",
+            reasoning: "Think",
+            modelIdentifier: "provider:model",
+        });
+        expect(messageService.createMessage).toHaveBeenCalledWith({
+            chatId: "chat-id",
+            role: "assistant",
+            text: "assistant",
+            reasoning: "reasoning",
+            modelIdentifier: "provider:model",
+        });
 
-    await controller.sendMessage(args, event)
+        expect(webContents.send).toHaveBeenCalledWith("chan-data", {
+            type: "message-metadata",
+            messageMetadata: {modelId: "provider:model"},
+        });
+        expect(webContents.send).toHaveBeenCalledWith("chan-data", {chunk: 1});
+        expect(webContents.send).toHaveBeenCalledWith("chan-data", {chunk: 2});
+        expect(webContents.send).toHaveBeenCalledWith("chan-end");
 
-    expect(ai.smoothStream).toHaveBeenCalledWith({delayInMs: 30})
-    expect(registry.languageModel).toHaveBeenCalledWith(args.modelIdentifier)
-    expect(mcpClientManager.getAllTools).toHaveBeenCalledTimes(1)
+        expect(
+            (controller as unknown as {activeStreams: Map<string, AbortController>})
+                .activeStreams
+                .has("chan")
+        ).toBe(false);
+    });
 
-    const streamOptions = ai.streamText.mock.calls[0][0]
-    expect(streamOptions.experimental_transform).toBe("transform")
-    expect(streamOptions.messages[0]).toEqual({role: "system", content: "persona-details"})
+    it("uses personaName lookup when personaId is not provided", async () => {
+        const {controller, personaService} = createControllerDependencies({
+            getByName: vi.fn().mockResolvedValue({details: "persona-by-name"}),
+        });
 
-    expect(messageService.createMessage).toHaveBeenCalledWith({
-      chatId: "chat-id",
-      role: "user",
-      text: "Hello",
-      reasoning: "Think",
-      modelIdentifier: "provider:model",
-    })
-    expect(messageService.createMessage).toHaveBeenCalledWith({
-      chatId: "chat-id",
-      role: "assistant",
-      text: "assistant",
-      reasoning: "reasoning",
-      modelIdentifier: "provider:model",
-    })
+        ai.convertToModelMessages.mockResolvedValue([{role: "user", content: "hi"}]);
+        ai.streamText.mockImplementation((options: StreamTextMockOptions) => {
+            void options.onFinish?.({text: "", reasoningText: ""});
+            return {
+                toUIMessageStream: () => createAsyncIterable<unknown>([]),
+            };
+        });
 
-    expect(webContents.send).toHaveBeenCalledWith("chan-data", {
-      type: "message-metadata",
-      messageMetadata: {modelId: "provider:model"},
-    })
-    expect(webContents.send).toHaveBeenCalledWith("chan-data", {chunk: 1})
-    expect(webContents.send).toHaveBeenCalledWith("chan-data", {chunk: 2})
-    expect(webContents.send).toHaveBeenCalledWith("chan-end")
+        const webContents = {
+            isDestroyed: vi.fn(() => false),
+            send: vi.fn(),
+        };
+        const event = createIpcEvent(webContents);
 
-    expect(
-      (controller as unknown as {activeStreams: Map<string, AbortController>}).activeStreams.has("chan")
-    ).toBe(false)
-  })
+        await controller.sendMessage(
+            {
+                chatId: "chat-id",
+                streamChannel: "chan",
+                modelIdentifier: "provider:model" as never,
+                personaName: "Persona",
+                messages: [createUserMessage([{type: "text", text: "Hello"}])],
+            },
+            event
+        );
 
-  it("uses personaName lookup when personaId is not provided", async () => {
-    const registry = {languageModel: vi.fn(() => "lm")}
-    const modelProviderService = {
-      getModelProviderRegistry: vi.fn().mockResolvedValue(registry),
-    } as unknown as ModelProviderService
-    const messageService = {
-      createMessage: vi.fn().mockResolvedValue(undefined),
-    } as unknown as MessageService
-    const personaService = {
-      getByName: vi.fn().mockResolvedValue({details: "persona-by-name"}),
-    } as unknown as PersonaService
-    const mcpClientManager = {
-      getAllTools: vi.fn().mockResolvedValue({}),
-    } as unknown as McpClientManager
+        expect(personaService.getByName).toHaveBeenCalledWith("Persona");
+        const streamOptions = ai.streamText.mock.calls[0][0];
+        expect(streamOptions.messages[0]).toEqual({role: "system", content: "persona-by-name"});
+        expect(
+            (controller as unknown as {activeStreams: Map<string, AbortController>})
+                .activeStreams
+                .has("chan")
+        ).toBe(false);
+    });
 
-    ai.convertToModelMessages.mockResolvedValue([{role: "user", content: "hi"}])
-    ai.streamText.mockImplementation((options: StreamTextMockOptions) => {
-      void options.onFinish?.({text: "", reasoningText: ""})
-      return {
-        toUIMessageStream: () => createAsyncIterable<unknown>([]),
-      }
-    })
+    it("sends an error event when streamText throws", async () => {
+        const {controller} = createControllerDependencies();
 
-    const controller = new StreamingChatController(
-      modelProviderService,
-      messageService,
-      personaService,
-      mcpClientManager
-    )
-    const webContents = {
-      isDestroyed: vi.fn(() => false),
-      send: vi.fn(),
-    }
-    const event = createIpcEvent(webContents)
+        ai.convertToModelMessages.mockResolvedValue([]);
+        ai.streamText.mockImplementation(() => {
+            throw new Error("boom");
+        });
 
-    await controller.sendMessage(
-      {
-        chatId: "chat-id",
-        streamChannel: "chan",
-        modelIdentifier: "provider:model" as never,
-        personaName: "Persona",
-        messages: [createUserMessage([{type: "text", text: "Hello"}])],
-      },
-      event
-    )
+        const webContents = {
+            isDestroyed: vi.fn(() => false),
+            send: vi.fn(),
+        };
+        const event = createIpcEvent(webContents);
 
-    expect(personaService.getByName).toHaveBeenCalledWith("Persona")
-    const streamOptions = ai.streamText.mock.calls[0][0]
-    expect(streamOptions.messages[0]).toEqual({role: "system", content: "persona-by-name"})
-    expect(
-      (controller as unknown as {activeStreams: Map<string, AbortController>}).activeStreams.has("chan")
-    ).toBe(false)
-  })
+        await controller.sendMessage(
+            {
+                chatId: "chat-id",
+                streamChannel: "chan",
+                modelIdentifier: "provider:model" as never,
+                messages: [createUserMessage([{type: "text", text: "Hello"}])],
+            },
+            event
+        );
 
-  it("sends an error event when streamText throws", async () => {
-    const modelProviderService = {
-      getModelProviderRegistry: vi.fn().mockResolvedValue({languageModel: vi.fn(() => "lm")}),
-    } as unknown as ModelProviderService
-    const messageService = {
-      createMessage: vi.fn().mockResolvedValue(undefined),
-    } as unknown as MessageService
-    const personaService = {
-      getById: vi.fn().mockResolvedValue(undefined),
-      getByName: vi.fn().mockResolvedValue(undefined),
-    } as unknown as PersonaService
-    const mcpClientManager = {
-      getAllTools: vi.fn().mockResolvedValue({}),
-    } as unknown as McpClientManager
+        expect(logger.error).toHaveBeenCalledWith("Failed to start streamText:", expect.any(Error));
+        expect(webContents.send).toHaveBeenCalledWith("chan-error", expect.any(Error));
+        expect(
+            (controller as unknown as {activeStreams: Map<string, AbortController>})
+                .activeStreams
+                .has("chan")
+        ).toBe(false);
+    });
 
-    ai.convertToModelMessages.mockResolvedValue([])
-    ai.streamText.mockImplementation(() => {
-      throw new Error("boom")
-    })
+    it("adds the Exa web-search tool and stopWhen when Exa is enabled", async () => {
+        const {controller} = createControllerDependencies({
+            getEnabledExaConfig: vi.fn().mockResolvedValue({
+                apiKey: "exa-secret",
+                enabled: true,
+            }),
+        });
 
-    const controller = new StreamingChatController(
-      modelProviderService,
-      messageService,
-      personaService,
-      mcpClientManager
-    )
-    const webContents = {
-      isDestroyed: vi.fn(() => false),
-      send: vi.fn(),
-    }
-    const event = createIpcEvent(webContents)
+        ai.streamText.mockImplementation(() => ({
+            toUIMessageStream: () => createAsyncIterable<unknown>([]),
+        }));
 
-    const args: ChatSendMessageArgs = {
-      chatId: "chat-id",
-      streamChannel: "chan",
-      modelIdentifier: "provider:model" as never,
-      messages: [createUserMessage([{type: "text", text: "Hello"}])],
-    }
+        const webContents = {
+            isDestroyed: vi.fn(() => false),
+            send: vi.fn(),
+        };
+        const event = createIpcEvent(webContents);
 
-    await controller.sendMessage(args, event)
+        await controller.sendMessage(
+            {
+                chatId: "chat-id",
+                streamChannel: "chan",
+                modelIdentifier: "provider:model" as never,
+                messages: [createUserMessage([{type: "text", text: "Hello"}])],
+            },
+            event
+        );
 
-    expect(logger.error).toHaveBeenCalledWith("Failed to start streamText:", expect.any(Error))
-    expect(webContents.send).toHaveBeenCalledWith("chan-error", expect.any(Error))
-    expect(
-      (controller as unknown as {activeStreams: Map<string, AbortController>}).activeStreams.has("chan")
-    ).toBe(false)
-  })
+        const streamOptions = ai.streamText.mock.calls[0][0];
+        expect(exa.webSearch).toHaveBeenCalledWith({apiKey: "exa-secret"});
+        expect(streamOptions.tools).toEqual({webSearch: "exa-tool"});
+        expect(ai.stepCountIs).toHaveBeenCalledWith(5);
+        expect(streamOptions.stopWhen).toBe("step:5");
+    });
 
-  it("emits streamText onError messages and prefers RetryError.lastError", async () => {
-    const registry = {languageModel: vi.fn(() => "lm")}
-    const modelProviderService = {
-      getModelProviderRegistry: vi.fn().mockResolvedValue(registry),
-    } as unknown as ModelProviderService
-    const messageService = {
-      createMessage: vi.fn().mockResolvedValue(undefined),
-    } as unknown as MessageService
-    const personaService = {
-      getById: vi.fn().mockResolvedValue(undefined),
-      getByName: vi.fn().mockResolvedValue(undefined),
-    } as unknown as PersonaService
-    const mcpClientManager = {
-      getAllTools: vi.fn().mockResolvedValue({}),
-    } as unknown as McpClientManager
+    it("enables multi-step execution when MCP tools are present", async () => {
+        const {controller} = createControllerDependencies({
+            getAllTools: vi.fn().mockResolvedValue({lookup: "tool"}),
+        });
 
-    ai.convertToModelMessages.mockResolvedValue([])
+        ai.streamText.mockImplementation(() => ({
+            toUIMessageStream: () => createAsyncIterable<unknown>([]),
+        }));
 
-    let capturedOptions: StreamTextMockOptions | undefined
-    ai.streamText.mockImplementation((options: StreamTextMockOptions) => {
-      capturedOptions = options
-      return {
-        toUIMessageStream: () => createAsyncIterable<unknown>([]),
-      }
-    })
+        const webContents = {
+            isDestroyed: vi.fn(() => false),
+            send: vi.fn(),
+        };
+        const event = createIpcEvent(webContents);
 
-    const controller = new StreamingChatController(
-      modelProviderService,
-      messageService,
-      personaService,
-      mcpClientManager
-    )
-    const webContents = {
-      isDestroyed: vi.fn(() => false),
-      send: vi.fn(),
-    }
-    const event = createIpcEvent(webContents)
+        await controller.sendMessage(
+            {
+                chatId: "chat-id",
+                streamChannel: "chan",
+                modelIdentifier: "provider:model" as never,
+                messages: [createUserMessage([{type: "text", text: "Hello"}])],
+            },
+            event
+        );
 
-    await controller.sendMessage(
-      {
-        chatId: "chat-id",
-        streamChannel: "chan",
-        modelIdentifier: "provider:model" as never,
-        messages: [createUserMessage([{type: "text", text: "Hello"}])],
-      },
-      event
-    )
+        const streamOptions = ai.streamText.mock.calls[0][0];
+        expect(streamOptions.tools).toEqual({lookup: "tool"});
+        expect(ai.stepCountIs).toHaveBeenCalledWith(5);
+        expect(streamOptions.stopWhen).toBe("step:5");
+    });
 
-    ai.RetryError.isInstance.mockReturnValue(true)
-    await capturedOptions?.onError?.({error: "original", lastError: "retry-last"})
+    it("emits streamText onError messages and prefers RetryError.lastError", async () => {
+        const {controller} = createControllerDependencies();
 
-    expect(logger.error).toHaveBeenCalledWith("Stream error:", expect.anything())
-    expect(webContents.send).toHaveBeenCalledWith("chan-error", "retry-last")
-    expect(
-      (controller as unknown as {activeStreams: Map<string, AbortController>}).activeStreams.has("chan")
-    ).toBe(false)
-  })
+        ai.convertToModelMessages.mockResolvedValue([]);
 
-  it("exposes renderer-side no-op listener helpers", () => {
-    const controller = new StreamingChatController(
-      {} as unknown as ModelProviderService,
-      {} as unknown as MessageService,
-      {} as unknown as PersonaService,
-      {} as unknown as McpClientManager
-    )
+        let capturedOptions: StreamTextMockOptions | undefined;
+        ai.streamText.mockImplementation((options: StreamTextMockOptions) => {
+            capturedOptions = options;
+            return {
+                toUIMessageStream: () => createAsyncIterable<unknown>([]),
+            };
+        });
 
-    const cleanupData = controller.onData("x", () => {})
-    const cleanupEnd = controller.onEnd("x", () => {})
-    const cleanupError = controller.onError("x", () => {})
+        const webContents = {
+            isDestroyed: vi.fn(() => false),
+            send: vi.fn(),
+        };
+        const event = createIpcEvent(webContents);
 
-    expect(cleanupData).toEqual(expect.any(Function))
-    expect(cleanupEnd).toEqual(expect.any(Function))
-    expect(cleanupError).toEqual(expect.any(Function))
+        await controller.sendMessage(
+            {
+                chatId: "chat-id",
+                streamChannel: "chan",
+                modelIdentifier: "provider:model" as never,
+                messages: [createUserMessage([{type: "text", text: "Hello"}])],
+            },
+            event
+        );
 
-    expect(cleanupData()).toBeUndefined()
-    expect(cleanupEnd()).toBeUndefined()
-    expect(cleanupError()).toBeUndefined()
-  })
+        ai.RetryError.isInstance.mockReturnValue(true);
+        await capturedOptions?.onError?.({error: "original", lastError: "retry-last"});
 
-  it("aborts and stops streaming when the WebContents is destroyed", async () => {
-    const modelProviderService = {
-      getModelProviderRegistry: vi.fn().mockResolvedValue({languageModel: vi.fn(() => "lm")}),
-    } as unknown as ModelProviderService
-    const messageService = {
-      createMessage: vi.fn().mockResolvedValue(undefined),
-    } as unknown as MessageService
-    const personaService = {
-      getById: vi.fn().mockResolvedValue(undefined),
-      getByName: vi.fn().mockResolvedValue(undefined),
-    } as unknown as PersonaService
-    const mcpClientManager = {
-      getAllTools: vi.fn().mockResolvedValue({}),
-    } as unknown as McpClientManager
+        expect(logger.error).toHaveBeenCalledWith("Stream error:", expect.anything());
+        expect(webContents.send).toHaveBeenCalledWith("chan-error", "retry-last");
+        expect(
+            (controller as unknown as {activeStreams: Map<string, AbortController>})
+                .activeStreams
+                .has("chan")
+        ).toBe(false);
+    });
 
-    ai.convertToModelMessages.mockResolvedValue([])
-    ai.streamText.mockImplementation((options: StreamTextMockOptions) => {
-      options.abortSignal.addEventListener("abort", () => {
-        void options.onAbort?.({steps: []})
-      })
-      return {
-        toUIMessageStream: () => createAsyncIterable([{chunk: 1}]),
-      }
-    })
+    it("exposes renderer-side no-op listener helpers", () => {
+        const {controller} = createControllerDependencies();
 
-    const controller = new StreamingChatController(
-      modelProviderService,
-      messageService,
-      personaService,
-      mcpClientManager
-    )
-    const webContents = {
-      isDestroyed: vi.fn(() => true),
-      send: vi.fn(),
-    }
-    const event = createIpcEvent(webContents)
+        const cleanupData = controller.onData("x", () => {
+        });
+        const cleanupEnd = controller.onEnd("x", () => {
+        });
+        const cleanupError = controller.onError("x", () => {
+        });
 
-    await controller.sendMessage(
-      {
-        chatId: "chat-id",
-        streamChannel: "chan",
-        modelIdentifier: "provider:model" as never,
-        messages: [createUserMessage([{type: "text", text: "Hello"}])],
-      },
-      event
-    )
+        expect(cleanupData).toEqual(expect.any(Function));
+        expect(cleanupEnd).toEqual(expect.any(Function));
+        expect(cleanupError).toEqual(expect.any(Function));
 
-    expect(logger.info).toHaveBeenCalledWith("WebContents destroyed, stopping stream.")
-    expect(webContents.send).not.toHaveBeenCalledWith("chan-data", expect.anything())
-    expect(
-      (controller as unknown as {activeStreams: Map<string, AbortController>}).activeStreams.has("chan")
-    ).toBe(false)
-  })
-})
+        expect(cleanupData()).toBeUndefined();
+        expect(cleanupEnd()).toBeUndefined();
+        expect(cleanupError()).toBeUndefined();
+    });
+
+    it("aborts and stops streaming when the WebContents is destroyed", async () => {
+        const {controller} = createControllerDependencies();
+
+        ai.convertToModelMessages.mockResolvedValue([]);
+        ai.streamText.mockImplementation((options: StreamTextMockOptions) => {
+            options.abortSignal.addEventListener("abort", () => {
+                void options.onAbort?.({steps: []});
+            });
+            return {
+                toUIMessageStream: () => createAsyncIterable([{chunk: 1}]),
+            };
+        });
+
+        const webContents = {
+            isDestroyed: vi.fn(() => true),
+            send: vi.fn(),
+        };
+        const event = createIpcEvent(webContents);
+
+        await controller.sendMessage(
+            {
+                chatId: "chat-id",
+                streamChannel: "chan",
+                modelIdentifier: "provider:model" as never,
+                messages: [createUserMessage([{type: "text", text: "Hello"}])],
+            },
+            event
+        );
+
+        expect(logger.info).toHaveBeenCalledWith("WebContents destroyed, stopping stream.");
+        expect(webContents.send).not.toHaveBeenCalledWith("chan-data", expect.anything());
+        expect(
+            (controller as unknown as {activeStreams: Map<string, AbortController>})
+                .activeStreams
+                .has("chan")
+        ).toBe(false);
+    });
+});

@@ -7,6 +7,7 @@ import {
     modelProvider,
     persona,
     command,
+    webSearchConfig,
 } from "./database/schema/schema";
 import {UIMessage} from "ai";
 
@@ -67,8 +68,34 @@ export interface CommandExecution {
     resolvedText: string;
 }
 
+export interface McpToolDefinition {
+    name: string;
+    title?: string;
+    description?: string;
+}
+
 export type ProviderWithModels = ModelProviderLite & {
     models: ModelLite[]
+}
+
+export type WebSearchConfig = InferSelectModel<typeof webSearchConfig>;
+export type WebSearchConfigInsert = InferInsertModel<typeof webSearchConfig>;
+export type WebSearchConfigCreateInput = Omit<
+    WebSearchConfigInsert,
+    'id' | 'createdAt' | 'updatedAt'
+>;
+export interface WebSearchConfigView {
+    id: string;
+    createdAt: Date;
+    updatedAt: Date | null;
+    type: WebSearchConfig["type"];
+    enabled: boolean;
+    hasApiKey: boolean;
+}
+export interface WebSearchConfigSaveInput {
+    type: WebSearchConfig["type"];
+    enabled: boolean;
+    apiKey?: string | null;
 }
 
 export type ChatWithMessages = Chat & {

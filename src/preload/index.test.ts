@@ -39,6 +39,7 @@ describe("preload index", () => {
       "persona",
       "command",
       "mcpServer",
+      "webSearch",
       "streaming",
     ])
     expect(api).not.toHaveProperty("ipcRenderer")

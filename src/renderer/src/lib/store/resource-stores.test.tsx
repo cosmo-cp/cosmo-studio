@@ -5,8 +5,10 @@ import type {
     NewModel,
     Persona,
     ProviderWithModels,
+    WebSearchConfigView,
 } from "core/dto";
 import {ModelProviderTypeEnum, ModelStatusEnum} from "core/database/schema/modelProviderSchema";
+import {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
 import {makeStore} from "@/lib/store/store";
 import {
     deleteCommand,
@@ -25,6 +27,11 @@ import {
     loadProviders,
     saveProvider,
 } from "@/lib/store/providers-store";
+import {
+    deleteWebSearchConfig,
+    loadWebSearchConfig,
+    saveWebSearchConfig,
+} from "@/lib/store/web-search-store";
 import {
     deleteMcpServer,
     loadMcpServerTools,
@@ -114,6 +121,17 @@ function buildMcpServer(id: string, name: string, enabled = true): McpServer {
         toolApprovals: {lookup: true},
         createdAt: new Date("2026-03-18T00:00:00.000Z"),
         updatedAt: new Date("2026-03-18T00:00:00.000Z"),
+    };
+}
+
+function buildWebSearchConfig(enabled = true): WebSearchConfigView {
+    return {
+        id: "web-search-1",
+        createdAt: new Date("2026-03-18T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-18T00:00:00.000Z"),
+        type: WebSearchProviderTypeEnum.EXA,
+        enabled,
+        hasApiKey: true,
     };
 }
 
@@ -261,6 +279,42 @@ describe("resource store thunks", () => {
 
         await store.dispatch(deleteProvider("provider-1")).unwrap();
         expect(store.getState().providers.items.some((provider) => provider.id === "provider-1")).toBe(false);
+    });
+
+    it("loads and mutates Exa web search settings through the root store", async () => {
+        let config: WebSearchConfigView | null = buildWebSearchConfig();
+
+        const store = makeStore({
+            appDataSource: createMockAppDataSource({
+                webSearch: {
+                    getConfig: async () => config,
+                    saveConfig: async (input) => {
+                        config = {
+                            ...(config ?? buildWebSearchConfig()),
+                            enabled: input.enabled,
+                            updatedAt: new Date("2026-03-18T01:00:00.000Z"),
+                            hasApiKey: Boolean(input.apiKey?.trim()) || config?.hasApiKey || false,
+                        };
+                        return config;
+                    },
+                    deleteConfig: async () => {
+                        config = null;
+                    },
+                },
+            }),
+        });
+
+        await store.dispatch(loadWebSearchConfig()).unwrap();
+        expect(store.getState().webSearch.config?.type).toBe(WebSearchProviderTypeEnum.EXA);
+
+        await store.dispatch(saveWebSearchConfig({
+            type: WebSearchProviderTypeEnum.EXA,
+            enabled: false,
+        })).unwrap();
+        expect(store.getState().webSearch.config?.enabled).toBe(false);
+
+        await store.dispatch(deleteWebSearchConfig()).unwrap();
+        expect(store.getState().webSearch.config).toBeNull();
     });
 
     it("loads MCP servers and tool actions through the root store", async () => {

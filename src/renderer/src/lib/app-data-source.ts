@@ -3,6 +3,7 @@ import type {
     CommandCreateInput,
     CommandDefinition,
     CommandExecution,
+    McpToolDefinition,
     McpServer,
     McpServerCreateInput,
     ModelIdentifier,
@@ -13,21 +14,20 @@ import type {
     PersonaCreateInput,
     PersonaIdentifier,
     ProviderWithModels,
+    WebSearchConfigSaveInput,
+    WebSearchConfigView,
 } from "core/dto";
 import {
     ModelModalityEnum,
     ModelProviderTypeEnum,
     ModelStatusEnum,
 } from "core/database/schema/modelProviderSchema";
+import {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
 import type {UIMessage} from "ai";
 
 type BackendKind = "electron" | "http";
 
-export interface McpTool {
-    name: string;
-    title?: string;
-    description?: string;
-}
+export type McpTool = McpToolDefinition;
 
 export interface AppDataSource {
     backend: BackendKind;
@@ -65,6 +65,11 @@ export interface AppDataSource {
         ): Promise<ProviderWithModels>;
         deleteProvider(providerId: string): Promise<void>;
     };
+    webSearch: {
+        getConfig(type: WebSearchProviderTypeEnum): Promise<WebSearchConfigView | null>;
+        saveConfig(input: WebSearchConfigSaveInput): Promise<WebSearchConfigView>;
+        deleteConfig(type: WebSearchProviderTypeEnum): Promise<void>;
+    };
     mcpServer: {
         getAll(): Promise<McpServer[]>;
         create(input: McpServerCreateInput): Promise<McpServer>;
@@ -87,6 +92,7 @@ interface DummyHttpState {
     commands: CommandDefinition[];
     personas: Persona[];
     providers: ProviderWithModels[];
+    webSearchConfig: WebSearchConfigView | null;
     mcpServers: McpServer[];
     mcpToolsByServerId: Record<string, McpTool[]>;
 }
@@ -274,6 +280,7 @@ function buildDummyHttpState(): DummyHttpState {
         providers: [
             buildProvider(providerId, ModelProviderTypeEnum.OPENAI, "Demo HTTP Provider", providerModels),
         ],
+        webSearchConfig: null,
         mcpServers: [
             {
                 id: "http-mcp-1",
@@ -374,6 +381,17 @@ function createElectronAppDataSource(): AppDataSource {
             },
             async deleteProvider(providerId) {
                 await window.api.modelProvider.deleteProvider(providerId);
+            },
+        },
+        webSearch: {
+            getConfig(type) {
+                return window.api.webSearch.getConfig(type);
+            },
+            saveConfig(input) {
+                return window.api.webSearch.saveConfig(input);
+            },
+            async deleteConfig(type) {
+                await window.api.webSearch.deleteConfig(type);
             },
         },
         mcpServer: {
@@ -607,6 +625,33 @@ function createDummyHttpAppDataSource(): AppDataSource {
                 state.providers = state.providers.filter((provider) => provider.id !== providerId);
             },
         },
+        webSearch: {
+            async getConfig(type) {
+                if (state.webSearchConfig?.type !== type) {
+                    return null;
+                }
+                return cloneValue(state.webSearchConfig);
+            },
+            async saveConfig(input) {
+                const now = new Date();
+                const existing = state.webSearchConfig;
+                const config: WebSearchConfigView = {
+                    id: existing?.id ?? crypto.randomUUID(),
+                    createdAt: existing?.createdAt ?? now,
+                    updatedAt: now,
+                    type: input.type,
+                    enabled: input.enabled,
+                    hasApiKey: Boolean(input.apiKey?.trim()) || existing?.hasApiKey || false,
+                };
+                state.webSearchConfig = config;
+                return cloneValue(config);
+            },
+            async deleteConfig(type) {
+                if (state.webSearchConfig?.type === type) {
+                    state.webSearchConfig = null;
+                }
+            },
+        },
         mcpServer: {
             async getAll() {
                 return cloneValue(state.mcpServers);
@@ -696,6 +741,7 @@ function hasElectronApis(): boolean {
         typeof window.api.command !== "undefined" &&
         typeof window.api.persona !== "undefined" &&
         typeof window.api.modelProvider !== "undefined" &&
+        typeof window.api.webSearch !== "undefined" &&
         typeof window.api.mcpServer !== "undefined";
 }
 

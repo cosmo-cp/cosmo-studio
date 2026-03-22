@@ -10,6 +10,7 @@ import {MessageController} from "./controllers/MessageController";
 import {PersonaController} from "./controllers/PersonaController";
 import {CommandController} from "./controllers/CommandController";
 import {McpServerController} from "./controllers/McpServerController";
+import {WebSearchController} from "./controllers/WebSearchController";
 
 const container = new Container({parent: coreContainer});
 
@@ -23,5 +24,6 @@ container.bind<Controller>(TYPES.Controller).to(MessageController).inSingletonSc
 container.bind<Controller>(TYPES.Controller).to(PersonaController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(CommandController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(McpServerController).inSingletonScope();
+container.bind<Controller>(TYPES.Controller).to(WebSearchController).inSingletonScope();
 
 export default container;

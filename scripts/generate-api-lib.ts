@@ -119,11 +119,15 @@ import {
     McpServer,
     McpServerCreateInput,
     McpServerUpdateInput,
+    McpToolDefinition,
     CommandCreateInput,
     CommandDefinition,
     CommandExecution,
     CommandUpdateInput,
+    WebSearchConfigSaveInput,
+    WebSearchConfigView,
 } from '../../packages/core/dto';
+import {WebSearchProviderTypeEnum} from '../../packages/core/database/schema/webSearchConfigSchema';
 import {UIMessage} from "ai";
 `
 
