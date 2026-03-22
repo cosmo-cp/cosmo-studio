@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
     ModelSelector,
@@ -11,28 +11,19 @@ import {
     ModelSelectorLogo,
     ModelSelectorName,
     ModelSelectorTrigger,
-} from "@/components/ai-elements/model-selector";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
-import type { UseChatHelpers } from "@ai-sdk/react";
-import type { UIMessage } from "ai";
-import { ModelModalityEnum } from "core/database/schema/modelProviderSchema";
-import type { Chat, Persona, ProviderWithModels } from "core/dto";
-import { cn } from "@/lib/utils";
-import { CheckIcon, XIcon } from "lucide-react";
-import type { FocusEvent, KeyboardEvent } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
-import { logger } from "../../logger";
-import {
-    Attachment,
-    AttachmentPreview,
-    AttachmentRemove,
-    Attachments,
-} from "./ai-elements/attachments";
+} from '@/components/ai-elements/model-selector';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import type { UseChatHelpers } from '@ai-sdk/react';
+import type { UIMessage } from 'ai';
+import { ModelModalityEnum } from 'core/database/schema/modelProviderSchema';
+import type { Chat, Persona, ProviderWithModels } from 'core/dto';
+import { cn } from '@/lib/utils';
+import { CheckIcon, XIcon } from 'lucide-react';
+import type { FocusEvent, KeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { logger } from '../../logger';
+import { Attachment, AttachmentPreview, AttachmentRemove, Attachments } from './ai-elements/attachments';
 import {
     PromptInput,
     PromptInputActionAddAttachments,
@@ -50,12 +41,10 @@ import {
     PromptInputTools,
     usePromptInputAttachments,
     usePromptInputController,
-} from "./ai-elements/prompt-input";
+} from './ai-elements/prompt-input';
 
 const parsePersonaDirective = (text: string) => {
-    const match = text.match(
-        /^\s*@persona(?:\s*[:=])?\s*(?:"([^"]+)"|'([^']+)'|([^\s]+))\s*/i,
-    );
+    const match = text.match(/^\s*@persona(?:\s*[:=])?\s*(?:"([^"]+)"|'([^']+)'|([^\s]+))\s*/i);
     if (!match) {
         return { text, personaName: undefined };
     }
@@ -77,16 +66,16 @@ export function MultimodalInput({
     stop,
 }: {
     chat: Chat;
-    status: UseChatHelpers<UIMessage>["status"];
+    status: UseChatHelpers<UIMessage>['status'];
     messages: Array<UIMessage>;
-    sendMessage: UseChatHelpers<UIMessage>["sendMessage"];
+    sendMessage: UseChatHelpers<UIMessage>['sendMessage'];
     className?: string;
     stillAnswering?: boolean;
     onModelChange: (providerName: string, modelId: string) => void;
     onPersonaChange: (personaId: string | null) => void;
-    stop?: UseChatHelpers<UIMessage>["stop"];
+    stop?: UseChatHelpers<UIMessage>['stop'];
 }) {
-    const [input, setInput] = useState<string>("");
+    const [input, setInput] = useState<string>('');
     const [providers, setProviders] = useState<ProviderWithModels[]>([]);
     const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
     const [personas, setPersonas] = useState<Persona[]>([]);
@@ -138,21 +127,18 @@ export function MultimodalInput({
             if (!chat.selectedModelId) {
                 return;
             }
-            const modelId = chat.selectedProvider + ":" + chat.selectedModelId;
+            const modelId = chat.selectedProvider + ':' + chat.selectedModelId;
             const { text: cleanedText } = parsePersonaDirective(message.text);
             let resolvedText = cleanedText;
 
-            if (cleanedText.trim().startsWith("/")) {
+            if (cleanedText.trim().startsWith('/')) {
                 try {
                     const result = await window.api.command.execute({
                         input: cleanedText,
                     });
                     resolvedText = result.resolvedText;
                 } catch (error) {
-                    const message =
-                        error instanceof Error
-                            ? error.message
-                            : "Failed to execute command.";
+                    const message = error instanceof Error ? error.message : 'Failed to execute command.';
                     toast.error(message);
                     return;
                 }
@@ -171,15 +157,10 @@ export function MultimodalInput({
                     toast.error(error.message);
                 })
                 .finally(() => {
-                    setInput("");
+                    setInput('');
                 });
         },
-        [
-            chat.selectedModelId,
-            chat.selectedProvider,
-            chat.selectedPersonaId,
-            sendMessage,
-        ],
+        [chat.selectedModelId, chat.selectedProvider, chat.selectedPersonaId, sendMessage],
     );
 
     const handlePersonaSelection = useCallback(
@@ -192,8 +173,8 @@ export function MultimodalInput({
     const personaOptions = useMemo(() => {
         return personas
             .map((persona) => ({
-                id: persona.id ?? persona.name ?? "",
-                name: persona.name ?? "",
+                id: persona.id ?? persona.name ?? '',
+                name: persona.name ?? '',
             }))
             .filter((persona) => persona.id && persona.name);
     }, [personas]);
@@ -248,14 +229,14 @@ function PromptInputContent({
     selectedPersonaId: string | null;
     setInput: (value: string) => void;
     setModelSelectorOpen: (value: boolean) => void;
-    status: UseChatHelpers<UIMessage>["status"];
+    status: UseChatHelpers<UIMessage>['status'];
     submitForm: (message: PromptInputMessage) => Promise<void>;
-    stop?: UseChatHelpers<UIMessage>["stop"];
+    stop?: UseChatHelpers<UIMessage>['stop'];
 }) {
     const attachments = usePromptInputAttachments();
     const controller = usePromptInputController();
     const [mentionMenuOpen, setMentionMenuOpen] = useState(false);
-    const [mentionSearch, setMentionSearch] = useState("");
+    const [mentionSearch, setMentionSearch] = useState('');
     const [selectedIndex, setSelectedIndex] = useState(0);
     const mentionTriggerIndexRef = useRef<number>(-1);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -277,10 +258,7 @@ function PromptInputContent({
             handlePersonaSelection(id);
             setMentionMenuOpen(false);
             const beforeMention = input.slice(0, mentionTriggerIndexRef.current);
-            const afterMention = input.slice(
-                textareaRef.current?.selectionStart ??
-                mentionTriggerIndexRef.current + 1,
-            );
+            const afterMention = input.slice(textareaRef.current?.selectionStart ?? mentionTriggerIndexRef.current + 1);
             const newText = beforeMention + afterMention;
             setInput(newText);
             controller.textInput.setInput(newText);
@@ -298,10 +276,7 @@ function PromptInputContent({
                 if (cursor <= mentionTriggerIndexRef.current) {
                     setMentionMenuOpen(false);
                 } else {
-                    const search = newValue.slice(
-                        mentionTriggerIndexRef.current + 1,
-                        cursor,
-                    );
+                    const search = newValue.slice(mentionTriggerIndexRef.current + 1, cursor);
                     if (/\s/.test(search)) {
                         setMentionMenuOpen(false);
                     } else {
@@ -314,71 +289,59 @@ function PromptInputContent({
         [mentionMenuOpen, setInput],
     );
 
-    const handleTextareaFocus = useCallback(
-        (event: FocusEvent<HTMLTextAreaElement>) => {
-            textareaRef.current = event.currentTarget;
-        },
-        [],
-    );
+    const handleTextareaFocus = useCallback((event: FocusEvent<HTMLTextAreaElement>) => {
+        textareaRef.current = event.currentTarget;
+    }, []);
 
     const handleTextareaKeyDown = useCallback(
         (event: KeyboardEvent<HTMLTextAreaElement>) => {
             textareaRef.current = event.currentTarget;
 
             if (mentionMenuOpen) {
-                if (event.key === "ArrowDown") {
+                if (event.key === 'ArrowDown') {
                     event.preventDefault();
                     setSelectedIndex((s) => (s + 1) % (filteredPersonas.length || 1));
                     return;
                 }
-                if (event.key === "ArrowUp") {
+                if (event.key === 'ArrowUp') {
                     event.preventDefault();
-                    setSelectedIndex(
-                        (s) =>
-                            (s - 1 + filteredPersonas.length) %
-                            (filteredPersonas.length || 1),
-                    );
+                    setSelectedIndex((s) => (s - 1 + filteredPersonas.length) % (filteredPersonas.length || 1));
                     return;
                 }
-                if (event.key === "Enter") {
+                if (event.key === 'Enter') {
                     event.preventDefault();
                     if (filteredPersonas.length > 0) {
                         handleSelectMention(filteredPersonas[selectedIndex].id);
                     }
                     return;
                 }
-                if (event.key === "Escape") {
+                if (event.key === 'Escape') {
                     event.preventDefault();
                     setMentionMenuOpen(false);
                     return;
                 }
             } else {
-                if (event.key === "Backspace" && input === "" && selectedPersonaId) {
+                if (event.key === 'Backspace' && input === '' && selectedPersonaId) {
                     event.preventDefault();
                     handlePersonaSelection(null);
                     return;
                 }
             }
 
-            const isPersonaShortcut =
-                event.key === "@" && !event.altKey && !event.ctrlKey && !event.metaKey;
+            const isPersonaShortcut = event.key === '@' && !event.altKey && !event.ctrlKey && !event.metaKey;
             if (!isPersonaShortcut) {
                 return;
             }
 
             const selectionStart = event.currentTarget.selectionStart ?? 0;
-            const textBeforeCursor = event.currentTarget.value.slice(
-                0,
-                selectionStart,
-            );
-            const isStartOfToken =
-                textBeforeCursor.length === 0 || /\s$/.test(textBeforeCursor);
+            const textBeforeCursor = event.currentTarget.value.slice(0, selectionStart);
+            const isStartOfToken = textBeforeCursor.length === 0 || /\s$/.test(textBeforeCursor);
             if (!isStartOfToken) {
                 return;
             }
 
             mentionTriggerIndexRef.current = selectionStart;
-            setMentionSearch("");
+            setMentionSearch('');
             setSelectedIndex(0);
             setMentionMenuOpen(true);
         },
@@ -401,10 +364,10 @@ function PromptInputContent({
                         <div
                             key={p.id}
                             className={cn(
-                                "relative flex cursor-pointer select-none items-center rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors",
+                                'relative flex cursor-pointer select-none items-center rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors',
                                 i === selectedIndex
-                                    ? "bg-accent text-accent-foreground"
-                                    : "text-foreground/80 hover:bg-accent/50",
+                                    ? 'bg-accent text-accent-foreground'
+                                    : 'text-foreground/80 hover:bg-accent/50',
                             )}
                             onClick={() => handleSelectMention(p.id)}
                             onMouseEnter={() => setSelectedIndex(i)}
@@ -418,11 +381,7 @@ function PromptInputContent({
                 <PromptInputHeader>
                     <Attachments>
                         {attachments.files.map((file) => (
-                            <Attachment
-                                key={file.id}
-                                data={file}
-                                onRemove={() => attachments.remove(file.id)}
-                            >
+                            <Attachment key={file.id} data={file} onRemove={() => attachments.remove(file.id)}>
                                 <AttachmentPreview />
                                 <AttachmentRemove />
                             </Attachment>
@@ -433,9 +392,7 @@ function PromptInputContent({
                     {selectedPersonaId && (
                         <div className="px-3 flex self-start items-center h-auto">
                             <span className="flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground border border-border shadow-sm">
-                                @
-                                {personaOptions.find((p) => p.id === selectedPersonaId)?.name ||
-                                    "Persona"}
+                                @{personaOptions.find((p) => p.id === selectedPersonaId)?.name || 'Persona'}
                                 <button
                                     type="button"
                                     className="ml-1 text-muted-foreground hover:text-foreground"
@@ -447,9 +404,7 @@ function PromptInputContent({
                         </div>
                     )}
                     <PromptInputTextarea
-                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                            handleInputTextChange(e.target.value)
-                        }
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputTextChange(e.target.value)}
                         onFocus={handleTextareaFocus}
                         onKeyDown={handleTextareaKeyDown}
                         placeholder="Type a message, use @ for personas..."
@@ -464,17 +419,13 @@ function PromptInputContent({
                                     <span>
                                         <PromptInputActionMenuTrigger
                                             disabled={
-                                                !selectedModelInfo?.inputModalities.includes(
-                                                    ModelModalityEnum.IMAGE,
-                                                )
+                                                !selectedModelInfo?.inputModalities.includes(ModelModalityEnum.IMAGE)
                                             }
                                         ></PromptInputActionMenuTrigger>
                                     </span>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    {selectedModelInfo?.inputModalities.includes(
-                                        ModelModalityEnum.IMAGE,
-                                    ) ? (
+                                    {selectedModelInfo?.inputModalities.includes(ModelModalityEnum.IMAGE) ? (
                                         <p>Attach Images</p>
                                     ) : (
                                         <p>Images not supported by selected Model</p>
@@ -485,18 +436,13 @@ function PromptInputContent({
                                 <PromptInputActionAddAttachments />
                             </PromptInputActionMenuContent>
                         </PromptInputActionMenu>
-                        <ModelSelector
-                            onOpenChange={setModelSelectorOpen}
-                            open={modelSelectorOpen}
-                        >
+                        <ModelSelector onOpenChange={setModelSelectorOpen} open={modelSelectorOpen}>
                             <ModelSelectorTrigger asChild>
                                 <PromptInputButton className="w-max">
                                     {chat.selectedModelId ? (
-                                        <ModelSelectorName>
-                                            {chat.selectedModelId}
-                                        </ModelSelectorName>
+                                        <ModelSelectorName>{chat.selectedModelId}</ModelSelectorName>
                                     ) : (
-                                        "Select Model"
+                                        'Select Model'
                                     )}
                                 </PromptInputButton>
                             </ModelSelectorTrigger>
@@ -505,10 +451,7 @@ function PromptInputContent({
                                 <ModelSelectorList>
                                     <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
                                     {providers.map((provider) => (
-                                        <ModelSelectorGroup
-                                            heading={provider.name}
-                                            key={provider.name}
-                                        >
+                                        <ModelSelectorGroup heading={provider.name} key={provider.name}>
                                             {provider.models.map((m) => (
                                                 <ModelSelectorItem
                                                     key={m.modelId}
@@ -524,7 +467,7 @@ function PromptInputContent({
                                                         provider={provider.type.toString()}
                                                     />
                                                     {chat.selectedProvider === provider.name &&
-                                                        chat.selectedModelId === m.modelId ? (
+                                                    chat.selectedModelId === m.modelId ? (
                                                         <CheckIcon className="ml-auto size-4" />
                                                     ) : (
                                                         <div className="ml-auto size-4" />
@@ -538,10 +481,7 @@ function PromptInputContent({
                         </ModelSelector>
                     </PromptInputTools>
                     <PromptInputSubmit
-                        disabled={
-                            !chat.selectedModelId ||
-                            (!input && status !== "submitted" && status !== "streaming")
-                        }
+                        disabled={!chat.selectedModelId || (!input && status !== 'submitted' && status !== 'streaming')}
                         status={status}
                         onStop={stop}
                     />
