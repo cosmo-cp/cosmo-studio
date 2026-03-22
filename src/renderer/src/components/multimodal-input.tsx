@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';
 import { ModelModalityEnum } from 'core/database/schema/modelProviderSchema';
-import type { Chat, Persona, ProviderWithModels } from 'core/dto';
+import type { Chat, CommandDefinition, Persona, ProviderWithModels } from 'core/dto';
 import { cn } from '@/lib/utils';
 import { CheckIcon, XIcon } from 'lucide-react';
 import type { FocusEvent, KeyboardEvent } from 'react';
@@ -79,6 +79,14 @@ export function MultimodalInput({
     const [providers, setProviders] = useState<ProviderWithModels[]>([]);
     const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
     const [personas, setPersonas] = useState<Persona[]>([]);
+    const [commands, setCommands] = useState<CommandDefinition[]>([]);
+
+    useEffect(() => {
+        window.api.command
+            .listAll()
+            .then((fetchedCommands) => setCommands(fetchedCommands))
+            .catch((error) => logger.error(error));
+    }, []);
 
     useEffect(() => {
         window.api.modelProvider
@@ -179,6 +187,14 @@ export function MultimodalInput({
             .filter((persona) => persona.id && persona.name);
     }, [personas]);
 
+    const commandOptions = useMemo(() => {
+        return commands.map((command) => ({
+            id: command.id ?? command.name,
+            name: command.name,
+            description: command.description,
+        }));
+    }, [commands]);
+
     return (
         <PromptInputProvider>
             <PromptInputContent
@@ -188,6 +204,7 @@ export function MultimodalInput({
                 modelSelectorOpen={modelSelectorOpen}
                 onModelChange={onModelChange}
                 personaOptions={personaOptions}
+                commandOptions={commandOptions}
                 providers={providers}
                 selectedModelInfo={selectedModelInfo}
                 selectedPersonaId={chat.selectedPersonaId ?? null}
@@ -209,6 +226,7 @@ function PromptInputContent({
     modelSelectorOpen,
     onModelChange,
     personaOptions,
+    commandOptions,
     providers,
     selectedModelInfo,
     selectedPersonaId,
@@ -224,6 +242,7 @@ function PromptInputContent({
     modelSelectorOpen: boolean;
     onModelChange: (providerName: string, modelId: string) => void;
     personaOptions: { id: string; name: string }[];
+    commandOptions: { id: string; name: string; description?: string }[];
     providers: ProviderWithModels[];
     selectedModelInfo: { inputModalities: string[] } | undefined;
     selectedPersonaId: string | null;
@@ -235,10 +254,12 @@ function PromptInputContent({
 }) {
     const attachments = usePromptInputAttachments();
     const controller = usePromptInputController();
-    const [mentionMenuOpen, setMentionMenuOpen] = useState(false);
-    const [mentionSearch, setMentionSearch] = useState('');
+    // @ mention is for personas, / is for commands
+    const [dropdownType, setDropdownType] = useState<'mention' | 'command' | null>(null);
+    const [dropdownSearch, setDropdownSearch] = useState('');
     const [selectedIndex, setSelectedIndex] = useState(0);
-    const mentionTriggerIndexRef = useRef<number>(-1);
+    const triggerIndexRef = useRef<number>(-1);
+
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
     const focusTextarea = useCallback(() => {
@@ -247,46 +268,62 @@ function PromptInputContent({
         });
     }, []);
 
-    const filteredPersonas = useMemo(() => {
-        if (!mentionSearch) return personaOptions;
-        const lower = mentionSearch.toLowerCase();
-        return personaOptions.filter((p) => p.name.toLowerCase().includes(lower));
-    }, [personaOptions, mentionSearch]);
+    const filteredOptions = useMemo(() => {
+        if (dropdownType === 'mention') {
+            if (!dropdownSearch) return personaOptions;
+            const lower = dropdownSearch.toLowerCase();
+            return personaOptions.filter((p) => p.name.toLowerCase().includes(lower));
+        } else if (dropdownType === 'command') {
+            if (!dropdownSearch) return commandOptions;
+            const lower = dropdownSearch.toLowerCase();
+            return commandOptions.filter((c) => c.name.toLowerCase().includes(lower));
+        }
+        return [];
+    }, [dropdownType, dropdownSearch, personaOptions, commandOptions]) as Array<{
+        id: string;
+        name: string;
+        description?: string;
+    }>;
 
-    const handleSelectMention = useCallback(
-        (id: string) => {
-            handlePersonaSelection(id);
-            setMentionMenuOpen(false);
-            const beforeMention = input.slice(0, mentionTriggerIndexRef.current);
-            const afterMention = input.slice(textareaRef.current?.selectionStart ?? mentionTriggerIndexRef.current + 1);
-            const newText = beforeMention + afterMention;
+    const handleSelectOption = useCallback(
+        (option: { id: string; name: string; description?: string }) => {
+            if (dropdownType === 'mention') {
+                handlePersonaSelection(option.id);
+            }
+            const beforeTrigger = input.slice(0, triggerIndexRef.current);
+            const afterTrigger = input.slice(textareaRef.current?.selectionStart ?? triggerIndexRef.current + 1);
+
+            const insertValue = dropdownType === 'mention' ? '' : option.name + ' ';
+            const newText = beforeTrigger + insertValue + afterTrigger;
+
             setInput(newText);
             controller.textInput.setInput(newText);
+            setDropdownType(null);
             focusTextarea();
         },
-        [handlePersonaSelection, input, focusTextarea, setInput, controller],
+        [dropdownType, handlePersonaSelection, input, focusTextarea, setInput, controller],
     );
 
     const handleInputTextChange = useCallback(
         (newValue: string) => {
             setInput(newValue);
-            if (mentionMenuOpen) {
+            if (dropdownType) {
                 const cursor = textareaRef.current?.selectionStart ?? 0;
-                // Handle deleting the @ symbol
-                if (cursor <= mentionTriggerIndexRef.current) {
-                    setMentionMenuOpen(false);
+                // Handle deleting the trigger symbol
+                if (cursor <= triggerIndexRef.current) {
+                    setDropdownType(null);
                 } else {
-                    const search = newValue.slice(mentionTriggerIndexRef.current + 1, cursor);
+                    const search = newValue.slice(triggerIndexRef.current + 1, cursor);
                     if (/\s/.test(search)) {
-                        setMentionMenuOpen(false);
+                        setDropdownType(null);
                     } else {
-                        setMentionSearch(search);
+                        setDropdownSearch(search);
                         setSelectedIndex(0);
                     }
                 }
             }
         },
-        [mentionMenuOpen, setInput],
+        [dropdownType, setInput],
     );
 
     const handleTextareaFocus = useCallback((event: FocusEvent<HTMLTextAreaElement>) => {
@@ -297,27 +334,27 @@ function PromptInputContent({
         (event: KeyboardEvent<HTMLTextAreaElement>) => {
             textareaRef.current = event.currentTarget;
 
-            if (mentionMenuOpen) {
+            if (dropdownType) {
                 if (event.key === 'ArrowDown') {
                     event.preventDefault();
-                    setSelectedIndex((s) => (s + 1) % (filteredPersonas.length || 1));
+                    setSelectedIndex((s) => (s + 1) % (filteredOptions.length || 1));
                     return;
                 }
                 if (event.key === 'ArrowUp') {
                     event.preventDefault();
-                    setSelectedIndex((s) => (s - 1 + filteredPersonas.length) % (filteredPersonas.length || 1));
+                    setSelectedIndex((s) => (s - 1 + filteredOptions.length) % (filteredOptions.length || 1));
                     return;
                 }
                 if (event.key === 'Enter') {
                     event.preventDefault();
-                    if (filteredPersonas.length > 0) {
-                        handleSelectMention(filteredPersonas[selectedIndex].id);
+                    if (filteredOptions.length > 0) {
+                        handleSelectOption(filteredOptions[selectedIndex]);
                     }
                     return;
                 }
                 if (event.key === 'Escape') {
                     event.preventDefault();
-                    setMentionMenuOpen(false);
+                    setDropdownType(null);
                     return;
                 }
             } else {
@@ -329,7 +366,9 @@ function PromptInputContent({
             }
 
             const isPersonaShortcut = event.key === '@' && !event.altKey && !event.ctrlKey && !event.metaKey;
-            if (!isPersonaShortcut) {
+            const isCommandShortcut = event.key === '/' && !event.altKey && !event.ctrlKey && !event.metaKey;
+
+            if (!isPersonaShortcut && !isCommandShortcut) {
                 return;
             }
 
@@ -340,16 +379,23 @@ function PromptInputContent({
                 return;
             }
 
-            mentionTriggerIndexRef.current = selectionStart;
-            setMentionSearch('');
-            setSelectedIndex(0);
-            setMentionMenuOpen(true);
+            if (isPersonaShortcut) {
+                triggerIndexRef.current = selectionStart;
+                setDropdownSearch('');
+                setSelectedIndex(0);
+                setDropdownType('mention');
+            } else if (isCommandShortcut) {
+                triggerIndexRef.current = selectionStart;
+                setDropdownSearch('');
+                setSelectedIndex(0);
+                setDropdownType('command');
+            }
         },
         [
-            mentionMenuOpen,
-            filteredPersonas,
+            dropdownType,
+            filteredOptions,
             selectedIndex,
-            handleSelectMention,
+            handleSelectOption,
             input,
             selectedPersonaId,
             handlePersonaSelection,
@@ -358,21 +404,26 @@ function PromptInputContent({
 
     return (
         <div className="relative w-full">
-            {mentionMenuOpen && filteredPersonas.length > 0 && (
-                <div className="absolute z-50 mb-2 bottom-full left-4 min-w-[250px] overflow-hidden rounded-xl border bg-popover p-1 text-popover-foreground shadow-lg outline-none">
-                    {filteredPersonas.map((p, i) => (
+            {dropdownType && filteredOptions.length > 0 && (
+                <div className="absolute z-50 mb-2 bottom-full left-4 min-w-[250px] overflow-hidden rounded-xl border bg-popover p-1 text-popover-foreground shadow-lg outline-none max-h-[300px] overflow-y-auto">
+                    {filteredOptions.map((option, i) => (
                         <div
-                            key={p.id}
+                            key={option.id}
                             className={cn(
-                                'relative flex cursor-pointer select-none items-center rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors',
+                                'flex flex-col cursor-pointer select-none rounded-md px-3 py-2 text-sm outline-none transition-colors',
                                 i === selectedIndex
                                     ? 'bg-accent text-accent-foreground'
                                     : 'text-foreground/80 hover:bg-accent/50',
                             )}
-                            onClick={() => handleSelectMention(p.id)}
+                            onClick={() => handleSelectOption(option)}
                             onMouseEnter={() => setSelectedIndex(i)}
                         >
-                            @{p.name}
+                            <span className="font-medium flex items-center gap-2">
+                                {dropdownType === 'mention' ? `@${option.name}` : option.name}
+                            </span>
+                            {option.description && (
+                                <span className="text-xs text-muted-foreground">{option.description}</span>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -407,7 +458,7 @@ function PromptInputContent({
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputTextChange(e.target.value)}
                         onFocus={handleTextareaFocus}
                         onKeyDown={handleTextareaKeyDown}
-                        placeholder="Type a message, use @ for personas..."
+                        placeholder="Type a message, use @ for personas, / for commands..."
                         value={input}
                     />
                 </PromptInputBody>
