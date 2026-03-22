@@ -20,7 +20,7 @@ import { Source, Sources, SourcesContent, SourcesTrigger } from '@/components/ai
 import { Loader } from '@/components/ai-elements/loader';
 import { DynamicToolUIPart, UIMessage } from 'ai';
 import { PreviewAttachment } from '@/components/preview-attachment';
-import { Tool, ToolHeader, ToolContent, ToolInput, ToolOutput, ToolPart } from './ai-elements/tool';
+import { Tool, ToolHeader, ToolContent, ToolInput, ToolOutput } from './ai-elements/tool';
 import {
     Confirmation,
     ConfirmationTitle,
@@ -81,7 +81,6 @@ interface MessagesProps {
 function PureMessages({
     status,
     messages,
-    regenerate,
     searchQuery,
     currentMatchIndex,
     onMatchesFound,

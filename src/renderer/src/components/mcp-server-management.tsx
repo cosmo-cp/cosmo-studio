@@ -3,7 +3,6 @@
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -270,9 +269,9 @@ export function McpServerManagement() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-[40px]"></TableHead>
-                                <TableHead className="w-[200px]">Name</TableHead>
+                                <TableHead className="w-[20px] pr-2"></TableHead>
+                                <TableHead className="w-[200px] pl-2">Name</TableHead>
                                 <TableHead className="w-[120px]">Transport</TableHead>
-                                <TableHead className="w-[100px]">Status</TableHead>
                                 <TableHead className="w-[120px] text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -301,7 +300,15 @@ export function McpServerManagement() {
                                                     )}
                                                 </Button>
                                             </TableCell>
-                                            <TableCell className="font-medium">
+                                            <TableCell className="pr-2">
+                                                <Switch
+                                                    size="sm"
+                                                    checked={server.enabled}
+                                                    onCheckedChange={() => handleToggleEnabled(server)}
+                                                    aria-label={`Toggle ${server.name}`}
+                                                />
+                                            </TableCell>
+                                            <TableCell className="font-medium pl-2">
                                                 <div>
                                                     <span className="block truncate">{server.name}</span>
                                                     {server.description && (
@@ -313,14 +320,6 @@ export function McpServerManagement() {
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant="secondary">{server.transportType}</Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Switch
-                                                    size="sm"
-                                                    checked={server.enabled}
-                                                    onCheckedChange={() => handleToggleEnabled(server)}
-                                                    aria-label={`Toggle ${server.name}`}
-                                                />
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Button
