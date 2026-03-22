@@ -1,14 +1,14 @@
-import {inject, injectable} from "inversify";
-import {CORETYPES} from "../types/types";
-import {McpServerRepository} from "../repositories/McpServerRepository";
+import { inject, injectable } from 'inversify';
+import { CORETYPES } from '../types/types';
+import { McpServerRepository } from '../repositories/McpServerRepository';
 import {
     HttpTransportConfig,
     McpServer,
     McpServerCreateInput,
     McpServerUpdateInput,
     SseTransportConfig,
-    StdioTransportConfig
-} from "../dto";
+    StdioTransportConfig,
+} from '../dto';
 
 const normalizeRequired = (value: string | null | undefined, field: string) => {
     if (!value || value.trim().length === 0) {
@@ -58,10 +58,7 @@ const validateTransportConfig = (transportType: string, config: unknown) => {
 
 @injectable()
 export class McpServerService {
-    constructor(
-        @inject(CORETYPES.McpServerRepository) private mcpServerRepository: McpServerRepository
-    ) {
-    }
+    constructor(@inject(CORETYPES.McpServerRepository) private mcpServerRepository: McpServerRepository) {}
 
     public async getAll(): Promise<McpServer[]> {
         return this.mcpServerRepository.getAll();
@@ -80,8 +77,8 @@ export class McpServerService {
     }
 
     public async create(data: McpServerCreateInput): Promise<McpServer> {
-        const name = normalizeRequired(data.name, "Name");
-        const transportType = normalizeRequired(data.transportType, "Transport Type");
+        const name = normalizeRequired(data.name, 'Name');
+        const transportType = normalizeRequired(data.transportType, 'Transport Type');
 
         validateTransportConfig(transportType, data.config);
 
@@ -98,11 +95,11 @@ export class McpServerService {
         };
 
         if (updates.name !== undefined) {
-            normalizedUpdates.name = normalizeRequired(updates.name, "Name");
+            normalizedUpdates.name = normalizeRequired(updates.name, 'Name');
         }
 
         if (updates.transportType !== undefined) {
-            normalizedUpdates.transportType = normalizeRequired(updates.transportType, "Transport Type");
+            normalizedUpdates.transportType = normalizeRequired(updates.transportType, 'Transport Type');
         }
 
         if (updates.config !== undefined) {
@@ -121,10 +118,10 @@ export class McpServerService {
     }
 
     public async enable(id: string): Promise<McpServer> {
-        return this.mcpServerRepository.update(id, {enabled: true});
+        return this.mcpServerRepository.update(id, { enabled: true });
     }
 
     public async disable(id: string): Promise<McpServer> {
-        return this.mcpServerRepository.update(id, {enabled: false});
+        return this.mcpServerRepository.update(id, { enabled: false });
     }
 }

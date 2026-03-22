@@ -1,16 +1,15 @@
-import {app, BrowserWindow, safeStorage} from 'electron';
+import { app, BrowserWindow, safeStorage } from 'electron';
 import path from 'path';
-import {IpcHandlerRegistry} from './ipc';
-import {DatabaseManager} from "core/database/DatabaseManager";
+import { IpcHandlerRegistry } from './ipc';
+import { DatabaseManager } from 'core/database/DatabaseManager';
 import 'reflect-metadata';
-import container from "./inversify.config";
-import {TYPES} from "./types";
-import {config} from "dotenv";
-import {updateElectronApp, UpdateSourceType} from "update-electron-app";
-import {logger} from "./logger";
-import {McpClientManager} from "core/services/McpClientManager";
-import {CORETYPES} from "core/types/types";
-
+import container from './inversify.config';
+import { TYPES } from './types';
+import { config } from 'dotenv';
+import { updateElectronApp, UpdateSourceType } from 'update-electron-app';
+import { logger } from './logger';
+import { McpClientManager } from 'core/services/McpClientManager';
+import { CORETYPES } from 'core/types/types';
 
 export class Main {
     private mainWindow: BrowserWindow | null = null;
@@ -37,14 +36,14 @@ export class Main {
                         type: UpdateSourceType.ElectronPublicUpdateService,
                         repo: 'cosmo-cp/cosmo-studio',
                     },
-                    updateInterval: '1 hour'
-                })
+                    updateInterval: '1 hour',
+                });
             }, 60000);
         });
     }
 
     private async initializeDatabase(): Promise<void> {
-        const dbFolderName = this.isDev ? process.env.DATABASE_NAME : "database";
+        const dbFolderName = this.isDev ? process.env.DATABASE_NAME : 'database';
         if (!dbFolderName) {
             logger.error('FATAL ERROR: DATABASE_NAME environment variable is not set. Cannot initialize database.');
             app.quit();
@@ -54,7 +53,7 @@ export class Main {
         try {
             const userDataPath = app.getPath('userData');
             const absoluteDbPath = path.join(userDataPath, dbFolderName);
-            logger.info("Database Dir:" + absoluteDbPath);
+            logger.info('Database Dir:' + absoluteDbPath);
             await DatabaseManager.initialize(absoluteDbPath);
         } catch (error) {
             logger.error('FATAL ERROR: Failed to initialize database connection.', error);

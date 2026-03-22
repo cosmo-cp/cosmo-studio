@@ -1,17 +1,17 @@
 'use client';
 
-import {useState} from "react";
-import {Card, CardContent} from "@/components/ui/card";
-import {cn} from "@/lib/utils";
-import {ProviderManagement} from "@/components/provider-management";
-import {SiteFooter} from "@/components/site-footer";
+import { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { ProviderManagement } from '@/components/provider-management';
+import { SiteFooter } from '@/components/site-footer';
 
 export default function SettingsPage() {
-    const [selectedSetting, setSelectedSettings] = useState("Provider");
+    const [selectedSetting, setSelectedSettings] = useState('Provider');
 
     const settingsItems = [
         {
-            name: "Provider",
+            name: 'Provider',
         },
     ];
     return (
@@ -23,12 +23,13 @@ export default function SettingsPage() {
                 <Card className="w-1/5 h-full">
                     <CardContent>
                         {settingsItems.map((item) => (
-                            <div key={item.name}
-                                 className={cn(
-                                     "flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted cursor-pointer transition-colors group",
-                                     selectedSetting === item.name && "bg-muted"
-                                 )}
-                                 onClick={() => setSelectedSettings(item.name)}
+                            <div
+                                key={item.name}
+                                className={cn(
+                                    'flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted cursor-pointer transition-colors group',
+                                    selectedSetting === item.name && 'bg-muted',
+                                )}
+                                onClick={() => setSelectedSettings(item.name)}
                             >
                                 <span className="font-medium">{item.name}</span>
                             </div>
@@ -36,14 +37,10 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
                 <Card className="h-full flex-1">
-                    <CardContent>
-                        {selectedSetting === "Provider" && (
-                            <ProviderManagement/>
-                        )}
-                    </CardContent>
+                    <CardContent>{selectedSetting === 'Provider' && <ProviderManagement />}</CardContent>
                 </Card>
             </div>
-            <SiteFooter/>
+            <SiteFooter />
         </div>
     );
 }

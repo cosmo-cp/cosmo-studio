@@ -5,20 +5,20 @@ This document captures UI/UX conventions so new features match the existing Cosm
 ## Visual structure (current)
 
 - Primary left app sidebar:
-  - Branding (Cosmo icon + “Cosmo Studio” text)
-  - Primary navigation (Chat, Persona)
-  - Footer Settings entry
+    - Branding (Cosmo icon + “Cosmo Studio” text)
+    - Primary navigation (Chat, Persona)
+    - Footer Settings entry
 - Top header:
-  - Sidebar toggle
-  - GitHub CTA button (“Give us a Star on Github”)
-  - Theme toggle
+    - Sidebar toggle
+    - GitHub CTA button (“Give us a Star on Github”)
+    - Theme toggle
 - Main “Chat” view:
-  - Chat history column with search + list
-  - Conversation area with message list and fixed composer
+    - Chat history column with search + list
+    - Conversation area with message list and fixed composer
 - Settings:
-  - Left rail of settings sections
-  - Right content card for selected setting
-  - Commands section for managing built-in and custom commands
+    - Left rail of settings sections
+    - Right content card for selected setting
+    - Commands section for managing built-in and custom commands
 
 ## Stack
 
@@ -32,8 +32,8 @@ This document captures UI/UX conventions so new features match the existing Cosm
 ### Mobile-first
 
 - Layout must work at small widths:
-  - Sidebar should collapse/hide without breaking navigation.
-  - Avoid horizontal overflow; use `min-h-0` + `overflow-hidden` where necessary.
+    - Sidebar should collapse/hide without breaking navigation.
+    - Avoid horizontal overflow; use `min-h-0` + `overflow-hidden` where necessary.
 
 ### Accessibility
 
@@ -51,10 +51,10 @@ This document captures UI/UX conventions so new features match the existing Cosm
 ### UX interactions
 
 - Streaming chat:
-  - Always handle failure states (toast + recoverable UI).
-  - Clean up IPC listeners when streams end/cancel.
+    - Always handle failure states (toast + recoverable UI).
+    - Clean up IPC listeners when streams end/cancel.
 - Commands:
-  - List commands dynamically (built-ins + custom).
-  - Allow optional single-argument input and show hints in the UI.
+    - List commands dynamically (built-ins + custom).
+    - Allow optional single-argument input and show hints in the UI.
 - Errors:
-  - Use `sonner` for user-facing errors; use `logger` for diagnostic logs.
+    - Use `sonner` for user-facing errors; use `logger` for diagnostic logs.

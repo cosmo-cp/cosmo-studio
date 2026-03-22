@@ -1,4 +1,4 @@
-import { PersonaList } from "@/components/persona-list";
+import { PersonaList } from '@/components/persona-list';
 
 export default function PersonaPage() {
     return (
@@ -6,5 +6,4 @@ export default function PersonaPage() {
             <PersonaList />
         </div>
     );
-
 }

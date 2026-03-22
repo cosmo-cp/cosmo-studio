@@ -1,4 +1,3 @@
-
 import 'reflect-metadata';
 
 export const IPC_CONTROLLER_METADATA_KEY = 'ipc-controller';
@@ -19,7 +18,7 @@ function createHandlerDecorator(metadataKey: string) {
             handlers[propertyKey] = name;
             Reflect.defineMetadata(metadataKey, handlers, target.constructor);
         };
-    }
+    };
 }
 
 export const IpcHandler = createHandlerDecorator(IPC_HANDLE_METADATA_KEY);

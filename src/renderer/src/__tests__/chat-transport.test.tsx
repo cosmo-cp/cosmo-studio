@@ -1,6 +1,6 @@
-import {beforeEach, describe, expect, it, vi} from "vitest";
-import type {UIMessage} from "ai";
-import {IpcChatTransport} from "../chat-transport";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { UIMessage } from 'ai';
+import { IpcChatTransport } from '../chat-transport';
 
 type StreamingApiMock = {
     onData: ReturnType<typeof vi.fn>;
@@ -29,94 +29,98 @@ const createChatApiMock = (): ChatApiMock => ({
 });
 
 const setWindowApi = (streaming: StreamingApiMock, chat: ChatApiMock = createChatApiMock()) => {
-    Object.defineProperty(window, "api", {
-        value: {streaming, chat},
+    Object.defineProperty(window, 'api', {
+        value: { streaming, chat },
         writable: true,
         configurable: true,
     });
 };
 
-describe("IpcChatTransport", () => {
+describe('IpcChatTransport', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
     });
 
-    it("removes listeners when reconnect stream is canceled", async () => {
+    it('removes listeners when reconnect stream is canceled', async () => {
         const streaming = createStreamingApiMock();
         setWindowApi(streaming);
 
         const transport = new IpcChatTransport();
-        const stream = await transport.reconnectToStream({chatId: "chat-1"});
+        const stream = await transport.reconnectToStream({ chatId: 'chat-1' });
         expect(stream).not.toBeNull();
 
         await stream!.getReader().cancel();
 
-        expect(streaming.removeListeners).toHaveBeenCalledWith("chat-stream-chat-1");
+        expect(streaming.removeListeners).toHaveBeenCalledWith('chat-stream-chat-1');
         expect(streaming.abortMessage).not.toHaveBeenCalled();
     });
 
-    it("removes listeners and aborts when send stream is canceled", async () => {
+    it('removes listeners and aborts when send stream is canceled', async () => {
         const streaming = createStreamingApiMock();
         setWindowApi(streaming);
 
         const transport = new IpcChatTransport();
         const stream = await transport.sendMessages({
-            trigger: "submit-message",
-            chatId: "chat-2",
+            trigger: 'submit-message',
+            chatId: 'chat-2',
             messageId: undefined,
             messages: [] as UIMessage[],
             abortSignal: undefined,
-            metadata: {modelId: "openai:gpt-4o"},
+            metadata: { modelId: 'openai:gpt-4o' },
         });
 
-        expect(streaming.sendMessage).toHaveBeenCalledWith(expect.objectContaining({
-            chatId: "chat-2",
-            streamChannel: "chat-stream-chat-2",
-            modelIdentifier: "openai:gpt-4o",
-        }));
+        expect(streaming.sendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                chatId: 'chat-2',
+                streamChannel: 'chat-stream-chat-2',
+                modelIdentifier: 'openai:gpt-4o',
+            }),
+        );
 
         await stream.getReader().cancel();
 
-        expect(streaming.removeListeners).toHaveBeenCalledWith("chat-stream-chat-2");
-        expect(streaming.abortMessage).toHaveBeenCalledWith({streamChannel: "chat-stream-chat-2"});
+        expect(streaming.removeListeners).toHaveBeenCalledWith('chat-stream-chat-2');
+        expect(streaming.abortMessage).toHaveBeenCalledWith({ streamChannel: 'chat-stream-chat-2' });
     });
 
-    it("surfaces sendMessage failures and cleans listeners", async () => {
+    it('surfaces sendMessage failures and cleans listeners', async () => {
         const streaming = createStreamingApiMock();
         streaming.sendMessage.mockImplementation(() => {
-            throw new Error("send failed");
+            throw new Error('send failed');
         });
         setWindowApi(streaming);
 
         const transport = new IpcChatTransport();
         const stream = await transport.sendMessages({
-            trigger: "submit-message",
-            chatId: "chat-3",
+            trigger: 'submit-message',
+            chatId: 'chat-3',
             messageId: undefined,
             messages: [] as UIMessage[],
             abortSignal: undefined,
-            metadata: {modelId: "openai:gpt-4o"},
+            metadata: { modelId: 'openai:gpt-4o' },
         });
 
-        await expect(stream.getReader().read()).rejects.toThrow("send failed");
-        expect(streaming.removeListeners).toHaveBeenCalledWith("chat-stream-chat-3");
+        await expect(stream.getReader().read()).rejects.toThrow('send failed');
+        expect(streaming.removeListeners).toHaveBeenCalledWith('chat-stream-chat-3');
     });
 
-    it("fails early when model metadata is missing", async () => {
+    it('fails early when model metadata is missing', async () => {
         const streaming = createStreamingApiMock();
         const chat = createChatApiMock();
         setWindowApi(streaming, chat);
 
         const transport = new IpcChatTransport();
-        await expect(transport.sendMessages({
-            trigger: "submit-message",
-            chatId: "chat-4",
-            messageId: undefined,
-            messages: [] as UIMessage[],
-            abortSignal: undefined,
-            metadata: {} as never,
-        })).rejects.toThrow("modelId is required");
-        expect(chat.getChatById).toHaveBeenCalledWith("chat-4");
+        await expect(
+            transport.sendMessages({
+                trigger: 'submit-message',
+                chatId: 'chat-4',
+                messageId: undefined,
+                messages: [] as UIMessage[],
+                abortSignal: undefined,
+                metadata: {} as never,
+            }),
+        ).rejects.toThrow('modelId is required');
+        expect(chat.getChatById).toHaveBeenCalledWith('chat-4');
         expect(streaming.sendMessage).not.toHaveBeenCalled();
         expect(streaming.removeListeners).not.toHaveBeenCalled();
     });
