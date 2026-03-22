@@ -1,62 +1,62 @@
 name: Build_signing
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - macos-signing
+    workflow_dispatch:
+    push:
+        branches:
+            - macos-signing
 
 jobs:
-  build:
-    name: Build on ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    build:
+        name: Build on ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [macos-latest]
+        runs-on: ${{ matrix.os }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.19.0'
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22.19.0'
 
-      - name: Install the Apple certificate
-        env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
-          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-        run: |
-          # create variables
-          BUILD_CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/login.keychain-db
-          
-          # import certificate from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $BUILD_CERTIFICATE_PATH
-          
-          # create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          
-          # import certificate to keychain
-          security import $BUILD_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
+            - name: Install the Apple certificate
+              env:
+                  BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+                  P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+                  KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+              run: |
+                  # create variables
+                  BUILD_CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+                  KEYCHAIN_PATH=$RUNNER_TEMP/login.keychain-db
 
-      - name: Install dependencies
-        run: npm install
+                  # import certificate from secrets
+                  echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $BUILD_CERTIFICATE_PATH
 
-      - name: Build application
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: npm run make
+                  # create temporary keychain
+                  security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+                  security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+                  security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-${{ matrix.os }}
-          path: out/make
+                  # import certificate to keychain
+                  security import $BUILD_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+                  security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+                  security list-keychain -d user -s $KEYCHAIN_PATH
+
+            - name: Install dependencies
+              run: npm install
+
+            - name: Build application
+              env:
+                  APPLE_ID: ${{ secrets.APPLE_ID }}
+                  APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+              run: npm run make
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: build-${{ matrix.os }}
+                  path: out/make

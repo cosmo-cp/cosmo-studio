@@ -5,21 +5,21 @@ import {
     Conversation,
     ConversationContent,
     ConversationEmptyState,
-    ConversationScrollButton
+    ConversationScrollButton,
 } from './ai-elements/conversation';
 import {
     Message,
     MessageAction,
     MessageActions,
     MessageContent,
-    MessageResponse
-} from "@/components/ai-elements/message";
-import { CopyIcon, MessageSquare } from "lucide-react";
-import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning";
-import { Source, Sources, SourcesContent, SourcesTrigger } from "@/components/ai-elements/sources";
-import { Loader } from "@/components/ai-elements/loader";
-import { DynamicToolUIPart, UIMessage } from "ai";
-import { PreviewAttachment } from "@/components/preview-attachment";
+    MessageResponse,
+} from '@/components/ai-elements/message';
+import { CopyIcon, MessageSquare } from 'lucide-react';
+import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-elements/reasoning';
+import { Source, Sources, SourcesContent, SourcesTrigger } from '@/components/ai-elements/sources';
+import { Loader } from '@/components/ai-elements/loader';
+import { DynamicToolUIPart, UIMessage } from 'ai';
+import { PreviewAttachment } from '@/components/preview-attachment';
 import { Tool, ToolHeader, ToolContent, ToolInput, ToolOutput, ToolPart } from './ai-elements/tool';
 import {
     Confirmation,
@@ -28,24 +28,24 @@ import {
     ConfirmationAccepted,
     ConfirmationRejected,
     ConfirmationActions,
-    ConfirmationAction
+    ConfirmationAction,
 } from './ai-elements/confirmation';
-import type { ProviderWithModels } from "core/dto";
-import ProviderIcon from "@/components/provider-icon";
-import { useTheme } from "next-themes";
-import { cn } from "@/lib/utils";
+import type { ProviderWithModels } from 'core/dto';
+import ProviderIcon from '@/components/provider-icon';
+import { useTheme } from 'next-themes';
+import { cn } from '@/lib/utils';
 
 const MODEL_NAME_COLORS = [
-    "text-emerald-600 dark:text-emerald-400",
-    "text-sky-600 dark:text-sky-400",
-    "text-amber-600 dark:text-amber-400",
-    "text-violet-600 dark:text-violet-400",
-    "text-rose-600 dark:text-rose-400",
-    "text-teal-600 dark:text-teal-400",
-    "text-lime-600 dark:text-lime-400",
-    "text-orange-600 dark:text-orange-400",
-    "text-cyan-600 dark:text-cyan-400",
-    "text-fuchsia-600 dark:text-fuchsia-400",
+    'text-emerald-600 dark:text-emerald-400',
+    'text-sky-600 dark:text-sky-400',
+    'text-amber-600 dark:text-amber-400',
+    'text-violet-600 dark:text-violet-400',
+    'text-rose-600 dark:text-rose-400',
+    'text-teal-600 dark:text-teal-400',
+    'text-lime-600 dark:text-lime-400',
+    'text-orange-600 dark:text-orange-400',
+    'text-cyan-600 dark:text-cyan-400',
+    'text-fuchsia-600 dark:text-fuchsia-400',
 ] as const;
 
 type MessageMetadata = {
@@ -54,11 +54,11 @@ type MessageMetadata = {
 
 // Normalize a model identifier into provider/model parts for display.
 const splitModelIdentifier = (modelIdentifier: string) => {
-    const [providerName, ...modelParts] = modelIdentifier.split(":");
+    const [providerName, ...modelParts] = modelIdentifier.split(':');
     if (modelParts.length === 0) {
         return { providerName: undefined, modelId: modelIdentifier };
     }
-    return { providerName, modelId: modelParts.join(":") };
+    return { providerName, modelId: modelParts.join(':') };
 };
 
 // Extract the model identifier from message metadata so UI can render per-model badges.
@@ -66,7 +66,6 @@ const getMessageModelIdentifier = (message: UIMessage) => {
     const metadata = message.metadata as MessageMetadata | undefined;
     return metadata?.modelId;
 };
-
 
 interface MessagesProps {
     chatId: string;
@@ -86,24 +85,25 @@ function PureMessages({
     searchQuery,
     currentMatchIndex,
     onMatchesFound,
-    addToolApprovalResponse
+    addToolApprovalResponse,
 }: MessagesProps) {
     const { resolvedTheme } = useTheme();
-    const [matches, setMatches] = useState<{ messageId: string, partIndex: number }[]>([]);
+    const [matches, setMatches] = useState<{ messageId: string; partIndex: number }[]>([]);
     const [matchStartIndexMap, setMatchStartIndexMap] = useState<Record<string, number>>({});
     const [providers, setProviders] = useState<ProviderWithModels[]>([]);
     const prevMatchIndexRef = useRef<number | null>(null);
 
     useEffect(() => {
         let mounted = true;
-        window.api.modelProvider.getProvidersWithModels()
+        window.api.modelProvider
+            .getProvidersWithModels()
             .then((list) => {
                 if (mounted) {
                     setProviders(list);
                 }
             })
             .catch((error) => {
-                console.error("Failed to load providers", error);
+                console.error('Failed to load providers', error);
             });
         return () => {
             mounted = false;
@@ -118,10 +118,10 @@ function PureMessages({
             return;
         }
 
-        const newMatches: { messageId: string, partIndex: number }[] = [];
+        const newMatches: { messageId: string; partIndex: number }[] = [];
         const newMatchStartIndexMap: Record<string, number> = {};
 
-        messages.forEach(m => {
+        messages.forEach((m) => {
             m.parts.forEach((p, pIndex) => {
                 if (p.type === 'text') {
                     const text = p.text.toLowerCase();
@@ -163,7 +163,7 @@ function PureMessages({
     }, [messages]);
 
     const modelInfoByMessageId = useMemo(() => {
-        const map = new Map<string, { identifier: string; label: string; providerType?: ProviderWithModels["type"] }>();
+        const map = new Map<string, { identifier: string; label: string; providerType?: ProviderWithModels['type'] }>();
         messages.forEach((message) => {
             if (message.role !== 'assistant') return;
             const modelIdentifier = getMessageModelIdentifier(message);
@@ -247,11 +247,11 @@ function PureMessages({
                 const globalIndex = startIndex + matchCount;
                 matchCount++;
                 // Always render as default match initially. Active match is handled by useEffect via DOM manipulation.
-                const style = "background-color: #fef08a; color: black;";
+                const style = 'background-color: #fef08a; color: black;';
                 return `<mark id="match-${globalIndex}" style="${style}">${match}</mark>`;
             });
         } catch (e) {
-            console.error("Error highlighting text", e);
+            console.error('Error highlighting text', e);
             return text;
         }
     };
@@ -270,17 +270,17 @@ function PureMessages({
                         const isAssistant = message.role === 'assistant';
                         const modelInfo = isAssistant ? modelInfoByMessageId.get(message.id) : undefined;
                         const modelColorClass = modelInfo ? modelColorMap.get(modelInfo.identifier) : undefined;
-                        const iconTheme = resolvedTheme === "light" ? "light" : "dark";
-                        const modelLabel = modelInfo?.label ?? "Assistant";
+                        const iconTheme = resolvedTheme === 'light' ? 'light' : 'dark';
+                        const modelLabel = modelInfo?.label ?? 'Assistant';
 
                         const reasoningParts = isAssistant
-                            ? message.parts.filter(part => part.type === 'reasoning')
+                            ? message.parts.filter((part) => part.type === 'reasoning')
                             : [];
-                        const hasTextContent = message.parts.some(p => p.type === 'text' && p.text.length > 0);
+                        const hasTextContent = message.parts.some((p) => p.type === 'text' && p.text.length > 0);
                         const isReasoningStreaming = status === 'streaming' && !hasTextContent;
 
                         const sourcesParts = isAssistant
-                            ? message.parts.filter(part => part.type === 'source-url')
+                            ? message.parts.filter((part) => part.type === 'source-url')
                             : [];
 
                         const assistantAvatar = isAssistant ? (
@@ -299,10 +299,7 @@ function PureMessages({
                         ) : null;
                         const assistantName = isAssistant ? (
                             <span
-                                className={cn(
-                                    "text-xs font-semibold",
-                                    modelColorClass ?? "text-muted-foreground"
-                                )}
+                                className={cn('text-xs font-semibold', modelColorClass ?? 'text-muted-foreground')}
                                 title={modelInfo?.identifier ?? modelLabel}
                             >
                                 {modelLabel}
@@ -332,9 +329,7 @@ function PureMessages({
                                                         <RefreshCcwIcon className="size-3"/>
                                                     </MessageAction>*/}
                                                     <MessageAction
-                                                        onClick={() =>
-                                                            navigator.clipboard.writeText(part.text)
-                                                        }
+                                                        onClick={() => navigator.clipboard.writeText(part.text)}
                                                         label="Copy"
                                                     >
                                                         <CopyIcon className="size-3" />
@@ -348,7 +343,7 @@ function PureMessages({
                                         <div key={`${message.id}-${i}`} className="flex flex-row justify-end gap-2 m-2">
                                             <PreviewAttachment
                                                 attachment={{
-                                                    name: part.filename ?? "file",
+                                                    name: part.filename ?? 'file',
                                                     contentType: part.mediaType,
                                                     url: part.url,
                                                 }}
@@ -382,44 +377,46 @@ function PureMessages({
                                                             output={toolPart.output}
                                                             errorText={isError ? toolPart.errorText : undefined}
                                                         />
-                                                    ) : (approval &&
-                                                        <Confirmation approval={approval} state={state}>
-                                                            <ConfirmationTitle>
-                                                                This tool requires your approval to run.
-                                                            </ConfirmationTitle>
-                                                            <ConfirmationRequest>
-                                                                <ConfirmationActions>
-                                                                    <ConfirmationAction
-                                                                        variant="outline"
-                                                                        onClick={() => {
-                                                                            addToolApprovalResponse?.({
-                                                                                id: approval.id,
-                                                                                approved: false,
-                                                                                reason: 'User denied tool call',
-                                                                            });
-                                                                        }}
-                                                                    >
-                                                                        Deny
-                                                                    </ConfirmationAction>
-                                                                    <ConfirmationAction
-                                                                        onClick={() => {
-                                                                            addToolApprovalResponse?.({
-                                                                                id: approval.id,
-                                                                                approved: true,
-                                                                            });
-                                                                        }}
-                                                                    >
-                                                                        Allow
-                                                                    </ConfirmationAction>
-                                                                </ConfirmationActions>
-                                                            </ConfirmationRequest>
-                                                            <ConfirmationAccepted>
-                                                                Tool execution approved.
-                                                            </ConfirmationAccepted>
-                                                            <ConfirmationRejected>
-                                                                Tool call was denied.
-                                                            </ConfirmationRejected>
-                                                        </Confirmation>
+                                                    ) : (
+                                                        approval && (
+                                                            <Confirmation approval={approval} state={state}>
+                                                                <ConfirmationTitle>
+                                                                    This tool requires your approval to run.
+                                                                </ConfirmationTitle>
+                                                                <ConfirmationRequest>
+                                                                    <ConfirmationActions>
+                                                                        <ConfirmationAction
+                                                                            variant="outline"
+                                                                            onClick={() => {
+                                                                                addToolApprovalResponse?.({
+                                                                                    id: approval.id,
+                                                                                    approved: false,
+                                                                                    reason: 'User denied tool call',
+                                                                                });
+                                                                            }}
+                                                                        >
+                                                                            Deny
+                                                                        </ConfirmationAction>
+                                                                        <ConfirmationAction
+                                                                            onClick={() => {
+                                                                                addToolApprovalResponse?.({
+                                                                                    id: approval.id,
+                                                                                    approved: true,
+                                                                                });
+                                                                            }}
+                                                                        >
+                                                                            Allow
+                                                                        </ConfirmationAction>
+                                                                    </ConfirmationActions>
+                                                                </ConfirmationRequest>
+                                                                <ConfirmationAccepted>
+                                                                    Tool execution approved.
+                                                                </ConfirmationAccepted>
+                                                                <ConfirmationRejected>
+                                                                    Tool call was denied.
+                                                                </ConfirmationRejected>
+                                                            </Confirmation>
+                                                        )
                                                     )}
                                                 </ToolContent>
                                             </Tool>
@@ -437,16 +434,17 @@ function PureMessages({
                                         <div className="mt-1">{assistantAvatar}</div>
                                         <div className="flex min-w-0 flex-col gap-2">
                                             {assistantName}
-                                            {reasoningParts.length > 0 && reasoningParts.map((part, i) => (
-                                                <Reasoning
-                                                    key={`${message.id}-reasoning-${i}`}
-                                                    className="w-full"
-                                                    isStreaming={isReasoningStreaming}
-                                                >
-                                                    <ReasoningTrigger />
-                                                    <ReasoningContent>{part.text}</ReasoningContent>
-                                                </Reasoning>
-                                            ))}
+                                            {reasoningParts.length > 0 &&
+                                                reasoningParts.map((part, i) => (
+                                                    <Reasoning
+                                                        key={`${message.id}-reasoning-${i}`}
+                                                        className="w-full"
+                                                        isStreaming={isReasoningStreaming}
+                                                    >
+                                                        <ReasoningTrigger />
+                                                        <ReasoningContent>{part.text}</ReasoningContent>
+                                                    </Reasoning>
+                                                ))}
                                             {sourcesParts.length > 0 && (
                                                 <Sources>
                                                     <SourcesTrigger count={sourcesParts.length} />
@@ -469,11 +467,13 @@ function PureMessages({
                                 )}
                             </div>
                         );
-                    }))}
-                {status === 'submitted' &&
+                    })
+                )}
+                {status === 'submitted' && (
                     <div className="self-start">
                         <Loader />
-                    </div>}
+                    </div>
+                )}
             </ConversationContent>
             <ConversationScrollButton />
         </Conversation>

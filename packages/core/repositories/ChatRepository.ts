@@ -1,10 +1,10 @@
-import {inject, injectable} from "inversify";
-import {and, asc, desc, eq, ilike, SQL} from "drizzle-orm";
-import {CORETYPES} from "../types/types";
-import {DatabaseManager} from "../database/DatabaseManager";
-import {chat, message} from "../database/schema/schema";
-import {Chat, ChatWithMessages, Message, ModelIdentifier, NewChat, PersonaIdentifier} from "../dto";
-import {UIMessage} from "ai";
+import { inject, injectable } from 'inversify';
+import { and, asc, desc, eq, ilike, SQL } from 'drizzle-orm';
+import { CORETYPES } from '../types/types';
+import { DatabaseManager } from '../database/DatabaseManager';
+import { chat, message } from '../database/schema/schema';
+import { Chat, ChatWithMessages, Message, ModelIdentifier, NewChat, PersonaIdentifier } from '../dto';
+import { UIMessage } from 'ai';
 
 @injectable()
 export class ChatRepository {
@@ -17,37 +17,41 @@ export class ChatRepository {
     public async getAll(searchQuery: string | null): Promise<Chat[]> {
         const conditions: SQL[] = [];
         if (searchQuery) {
-            conditions.push(ilike(chat.title, `%${searchQuery.trim()}%`))
+            conditions.push(ilike(chat.title, `%${searchQuery.trim()}%`));
         }
-        return this.db.select().from(chat).where(and(...conditions)).orderBy(desc(chat.pinned), desc(chat.pinnedAt), desc(chat.lastMessageAt));
+        return this.db
+            .select()
+            .from(chat)
+            .where(and(...conditions))
+            .orderBy(desc(chat.pinned), desc(chat.pinnedAt), desc(chat.lastMessageAt));
     }
 
     public async getById(id: string): Promise<ChatWithMessages | undefined> {
         const result = await this.db.query.chat.findFirst({
             where: eq(chat.id, id),
-            with: {messages: {orderBy: asc(message.createdAt)}}
+            with: { messages: { orderBy: asc(message.createdAt) } },
         });
 
-        return result ? {
-            ...result,
-            messages: this.convertToUiMessage(result.messages)
-        } : undefined;
+        return result
+            ? {
+                  ...result,
+                  messages: this.convertToUiMessage(result.messages),
+              }
+            : undefined;
     }
 
     private convertToUiMessage(messages: Message[]): UIMessage[] {
         return messages.map((message) => {
-            const parts: { type: 'text' | 'reasoning', text: string }[] = [];
+            const parts: { type: 'text' | 'reasoning'; text: string }[] = [];
 
             if (message.text) {
-                parts.push({type: 'text', text: message.text});
+                parts.push({ type: 'text', text: message.text });
             }
             if (message.reasoning) {
-                parts.push({type: 'reasoning', text: message.reasoning});
+                parts.push({ type: 'reasoning', text: message.reasoning });
             }
 
-            const metadata = message.modelIdentifier
-                ? {modelId: message.modelIdentifier}
-                : undefined;
+            const metadata = message.modelIdentifier ? { modelId: message.modelIdentifier } : undefined;
 
             const base = {
                 id: message.id,
@@ -55,21 +59,19 @@ export class ChatRepository {
                 parts: parts,
             };
 
-            return metadata ? {...base, metadata} : base;
+            return metadata ? { ...base, metadata } : base;
         });
     }
 
     public async create(newChat: NewChat): Promise<void> {
         await this.db.transaction(async (tx) => {
             // 1. Set all rows to unselected
-            await tx
-                .update(chat)
-                .set({selected: false});
+            await tx.update(chat).set({ selected: false });
 
             await tx.insert(chat).values({
                 createdAt: new Date(),
                 title: newChat.title,
-                selected: true
+                selected: true,
             });
         });
     }
@@ -97,7 +99,7 @@ export class ChatRepository {
 
     public async getSelectedModelForChatId(chatId: string): Promise<string | null> {
         const chatRecord = await this.db
-            .select({selectedModelId: chat.selectedModelId})
+            .select({ selectedModelId: chat.selectedModelId })
             .from(chat)
             .where(eq(chat.id, chatId))
             .limit(1);
@@ -109,7 +111,7 @@ export class ChatRepository {
             .update(chat)
             .set({
                 selectedProvider: modelIdentifier.selectedProvider,
-                selectedModelId: modelIdentifier.selectedModelId
+                selectedModelId: modelIdentifier.selectedModelId,
             })
             .where(eq(chat.id, chatId));
     }
@@ -118,7 +120,7 @@ export class ChatRepository {
         await this.db
             .update(chat)
             .set({
-                selectedPersonaId: personaIdentifier.selectedPersonaId
+                selectedPersonaId: personaIdentifier.selectedPersonaId,
             })
             .where(eq(chat.id, chatId));
     }
@@ -126,15 +128,10 @@ export class ChatRepository {
     public async updateSelectedChat(chatId: string): Promise<void> {
         await this.db.transaction(async (tx) => {
             // 1. Set all rows to false
-            await tx
-                .update(chat)
-                .set({selected: false});
+            await tx.update(chat).set({ selected: false });
 
             // 2. Set the chosen row to true
-            await tx
-                .update(chat)
-                .set({selected: true})
-                .where(eq(chat.id, chatId));
+            await tx.update(chat).set({ selected: true }).where(eq(chat.id, chatId));
         });
     }
 }

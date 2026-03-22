@@ -1,9 +1,9 @@
-import { inject, injectable } from "inversify";
-import { createMCPClient, type MCPClient } from "@ai-sdk/mcp";
-import type { ToolSet } from "ai";
-import { CORETYPES } from "../types/types";
-import { McpServerService } from "./McpServerService";
-import { HttpTransportConfig, SseTransportConfig, StdioTransportConfig } from "../dto";
+import { inject, injectable } from 'inversify';
+import { createMCPClient, type MCPClient } from '@ai-sdk/mcp';
+import type { ToolSet } from 'ai';
+import { CORETYPES } from '../types/types';
+import { McpServerService } from './McpServerService';
+import { HttpTransportConfig, SseTransportConfig, StdioTransportConfig } from '../dto';
 
 interface McpClientInstance {
     client: MCPClient;
@@ -16,10 +16,7 @@ interface McpClientInstance {
 export class McpClientManager {
     private clients: Map<string, McpClientInstance> = new Map();
 
-    constructor(
-        @inject(CORETYPES.McpServerService) private mcpServerService: McpServerService
-    ) {
-    }
+    constructor(@inject(CORETYPES.McpServerService) private mcpServerService: McpServerService) {}
 
     /**
      * Initialize all enabled MCP clients
@@ -81,7 +78,7 @@ export class McpClientManager {
             }
             case 'stdio': {
                 const config = server.config as StdioTransportConfig;
-                const { Experimental_StdioMCPTransport } = await import("@ai-sdk/mcp/mcp-stdio");
+                const { Experimental_StdioMCPTransport } = await import('@ai-sdk/mcp/mcp-stdio');
                 const stdioTransport = new Experimental_StdioMCPTransport({
                     command: config.command,
                     args: config.args,
@@ -116,7 +113,7 @@ export class McpClientManager {
      * Get all active clients
      */
     public getAllClients(): MCPClient[] {
-        return Array.from(this.clients.values()).map(instance => instance.client);
+        return Array.from(this.clients.values()).map((instance) => instance.client);
     }
 
     /**
@@ -165,7 +162,9 @@ export class McpClientManager {
     /**
      * Get tools for a specific server (serializable format for IPC)
      */
-    public async getToolsForServer(serverId: string): Promise<Array<{ name: string; title?: string; description?: string }>> {
+    public async getToolsForServer(
+        serverId: string,
+    ): Promise<Array<{ name: string; title?: string; description?: string }>> {
         const instance = this.clients.get(serverId);
         if (!instance) {
             return [];

@@ -1,37 +1,37 @@
 'use client';
 
-import {Chat} from "core/dto";
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
-import {Button} from "@/components/ui/button";
-import {ChevronDown, ChevronUp, Pin, PinOff, Search, Trash, X} from "lucide-react";
-import {useEffect, useRef, useState} from "react";
-import {ConfirmDialog} from "@/components/confirm-dialog";
-import {Input} from "@/components/ui/input";
+import { Chat } from 'core/dto';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronUp, Pin, PinOff, Search, Trash, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { Input } from '@/components/ui/input';
 
 export function ChatHeader({
-                               chat,
-                               onDeleteChat,
-                               onPinChat,
-                               onSearch,
-                               currentMatch,
-                               totalMatches,
-                               onNextMatch,
-                               onPrevMatch,
-                               onClearSearch
-                           }: {
-    chat: Chat,
-    onDeleteChat: (chat: Chat) => void
-    onPinChat: (chat: Chat) => void
-    onSearch: (query: string) => void
-    currentMatch: number
-    totalMatches: number
-    onNextMatch: () => void
-    onPrevMatch: () => void
-    onClearSearch: () => void
+    chat,
+    onDeleteChat,
+    onPinChat,
+    onSearch,
+    currentMatch,
+    totalMatches,
+    onNextMatch,
+    onPrevMatch,
+    onClearSearch,
+}: {
+    chat: Chat;
+    onDeleteChat: (chat: Chat) => void;
+    onPinChat: (chat: Chat) => void;
+    onSearch: (query: string) => void;
+    currentMatch: number;
+    totalMatches: number;
+    onNextMatch: () => void;
+    onPrevMatch: () => void;
+    onClearSearch: () => void;
 }) {
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
+    const [searchQuery, setSearchQuery] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -63,23 +63,23 @@ export function ChatHeader({
     }, [searchQuery, isSearchOpen, onSearch]);
 
     const handleCloseSearch = () => {
-        setSearchQuery("");
+        setSearchQuery('');
         onClearSearch();
         setIsSearchOpen(false);
     };
 
     const handleDeleteClick = () => {
         setIsDeleteOpen(true);
-    }
+    };
 
     const handleConfirmDelete = () => {
         onDeleteChat(chat);
         setIsDeleteOpen(false);
-    }
+    };
 
     const handlePinChat = () => {
         onPinChat(chat);
-    }
+    };
 
     return (
         <div className="flex items-center justify-end h-full flex-row w-full">
@@ -120,7 +120,7 @@ export function ChatHeader({
                             onClick={onPrevMatch}
                             disabled={totalMatches === 0}
                         >
-                            <ChevronUp className="h-4 w-4"/>
+                            <ChevronUp className="h-4 w-4" />
                         </Button>
                         <Button
                             variant="ghost"
@@ -129,15 +129,10 @@ export function ChatHeader({
                             onClick={onNextMatch}
                             disabled={totalMatches === 0}
                         >
-                            <ChevronDown className="h-4 w-4"/>
+                            <ChevronDown className="h-4 w-4" />
                         </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={handleCloseSearch}
-                        >
-                            <X className="h-4 w-4"/>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCloseSearch}>
+                            <X className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>
@@ -148,23 +143,11 @@ export function ChatHeader({
                         {/* Pin */}
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="cursor-pointer"
-                                        onClick={handlePinChat}>
-                                    {chat.pinned ? (
-                                        <PinOff className="h-4 w-4"/>
-                                    ) : (
-                                        <Pin className="h-4 w-4"/>
-                                    )}
+                                <Button variant="ghost" size="icon" className="cursor-pointer" onClick={handlePinChat}>
+                                    {chat.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent>
-                                {chat.pinned ? (
-                                    <p>Un-Pin Chat</p>
-                                ) : (
-                                    <p>Pin Chat</p>
-                                )}
-
-                            </TooltipContent>
+                            <TooltipContent>{chat.pinned ? <p>Un-Pin Chat</p> : <p>Pin Chat</p>}</TooltipContent>
                         </Tooltip>
                         {/* Search */}
                         <Tooltip>
@@ -175,7 +158,7 @@ export function ChatHeader({
                                     className="cursor-pointer"
                                     onClick={() => setIsSearchOpen(true)}
                                 >
-                                    <Search className="h-4 w-4"/>
+                                    <Search className="h-4 w-4" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -192,7 +175,7 @@ export function ChatHeader({
                                     onClick={handleDeleteClick}
                                     className="cursor-pointer"
                                 >
-                                    <Trash className="h-4 w-4"/>
+                                    <Trash className="h-4 w-4" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>

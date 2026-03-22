@@ -1,20 +1,20 @@
-import "reflect-metadata";
-import {Container} from "inversify";
-import {CORETYPES} from "./types/types";
-import {DatabaseManager} from "./database/DatabaseManager";
-import {ChatRepository} from "./repositories/ChatRepository";
-import {MessageRepository} from "./repositories/MessageRepository";
-import {ChatService} from "./services/ChatService";
-import {MessageService} from "./services/MessageService";
-import {ModelProviderRepository} from "./repositories/ModelProviderRepository";
-import {ModelProviderService} from "./services/ModelProviderService";
-import {PersonaRepository} from "./repositories/PersonaRepository";
-import {PersonaService} from "./services/PersonaService";
-import {CommandRepository} from "./repositories/CommandRepository";
-import {CommandService} from "./services/CommandService";
-import {McpServerRepository} from "./repositories/McpServerRepository";
-import {McpServerService} from "./services/McpServerService";
-import {McpClientManager} from "./services/McpClientManager";
+import 'reflect-metadata';
+import { Container } from 'inversify';
+import { CORETYPES } from './types/types';
+import { DatabaseManager } from './database/DatabaseManager';
+import { ChatRepository } from './repositories/ChatRepository';
+import { MessageRepository } from './repositories/MessageRepository';
+import { ChatService } from './services/ChatService';
+import { MessageService } from './services/MessageService';
+import { ModelProviderRepository } from './repositories/ModelProviderRepository';
+import { ModelProviderService } from './services/ModelProviderService';
+import { PersonaRepository } from './repositories/PersonaRepository';
+import { PersonaService } from './services/PersonaService';
+import { CommandRepository } from './repositories/CommandRepository';
+import { CommandService } from './services/CommandService';
+import { McpServerRepository } from './repositories/McpServerRepository';
+import { McpServerService } from './services/McpServerService';
+import { McpClientManager } from './services/McpClientManager';
 
 const coreContainer = new Container();
 
@@ -24,7 +24,10 @@ coreContainer.bind<DatabaseManager>(CORETYPES.DatabaseManager).to(DatabaseManage
 // Repositories
 coreContainer.bind<ChatRepository>(CORETYPES.ChatRepository).to(ChatRepository).inSingletonScope();
 coreContainer.bind<MessageRepository>(CORETYPES.MessageRepository).to(MessageRepository).inSingletonScope();
-coreContainer.bind<ModelProviderRepository>(CORETYPES.ModelProviderRepository).to(ModelProviderRepository).inSingletonScope();
+coreContainer
+    .bind<ModelProviderRepository>(CORETYPES.ModelProviderRepository)
+    .to(ModelProviderRepository)
+    .inSingletonScope();
 coreContainer.bind<PersonaRepository>(CORETYPES.PersonaRepository).to(PersonaRepository).inSingletonScope();
 coreContainer.bind<CommandRepository>(CORETYPES.CommandRepository).to(CommandRepository).inSingletonScope();
 coreContainer.bind<McpServerRepository>(CORETYPES.McpServerRepository).to(McpServerRepository).inSingletonScope();
@@ -38,4 +41,4 @@ coreContainer.bind<CommandService>(CORETYPES.CommandService).to(CommandService).
 coreContainer.bind<McpServerService>(CORETYPES.McpServerService).to(McpServerService).inSingletonScope();
 coreContainer.bind<McpClientManager>(CORETYPES.McpClientManager).to(McpClientManager).inSingletonScope();
 
-export {coreContainer};
+export { coreContainer };

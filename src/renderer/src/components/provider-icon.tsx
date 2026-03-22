@@ -1,6 +1,5 @@
-import {ModelProviderTypeEnum} from "core/database/schema/modelProviderSchema";
-import {cn} from "@/lib/utils";
-
+import { ModelProviderTypeEnum } from 'core/database/schema/modelProviderSchema';
+import { cn } from '@/lib/utils';
 
 type ProviderIconProps = {
     type: ModelProviderTypeEnum;
@@ -10,7 +9,7 @@ type ProviderIconProps = {
 };
 
 const ProviderIcon = ({ type, size = 20, theme, className }: ProviderIconProps) => {
-    const iconPath = "providers/" + type + ".svg";
+    const iconPath = 'providers/' + type + '.svg';
 
     return (
         <img
@@ -19,8 +18,8 @@ const ProviderIcon = ({ type, size = 20, theme, className }: ProviderIconProps) 
             alt={`${type} icon`}
             width={size}
             height={size}
-            style={{ backgroundColor: theme === "dark" ? "white" : "transparent" }}
-            className={cn("mr-2 rounded-sm", className)}
+            style={{ backgroundColor: theme === 'dark' ? 'white' : 'transparent' }}
+            className={cn('mr-2 rounded-sm', className)}
         />
     );
 };

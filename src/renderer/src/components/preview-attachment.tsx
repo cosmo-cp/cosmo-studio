@@ -5,10 +5,10 @@ import { Button } from './ui/button';
 import Image from 'next/image';
 
 export const PreviewAttachment = ({
-                                      attachment,
-                                      isUploading = false,
-                                      onRemove,
-                                  }: {
+    attachment,
+    isUploading = false,
+    onRemove,
+}: {
     attachment: Attachment;
     isUploading?: boolean;
     onRemove?: () => void;
@@ -30,9 +30,7 @@ export const PreviewAttachment = ({
                     height={64}
                 />
             ) : (
-                <div className="flex size-full items-center justify-center text-muted-foreground text-xs">
-                    File
-                </div>
+                <div className="flex size-full items-center justify-center text-muted-foreground text-xs">File</div>
             )}
 
             {isUploading && (

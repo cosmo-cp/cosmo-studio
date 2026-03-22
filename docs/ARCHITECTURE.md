@@ -78,8 +78,8 @@ Cosmo Studio is an Electron desktop application with a static-exported Next.js U
 ### Production (`npm run make` / `npm run package`)
 
 1. Build renderer: `cd src/renderer && npm run build`
-   - Produces static output under `src/renderer/out/`.
+    - Produces static output under `src/renderer/out/`.
 2. Electron Forge packaging:
-   - Vite plugin builds main and preload (`vite.main.config.ts`, `vite.preload.config.ts`).
-   - `NextPlugin` copies `src/renderer/out/` into the packaged renderer directory.
-   - `@electric-sql/*` is copied into the package so PGlite works at runtime.
+    - Vite plugin builds main and preload (`vite.main.config.ts`, `vite.preload.config.ts`).
+    - `NextPlugin` copies `src/renderer/out/` into the packaged renderer directory.
+    - `@electric-sql/*` is copied into the package so PGlite works at runtime.

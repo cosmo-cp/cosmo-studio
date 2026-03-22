@@ -11,37 +11,37 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    useSidebar
+    useSidebar,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { Cable, CircleUserRound, MessageCircle, SettingsIcon, Slash } from "lucide-react";
-import { CosmoIcon } from "@/components/cosmo-icon";
+import { Cable, CircleUserRound, MessageCircle, SettingsIcon, Slash } from 'lucide-react';
+import { CosmoIcon } from '@/components/cosmo-icon';
 
 export function AppSidebar() {
     useSidebar();
     useRouter();
     const menuItems = [
         {
-            title: "Chat",
-            url: "./",
+            title: 'Chat',
+            url: './',
             icon: MessageCircle,
         },
         {
-            title: "Persona",
-            url: "./persona",
+            title: 'Persona',
+            url: './persona',
             icon: CircleUserRound,
         },
         {
-            title: "Command",
-            url: "./command",
+            title: 'Command',
+            url: './command',
             icon: Slash,
         },
         {
-            title: "MCP Servers",
-            url: "./mcp-server",
+            title: 'MCP Servers',
+            url: './mcp-server',
             icon: Cable,
         },
-    ]
+    ];
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
