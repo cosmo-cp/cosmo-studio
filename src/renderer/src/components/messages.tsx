@@ -278,13 +278,22 @@ const MessageItem = memo(
 
         const renderedParts = message.parts.map((part, i) => {
             switch (part.type) {
-                case 'text':
+                case 'text': {
+                    const highlighted = searchQuery
+                        ? highlightText(part.text, searchQuery, message.id, i, matchStartIndexMap)
+                        : null;
                     return (
                         <Message key={`${message.id}-${i}`} from={message.role} id={`message-${message.id}-part-${i}`}>
                             <MessageContent>
-                                <MessageResponse key={searchQuery}>
-                                    {highlightText(part.text, searchQuery || '', message.id, i, matchStartIndexMap)}
-                                </MessageResponse>
+                                {highlighted ? (
+                                    <div
+                                        key={searchQuery}
+                                        className="size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose dark:prose-invert prose-sm max-w-none"
+                                        dangerouslySetInnerHTML={{ __html: highlighted }}
+                                    />
+                                ) : (
+                                    <MessageResponse>{part.text}</MessageResponse>
+                                )}
                             </MessageContent>
                             {message.role === 'assistant' && (
                                 <MessageActions>
@@ -295,6 +304,7 @@ const MessageItem = memo(
                             )}
                         </Message>
                     );
+                }
                 case 'file':
                     return (
                         <div key={`${message.id}-${i}`} className="flex flex-row justify-end gap-2 m-2">
