@@ -418,8 +418,6 @@ function PureMessages({
     addToolApprovalResponse,
 }: MessagesProps) {
     const { resolvedTheme } = useTheme();
-    const [matches, setMatches] = useState<{ messageId: string; partIndex: number }[]>([]);
-    const [matchStartIndexMap, setMatchStartIndexMap] = useState<Record<string, number>>({});
     const [providers, setProviders] = useState<ProviderWithModels[]>([]);
     const prevMatchIndexRef = useRef<number | null>(null);
 
@@ -440,12 +438,13 @@ function PureMessages({
         };
     }, []);
 
-    useEffect(() => {
+    const providersByName = useMemo(() => {
+        return new Map(providers.map((provider) => [provider.name, provider]));
+    }, [providers]);
+
+    const { matches, matchStartIndexMap } = useMemo(() => {
         if (!searchQuery) {
-            setMatches([]);
-            setMatchStartIndexMap({});
-            if (onMatchesFound) onMatchesFound(0);
-            return;
+            return { matches: [], matchStartIndexMap: {} };
         }
 
         const newMatches: { messageId: string; partIndex: number }[] = [];
@@ -470,14 +469,14 @@ function PureMessages({
             });
         });
 
-        setMatches(newMatches);
-        setMatchStartIndexMap(newMatchStartIndexMap);
-        if (onMatchesFound) onMatchesFound(newMatches.length);
-    }, [searchQuery, messages, onMatchesFound]);
+        return { matches: newMatches, matchStartIndexMap: newMatchStartIndexMap };
+    }, [searchQuery, messages]);
 
-    const providersByName = useMemo(() => {
-        return new Map(providers.map((provider) => [provider.name, provider]));
-    }, [providers]);
+    useEffect(() => {
+        if (onMatchesFound) {
+            onMatchesFound(matches.length);
+        }
+    }, [matches.length, onMatchesFound]);
 
     const modelColorMap = useMemo(() => {
         const map = new Map<string, string>();

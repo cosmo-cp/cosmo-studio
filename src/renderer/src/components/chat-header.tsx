@@ -4,7 +4,7 @@ import { Chat } from 'core/dto';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, Pin, PinOff, Search, Trash, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Input } from '@/components/ui/input';
 
