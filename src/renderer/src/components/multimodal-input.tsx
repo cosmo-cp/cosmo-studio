@@ -18,12 +18,13 @@ import type { UIMessage } from 'ai';
 import { ModelModalityEnum } from 'core/database/schema/modelProviderSchema';
 import type { Chat, CommandDefinition, Persona, ProviderWithModels } from 'core/dto';
 import { cn } from '@/lib/utils';
-import { CheckIcon, XIcon } from 'lucide-react';
+import { CheckIcon, ChevronUp, XIcon } from 'lucide-react';
 import type { FocusEvent, KeyboardEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { logger } from '../../logger';
 import { Attachment, AttachmentPreview, AttachmentRemove, Attachments } from './ai-elements/attachments';
+import { McpToolsSelector } from './mcp-tools-selector';
 import {
     PromptInput,
     PromptInputActionAddAttachments,
@@ -489,12 +490,15 @@ function PromptInputContent({
                         </PromptInputActionMenu>
                         <ModelSelector onOpenChange={setModelSelectorOpen} open={modelSelectorOpen}>
                             <ModelSelectorTrigger asChild>
-                                <PromptInputButton className="w-max">
+                                <PromptInputButton className="w-max border border-border/40 px-3 py-1.5 h-9 bg-background/50 hover:bg-accent/50 transition-all duration-200">
                                     {chat.selectedModelId ? (
-                                        <ModelSelectorName>{chat.selectedModelId}</ModelSelectorName>
+                                        <ModelSelectorName className="text-sm font-medium">
+                                            {chat.selectedModelId}
+                                        </ModelSelectorName>
                                     ) : (
                                         'Select Model'
                                     )}
+                                    <ChevronUp className="h-3.5 w-3.5 opacity-50" />
                                 </PromptInputButton>
                             </ModelSelectorTrigger>
                             <ModelSelectorContent>
@@ -530,6 +534,7 @@ function PromptInputContent({
                                 </ModelSelectorList>
                             </ModelSelectorContent>
                         </ModelSelector>
+                        <McpToolsSelector />
                     </PromptInputTools>
                     <PromptInputSubmit
                         disabled={!chat.selectedModelId || (!input && status !== 'submitted' && status !== 'streaming')}
