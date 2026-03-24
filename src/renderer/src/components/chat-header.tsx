@@ -34,6 +34,18 @@ export function ChatHeader({
     const [searchQuery, setSearchQuery] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
 
+    // Ctrl+F / Cmd+F to open search
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                setIsSearchOpen(true);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     useEffect(() => {
         if (!isSearchOpen) {
             return;
