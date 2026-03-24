@@ -78,6 +78,7 @@ export function ProviderManagement() {
         setApiKey('');
         setApiUrl('');
         setSelectedModels([]);
+        setModels([]);
         setIsOpen(true);
         setError(null);
         setProviderSearch('');
@@ -132,6 +133,17 @@ export function ProviderManagement() {
     };
 
     const handleProviderTypeChange = (type: ModelProviderTypeEnum) => {
+        // Reset fields when picking a provider type from the catalog
+        // to avoid carrying over details from a previous attempt or failed attempt.
+        // We only preserve the details if we were already editing a provider of the same type.
+        if (type !== selectedProviderType || !editingProvider) {
+            setApiKey('');
+            setApiUrl('');
+            setSelectedModels([]);
+            setModels([]);
+            setError(null);
+        }
+
         setSelectedProviderType(type);
         const info = ProviderInfo[type];
         setName(info.name);
@@ -142,9 +154,12 @@ export function ProviderManagement() {
         if (!selectedProviderType) {
             return;
         }
+
+        const currentType = selectedProviderType;
         setIsLoadingModels(true);
         setError(null);
         setModels([]);
+
         try {
             const values = await window.api.modelProvider.getAvailableModelsFromProviders({
                 type: selectedProviderType,
@@ -152,15 +167,23 @@ export function ProviderManagement() {
                 apiUrl,
                 name,
             });
-            setModels(values);
-            if (values.length === 0) {
-                setError('No models found for this provider.');
+
+            // Prevent updating state if the user has navigated away or changed providers
+            if (currentType === selectedProviderType) {
+                setModels(values);
+                if (values.length === 0) {
+                    setError('No models found for this provider.');
+                }
             }
         } catch (error) {
-            logger.error(error);
-            setError('Failed to load models for this provider.');
+            if (currentType === selectedProviderType) {
+                logger.error(error);
+                setError('Failed to load models for this provider.');
+            }
         } finally {
-            setIsLoadingModels(false);
+            if (currentType === selectedProviderType) {
+                setIsLoadingModels(false);
+            }
         }
     };
 

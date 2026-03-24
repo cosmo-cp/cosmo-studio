@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import equal from 'fast-deep-equal';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import {
@@ -66,6 +66,327 @@ const getMessageModelIdentifier = (message: UIMessage) => {
     const metadata = message.metadata as MessageMetadata | undefined;
     return metadata?.modelId;
 };
+
+// --- Pure helper: highlight search matches in text (module-scope, no re-creation) ---
+function highlightText(
+    text: string,
+    query: string,
+    messageId: string,
+    partIndex: number,
+    matchStartIndexMap: Record<string, number>,
+): string {
+    if (!query) return text;
+    const partKey = `${messageId}-${partIndex}`;
+    const startIndex = matchStartIndexMap[partKey];
+    if (startIndex === undefined) return text;
+
+    try {
+        const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escapedQuery})`, 'gi');
+
+        let matchCount = 0;
+        return text.replace(regex, (match) => {
+            const globalIndex = startIndex + matchCount;
+            matchCount++;
+            const style = 'background-color: #fef08a; color: black;';
+            return `<mark id="match-${globalIndex}" style="${style}">${match}</mark>`;
+        });
+    } catch (e) {
+        console.error('Error highlighting text', e);
+        return text;
+    }
+}
+
+// --- Precompute per-message derived data in a single pass ---
+type ReasoningPart = Extract<UIMessage['parts'][number], { type: 'reasoning' }>;
+type SourceUrlPart = Extract<UIMessage['parts'][number], { type: 'source-url' }>;
+
+interface MessageDerivedData {
+    reasoningParts: ReasoningPart[];
+    sourcesParts: SourceUrlPart[];
+    hasTextContent: boolean;
+    hasAnyContent: boolean;
+}
+
+function computeMessageData(parts: UIMessage['parts']): MessageDerivedData {
+    const reasoningParts: ReasoningPart[] = [];
+    const sourcesParts: SourceUrlPart[] = [];
+    let hasTextContent = false;
+    let hasAnyContent = false;
+
+    for (const part of parts) {
+        switch (part.type) {
+            case 'reasoning':
+                reasoningParts.push(part);
+                hasAnyContent = true;
+                break;
+            case 'source-url':
+                sourcesParts.push(part);
+                hasAnyContent = true;
+                break;
+            case 'text':
+                if (part.text.length > 0) {
+                    hasTextContent = true;
+                    hasAnyContent = true;
+                }
+                break;
+            default:
+                if (part.type.startsWith('tool-') || part.type.endsWith('-tool')) {
+                    hasAnyContent = true;
+                }
+                break;
+        }
+    }
+
+    return { reasoningParts, sourcesParts, hasTextContent, hasAnyContent };
+}
+
+// --- Memoized ToolPartRenderer: prevents re-render of static tool parts ---
+
+interface ToolPartRendererProps {
+    part: DynamicToolUIPart;
+    messageId: string;
+    partIndex: number;
+    addToolApprovalResponse?: UseChatHelpers<UIMessage>['addToolApprovalResponse'];
+}
+
+const ToolPartRenderer = memo(function ToolPartRenderer({
+    part,
+    messageId,
+    partIndex,
+    addToolApprovalResponse,
+}: ToolPartRendererProps) {
+    const { state = 'input-available' } = part;
+    const approval = part.approval;
+    const toolName = part.toolName;
+    const hasOutput = state === 'output-available' || state === 'output-error';
+    const isError = state === 'output-error';
+
+    const handleDeny = useCallback(() => {
+        addToolApprovalResponse?.({
+            id: approval!.id,
+            approved: false,
+            reason: 'User denied tool call',
+        });
+    }, [addToolApprovalResponse, approval]);
+
+    const handleAllow = useCallback(() => {
+        addToolApprovalResponse?.({
+            id: approval!.id,
+            approved: true,
+        });
+    }, [addToolApprovalResponse, approval]);
+
+    return (
+        <Tool key={`${messageId}-${partIndex}`} defaultOpen={true}>
+            <ToolHeader title={toolName} type={part.type as `tool-${string}`} state={state} />
+            <ToolContent>
+                {!!part.input && <ToolInput input={part.input} />}
+                {hasOutput ? (
+                    <ToolOutput output={part.output} errorText={isError ? part.errorText : undefined} />
+                ) : (
+                    approval && (
+                        <Confirmation approval={approval} state={state}>
+                            <ConfirmationTitle>This tool requires your approval to run.</ConfirmationTitle>
+                            <ConfirmationRequest>
+                                <ConfirmationActions>
+                                    <ConfirmationAction variant="outline" onClick={handleDeny}>
+                                        Deny
+                                    </ConfirmationAction>
+                                    <ConfirmationAction onClick={handleAllow}>Allow</ConfirmationAction>
+                                </ConfirmationActions>
+                            </ConfirmationRequest>
+                            <ConfirmationAccepted>Tool execution approved.</ConfirmationAccepted>
+                            <ConfirmationRejected>Tool call was denied.</ConfirmationRejected>
+                        </Confirmation>
+                    )
+                )}
+            </ToolContent>
+        </Tool>
+    );
+});
+
+// --- Memoized MessageItem: the critical optimization ---
+
+interface MessageItemProps {
+    message: UIMessage;
+    isLastMessage: boolean;
+    status: UseChatHelpers<UIMessage>['status'];
+    searchQuery?: string;
+    matchStartIndexMap: Record<string, number>;
+    modelInfo?: { identifier: string; label: string; providerType?: ProviderWithModels['type'] };
+    modelColorClass?: string;
+    resolvedTheme?: string;
+    addToolApprovalResponse?: UseChatHelpers<UIMessage>['addToolApprovalResponse'];
+}
+
+const MessageItem = memo(
+    function MessageItem({
+        message,
+        isLastMessage,
+        status,
+        searchQuery,
+        matchStartIndexMap,
+        modelInfo,
+        modelColorClass,
+        resolvedTheme,
+        addToolApprovalResponse,
+    }: MessageItemProps) {
+        const isAssistant = message.role === 'assistant';
+
+        // Single-pass computation of derived data
+        const { reasoningParts, sourcesParts, hasTextContent, hasAnyContent } = useMemo(
+            () => computeMessageData(message.parts),
+            [message.parts],
+        );
+
+        const isReasoningStreaming = status === 'streaming' && !hasTextContent;
+        const isLoading =
+            isAssistant && isLastMessage && (status === 'streaming' || status === 'submitted') && !hasAnyContent;
+
+        const iconTheme = resolvedTheme === 'light' ? 'light' : 'dark';
+        const modelLabel = modelInfo?.label ?? 'Assistant';
+
+        const assistantAvatar = isAssistant ? (
+            <div className="flex size-7 items-center justify-center rounded-full border bg-background">
+                {modelInfo?.providerType ? (
+                    <ProviderIcon
+                        className="mr-0 rounded-full"
+                        size={14}
+                        theme={iconTheme}
+                        type={modelInfo.providerType}
+                    />
+                ) : (
+                    <MessageSquare className="size-3 text-muted-foreground" />
+                )}
+            </div>
+        ) : null;
+
+        const assistantName = isAssistant ? (
+            <span
+                className={cn('text-xs font-semibold', modelColorClass ?? 'text-muted-foreground')}
+                title={modelInfo?.identifier ?? modelLabel}
+            >
+                {modelLabel}
+            </span>
+        ) : null;
+
+        // Stable copy handler
+        const handleCopy = useCallback((text: string) => {
+            navigator.clipboard.writeText(text);
+        }, []);
+
+        const renderedParts = message.parts.map((part, i) => {
+            switch (part.type) {
+                case 'text':
+                    return (
+                        <Message key={`${message.id}-${i}`} from={message.role} id={`message-${message.id}-part-${i}`}>
+                            <MessageContent>
+                                <MessageResponse key={searchQuery}>
+                                    {highlightText(part.text, searchQuery || '', message.id, i, matchStartIndexMap)}
+                                </MessageResponse>
+                            </MessageContent>
+                            {message.role === 'assistant' && (
+                                <MessageActions>
+                                    <MessageAction onClick={() => handleCopy(part.text)} label="Copy">
+                                        <CopyIcon className="size-3" />
+                                    </MessageAction>
+                                </MessageActions>
+                            )}
+                        </Message>
+                    );
+                case 'file':
+                    return (
+                        <div key={`${message.id}-${i}`} className="flex flex-row justify-end gap-2 m-2">
+                            <PreviewAttachment
+                                attachment={{
+                                    name: part.filename ?? 'file',
+                                    contentType: part.mediaType,
+                                    url: part.url,
+                                }}
+                            />
+                        </div>
+                    );
+                default: {
+                    if (part.type.startsWith('tool-') || part.type.endsWith('-tool')) {
+                        return (
+                            <ToolPartRenderer
+                                key={`${message.id}-${i}`}
+                                part={part as DynamicToolUIPart}
+                                messageId={message.id}
+                                partIndex={i}
+                                addToolApprovalResponse={addToolApprovalResponse}
+                            />
+                        );
+                    }
+                    return null;
+                }
+            }
+        });
+
+        return (
+            <div key={message.id}>
+                {isAssistant ? (
+                    <div className="flex items-start gap-3">
+                        <div className="mt-1">{assistantAvatar}</div>
+                        <div className="flex min-w-0 flex-col gap-2">
+                            {assistantName}
+                            {reasoningParts.length > 0 &&
+                                reasoningParts.map((part, i) => (
+                                    <Reasoning
+                                        key={`${message.id}-reasoning-${i}`}
+                                        className="w-full"
+                                        isStreaming={isReasoningStreaming}
+                                    >
+                                        <ReasoningTrigger />
+                                        <ReasoningContent>{part.text}</ReasoningContent>
+                                    </Reasoning>
+                                ))}
+                            {sourcesParts.length > 0 && (
+                                <Sources>
+                                    <SourcesTrigger count={sourcesParts.length} />
+                                    {sourcesParts.map((part, idx) => (
+                                        <SourcesContent key={`${message.id}-source-${idx}`}>
+                                            <Source
+                                                key={`${message.id}-source-${idx}`}
+                                                href={part.url}
+                                                title={part.url}
+                                            />
+                                        </SourcesContent>
+                                    ))}
+                                </Sources>
+                            )}
+                            {renderedParts}
+                            {isLoading && <Loader className="mt-2 self-start" />}
+                        </div>
+                    </div>
+                ) : (
+                    renderedParts
+                )}
+            </div>
+        );
+    },
+    (prevProps, nextProps) => {
+        // Fast-path: skip re-render when nothing relevant changed
+        if (prevProps.searchQuery !== nextProps.searchQuery) return false;
+        if (prevProps.status !== nextProps.status) return false;
+        if (prevProps.isLastMessage !== nextProps.isLastMessage) return false;
+        if (prevProps.modelColorClass !== nextProps.modelColorClass) return false;
+        if (prevProps.resolvedTheme !== nextProps.resolvedTheme) return false;
+
+        // If streaming the last message, always re-render it for token updates
+        if (nextProps.isLastMessage && nextProps.status === 'streaming') return false;
+
+        // Deep compare the message object only for non-streaming states
+        return (
+            equal(prevProps.message, nextProps.message) &&
+            prevProps.matchStartIndexMap === nextProps.matchStartIndexMap &&
+            prevProps.modelInfo === nextProps.modelInfo
+        );
+    },
+);
+
+// --- Main Messages container (slimmed down) ---
 
 interface MessagesProps {
     chatId: string;
@@ -231,30 +552,6 @@ function PureMessages({
         };
     }, [currentMatchIndex, matches]);
 
-    const highlightText = (text: string, query: string, messageId: string, partIndex: number) => {
-        if (!query) return text;
-        const partKey = `${messageId}-${partIndex}`;
-        const startIndex = matchStartIndexMap[partKey];
-        if (startIndex === undefined) return text;
-
-        try {
-            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(`(${escapedQuery})`, 'gi');
-
-            let matchCount = 0;
-            return text.replace(regex, (match) => {
-                const globalIndex = startIndex + matchCount;
-                matchCount++;
-                // Always render as default match initially. Active match is handled by useEffect via DOM manipulation.
-                const style = 'background-color: #fef08a; color: black;';
-                return `<mark id="match-${globalIndex}" style="${style}">${match}</mark>`;
-            });
-        } catch (e) {
-            console.error('Error highlighting text', e);
-            return text;
-        }
-    };
-
     return (
         <Conversation>
             <ConversationContent>
@@ -265,210 +562,28 @@ function PureMessages({
                         description="Type a message below to begin chatting"
                     />
                 ) : (
-                    messages.map((message) => {
+                    messages.map((message, index) => {
                         const isAssistant = message.role === 'assistant';
                         const modelInfo = isAssistant ? modelInfoByMessageId.get(message.id) : undefined;
                         const modelColorClass = modelInfo ? modelColorMap.get(modelInfo.identifier) : undefined;
-                        const iconTheme = resolvedTheme === 'light' ? 'light' : 'dark';
-                        const modelLabel = modelInfo?.label ?? 'Assistant';
-
-                        const reasoningParts = isAssistant
-                            ? message.parts.filter((part) => part.type === 'reasoning')
-                            : [];
-                        const hasTextContent = message.parts.some((p) => p.type === 'text' && p.text.length > 0);
-                        const isReasoningStreaming = status === 'streaming' && !hasTextContent;
-
-                        const sourcesParts = isAssistant
-                            ? message.parts.filter((part) => part.type === 'source-url')
-                            : [];
-
-                        const assistantAvatar = isAssistant ? (
-                            <div className="flex size-7 items-center justify-center rounded-full border bg-background">
-                                {modelInfo?.providerType ? (
-                                    <ProviderIcon
-                                        className="mr-0 rounded-full"
-                                        size={14}
-                                        theme={iconTheme}
-                                        type={modelInfo.providerType}
-                                    />
-                                ) : (
-                                    <MessageSquare className="size-3 text-muted-foreground" />
-                                )}
-                            </div>
-                        ) : null;
-                        const assistantName = isAssistant ? (
-                            <span
-                                className={cn('text-xs font-semibold', modelColorClass ?? 'text-muted-foreground')}
-                                title={modelInfo?.identifier ?? modelLabel}
-                            >
-                                {modelLabel}
-                            </span>
-                        ) : null;
-
-                        const renderedParts = message.parts.map((part, i) => {
-                            switch (part.type) {
-                                case 'text':
-                                    return (
-                                        <Message
-                                            key={`${message.id}-${i}`}
-                                            from={message.role}
-                                            id={`message-${message.id}-part-${i}`}
-                                        >
-                                            <MessageContent>
-                                                <MessageResponse key={searchQuery}>
-                                                    {highlightText(part.text, searchQuery || '', message.id, i)}
-                                                </MessageResponse>
-                                            </MessageContent>
-                                            {message.role === 'assistant' && (
-                                                <MessageActions>
-                                                    {/*<MessageAction
-                                                        onClick={() => regenerate()}
-                                                        label="Retry"
-                                                    >
-                                                        <RefreshCcwIcon className="size-3"/>
-                                                    </MessageAction>*/}
-                                                    <MessageAction
-                                                        onClick={() => navigator.clipboard.writeText(part.text)}
-                                                        label="Copy"
-                                                    >
-                                                        <CopyIcon className="size-3" />
-                                                    </MessageAction>
-                                                </MessageActions>
-                                            )}
-                                        </Message>
-                                    );
-                                case 'file':
-                                    return (
-                                        <div key={`${message.id}-${i}`} className="flex flex-row justify-end gap-2 m-2">
-                                            <PreviewAttachment
-                                                attachment={{
-                                                    name: part.filename ?? 'file',
-                                                    contentType: part.mediaType,
-                                                    url: part.url,
-                                                }}
-                                            />
-                                        </div>
-                                    );
-
-                                default: {
-                                    // Handle dynamic tool types (e.g., tool-getWeather, tool-searchFiles, dynamic-tool)
-                                    if (part.type.startsWith('tool-') || part.type.endsWith('-tool')) {
-                                        const toolPart = part as DynamicToolUIPart;
-                                        const { state = 'input-available' } = toolPart;
-                                        const approval = toolPart.approval;
-                                        const toolName = toolPart.toolName;
-
-                                        // Check if this is a completed tool with output
-                                        const hasOutput = state === 'output-available' || state === 'output-error';
-                                        const isError = state === 'output-error';
-
-                                        return (
-                                            <Tool key={`${message.id}-${i}`} defaultOpen={true}>
-                                                <ToolHeader
-                                                    title={toolName}
-                                                    type={part.type as `tool-${string}`}
-                                                    state={state}
-                                                />
-                                                <ToolContent>
-                                                    {!!toolPart.input && <ToolInput input={toolPart.input} />}
-                                                    {hasOutput ? (
-                                                        <ToolOutput
-                                                            output={toolPart.output}
-                                                            errorText={isError ? toolPart.errorText : undefined}
-                                                        />
-                                                    ) : (
-                                                        approval && (
-                                                            <Confirmation approval={approval} state={state}>
-                                                                <ConfirmationTitle>
-                                                                    This tool requires your approval to run.
-                                                                </ConfirmationTitle>
-                                                                <ConfirmationRequest>
-                                                                    <ConfirmationActions>
-                                                                        <ConfirmationAction
-                                                                            variant="outline"
-                                                                            onClick={() => {
-                                                                                addToolApprovalResponse?.({
-                                                                                    id: approval.id,
-                                                                                    approved: false,
-                                                                                    reason: 'User denied tool call',
-                                                                                });
-                                                                            }}
-                                                                        >
-                                                                            Deny
-                                                                        </ConfirmationAction>
-                                                                        <ConfirmationAction
-                                                                            onClick={() => {
-                                                                                addToolApprovalResponse?.({
-                                                                                    id: approval.id,
-                                                                                    approved: true,
-                                                                                });
-                                                                            }}
-                                                                        >
-                                                                            Allow
-                                                                        </ConfirmationAction>
-                                                                    </ConfirmationActions>
-                                                                </ConfirmationRequest>
-                                                                <ConfirmationAccepted>
-                                                                    Tool execution approved.
-                                                                </ConfirmationAccepted>
-                                                                <ConfirmationRejected>
-                                                                    Tool call was denied.
-                                                                </ConfirmationRejected>
-                                                            </Confirmation>
-                                                        )
-                                                    )}
-                                                </ToolContent>
-                                            </Tool>
-                                        );
-                                    }
-                                    return null;
-                                }
-                            }
-                        });
 
                         return (
-                            <div key={message.id}>
-                                {isAssistant ? (
-                                    <div className="flex items-start gap-3">
-                                        <div className="mt-1">{assistantAvatar}</div>
-                                        <div className="flex min-w-0 flex-col gap-2">
-                                            {assistantName}
-                                            {reasoningParts.length > 0 &&
-                                                reasoningParts.map((part, i) => (
-                                                    <Reasoning
-                                                        key={`${message.id}-reasoning-${i}`}
-                                                        className="w-full"
-                                                        isStreaming={isReasoningStreaming}
-                                                    >
-                                                        <ReasoningTrigger />
-                                                        <ReasoningContent>{part.text}</ReasoningContent>
-                                                    </Reasoning>
-                                                ))}
-                                            {sourcesParts.length > 0 && (
-                                                <Sources>
-                                                    <SourcesTrigger count={sourcesParts.length} />
-                                                    {sourcesParts.map((part, idx) => (
-                                                        <SourcesContent key={`${message.id}-source-${idx}`}>
-                                                            <Source
-                                                                key={`${message.id}-source-${idx}`}
-                                                                href={part.url}
-                                                                title={part.url}
-                                                            />
-                                                        </SourcesContent>
-                                                    ))}
-                                                </Sources>
-                                            )}
-                                            {renderedParts}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    renderedParts
-                                )}
-                            </div>
+                            <MessageItem
+                                key={message.id}
+                                message={message}
+                                isLastMessage={index === messages.length - 1}
+                                status={status}
+                                searchQuery={searchQuery}
+                                matchStartIndexMap={matchStartIndexMap}
+                                modelInfo={modelInfo}
+                                modelColorClass={modelColorClass}
+                                resolvedTheme={resolvedTheme}
+                                addToolApprovalResponse={addToolApprovalResponse}
+                            />
                         );
                     })
                 )}
-                {status === 'submitted' && (
+                {status === 'submitted' && messages[messages.length - 1]?.role !== 'assistant' && (
                     <div className="self-start">
                         <Loader />
                     </div>
