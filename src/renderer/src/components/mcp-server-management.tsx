@@ -309,10 +309,12 @@ export function McpServerManagement() {
                                                 />
                                             </TableCell>
                                             <TableCell className="font-medium pl-2">
-                                                <div>
-                                                    <span className="block truncate">{server.name}</span>
+                                                <div className="min-w-0">
+                                                    <span className="block whitespace-normal break-words">
+                                                        {server.name}
+                                                    </span>
                                                     {server.description && (
-                                                        <span className="block text-xs text-muted-foreground truncate">
+                                                        <span className="block text-xs text-muted-foreground whitespace-normal break-words">
                                                             {server.description as string}
                                                         </span>
                                                     )}
