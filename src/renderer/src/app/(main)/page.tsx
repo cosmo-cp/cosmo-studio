@@ -19,6 +19,7 @@ import {
     setChatHistorySearchQuery,
     setConversationSearchQuery,
     setCurrentMatchIndex,
+    setSelectedWebSearchOption,
     setTotalMatches,
     updateChatInHistory as updateChatInHistoryAction,
 } from "@/lib/store/main-chat-page-slice";
@@ -32,6 +33,7 @@ import {
     updateSelectedModel,
     updateSelectedPersona,
 } from "@/lib/store/main-chat-page-thunks";
+import {WEB_SEARCH_NONE_OPTION_ID} from "@/lib/web-search-options";
 
 function MainChatPage(): JSX.Element {
     const dispatch = useAppDispatch();
@@ -41,6 +43,7 @@ function MainChatPage(): JSX.Element {
         searchHistoryQuery,
         searchQuery,
         currentMatchIndex,
+        selectedWebSearchOptionByChatId,
         totalMatches,
     } = useAppSelector((state) => state.mainChatPage);
     const transport = useMemo(() => new IpcChatTransport(), []);
@@ -277,6 +280,17 @@ function MainChatPage(): JSX.Element {
             });
     }, [dispatch, selectedChat]);
 
+    const handleWebSearchChange = useCallback((optionId: string) => {
+        if (!selectedChat) {
+            return;
+        }
+        dispatch(setSelectedWebSearchOption({chatId: selectedChat.id, optionId}));
+    }, [dispatch, selectedChat]);
+
+    const selectedWebSearchOptionId = selectedChat ?
+        selectedWebSearchOptionByChatId[selectedChat.id] ?? WEB_SEARCH_NONE_OPTION_ID :
+        WEB_SEARCH_NONE_OPTION_ID;
+
     return (
         <div
             className="flex-1 min-h-0 flex rounded-b-lg border-t-0 overflow-hidden bg-background">
@@ -325,6 +339,8 @@ function MainChatPage(): JSX.Element {
                                     sendMessage={sendMessage}
                                     onModelChange={handleModelChange}
                                     onPersonaChange={handlePersonaChange}
+                                    onWebSearchChange={handleWebSearchChange}
+                                    selectedWebSearchOptionId={selectedWebSearchOptionId}
                                     stop={stop}
                                 />
                             </div>

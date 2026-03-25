@@ -9,6 +9,7 @@ import {
     updateSelectedModel,
     updateSelectedPersona,
 } from "@/lib/store/main-chat-page-thunks";
+import {WEB_SEARCH_NONE_OPTION_ID} from "@/lib/web-search-options";
 
 export interface MainChatPageState {
     chatHistory: Chat[];
@@ -17,11 +18,17 @@ export interface MainChatPageState {
     searchQuery: string;
     currentMatchIndex: number;
     totalMatches: number;
+    selectedWebSearchOptionByChatId: Record<string, string>;
 }
 
 interface UpdateChatInHistoryPayload {
     chatId: string;
     updates: Partial<Chat>;
+}
+
+interface SetSelectedWebSearchOptionPayload {
+    chatId: string;
+    optionId: string;
 }
 
 // Keep page-scoped Redux state resettable so the route behaves like the old local state model.
@@ -33,12 +40,20 @@ function createInitialState(): MainChatPageState {
         searchQuery: "",
         currentMatchIndex: 0,
         totalMatches: 0,
+        selectedWebSearchOptionByChatId: {},
     };
 }
 
+// Preserve any existing per-chat selector state while giving newly loaded chats a safe default.
 function applyChatHistory(state: MainChatPageState, chats: Chat[]) {
     state.chatHistory = chats;
     state.selectedChat = chats.find((chat) => chat.selected) ?? chats[0] ?? null;
+    state.selectedWebSearchOptionByChatId = Object.fromEntries(
+        chats.map((chat) => [
+            chat.id,
+            state.selectedWebSearchOptionByChatId[chat.id] ?? WEB_SEARCH_NONE_OPTION_ID,
+        ])
+    );
 }
 
 const mainChatPageSlice = createSlice({
@@ -61,6 +76,9 @@ const mainChatPageSlice = createSlice({
             state.searchQuery = "";
             state.currentMatchIndex = 0;
             state.totalMatches = 0;
+        },
+        setSelectedWebSearchOption(state, action: PayloadAction<SetSelectedWebSearchOptionPayload>) {
+            state.selectedWebSearchOptionByChatId[action.payload.chatId] = action.payload.optionId;
         },
         updateChatInHistory(state, action: PayloadAction<UpdateChatInHistoryPayload>) {
             const {chatId, updates} = action.payload;
@@ -119,6 +137,7 @@ export const {
     setChatHistorySearchQuery,
     setConversationSearchQuery,
     setCurrentMatchIndex,
+    setSelectedWebSearchOption,
     setTotalMatches,
     updateChatInHistory,
 } = mainChatPageSlice.actions;

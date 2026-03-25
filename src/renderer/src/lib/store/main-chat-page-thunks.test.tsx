@@ -3,6 +3,7 @@ import type {UIMessage} from "ai";
 import type {Chat, ModelIdentifier, PersonaIdentifier} from "core/dto";
 import {makeStore} from "@/lib/store/store";
 import type {AppDataSource} from "@/lib/app-data-source";
+import {setSelectedWebSearchOption} from "@/lib/store/main-chat-page-slice";
 import {
     createChat,
     deleteChat,
@@ -14,6 +15,7 @@ import {
     updateSelectedPersona,
 } from "@/lib/store/main-chat-page-thunks";
 import {createMockAppDataSource} from "@/test/mock-app-data-source";
+import {WEB_SEARCH_NONE_OPTION_ID} from "@/lib/web-search-options";
 
 function buildChat(id: string, overrides: Partial<Chat> = {}): Chat {
     return {
@@ -146,5 +148,27 @@ describe("main chat page thunks", () => {
 
         await store.dispatch(deleteChat("chat-2")).unwrap();
         expect(store.getState().mainChatPage.chatHistory.some((chat) => chat.id === "chat-2")).toBe(false);
+    });
+
+    it("tracks chat-scoped web search selection in Redux without a backend round trip", async () => {
+        const {appDataSource} = createMockChatDataSource();
+        const store = makeStore({appDataSource});
+
+        await store.dispatch(loadChatHistory(null)).unwrap();
+        expect(store.getState().mainChatPage.selectedWebSearchOptionByChatId).toEqual({
+            "chat-1": WEB_SEARCH_NONE_OPTION_ID,
+            "chat-2": WEB_SEARCH_NONE_OPTION_ID,
+        });
+
+        store.dispatch(setSelectedWebSearchOption({
+            chatId: "chat-1",
+            optionId: "exa",
+        }));
+
+        expect(store.getState().mainChatPage.selectedWebSearchOptionByChatId["chat-1"]).toBe("exa");
+
+        await store.dispatch(createChat({title: "Fresh chat"})).unwrap();
+        expect(store.getState().mainChatPage.selectedWebSearchOptionByChatId["chat-3"])
+            .toBe(WEB_SEARCH_NONE_OPTION_ID);
     });
 });

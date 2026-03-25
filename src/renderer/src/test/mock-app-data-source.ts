@@ -66,6 +66,7 @@ export function createMockAppDataSource(
         },
         webSearch: {
             getConfig: async () => null,
+            listOptions: async () => [],
             saveConfig: async () => {
                 throw new Error("webSearch.saveConfig not mocked");
             },

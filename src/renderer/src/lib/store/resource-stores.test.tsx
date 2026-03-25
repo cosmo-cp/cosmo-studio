@@ -30,6 +30,7 @@ import {
 import {
     deleteWebSearchConfig,
     loadWebSearchConfig,
+    loadWebSearchOptions,
     saveWebSearchConfig,
 } from "@/lib/store/web-search-store";
 import {
@@ -41,6 +42,7 @@ import {
     updateMcpToolApproval,
 } from "@/lib/store/mcp-servers-store";
 import {createMockAppDataSource} from "@/test/mock-app-data-source";
+import {WEB_SEARCH_NONE_OPTION_ID} from "@/lib/web-search-options";
 
 function buildCommand(id: string, name: string): CommandDefinition {
     return {
@@ -283,11 +285,24 @@ describe("resource store thunks", () => {
 
     it("loads and mutates Exa web search settings through the root store", async () => {
         let config: WebSearchConfigView | null = buildWebSearchConfig();
+        const options = [
+            {
+                id: WEB_SEARCH_NONE_OPTION_ID,
+                label: "No web search",
+                description: "Answer with the selected model only.",
+            },
+            {
+                id: WebSearchProviderTypeEnum.EXA,
+                label: "Exa web search",
+                description: "Use Exa for fresh web results in this chat.",
+            },
+        ];
 
         const store = makeStore({
             appDataSource: createMockAppDataSource({
                 webSearch: {
                     getConfig: async () => config,
+                    listOptions: async () => options,
                     saveConfig: async (input) => {
                         config = {
                             ...(config ?? buildWebSearchConfig()),
@@ -306,6 +321,9 @@ describe("resource store thunks", () => {
 
         await store.dispatch(loadWebSearchConfig()).unwrap();
         expect(store.getState().webSearch.config?.type).toBe(WebSearchProviderTypeEnum.EXA);
+
+        await store.dispatch(loadWebSearchOptions()).unwrap();
+        expect(store.getState().webSearch.options).toEqual(options);
 
         await store.dispatch(saveWebSearchConfig({
             type: WebSearchProviderTypeEnum.EXA,

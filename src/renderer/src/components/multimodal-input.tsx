@@ -25,6 +25,11 @@ import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
 import {executeCommand} from "@/lib/store/commands-store";
 import {loadPersonas} from "@/lib/store/personas-store";
 import {loadProviders} from "@/lib/store/providers-store";
+import {loadWebSearchOptions} from "@/lib/store/web-search-store";
+import {
+    WEB_SEARCH_NONE_OPTION_ID,
+    type WebSearchOption,
+} from "@/lib/web-search-options";
 import { Attachment, AttachmentPreview, AttachmentRemove, Attachments, } from './ai-elements/attachments';
 import {
     PromptInput,
@@ -71,6 +76,8 @@ export function MultimodalInput({
                                     sendMessage,
                                     onModelChange,
                                     onPersonaChange,
+                                    onWebSearchChange,
+                                    selectedWebSearchOptionId,
                                     stop,
 }: {
     chat: Chat;
@@ -81,6 +88,8 @@ export function MultimodalInput({
     stillAnswering?: boolean,
     onModelChange: (providerName: string, modelId: string) => void;
     onPersonaChange: (personaId: string | null) => void;
+    onWebSearchChange: (optionId: string) => void;
+    selectedWebSearchOptionId: string;
     stop?: UseChatHelpers<UIMessage>['stop'];
 }) {
     const dispatch = useAppDispatch();
@@ -88,8 +97,17 @@ export function MultimodalInput({
     const providersStatus = useAppSelector((state) => state.providers.status);
     const personas = useAppSelector((state) => state.personas.items);
     const personasStatus = useAppSelector((state) => state.personas.status);
+    const webSearchOptions = useAppSelector((state) => state.webSearch.options);
+    const webSearchOptionsStatus = useAppSelector((state) => state.webSearch.optionsStatus);
     const [input, setInput] = useState<string>('');
     const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+    const resolvedWebSearchOptions = webSearchOptions.length > 0 ? webSearchOptions : [
+        {
+            id: WEB_SEARCH_NONE_OPTION_ID,
+            label: "No web search",
+            description: "Answer with the selected model only.",
+        },
+    ];
 
     useEffect(() => {
         if (providersStatus === "idle") {
@@ -102,6 +120,12 @@ export function MultimodalInput({
             void dispatch(loadPersonas());
         }
     }, [dispatch, personasStatus]);
+
+    useEffect(() => {
+        if (webSearchOptionsStatus === "idle") {
+            void dispatch(loadWebSearchOptions());
+        }
+    }, [dispatch, webSearchOptionsStatus]);
 
     const selectedModelInfo = useMemo(() => {
         if (providers.length === 0) return undefined;
@@ -154,13 +178,26 @@ export function MultimodalInput({
             text: resolvedText,
             files: message.files
         }, {
-            metadata: {modelId, personaId: chat.selectedPersonaId ?? null}
+            metadata: {
+                modelId,
+                personaId: chat.selectedPersonaId ?? null,
+                webSearchOptionId: selectedWebSearchOptionId === WEB_SEARCH_NONE_OPTION_ID ?
+                    null :
+                    selectedWebSearchOptionId,
+            }
         }).catch((error) => {
             toast.error(error.message);
         }).finally(() => {
             setInput('');
         })
-    }, [chat.selectedModelId, chat.selectedProvider, chat.selectedPersonaId, dispatch, sendMessage]);
+    }, [
+        chat.selectedModelId,
+        chat.selectedPersonaId,
+        chat.selectedProvider,
+        dispatch,
+        selectedWebSearchOptionId,
+        sendMessage,
+    ]);
 
     const handlePersonaSelection = useCallback((personaId: string | null) => {
         onPersonaChange(personaId);
@@ -187,10 +224,13 @@ export function MultimodalInput({
                 providers={providers}
                 selectedModelInfo={selectedModelInfo}
                 selectedPersonaId={chat.selectedPersonaId ?? null}
+                selectedWebSearchOptionId={selectedWebSearchOptionId}
                 setInput={setInput}
                 setModelSelectorOpen={setModelSelectorOpen}
                 status={status}
                 submitForm={submitForm}
+                webSearchOptions={resolvedWebSearchOptions}
+                onWebSearchChange={onWebSearchChange}
                 stop={stop}
             />
         </PromptInputProvider>
@@ -204,14 +244,17 @@ function PromptInputContent({
                                 input,
                                 modelSelectorOpen,
                                 onModelChange,
+                                onWebSearchChange,
                                 personaOptions,
                                 providers,
                                 selectedModelInfo,
                                 selectedPersonaId,
+                                selectedWebSearchOptionId,
                                 setInput,
                                 setModelSelectorOpen,
                                 status,
                                 submitForm,
+                                webSearchOptions,
                                 stop
                             }: {
     chat: Chat;
@@ -219,18 +262,22 @@ function PromptInputContent({
     input: string;
     modelSelectorOpen: boolean;
     onModelChange: (providerName: string, modelId: string) => void;
+    onWebSearchChange: (optionId: string) => void;
     personaOptions: { id: string; name: string }[];
     providers: ProviderWithModels[];
     selectedModelInfo: { inputModalities: string[] } | undefined;
     selectedPersonaId: string | null;
+    selectedWebSearchOptionId: string;
     setInput: (value: string) => void;
     setModelSelectorOpen: (value: boolean) => void;
     status: UseChatHelpers<UIMessage>['status'];
     submitForm: (message: PromptInputMessage) => Promise<void>;
+    webSearchOptions: WebSearchOption[];
     stop?: UseChatHelpers<UIMessage>['stop'];
 }) {
     const attachments = usePromptInputAttachments();
     const [personaSelectorOpen, setPersonaSelectorOpen] = useState(false);
+    const [webSearchSelectorOpen, setWebSearchSelectorOpen] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const personaSelectorTriggeredByShortcutRef = useRef(false);
 
@@ -242,6 +289,12 @@ function PromptInputContent({
             selectedPersonaId :
             PERSONA_NONE_VALUE;
     }, [personaOptions, selectedPersonaId]);
+
+    const selectedWebSearchValue = useMemo(() => {
+        return webSearchOptions.some((option) => option.id === selectedWebSearchOptionId && !option.disabled) ?
+            selectedWebSearchOptionId :
+            WEB_SEARCH_NONE_OPTION_ID;
+    }, [selectedWebSearchOptionId, webSearchOptions]);
 
     const focusTextarea = useCallback(() => {
         window.requestAnimationFrame(() => {
@@ -262,6 +315,11 @@ function PromptInputContent({
             focusTextarea();
         }
     }, [focusTextarea]);
+
+    const handleWebSearchValueChange = useCallback((value: string) => {
+        onWebSearchChange(value);
+        focusTextarea();
+    }, [focusTextarea, onWebSearchChange]);
 
     const handleTextareaFocus = useCallback((event: FocusEvent<HTMLTextAreaElement>) => {
         textareaRef.current = event.currentTarget;
@@ -377,6 +435,35 @@ function PromptInputContent({
                             </ModelSelectorList>
                         </ModelSelectorContent>
                     </ModelSelector>
+                    <PromptInputSelect
+                        onOpenChange={setWebSearchSelectorOpen}
+                        onValueChange={handleWebSearchValueChange}
+                        open={webSearchSelectorOpen}
+                        value={selectedWebSearchValue}
+                    >
+                        <PromptInputSelectTrigger
+                            aria-label="Web search"
+                            className="w-max"
+                        >
+                            <PromptInputSelectValue placeholder="Web Search"/>
+                        </PromptInputSelectTrigger>
+                        <PromptInputSelectContent>
+                            {webSearchOptions.map((option) => (
+                                <PromptInputSelectItem
+                                    disabled={option.disabled}
+                                    key={option.id}
+                                    value={option.id}
+                                >
+                                    <div className="flex flex-col">
+                                        <span>{option.label}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {option.description}
+                                        </span>
+                                    </div>
+                                </PromptInputSelectItem>
+                            ))}
+                        </PromptInputSelectContent>
+                    </PromptInputSelect>
                     <PromptInputSelect
                         onOpenChange={handlePersonaSelectorOpenChange}
                         onValueChange={handlePersonaValueChange}

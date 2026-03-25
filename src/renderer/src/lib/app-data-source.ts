@@ -24,6 +24,7 @@ import {
 } from "core/database/schema/modelProviderSchema";
 import {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
 import type {UIMessage} from "ai";
+import {buildWebSearchOptions, type WebSearchOption} from "@/lib/web-search-options";
 
 type BackendKind = "electron" | "http";
 
@@ -67,6 +68,7 @@ export interface AppDataSource {
     };
     webSearch: {
         getConfig(type: WebSearchProviderTypeEnum): Promise<WebSearchConfigView | null>;
+        listOptions(): Promise<WebSearchOption[]>;
         saveConfig(input: WebSearchConfigSaveInput): Promise<WebSearchConfigView>;
         deleteConfig(type: WebSearchProviderTypeEnum): Promise<void>;
     };
@@ -280,7 +282,14 @@ function buildDummyHttpState(): DummyHttpState {
         providers: [
             buildProvider(providerId, ModelProviderTypeEnum.OPENAI, "Demo HTTP Provider", providerModels),
         ],
-        webSearchConfig: null,
+        webSearchConfig: {
+            id: "http-web-search-config-1",
+            createdAt: new Date("2026-03-18T08:30:00.000Z"),
+            updatedAt: new Date("2026-03-18T08:45:00.000Z"),
+            type: WebSearchProviderTypeEnum.EXA,
+            enabled: true,
+            hasApiKey: true,
+        },
         mcpServers: [
             {
                 id: "http-mcp-1",
@@ -384,8 +393,12 @@ function createElectronAppDataSource(): AppDataSource {
             },
         },
         webSearch: {
-            getConfig(type) {
+            async getConfig(type) {
                 return window.api.webSearch.getConfig(type);
+            },
+            async listOptions() {
+                const config = await window.api.webSearch.getConfig(WebSearchProviderTypeEnum.EXA);
+                return buildWebSearchOptions(config);
             },
             saveConfig(input) {
                 return window.api.webSearch.saveConfig(input);
@@ -631,6 +644,9 @@ function createDummyHttpAppDataSource(): AppDataSource {
                     return null;
                 }
                 return cloneValue(state.webSearchConfig);
+            },
+            async listOptions() {
+                return buildWebSearchOptions(state.webSearchConfig);
             },
             async saveConfig(input) {
                 const now = new Date();
