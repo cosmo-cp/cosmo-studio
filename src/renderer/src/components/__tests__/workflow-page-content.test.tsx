@@ -26,7 +26,7 @@ describe('WorkflowPageContent', () => {
 
         await user.click(screen.getAllByRole('button', {name: /new workflow/i})[0]);
 
-        expect(await screen.findByText(/untitled workflow/i)).toBeInTheDocument();
+        expect(await screen.findByText(/workflow canvas/i)).toBeInTheDocument();
         expect(screen.queryByText(/start a new workflow/i)).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: /delete untitled workflow/i})).toBeInTheDocument();
 
@@ -35,5 +35,6 @@ describe('WorkflowPageContent', () => {
 
         expect(screen.getByText(/no workflows yet/i)).toBeInTheDocument();
         expect(screen.getByText(/start a new workflow/i)).toBeInTheDocument();
+        expect(screen.queryByText(/workflow canvas/i)).not.toBeInTheDocument();
     });
 });

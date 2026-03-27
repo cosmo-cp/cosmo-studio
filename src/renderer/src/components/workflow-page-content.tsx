@@ -3,6 +3,7 @@
 import {Button} from '@/components/ui/button';
 import {Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle} from '@/components/ui/empty';
 import {ConfirmDialog} from '@/components/confirm-dialog';
+import {WorkflowCanvas} from '@/components/workflow-canvas';
 import {WorkflowHistory, type WorkflowListItem} from '@/components/workflow-history';
 import {Workflow} from 'lucide-react';
 import {useRef, useState} from 'react';
@@ -25,6 +26,7 @@ export function WorkflowPageContent() {
     const [pendingDeleteWorkflow, setPendingDeleteWorkflow] = useState<WorkflowListItem | null>(null);
 
     const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+    const selectedWorkflow = workflows.find((workflow) => workflow.id === selectedWorkflowId) ?? null;
     const visibleWorkflows = normalizedSearchQuery.length > 0 ?
         workflows.filter((workflow) => {
             const title = workflow.title.toLowerCase();
@@ -88,8 +90,22 @@ export function WorkflowPageContent() {
                             </EmptyContent>
                         </Empty>
                     </div>
+                ) : selectedWorkflow ? (
+                    <WorkflowCanvas workflow={selectedWorkflow} />
                 ) : (
-                    <div className="flex-1 min-h-0 overflow-hidden bg-background" />
+                    <div className="flex h-full flex-1 flex-col items-center justify-center">
+                        <Empty>
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <Workflow />
+                                </EmptyMedia>
+                                <EmptyTitle>Select a Workflow</EmptyTitle>
+                                <EmptyDescription>
+                                    Choose a workflow from the history panel to open its canvas.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
+                    </div>
                 )}
             </div>
             <ConfirmDialog
