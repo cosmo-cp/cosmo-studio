@@ -1,7 +1,10 @@
 'use client';
 
+import {Button} from '@/components/ui/button';
+import {Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle} from '@/components/ui/empty';
 import {ConfirmDialog} from '@/components/confirm-dialog';
 import {WorkflowHistory, type WorkflowListItem} from '@/components/workflow-history';
+import {Workflow} from 'lucide-react';
 import {useRef, useState} from 'react';
 
 // Keep untitled workflow names predictable while there is no persisted workflow backend yet.
@@ -66,7 +69,28 @@ export function WorkflowPageContent() {
                     onSearch={setSearchQuery}
                     onSelectWorkflow={setSelectedWorkflowId}
                 />
-                <div className="flex-1 min-h-0 overflow-hidden bg-background" />
+                {workflows.length === 0 ? (
+                    <div className="flex h-full flex-1 flex-col items-center justify-center">
+                        <Empty>
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <Workflow />
+                                </EmptyMedia>
+                                <EmptyTitle>Start a new Workflow</EmptyTitle>
+                                <EmptyDescription>
+                                    Create a workflow to begin building your flow.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                            <EmptyContent>
+                                <Button variant="outline" size="sm" onClick={handleCreateWorkflow}>
+                                    New Workflow
+                                </Button>
+                            </EmptyContent>
+                        </Empty>
+                    </div>
+                ) : (
+                    <div className="flex-1 min-h-0 overflow-hidden bg-background" />
+                )}
             </div>
             <ConfirmDialog
                 open={pendingDeleteWorkflow !== null}

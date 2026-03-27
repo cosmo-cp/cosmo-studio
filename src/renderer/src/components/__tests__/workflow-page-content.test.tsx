@@ -22,15 +22,18 @@ describe('WorkflowPageContent', () => {
         render(<WorkflowPageContent />);
 
         expect(screen.getByText(/no workflows yet/i)).toBeInTheDocument();
+        expect(screen.getByText(/start a new workflow/i)).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', {name: /new workflow/i}));
+        await user.click(screen.getAllByRole('button', {name: /new workflow/i})[0]);
 
         expect(await screen.findByText(/untitled workflow/i)).toBeInTheDocument();
+        expect(screen.queryByText(/start a new workflow/i)).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: /delete untitled workflow/i})).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /delete untitled workflow/i}));
         await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
         expect(screen.getByText(/no workflows yet/i)).toBeInTheDocument();
+        expect(screen.getByText(/start a new workflow/i)).toBeInTheDocument();
     });
 });
