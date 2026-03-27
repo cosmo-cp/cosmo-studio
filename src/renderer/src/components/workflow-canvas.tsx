@@ -15,6 +15,8 @@ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/compon
 import type {WorkflowListItem} from '@/components/workflow-history';
 import {
     Bot,
+    GripHorizontal,
+    GripVertical,
     Hand,
     MousePointer2,
     Sparkles,
@@ -36,7 +38,7 @@ type WorkflowCanvasNodeData = {
 const WORKFLOW_CANVAS_NODE_TYPE = 'workflow-card';
 const DEFAULT_TOOLBAR_OFFSET = {
     x: 0,
-    y: 84,
+    y: 0,
 };
 
 const CANVAS_NODE_TYPES = {
@@ -80,9 +82,9 @@ function WorkflowCanvasToolbar({
     const [toolbarOffset, setToolbarOffset] = useState(DEFAULT_TOOLBAR_OFFSET);
     const [isDragging, setIsDragging] = useState(false);
 
-    // Keep the toolbar floating over the canvas while still allowing it to be repositioned.
+    // Keep the toolbar floating over the canvas while still allowing it to be repositioned from a dedicated handle.
     const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-        if ((event.target as HTMLElement).closest('[data-toolbar-button="true"]')) {
+        if (!(event.target as HTMLElement).closest('[data-toolbar-drag="true"]')) {
             return;
         }
 
@@ -121,26 +123,39 @@ function WorkflowCanvasToolbar({
     };
 
     return (
-        <Panel className="overflow-visible border-0 bg-transparent p-0 shadow-none" position="top-left">
+        <Panel
+            className="m-0 overflow-visible border-0 bg-transparent p-0 shadow-none"
+            data-testid="workflow-toolbar-panel"
+            position="top-left"
+            style={{
+                left: '5px',
+                top: '40%',
+                transform: `translate(${toolbarOffset.x}px, calc(-50% + ${toolbarOffset.y}px))`,
+            }}
+        >
             <TooltipProvider>
                 <div
-                    className="flex items-center gap-1 rounded-md border bg-background p-1 shadow-xs touch-none"
+                    className="flex flex-col items-center gap-1 rounded-md border bg-background p-1 shadow-xs touch-none"
                     data-testid="workflow-toolbar"
                     onPointerDown={handlePointerDown}
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
                     onPointerCancel={handlePointerUp}
-                    style={{
-                        cursor: isDragging ? 'grabbing' : 'grab',
-                        transform: `translate(${toolbarOffset.x}px, ${toolbarOffset.y}px)`,
-                    }}
                 >
+                    <div
+                        aria-hidden="true"
+                        className="flex items-center justify-center px-1 py-1 text-muted-foreground/45"
+                        data-testid="workflow-toolbar-handle"
+                        data-toolbar-drag="true"
+                        style={{cursor: isDragging ? 'grabbing' : 'grab'}}
+                    >
+                        <GripHorizontal className="pointer-events-none size-4" />
+                    </div>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
                                 aria-label="Pointer mode"
                                 aria-pressed={interactionMode === 'pointer'}
-                                data-toolbar-button="true"
                                 onClick={() => onInteractionModeChange('pointer')}
                                 onPointerDown={(event) => event.stopPropagation()}
                                 size="icon"
@@ -149,7 +164,7 @@ function WorkflowCanvasToolbar({
                                 <MousePointer2 className="size-4" />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent>
+                        <TooltipContent side='right'>
                             <p>Pointer mode</p>
                         </TooltipContent>
                     </Tooltip>
@@ -158,7 +173,6 @@ function WorkflowCanvasToolbar({
                             <Button
                                 aria-label="Hand mode"
                                 aria-pressed={interactionMode === 'hand'}
-                                data-toolbar-button="true"
                                 onClick={() => onInteractionModeChange('hand')}
                                 onPointerDown={(event) => event.stopPropagation()}
                                 size="icon"
@@ -167,7 +181,7 @@ function WorkflowCanvasToolbar({
                                 <Hand className="size-4" />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent>
+                        <TooltipContent side='right'>
                             <p>Hand mode</p>
                         </TooltipContent>
                     </Tooltip>

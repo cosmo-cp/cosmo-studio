@@ -27,6 +27,10 @@ describe('WorkflowPageContent', () => {
         await user.click(screen.getAllByRole('button', {name: /new workflow/i})[0]);
 
         expect(await screen.findByTestId('workflow-toolbar')).toBeInTheDocument();
+        expect(screen.getByTestId('workflow-toolbar-panel')).toHaveStyle({
+            top: '50%',
+        });
+        expect(screen.getByTestId('workflow-toolbar-handle')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /pointer mode/i})).toHaveAttribute('aria-pressed', 'true');
         expect(screen.getByRole('button', {name: /hand mode/i})).toBeInTheDocument();
         expect(screen.queryByText(/^pointer$/i)).not.toBeInTheDocument();
@@ -38,8 +42,8 @@ describe('WorkflowPageContent', () => {
 
         expect(screen.getByRole('button', {name: /hand mode/i})).toHaveAttribute('aria-pressed', 'true');
         expect(screen.getByRole('button', {name: /pointer mode/i})).toHaveAttribute('aria-pressed', 'false');
-        expect(screen.getByTestId('workflow-toolbar')).toHaveStyle({
-            transform: 'translate(0px, 84px)',
+        expect(screen.getByTestId('workflow-toolbar-panel')).toHaveStyle({
+            transform: 'translate(0px, calc(-50% + 0px))',
         });
 
         await user.click(screen.getByRole('button', {name: /delete untitled workflow/i}));
