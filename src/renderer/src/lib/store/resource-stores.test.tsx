@@ -28,9 +28,11 @@ import {
     saveProvider,
 } from "@/lib/store/providers-store";
 import {
+    deleteParallelWebSearchConfig,
     deleteWebSearchConfig,
     loadWebSearchConfig,
     loadWebSearchOptions,
+    saveParallelWebSearchConfig,
     saveWebSearchConfig,
 } from "@/lib/store/web-search-store";
 import {
@@ -42,7 +44,10 @@ import {
     updateMcpToolApproval,
 } from "@/lib/store/mcp-servers-store";
 import {createMockAppDataSource} from "@/test/mock-app-data-source";
-import {WEB_SEARCH_NONE_OPTION_ID} from "@/lib/web-search-options";
+import {
+    PARALLEL_WEB_SEARCH_PROVIDER_ID,
+    WEB_SEARCH_NONE_OPTION_ID,
+} from "@/lib/web-search-options";
 
 function buildCommand(id: string, name: string): CommandDefinition {
     return {
@@ -295,6 +300,15 @@ describe("resource store thunks", () => {
                 id: WebSearchProviderTypeEnum.EXA,
                 label: "Exa web search",
                 description: "Use Exa for fresh web results in this chat.",
+                configured: true,
+                hasApiKey: true,
+            },
+            {
+                id: PARALLEL_WEB_SEARCH_PROVIDER_ID,
+                label: "Parallel web search",
+                description: "Use Parallel search and extraction tools in this chat.",
+                configured: true,
+                hasApiKey: true,
             },
         ];
 
@@ -330,6 +344,18 @@ describe("resource store thunks", () => {
             enabled: false,
         })).unwrap();
         expect(store.getState().webSearch.config?.enabled).toBe(false);
+
+        store.dispatch(saveParallelWebSearchConfig({
+            enabled: true,
+            apiKey: "parallel-secret",
+        }));
+        expect(store.getState().webSearch.parallelConfig).toEqual({
+            enabled: true,
+            hasApiKey: true,
+        });
+
+        store.dispatch(deleteParallelWebSearchConfig());
+        expect(store.getState().webSearch.parallelConfig).toBeNull();
 
         await store.dispatch(deleteWebSearchConfig()).unwrap();
         expect(store.getState().webSearch.config).toBeNull();

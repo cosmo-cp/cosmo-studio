@@ -1,4 +1,4 @@
-import {createAsyncThunk, createSlice} from "@reduxjs/toolkit";
+import {createAsyncThunk, createSlice, type PayloadAction} from "@reduxjs/toolkit";
 import type {
     WebSearchConfigSaveInput,
     WebSearchConfigView,
@@ -6,10 +6,22 @@ import type {
 import {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
 import type {AsyncStatus} from "@/lib/store/async-status";
 import type {AppThunkExtra} from "@/lib/store/store";
-import {buildWebSearchOptions, type WebSearchOption} from "@/lib/web-search-options";
+import {
+    buildWebSearchOptions,
+    getFrontendWebSearchProviderConfig,
+    PARALLEL_WEB_SEARCH_PROVIDER_ID,
+    type FrontendWebSearchProviderConfig,
+    type WebSearchOption,
+} from "@/lib/web-search-options";
+
+interface SaveParallelWebSearchConfigPayload {
+    enabled: boolean;
+    apiKey?: string | null;
+}
 
 export interface WebSearchState {
     config: WebSearchConfigView | null;
+    parallelConfig: FrontendWebSearchProviderConfig | null;
     status: AsyncStatus;
     errorMessage: string | null;
     options: WebSearchOption[];
@@ -19,9 +31,13 @@ export interface WebSearchState {
 
 const initialState: WebSearchState = {
     config: null,
+    parallelConfig: null,
     status: "idle",
     errorMessage: null,
-    options: [],
+    options: buildWebSearchOptions({
+        exaConfig: null,
+        parallelConfig: null,
+    }),
     optionsStatus: "idle",
     optionsErrorMessage: null,
 };
@@ -33,6 +49,14 @@ const createWebSearchAsyncThunk = createAsyncThunk.withTypes<{
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
     return error instanceof Error ? error.message : fallbackMessage;
+}
+
+// Keep the dropdown catalog in sync with both persisted and renderer-only provider state.
+function syncOptions(state: WebSearchState) {
+    state.options = buildWebSearchOptions({
+        exaConfig: state.config,
+        parallelConfig: state.parallelConfig,
+    });
 }
 
 export const loadWebSearchConfig = createWebSearchAsyncThunk<WebSearchConfigView | null, void>(
@@ -82,7 +106,19 @@ export const loadWebSearchOptions = createWebSearchAsyncThunk<WebSearchOption[],
 const webSearchSlice = createSlice({
     name: "webSearch",
     initialState,
-    reducers: {},
+    reducers: {
+        saveParallelWebSearchConfig(state, action: PayloadAction<SaveParallelWebSearchConfigPayload>) {
+            state.parallelConfig = {
+                enabled: action.payload.enabled,
+                hasApiKey: Boolean(action.payload.apiKey?.trim()) || state.parallelConfig?.hasApiKey || false,
+            };
+            syncOptions(state);
+        },
+        deleteParallelWebSearchConfig(state) {
+            state.parallelConfig = null;
+            syncOptions(state);
+        },
+    },
     extraReducers: (builder) => {
         builder
             .addCase(loadWebSearchConfig.pending, (state) => {
@@ -92,7 +128,7 @@ const webSearchSlice = createSlice({
             .addCase(loadWebSearchConfig.fulfilled, (state, action) => {
                 state.status = "succeeded";
                 state.config = action.payload;
-                state.options = buildWebSearchOptions(action.payload);
+                syncOptions(state);
             })
             .addCase(loadWebSearchConfig.rejected, (state, action) => {
                 state.status = "failed";
@@ -100,16 +136,16 @@ const webSearchSlice = createSlice({
             })
             .addCase(saveWebSearchConfig.fulfilled, (state, action) => {
                 state.config = action.payload;
-                state.options = buildWebSearchOptions(action.payload);
                 state.errorMessage = null;
+                syncOptions(state);
             })
             .addCase(saveWebSearchConfig.rejected, (state, action) => {
                 state.errorMessage = action.payload ?? "Failed to save web search settings";
             })
             .addCase(deleteWebSearchConfig.fulfilled, (state) => {
                 state.config = null;
-                state.options = buildWebSearchOptions(null);
                 state.errorMessage = null;
+                syncOptions(state);
             })
             .addCase(deleteWebSearchConfig.rejected, (state, action) => {
                 state.errorMessage = action.payload ?? "Failed to remove web search settings";
@@ -121,6 +157,10 @@ const webSearchSlice = createSlice({
             .addCase(loadWebSearchOptions.fulfilled, (state, action) => {
                 state.optionsStatus = "succeeded";
                 state.options = action.payload;
+                state.parallelConfig = getFrontendWebSearchProviderConfig(
+                    action.payload,
+                    PARALLEL_WEB_SEARCH_PROVIDER_ID
+                );
             })
             .addCase(loadWebSearchOptions.rejected, (state, action) => {
                 state.optionsStatus = "failed";
@@ -129,4 +169,8 @@ const webSearchSlice = createSlice({
     },
 });
 
+export const {
+    deleteParallelWebSearchConfig,
+    saveParallelWebSearchConfig,
+} = webSearchSlice.actions;
 export const webSearchReducer = webSearchSlice.reducer;

@@ -24,7 +24,11 @@ import {
 } from "core/database/schema/modelProviderSchema";
 import {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
 import type {UIMessage} from "ai";
-import {buildWebSearchOptions, type WebSearchOption} from "@/lib/web-search-options";
+import {
+    buildWebSearchOptions,
+    type FrontendWebSearchProviderConfig,
+    type WebSearchOption,
+} from "@/lib/web-search-options";
 
 type BackendKind = "electron" | "http";
 
@@ -95,6 +99,7 @@ interface DummyHttpState {
     personas: Persona[];
     providers: ProviderWithModels[];
     webSearchConfig: WebSearchConfigView | null;
+    parallelWebSearchConfig: FrontendWebSearchProviderConfig | null;
     mcpServers: McpServer[];
     mcpToolsByServerId: Record<string, McpTool[]>;
 }
@@ -290,6 +295,10 @@ function buildDummyHttpState(): DummyHttpState {
             enabled: true,
             hasApiKey: true,
         },
+        parallelWebSearchConfig: {
+            enabled: true,
+            hasApiKey: true,
+        },
         mcpServers: [
             {
                 id: "http-mcp-1",
@@ -398,7 +407,10 @@ function createElectronAppDataSource(): AppDataSource {
             },
             async listOptions() {
                 const config = await window.api.webSearch.getConfig(WebSearchProviderTypeEnum.EXA);
-                return buildWebSearchOptions(config);
+                return buildWebSearchOptions({
+                    exaConfig: config,
+                    parallelConfig: null,
+                });
             },
             saveConfig(input) {
                 return window.api.webSearch.saveConfig(input);
@@ -646,7 +658,10 @@ function createDummyHttpAppDataSource(): AppDataSource {
                 return cloneValue(state.webSearchConfig);
             },
             async listOptions() {
-                return buildWebSearchOptions(state.webSearchConfig);
+                return buildWebSearchOptions({
+                    exaConfig: state.webSearchConfig,
+                    parallelConfig: state.parallelWebSearchConfig,
+                });
             },
             async saveConfig(input) {
                 const now = new Date();

@@ -5,6 +5,7 @@ import {StoreProvider} from "@/lib/store/store-provider";
 import {createMockAppDataSource} from "@/test/mock-app-data-source";
 import {WebSearchManagement} from "@/components/web-search-management";
 import {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
+import {PARALLEL_WEB_SEARCH_PROVIDER_ID} from "@/lib/web-search-options";
 
 class ResizeObserverMock {
     observe() {
@@ -22,7 +23,7 @@ describe("WebSearchManagement", () => {
         vi.stubGlobal("ResizeObserver", ResizeObserverMock);
     });
 
-    it("shows the Exa card instead of the placeholder sections", async () => {
+    it("shows Exa and Parallel cards instead of the placeholder sections", async () => {
         render(
             <StoreProvider appDataSource={createMockAppDataSource()}>
                 <WebSearchManagement />
@@ -31,6 +32,7 @@ describe("WebSearchManagement", () => {
 
         expect(await screen.findByRole("heading", {name: /^web search$/i})).toBeInTheDocument();
         expect(screen.getByText(/exa web search/i)).toBeInTheDocument();
+        expect(screen.getByText(/parallel web search/i)).toBeInTheDocument();
         expect(screen.queryByText(/default behavior/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/result handling/i)).not.toBeInTheDocument();
     });
@@ -69,7 +71,42 @@ describe("WebSearchManagement", () => {
             });
         });
 
-        expect(await screen.findByText(/configured/i)).toBeInTheDocument();
+        expect(await screen.findByText(/^configured$/i)).toBeInTheDocument();
         expect(screen.getByText(/api key saved securely/i)).toBeInTheDocument();
+    });
+
+    it("saves Parallel settings in Redux state and updates the card state", async () => {
+        const user = userEvent.setup();
+
+        render(
+            <StoreProvider appDataSource={createMockAppDataSource({
+                webSearch: {
+                    listOptions: async () => [
+                        {
+                            id: WebSearchProviderTypeEnum.EXA,
+                            label: "Exa web search",
+                            description: "Use Exa for fresh web results in this chat.",
+                            disabled: true,
+                        },
+                        {
+                            id: PARALLEL_WEB_SEARCH_PROVIDER_ID,
+                            label: "Parallel web search",
+                            description: "Setup required in Settings > Web Search.",
+                            disabled: true,
+                        },
+                    ],
+                },
+            })}>
+                <WebSearchManagement />
+            </StoreProvider>
+        );
+
+        await user.click(await screen.findByRole("button", {name: /add parallel/i}));
+        await user.type(screen.getByLabelText(/api key/i), "parallel-secret");
+        await user.click(screen.getByRole("button", {name: /save parallel/i}));
+
+        expect(await screen.findAllByText(/^configured$/i)).toHaveLength(1);
+        expect(screen.getByText(/api key kept in redux state/i)).toBeInTheDocument();
+        expect(screen.getByText(/parallel search and extraction are available/i)).toBeInTheDocument();
     });
 });

@@ -104,8 +104,7 @@ export function MultimodalInput({
     const resolvedWebSearchOptions = webSearchOptions.length > 0 ? webSearchOptions : [
         {
             id: WEB_SEARCH_NONE_OPTION_ID,
-            label: "No web search",
-            description: "Answer with the selected model only.",
+            label: "Disabled"
         },
     ];
 

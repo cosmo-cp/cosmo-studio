@@ -9,7 +9,10 @@ import {MultimodalInput} from "@/components/multimodal-input";
 import {TooltipProvider} from "@/components/ui/tooltip";
 import {StoreProvider} from "@/lib/store/store-provider";
 import {createMockAppDataSource} from "@/test/mock-app-data-source";
-import {WEB_SEARCH_NONE_OPTION_ID} from "@/lib/web-search-options";
+import {
+    PARALLEL_WEB_SEARCH_PROVIDER_ID,
+    WEB_SEARCH_NONE_OPTION_ID,
+} from "@/lib/web-search-options";
 
 class ResizeObserverMock {
     observe() {
@@ -96,13 +99,15 @@ describe("MultimodalInput", () => {
         const options = [
             {
                 id: WEB_SEARCH_NONE_OPTION_ID,
-                label: "No web search",
-                description: "Answer with the selected model only.",
+                label: "No web search"
             },
             {
                 id: WebSearchProviderTypeEnum.EXA,
-                label: "Exa web search",
-                description: "Use Exa for fresh web results in this chat.",
+                label: "Exa web search"
+            },
+            {
+                id: PARALLEL_WEB_SEARCH_PROVIDER_ID,
+                label: "Parallel web search"
             },
         ];
 
@@ -141,7 +146,7 @@ describe("MultimodalInput", () => {
         await user.click(screen.getByRole("combobox", {name: /web search/i}));
         expect(await screen.findByRole("option", {name: /no web search/i})).toBeInTheDocument();
 
-        await user.click(screen.getByRole("option", {name: /exa web search/i}));
-        expect(onWebSearchChange).toHaveBeenCalledWith(WebSearchProviderTypeEnum.EXA);
+        await user.click(screen.getByRole("option", {name: /parallel web search/i}));
+        expect(onWebSearchChange).toHaveBeenCalledWith(PARALLEL_WEB_SEARCH_PROVIDER_ID);
     });
 });

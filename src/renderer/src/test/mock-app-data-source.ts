@@ -1,4 +1,5 @@
 import type {AppDataSource} from "@/lib/app-data-source";
+import {buildWebSearchOptions} from "@/lib/web-search-options";
 
 type AppDataSourceOverrides = {
     backend?: AppDataSource["backend"];
@@ -66,7 +67,10 @@ export function createMockAppDataSource(
         },
         webSearch: {
             getConfig: async () => null,
-            listOptions: async () => [],
+            listOptions: async () => buildWebSearchOptions({
+                exaConfig: null,
+                parallelConfig: null,
+            }),
             saveConfig: async () => {
                 throw new Error("webSearch.saveConfig not mocked");
             },
