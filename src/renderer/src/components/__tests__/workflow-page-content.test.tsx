@@ -26,15 +26,27 @@ describe('WorkflowPageContent', () => {
 
         await user.click(screen.getAllByRole('button', {name: /new workflow/i})[0]);
 
-        expect(await screen.findByText(/workflow canvas/i)).toBeInTheDocument();
+        expect(await screen.findByTestId('workflow-toolbar')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /pointer mode/i})).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', {name: /hand mode/i})).toBeInTheDocument();
+        expect(screen.queryByText(/^pointer$/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/^hand$/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/start a new workflow/i)).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: /delete untitled workflow/i})).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: /hand mode/i}));
+
+        expect(screen.getByRole('button', {name: /hand mode/i})).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', {name: /pointer mode/i})).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.getByTestId('workflow-toolbar')).toHaveStyle({
+            transform: 'translate(0px, 84px)',
+        });
 
         await user.click(screen.getByRole('button', {name: /delete untitled workflow/i}));
         await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
         expect(screen.getByText(/no workflows yet/i)).toBeInTheDocument();
         expect(screen.getByText(/start a new workflow/i)).toBeInTheDocument();
-        expect(screen.queryByText(/workflow canvas/i)).not.toBeInTheDocument();
+        expect(screen.queryByTestId('workflow-toolbar')).not.toBeInTheDocument();
     });
 });
