@@ -22,6 +22,7 @@ import {
     MessageCircle,
     SettingsIcon,
     Slash,
+    Workflow,
 } from 'lucide-react';
 import {CosmoIcon} from '@/components/cosmo-icon';
 import {
@@ -39,6 +40,12 @@ const menuItems = [
         href: './',
         pathname: '/',
         icon: MessageCircle,
+    },
+    {
+        title: 'Workflow',
+        href: './workflow',
+        pathname: '/workflow',
+        icon: Workflow,
     },
     {
         title: 'Persona',

@@ -41,14 +41,15 @@ function renderSidebar(pathname: string) {
 
 describe('AppSidebar', () => {
     it('shows the main navigation outside of settings', () => {
-        renderSidebar('/command');
+        renderSidebar('/workflow');
 
         expect(screen.getByRole('link', {name: /chat/i})).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: /persona/i})).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: /command/i})).toHaveAttribute(
+        expect(screen.getByRole('link', {name: /workflow/i})).toHaveAttribute(
             'data-active',
             'true'
         );
+        expect(screen.getByRole('link', {name: /persona/i})).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: /command/i})).toBeInTheDocument();
         expect(screen.getByRole('link', {name: /settings/i})).toHaveAttribute(
             'href',
             getDefaultSettingsHref()
