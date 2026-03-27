@@ -32,11 +32,16 @@ describe('WorkflowPageContent', () => {
         });
         expect(screen.getByTestId('workflow-toolbar-handle')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /pointer mode/i})).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', {name: /add node/i})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /hand mode/i})).toBeInTheDocument();
         expect(screen.queryByText(/^pointer$/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/^hand$/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/start a new workflow/i)).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: /delete untitled workflow/i})).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: /add node/i}));
+
+        expect(screen.getByText(/node 1/i)).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /hand mode/i}));
 

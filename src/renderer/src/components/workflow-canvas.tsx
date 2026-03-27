@@ -16,15 +16,15 @@ import type {WorkflowListItem} from '@/components/workflow-history';
 import {
     Bot,
     GripHorizontal,
-    GripVertical,
     Hand,
     MousePointer2,
+    Plus,
     Sparkles,
     Workflow,
 } from 'lucide-react';
-import {useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import type {Edge, Node, NodeProps} from '@xyflow/react';
-import {MarkerType} from '@xyflow/react';
+import {MarkerType, useEdgesState, useNodesState} from '@xyflow/react';
 import type {PointerEvent as ReactPointerEvent} from 'react';
 
 type InteractionMode = 'hand' | 'pointer';
@@ -44,6 +44,58 @@ const DEFAULT_TOOLBAR_OFFSET = {
 const CANVAS_NODE_TYPES = {
     [WORKFLOW_CANVAS_NODE_TYPE]: WorkflowCanvasNode,
 };
+
+function buildInitialNodes(workflow: WorkflowListItem): Node<WorkflowCanvasNodeData>[] {
+    return [
+        {
+            id: `${workflow.id}-workflow`,
+            type: WORKFLOW_CANVAS_NODE_TYPE,
+            position: {x: 80, y: 190},
+            data: {
+                icon: 'workflow',
+                title: workflow.title,
+                description: 'Workflow entry point. Add steps here to define the flow.',
+            },
+        },
+        {
+            id: `${workflow.id}-agent`,
+            type: WORKFLOW_CANVAS_NODE_TYPE,
+            position: {x: 430, y: 190},
+            data: {
+                icon: 'agent',
+                title: 'Agent Step',
+                description: 'Use AI SDK tools and prompts to process the workflow input.',
+            },
+        },
+        {
+            id: `${workflow.id}-result`,
+            type: WORKFLOW_CANVAS_NODE_TYPE,
+            position: {x: 780, y: 190},
+            data: {
+                icon: 'result',
+                title: 'Result',
+                description: 'Render or persist the workflow output once execution completes.',
+            },
+        },
+    ];
+}
+
+function buildInitialEdges(workflow: WorkflowListItem): Edge[] {
+    return [
+        {
+            id: `${workflow.id}-edge-1`,
+            source: `${workflow.id}-workflow`,
+            target: `${workflow.id}-agent`,
+            markerEnd: {type: MarkerType.ArrowClosed},
+        },
+        {
+            id: `${workflow.id}-edge-2`,
+            source: `${workflow.id}-agent`,
+            target: `${workflow.id}-result`,
+            markerEnd: {type: MarkerType.ArrowClosed},
+        },
+    ];
+}
 
 function WorkflowCanvasNode({data}: NodeProps<Node<WorkflowCanvasNodeData>>) {
     const icon = data.icon === 'workflow' ?
@@ -66,9 +118,11 @@ function WorkflowCanvasNode({data}: NodeProps<Node<WorkflowCanvasNodeData>>) {
 }
 
 function WorkflowCanvasToolbar({
+    onAddNode,
     interactionMode,
     onInteractionModeChange,
 }: {
+    onAddNode: () => void;
     interactionMode: InteractionMode;
     onInteractionModeChange: (mode: InteractionMode) => void;
 }) {
@@ -128,8 +182,8 @@ function WorkflowCanvasToolbar({
             data-testid="workflow-toolbar-panel"
             position="top-left"
             style={{
-                left: '5px',
-                top: '40%',
+                left: '16px',
+                top: '50%',
                 transform: `translate(${toolbarOffset.x}px, calc(-50% + ${toolbarOffset.y}px))`,
             }}
         >
@@ -151,6 +205,22 @@ function WorkflowCanvasToolbar({
                     >
                         <GripHorizontal className="pointer-events-none size-4" />
                     </div>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                aria-label="Add node"
+                                onClick={onAddNode}
+                                onPointerDown={(event) => event.stopPropagation()}
+                                size="icon"
+                                variant="ghost"
+                            >
+                                <Plus className="size-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side='right'>
+                            <p>Add node</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
@@ -193,54 +263,43 @@ function WorkflowCanvasToolbar({
 
 export function WorkflowCanvas({workflow}: {workflow: WorkflowListItem}) {
     const [interactionMode, setInteractionMode] = useState<InteractionMode>('pointer');
+    const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowCanvasNodeData>(buildInitialNodes(workflow));
+    const [edges, setEdges, onEdgesChange] = useEdgesState(buildInitialEdges(workflow));
+    const nextNodeIndexRef = useRef(1);
 
-    const nodes = useMemo<Node<WorkflowCanvasNodeData>[]>(() => ([
-        {
-            id: `${workflow.id}-workflow`,
-            type: WORKFLOW_CANVAS_NODE_TYPE,
-            position: {x: 80, y: 190},
-            data: {
-                icon: 'workflow',
-                title: workflow.title,
-                description: 'Workflow entry point. Add steps here to define the flow.',
-            },
-        },
-        {
-            id: `${workflow.id}-agent`,
-            type: WORKFLOW_CANVAS_NODE_TYPE,
-            position: {x: 430, y: 190},
-            data: {
-                icon: 'agent',
-                title: 'Agent Step',
-                description: 'Use AI SDK tools and prompts to process the workflow input.',
-            },
-        },
-        {
-            id: `${workflow.id}-result`,
-            type: WORKFLOW_CANVAS_NODE_TYPE,
-            position: {x: 780, y: 190},
-            data: {
-                icon: 'result',
-                title: 'Result',
-                description: 'Render or persist the workflow output once execution completes.',
-            },
-        },
-    ]), [workflow.id, workflow.title]);
+    useEffect(() => {
+        setNodes(buildInitialNodes(workflow));
+        setEdges(buildInitialEdges(workflow));
+        nextNodeIndexRef.current = 1;
+    }, [setEdges, setNodes, workflow]);
 
-    const edges = useMemo<Edge[]>(() => ([
-        {
-            id: `${workflow.id}-edge-1`,
-            source: `${workflow.id}-workflow`,
-            target: `${workflow.id}-agent`,
-            markerEnd: {type: MarkerType.ArrowClosed},
-        },
-        {
-            id: `${workflow.id}-edge-2`,
-            source: `${workflow.id}-agent`,
-            target: `${workflow.id}-result`,
-            markerEnd: {type: MarkerType.ArrowClosed},
-        },
-    ]), [workflow.id]);
+    const handleAddNode = useCallback(() => {
+        const newNodeIndex = nextNodeIndexRef.current;
+        nextNodeIndexRef.current += 1;
+
+        setNodes((currentNodes) => {
+            const additionalNodeCount = currentNodes.filter((node) => node.id.includes('-custom-')).length;
+            const column = additionalNodeCount % 3;
+            const row = Math.floor(additionalNodeCount / 3);
+
+            return [
+                ...currentNodes,
+                {
+                    id: `${workflow.id}-custom-${newNodeIndex}`,
+                    type: WORKFLOW_CANVAS_NODE_TYPE,
+                    position: {
+                        x: 180 + (column * 320),
+                        y: 410 + (row * 180),
+                    },
+                    data: {
+                        icon: 'agent',
+                        title: `Node ${newNodeIndex}`,
+                        description: 'New workflow step. Configure this node next.',
+                    },
+                },
+            ];
+        });
+    }, [setNodes, workflow.id]);
 
     return (
         <div className="flex h-full flex-1 min-h-0 overflow-hidden bg-background">
@@ -251,11 +310,14 @@ export function WorkflowCanvas({workflow}: {workflow: WorkflowListItem}) {
                 nodeTypes={CANVAS_NODE_TYPES}
                 nodesDraggable={interactionMode === 'pointer'}
                 nodes={nodes}
+                onEdgesChange={onEdgesChange}
+                onNodesChange={onNodesChange}
                 panOnDrag={interactionMode === 'hand'}
                 proOptions={{hideAttribution: true}}
                 selectionOnDrag={interactionMode === 'pointer'}
             >
                 <WorkflowCanvasToolbar
+                    onAddNode={handleAddNode}
                     interactionMode={interactionMode}
                     onInteractionModeChange={setInteractionMode}
                 />
