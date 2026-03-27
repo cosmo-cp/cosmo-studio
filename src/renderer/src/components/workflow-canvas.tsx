@@ -11,6 +11,7 @@ import {
 } from '@/components/ai-elements/node';
 import {Panel} from '@/components/ai-elements/panel';
 import {Button} from '@/components/ui/button';
+import {cn} from '@/lib/utils';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import type {WorkflowListItem} from '@/components/workflow-history';
 import {
@@ -23,8 +24,8 @@ import {
     Workflow,
 } from 'lucide-react';
 import {useCallback, useEffect, useRef, useState} from 'react';
-import type {Edge, Node, NodeProps} from '@xyflow/react';
-import {MarkerType, useEdgesState, useNodesState} from '@xyflow/react';
+import type {Connection, Edge, Node, NodeProps} from '@xyflow/react';
+import {addEdge, Handle, MarkerType, Position, useEdgesState, useNodesState} from '@xyflow/react';
 import type {PointerEvent as ReactPointerEvent} from 'react';
 
 type InteractionMode = 'hand' | 'pointer';
@@ -103,9 +104,29 @@ function WorkflowCanvasNode({data}: NodeProps<Node<WorkflowCanvasNodeData>>) {
         data.icon === 'agent' ?
             <Bot className="size-4 text-muted-foreground" /> :
             <Sparkles className="size-4 text-muted-foreground" />;
+    const hasTargetHandle = data.icon !== 'workflow';
 
     return (
-        <CanvasNodeCard className="w-72" handles={{target: data.icon !== 'workflow', source: true}}>
+        <CanvasNodeCard className="relative w-72" handles={{target: false, source: false}}>
+            {hasTargetHandle ? (
+                <Handle
+                    aria-label={`${data.title} end connection`}
+                    className={cn(
+                        '!left-0 !size-4 !-translate-x-1/2 !rounded-full !border-2 !border-primary !bg-background shadow-sm'
+                    )}
+                    position={Position.Left}
+                    type="target"
+                />
+            ) : null}
+            <Handle
+                aria-label={`${data.title} start connection`}
+                className={cn(
+                    '!right-0 !size-6 !translate-x-1/2 !rounded-full !border-2 !border-background !bg-primary !text-primary-foreground shadow-sm',
+                    "after:absolute after:inset-0 after:flex after:items-center after:justify-center after:text-sm after:font-semibold after:text-primary-foreground after:content-['+']"
+                )}
+                position={Position.Right}
+                type="source"
+            />
             <NodeHeader className="flex flex-row items-center gap-2">
                 {icon}
                 <NodeTitle>{data.title}</NodeTitle>
@@ -301,15 +322,24 @@ export function WorkflowCanvas({workflow}: {workflow: WorkflowListItem}) {
         });
     }, [setNodes, workflow.id]);
 
+    const handleConnect = useCallback((connection: Connection) => {
+        setEdges((currentEdges) => addEdge({
+            ...connection,
+            markerEnd: {type: MarkerType.ArrowClosed},
+        }, currentEdges));
+    }, [setEdges]);
+
     return (
         <div className="flex h-full flex-1 min-h-0 overflow-hidden bg-background">
             <Canvas
                 className="h-full w-full"
+                connectOnClick
                 edges={edges}
                 fitViewOptions={{padding: 0.2}}
                 nodeTypes={CANVAS_NODE_TYPES}
                 nodesDraggable={interactionMode === 'pointer'}
                 nodes={nodes}
+                onConnect={handleConnect}
                 onEdgesChange={onEdgesChange}
                 onNodesChange={onNodesChange}
                 panOnDrag={interactionMode === 'hand'}

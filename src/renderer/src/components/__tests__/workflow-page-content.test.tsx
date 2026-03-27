@@ -42,6 +42,8 @@ describe('WorkflowPageContent', () => {
         await user.click(screen.getByRole('button', {name: /add node/i}));
 
         expect(screen.getByText(/node 1/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/node 1 start connection/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/result end connection/i)).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /hand mode/i}));
 
