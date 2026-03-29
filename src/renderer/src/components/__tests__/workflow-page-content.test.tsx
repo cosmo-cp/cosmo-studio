@@ -37,6 +37,7 @@ describe('WorkflowPageContent', () => {
         expect(screen.queryByText(/^pointer$/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/^hand$/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/start a new workflow/i)).not.toBeInTheDocument();
+        expect(screen.getAllByText(/^start$/i)).not.toHaveLength(0);
         expect(screen.getByRole('button', {name: /delete untitled workflow/i})).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /add node/i}));
@@ -45,16 +46,33 @@ describe('WorkflowPageContent', () => {
         expect(screen.getByText(/^core$/i)).toBeInTheDocument();
         expect(screen.getByText(/^logic$/i)).toBeInTheDocument();
         expect(screen.getByText(/^tools$/i)).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /agent run an ai-powered task or decision step/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /end mark where a workflow path completes/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /classify route execution based on a classification result/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /if \/ else branch the flow into conditional paths/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /loop repeat a set of steps until the loop exits/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /user approval pause the workflow until a person approves it/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /mcp call an mcp server as part of the workflow/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /http send an http request to an external system/i})).toBeInTheDocument();
+        expect(screen.queryByText(/choose a workflow step to place on the canvas/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/route execution based on a classification result/i)).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /^start$/i})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^agent$/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^end$/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^classify$/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^if \/ else$/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^loop$/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^user approval$/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^mcp$/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^http$/i})).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', {name: /http send an http request to an external system/i}));
+        await user.hover(screen.getByRole('button', {name: /^classify$/i}));
+
+        expect((await screen.findAllByText(/route execution based on a classification result/i)).length).toBeGreaterThan(0);
+
+        await user.unhover(screen.getByRole('button', {name: /^classify$/i}));
+
+        await user.click(document.body);
+
+        expect(screen.queryByTestId('workflow-node-picker')).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: /add node/i}));
+
+        expect(screen.getByTestId('workflow-node-picker')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: /^http$/i}));
 
         expect(screen.queryByTestId('workflow-node-picker')).not.toBeInTheDocument();
         expect(screen.getAllByText(/^http$/i)).not.toHaveLength(0);
