@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify';
 import { CORETYPES } from '../types/types';
 import { ModelProviderRepository } from '../repositories/ModelProviderRepository';
 import { ModelProvider, ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels } from '../dto';
-import { ModelProviderTypeEnum } from '../database/schema/modelProviderSchema';
+import { ModelProviderTypeEnum, ModelModalityEnum } from '../database/schema/modelProviderSchema';
 import { safeStorage } from 'electron';
 import { ProviderV3 } from '@ai-sdk/provider';
 import { AnthropicProviderSettings, createAnthropic } from '@ai-sdk/anthropic';
@@ -29,6 +29,19 @@ export type RemoteProviderOptions =
     | OpenAIProviderSettings;
 
 export type LocalProviderOptions = OllamaProviderSettings;
+
+interface LMStudioModelPayload {
+    id: string;
+    key?: string;
+    display_name?: string;
+    description?: string;
+    max_context_length?: number;
+    capabilities?: {
+        reasoning?: boolean;
+        vision?: boolean;
+        trained_for_tool_use?: boolean;
+    };
+}
 
 @injectable()
 export class ModelProviderService {
@@ -279,18 +292,20 @@ export class ModelProviderService {
     private async getModelsFromLMStudio(provider: ModelProviderCreateInput): Promise<NewModel[]> {
         const baseUrl = (provider.apiUrl && provider.apiUrl.trim()) || ModelProviderService.MODELS_LMSTUDIO_URL;
 
-        return this.fetchLocalModels<any>(
+        return this.fetchLocalModels<LMStudioModelPayload>(
             baseUrl.replace(/\/?$/, '') + '/v1/models',
             'LM Studio',
             'models',
             (m) => ({
-                name: m.display_name || m.id || m.key,
+                name: m.display_name || m.id || m.key || '',
                 modelId: m.key || m.id,
                 description: m.description || m.display_name || m.id || m.key,
                 contextWindow: m.max_context_length,
                 reasoning: !!m.capabilities?.reasoning,
-                inputModalities: m.capabilities?.vision ? (['text', 'image'] as any[]) : (['text'] as any[]),
-                outputModalities: ['text'] as any[],
+                inputModalities: m.capabilities?.vision
+                    ? [ModelModalityEnum.TEXT, ModelModalityEnum.IMAGE]
+                    : [ModelModalityEnum.TEXT],
+                outputModalities: [ModelModalityEnum.TEXT],
                 toolCall: !!m.capabilities?.trained_for_tool_use,
             }),
         );
