@@ -39,10 +39,11 @@ export function TokenUsageIndicator({ messages, modelId, personaId }: TokenUsage
             try {
                 const providers = await window.api.modelProvider.getProvidersWithModels();
                 for (const provider of providers) {
-                    const found = provider.models.find(m => m.modelId === modelId);
+                    const found = provider.models.find((m) => m.modelId === modelId);
                     if (found) {
                         if (found.contextWindow && found.contextWindow > 0) setMaxTokens(found.contextWindow);
-                        if (found.maxOutputWindow && found.maxOutputWindow > 0) setMaxOutputTokens(found.maxOutputWindow);
+                        if (found.maxOutputWindow && found.maxOutputWindow > 0)
+                            setMaxOutputTokens(found.maxOutputWindow);
                         return;
                     }
                 }
@@ -131,19 +132,14 @@ export function TokenUsageIndicator({ messages, modelId, personaId }: TokenUsage
                         const toolPart = p as DynamicToolUIPart & Record<string, unknown>;
 
                         // Accurately capture lengths across different AI SDK versions without double counting
-                        const inputLength = getSafeLength(toolPart.input ?? toolPart.args ?? (toolPart.toolInvocation as any)?.args);
-                        const outputLength = getSafeLength(toolPart.output ?? toolPart.result ?? (toolPart.toolInvocation as any)?.result);
+                        const inputLength = getSafeLength(toolPart.input ?? toolPart.args);
+                        const outputLength = getSafeLength(toolPart.output ?? toolPart.result);
 
                         toolResultsTokens += Math.ceil((inputLength + outputLength) / CHARS_PER_TOKEN);
                     }
                 }
-            } else if ('content' in m) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const content = (m as any).content;
-                contentString = typeof content === 'string' ? content : JSON.stringify(content ?? '');
             } else if ('text' in m) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                contentString = (m as any).text ?? '';
+                contentString = (m.text as string) ?? '';
             }
 
             const msgTokens = Math.ceil(contentString.length / CHARS_PER_TOKEN);
@@ -208,18 +204,21 @@ export function TokenUsageIndicator({ messages, modelId, personaId }: TokenUsage
                                     </TooltipTrigger>
                                     <TooltipContent side="right" className="max-w-[220px]">
                                         <p className="text-xs">
-                                            This is a rough estimate based on character count approximations and may not match the actual token usage entirely.
+                                            This is a rough estimate based on character count approximations and may not
+                                            match the actual token usage entirely.
                                         </p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
                         </div>
-                        
+
                         <div className="space-y-1.5">
                             <div className="flex justify-between items-center text-xs text-muted-foreground">
                                 <span>Context Range</span>
                                 <div className="flex items-center gap-2">
-                                    <span>{formatTokens(tokens.totalTokens)} / {formatTokens(maxTokens)}</span>
+                                    <span>
+                                        {formatTokens(tokens.totalTokens)} / {formatTokens(maxTokens)}
+                                    </span>
                                     <span className="px-1.5 py-0.5 rounded-md bg-secondary text-secondary-foreground font-medium">
                                         {totalPercentage.toFixed(1)}%
                                     </span>
