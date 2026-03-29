@@ -11,28 +11,68 @@ import {
 } from '@/components/ai-elements/node';
 import {Panel} from '@/components/ai-elements/panel';
 import {Button} from '@/components/ui/button';
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
 import {cn} from '@/lib/utils';
+import {ScrollArea} from '@/components/ui/scroll-area';
+import {Separator} from '@/components/ui/separator';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import type {WorkflowListItem} from '@/components/workflow-history';
 import {
+    CircleStop,
     Bot,
+    Globe,
+    GitBranch,
     GripHorizontal,
     Hand,
     MousePointer2,
     Plus,
+    PlugZap,
+    Repeat,
+    ShieldCheck,
     Sparkles,
+    Tags,
     Workflow,
 } from 'lucide-react';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useRef, useState} from 'react';
 import type {Connection, Edge, Node, NodeProps} from '@xyflow/react';
 import {addEdge, Handle, MarkerType, Position, useEdgesState, useNodesState} from '@xyflow/react';
 import type {PointerEvent as ReactPointerEvent} from 'react';
 
 type InteractionMode = 'hand' | 'pointer';
+type WorkflowNodeTemplateId =
+    'agent' |
+    'classify' |
+    'end' |
+    'http' |
+    'if-else' |
+    'loop' |
+    'mcp' |
+    'user-approval' |
+    'workflow-root';
+type WorkflowNodeGroupName = 'Core' | 'Logic' | 'Tools';
+type WorkflowCanvasNodeIcon =
+    'agent' |
+    'classify' |
+    'end' |
+    'http' |
+    'if-else' |
+    'loop' |
+    'mcp' |
+    'user-approval' |
+    'workflow';
 
 type WorkflowCanvasNodeData = {
     description: string;
-    icon: 'workflow' | 'agent' | 'result';
+    icon: WorkflowCanvasNodeIcon;
+    templateId: WorkflowNodeTemplateId;
+    title: string;
+};
+
+type WorkflowNodeTemplate = {
+    description: string;
+    group: WorkflowNodeGroupName;
+    icon: WorkflowCanvasNodeIcon;
+    id: Exclude<WorkflowNodeTemplateId, 'workflow-root'>;
     title: string;
 };
 
@@ -41,10 +81,111 @@ const DEFAULT_TOOLBAR_OFFSET = {
     x: 0,
     y: 0,
 };
+const WORKFLOW_NODE_GROUPS: {name: WorkflowNodeGroupName; nodes: WorkflowNodeTemplate[]}[] = [
+    {
+        name: 'Core',
+        nodes: [
+            {
+                id: 'agent',
+                title: 'Agent',
+                group: 'Core',
+                icon: 'agent',
+                description: 'Run an AI-powered task or decision step.',
+            },
+            {
+                id: 'end',
+                title: 'End',
+                group: 'Core',
+                icon: 'end',
+                description: 'Mark where a workflow path completes.',
+            },
+            {
+                id: 'classify',
+                title: 'Classify',
+                group: 'Core',
+                icon: 'classify',
+                description: 'Route execution based on a classification result.',
+            },
+        ],
+    },
+    {
+        name: 'Logic',
+        nodes: [
+            {
+                id: 'if-else',
+                title: 'If / Else',
+                group: 'Logic',
+                icon: 'if-else',
+                description: 'Branch the flow into conditional paths.',
+            },
+            {
+                id: 'loop',
+                title: 'Loop',
+                group: 'Logic',
+                icon: 'loop',
+                description: 'Repeat a set of steps until the loop exits.',
+            },
+            {
+                id: 'user-approval',
+                title: 'User Approval',
+                group: 'Logic',
+                icon: 'user-approval',
+                description: 'Pause the workflow until a person approves it.',
+            },
+        ],
+    },
+    {
+        name: 'Tools',
+        nodes: [
+            {
+                id: 'mcp',
+                title: 'MCP',
+                group: 'Tools',
+                icon: 'mcp',
+                description: 'Call an MCP server as part of the workflow.',
+            },
+            {
+                id: 'http',
+                title: 'HTTP',
+                group: 'Tools',
+                icon: 'http',
+                description: 'Send an HTTP request to an external system.',
+            },
+        ],
+    },
+];
+const INITIAL_WORKFLOW_NODE_TEMPLATE_IDS: Exclude<WorkflowNodeTemplateId, 'workflow-root'>[] = ['agent', 'end'];
+const WORKFLOW_NODE_TEMPLATES_BY_ID = new Map<WorkflowNodeTemplate['id'], WorkflowNodeTemplate>(
+    WORKFLOW_NODE_GROUPS.flatMap((group) => group.nodes).map((template) => [template.id, template])
+);
 
 const CANVAS_NODE_TYPES = {
     [WORKFLOW_CANVAS_NODE_TYPE]: WorkflowCanvasNode,
 };
+
+function buildWorkflowRootNodeData(workflow: WorkflowListItem): WorkflowCanvasNodeData {
+    return {
+        icon: 'workflow',
+        templateId: 'workflow-root',
+        title: workflow.title,
+        description: 'Workflow entry point. Add steps here to define the flow.',
+    };
+}
+
+function buildNodeData(templateId: Exclude<WorkflowNodeTemplateId, 'workflow-root'>): WorkflowCanvasNodeData {
+    const template = WORKFLOW_NODE_TEMPLATES_BY_ID.get(templateId);
+
+    if (!template) {
+        throw new Error(`Unknown workflow node template: ${templateId}`);
+    }
+
+    return {
+        description: template.description,
+        icon: template.icon,
+        templateId: template.id,
+        title: template.title,
+    };
+}
 
 function buildInitialNodes(workflow: WorkflowListItem): Node<WorkflowCanvasNodeData>[] {
     return [
@@ -52,32 +193,14 @@ function buildInitialNodes(workflow: WorkflowListItem): Node<WorkflowCanvasNodeD
             id: `${workflow.id}-workflow`,
             type: WORKFLOW_CANVAS_NODE_TYPE,
             position: {x: 80, y: 190},
-            data: {
-                icon: 'workflow',
-                title: workflow.title,
-                description: 'Workflow entry point. Add steps here to define the flow.',
-            },
+            data: buildWorkflowRootNodeData(workflow),
         },
-        {
-            id: `${workflow.id}-agent`,
+        ...INITIAL_WORKFLOW_NODE_TEMPLATE_IDS.map((templateId, index) => ({
+            id: `${workflow.id}-${templateId}`,
             type: WORKFLOW_CANVAS_NODE_TYPE,
-            position: {x: 430, y: 190},
-            data: {
-                icon: 'agent',
-                title: 'Agent Step',
-                description: 'Use AI SDK tools and prompts to process the workflow input.',
-            },
-        },
-        {
-            id: `${workflow.id}-result`,
-            type: WORKFLOW_CANVAS_NODE_TYPE,
-            position: {x: 780, y: 190},
-            data: {
-                icon: 'result',
-                title: 'Result',
-                description: 'Render or persist the workflow output once execution completes.',
-            },
-        },
+            position: {x: 430 + (index * 350), y: 190},
+            data: buildNodeData(templateId),
+        })),
     ];
 }
 
@@ -92,7 +215,7 @@ function buildInitialEdges(workflow: WorkflowListItem): Edge[] {
         {
             id: `${workflow.id}-edge-2`,
             source: `${workflow.id}-agent`,
-            target: `${workflow.id}-result`,
+            target: `${workflow.id}-end`,
             markerEnd: {type: MarkerType.ArrowClosed},
         },
     ];
@@ -103,8 +226,22 @@ function WorkflowCanvasNode({data}: NodeProps<Node<WorkflowCanvasNodeData>>) {
         <Workflow className="size-4 text-muted-foreground" /> :
         data.icon === 'agent' ?
             <Bot className="size-4 text-muted-foreground" /> :
-            <Sparkles className="size-4 text-muted-foreground" />;
-    const hasTargetHandle = data.icon !== 'workflow';
+            data.icon === 'end' ?
+                <CircleStop className="size-4 text-muted-foreground" /> :
+                data.icon === 'classify' ?
+                    <Tags className="size-4 text-muted-foreground" /> :
+                    data.icon === 'if-else' ?
+                        <GitBranch className="size-4 text-muted-foreground" /> :
+                        data.icon === 'loop' ?
+                            <Repeat className="size-4 text-muted-foreground" /> :
+                            data.icon === 'user-approval' ?
+                                <ShieldCheck className="size-4 text-muted-foreground" /> :
+                                data.icon === 'mcp' ?
+                                    <PlugZap className="size-4 text-muted-foreground" /> :
+                                    data.icon === 'http' ?
+                                        <Globe className="size-4 text-muted-foreground" /> :
+                                        <Sparkles className="size-4 text-muted-foreground" />;
+    const hasTargetHandle = data.templateId !== 'workflow-root';
 
     return (
         <CanvasNodeCard className="relative w-72" handles={{target: false, source: false}}>
@@ -138,12 +275,95 @@ function WorkflowCanvasNode({data}: NodeProps<Node<WorkflowCanvasNodeData>>) {
     );
 }
 
+function WorkflowNodePicker({
+    onSelect,
+}: {
+    onSelect: (templateId: WorkflowNodeTemplate['id']) => void;
+}) {
+    return (
+        <Panel
+            className="m-0 border-0 bg-transparent p-0 shadow-none"
+            data-testid="workflow-node-picker-panel"
+            position="top-left"
+            style={{
+                left: '72px',
+                top: '50%',
+                transform: 'translate(0px, -50%)',
+            }}
+        >
+            <Card
+                aria-label="Workflow node picker"
+                className="max-w-[calc(100vw-120px)] overflow-hidden py-0 shadow-sm"
+                data-testid="workflow-node-picker"
+                id="workflow-node-picker"
+                role="dialog"
+                style={{width: 'min(320px, calc(100vw - 120px))'}}
+            >
+                <CardHeader className="gap-1 border-b px-4 py-4">
+                    <CardTitle className="text-sm">Add a node</CardTitle>
+                    <CardDescription>
+                        Choose a workflow step to place on the canvas.
+                    </CardDescription>
+                </CardHeader>
+                <ScrollArea
+                    className="w-full"
+                    style={{height: 'min(420px, calc(100dvh - 112px))'}}
+                >
+                    <CardContent className="px-0 py-0 pr-2">
+                        {WORKFLOW_NODE_GROUPS.map((group, groupIndex) => (
+                            <div key={group.name}>
+                                {groupIndex > 0 ? <Separator /> : null}
+                                <div className="px-4 py-3">
+                                    <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                                        {group.name}
+                                    </p>
+                                </div>
+                                <div className="space-y-1 px-2 pb-3 pr-2">
+                                    {group.nodes.map((template) => (
+                                        <Button
+                                            className="h-auto w-full justify-start gap-3 px-3 py-3 text-left"
+                                            key={template.id}
+                                            onClick={() => onSelect(template.id)}
+                                            variant="ghost"
+                                        >
+                                            <span className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-muted/40">
+                                                {template.icon === 'agent' ? <Bot className="size-4 text-muted-foreground" /> :
+                                                    template.icon === 'end' ? <CircleStop className="size-4 text-muted-foreground" /> :
+                                                        template.icon === 'classify' ? <Tags className="size-4 text-muted-foreground" /> :
+                                                            template.icon === 'if-else' ? <GitBranch className="size-4 text-muted-foreground" /> :
+                                                                template.icon === 'loop' ? <Repeat className="size-4 text-muted-foreground" /> :
+                                                                    template.icon === 'user-approval' ? <ShieldCheck className="size-4 text-muted-foreground" /> :
+                                                                        template.icon === 'mcp' ? <PlugZap className="size-4 text-muted-foreground" /> :
+                                                                            <Globe className="size-4 text-muted-foreground" />}
+                                            </span>
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block text-sm font-medium">
+                                                    {template.title}
+                                                </span>
+                                                <span className="block text-xs text-muted-foreground">
+                                                    {template.description}
+                                                </span>
+                                            </span>
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </CardContent>
+                </ScrollArea>
+            </Card>
+        </Panel>
+    );
+}
+
 function WorkflowCanvasToolbar({
     onAddNode,
+    isNodePickerOpen,
     interactionMode,
     onInteractionModeChange,
 }: {
     onAddNode: () => void;
+    isNodePickerOpen: boolean;
     interactionMode: InteractionMode;
     onInteractionModeChange: (mode: InteractionMode) => void;
 }) {
@@ -230,10 +450,13 @@ function WorkflowCanvasToolbar({
                         <TooltipTrigger asChild>
                             <Button
                                 aria-label="Add node"
+                                aria-expanded={isNodePickerOpen}
+                                aria-pressed={isNodePickerOpen}
+                                aria-controls="workflow-node-picker"
                                 onClick={onAddNode}
                                 onPointerDown={(event) => event.stopPropagation()}
                                 size="icon"
-                                variant="ghost"
+                                variant={isNodePickerOpen ? 'secondary' : 'ghost'}
                             >
                                 <Plus className="size-4" />
                             </Button>
@@ -282,19 +505,18 @@ function WorkflowCanvasToolbar({
     );
 }
 
-export function WorkflowCanvas({workflow}: {workflow: WorkflowListItem}) {
+function WorkflowCanvasContent({workflow}: {workflow: WorkflowListItem}) {
     const [interactionMode, setInteractionMode] = useState<InteractionMode>('pointer');
+    const [isNodePickerOpen, setIsNodePickerOpen] = useState(false);
     const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowCanvasNodeData>(buildInitialNodes(workflow));
     const [edges, setEdges, onEdgesChange] = useEdgesState(buildInitialEdges(workflow));
     const nextNodeIndexRef = useRef(1);
 
-    useEffect(() => {
-        setNodes(buildInitialNodes(workflow));
-        setEdges(buildInitialEdges(workflow));
-        nextNodeIndexRef.current = 1;
-    }, [setEdges, setNodes, workflow]);
-
     const handleAddNode = useCallback(() => {
+        setIsNodePickerOpen((currentValue) => !currentValue);
+    }, []);
+
+    const handleNodeTemplateSelect = useCallback((templateId: WorkflowNodeTemplate['id']) => {
         const newNodeIndex = nextNodeIndexRef.current;
         nextNodeIndexRef.current += 1;
 
@@ -312,14 +534,11 @@ export function WorkflowCanvas({workflow}: {workflow: WorkflowListItem}) {
                         x: 180 + (column * 320),
                         y: 410 + (row * 180),
                     },
-                    data: {
-                        icon: 'agent',
-                        title: `Node ${newNodeIndex}`,
-                        description: 'New workflow step. Configure this node next.',
-                    },
+                    data: buildNodeData(templateId),
                 },
             ];
         });
+        setIsNodePickerOpen(false);
     }, [setNodes, workflow.id]);
 
     const handleConnect = useCallback((connection: Connection) => {
@@ -348,11 +567,17 @@ export function WorkflowCanvas({workflow}: {workflow: WorkflowListItem}) {
             >
                 <WorkflowCanvasToolbar
                     onAddNode={handleAddNode}
+                    isNodePickerOpen={isNodePickerOpen}
                     interactionMode={interactionMode}
                     onInteractionModeChange={setInteractionMode}
                 />
+                {isNodePickerOpen ? <WorkflowNodePicker onSelect={handleNodeTemplateSelect} /> : null}
                 <Controls showInteractive={false} />
             </Canvas>
         </div>
     );
+}
+
+export function WorkflowCanvas({workflow}: {workflow: WorkflowListItem}) {
+    return <WorkflowCanvasContent key={workflow.id} workflow={workflow} />;
 }

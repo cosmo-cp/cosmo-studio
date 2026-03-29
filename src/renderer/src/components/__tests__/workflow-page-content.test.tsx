@@ -41,9 +41,25 @@ describe('WorkflowPageContent', () => {
 
         await user.click(screen.getByRole('button', {name: /add node/i}));
 
-        expect(screen.getByText(/node 1/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/node 1 start connection/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/result end connection/i)).toBeInTheDocument();
+        expect(screen.getByTestId('workflow-node-picker')).toBeInTheDocument();
+        expect(screen.getByText(/^core$/i)).toBeInTheDocument();
+        expect(screen.getByText(/^logic$/i)).toBeInTheDocument();
+        expect(screen.getByText(/^tools$/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /agent run an ai-powered task or decision step/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /end mark where a workflow path completes/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /classify route execution based on a classification result/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /if \/ else branch the flow into conditional paths/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /loop repeat a set of steps until the loop exits/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /user approval pause the workflow until a person approves it/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /mcp call an mcp server as part of the workflow/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /http send an http request to an external system/i})).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: /http send an http request to an external system/i}));
+
+        expect(screen.queryByTestId('workflow-node-picker')).not.toBeInTheDocument();
+        expect(screen.getAllByText(/^http$/i)).not.toHaveLength(0);
+        expect(screen.getByLabelText(/http start connection/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/end end connection/i)).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /hand mode/i}));
 
