@@ -2,6 +2,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeAll, describe, expect, it} from 'vitest';
 import {WorkflowPageContent} from '@/components/workflow-page-content';
+import {getDropPickerAnchorPosition, getNodePositionFromDrop} from '@/components/workflow-canvas';
 
 beforeAll(() => {
     class ResizeObserverMock {
@@ -16,6 +17,23 @@ beforeAll(() => {
 });
 
 describe('WorkflowPageContent', () => {
+    it('clamps drop-open picker placement and centers new nodes around the drop point', () => {
+        const anchor = getDropPickerAnchorPosition({
+            clientX: 600,
+            clientY: 420,
+            containerRect: {
+                left: 100,
+                top: 80,
+                width: 640,
+                height: 480,
+            } as DOMRect,
+        });
+
+        expect(anchor).toEqual({x: 392, y: 172});
+        expect(getNodePositionFromDrop({x: 140, y: 120})).toEqual({x: 86, y: 99});
+        expect(getNodePositionFromDrop({x: 10, y: 10})).toEqual({x: 24, y: 24});
+    });
+
     it('creates workflows from the history panel and deletes them from the same list', async () => {
         const user = userEvent.setup();
 
