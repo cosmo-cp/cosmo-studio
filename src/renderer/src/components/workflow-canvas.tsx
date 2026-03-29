@@ -76,6 +76,9 @@ const DEFAULT_TOOLBAR_OFFSET = {
     x: 0,
     y: 0,
 };
+const WORKFLOW_EDGE_STYLE = {
+    strokeWidth: 1.5,
+};
 const WORKFLOW_NODE_GROUPS: {name: WorkflowNodeGroupName; nodes: WorkflowNodeTemplate[]}[] = [
     {
         name: 'Core',
@@ -207,12 +210,14 @@ function buildInitialEdges(workflow: WorkflowListItem): Edge[] {
             source: `${workflow.id}-start`,
             target: `${workflow.id}-agent`,
             markerEnd: {type: MarkerType.ArrowClosed},
+            style: WORKFLOW_EDGE_STYLE,
         },
         {
             id: `${workflow.id}-edge-2`,
             source: `${workflow.id}-agent`,
             target: `${workflow.id}-end`,
             markerEnd: {type: MarkerType.ArrowClosed},
+            style: WORKFLOW_EDGE_STYLE,
         },
     ];
 }
@@ -643,6 +648,7 @@ function WorkflowCanvasContent({workflow}: {workflow: WorkflowListItem}) {
         setEdges((currentEdges) => addEdge({
             ...connection,
             markerEnd: {type: MarkerType.ArrowClosed},
+            style: WORKFLOW_EDGE_STYLE,
         }, currentEdges));
     }, [setEdges]);
 
