@@ -9,7 +9,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { McpServer } from 'core/dto';
 import { ChevronUp, RefreshCw, Wrench } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 
 interface McpTool {
     name: string;

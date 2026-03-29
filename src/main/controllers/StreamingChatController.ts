@@ -1,4 +1,4 @@
-import { convertToModelMessages, ModelMessage, RetryError, smoothStream, streamText } from 'ai';
+import { convertToModelMessages, ModelMessage, RetryError, smoothStream, streamText, stepCountIs } from 'ai';
 import { IpcMainEvent, WebContents } from 'electron';
 import { inject, injectable } from 'inversify';
 import { IpcController, IpcOn, IpcRendererOn } from '../ipc/Decorators';
@@ -73,6 +73,7 @@ export class StreamingChatController implements Controller {
                 model: modelProviderRegistry.languageModel(args.modelIdentifier),
                 messages: modelMessages,
                 tools: await this.mcpClientManager.getAllTools(),
+                stopWhen: stepCountIs(10),
                 abortSignal: controller.signal,
                 experimental_transform: smoothStream({ delayInMs: 30 }),
                 onFinish: (result) => {
