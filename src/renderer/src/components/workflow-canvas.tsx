@@ -9,7 +9,6 @@ import {Panel} from '@/components/ai-elements/panel';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {cn} from '@/lib/utils';
-import {Separator} from '@/components/ui/separator';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import type {WorkflowListItem} from '@/components/workflow-history';
 import {
@@ -190,14 +189,14 @@ function buildInitialNodes(workflow: WorkflowListItem): Node<WorkflowCanvasNodeD
         {
             id: `${workflow.id}-start`,
             type: WORKFLOW_CANVAS_NODE_TYPE,
-            position: {x: 80, y: 190},
+            position: {x: 64, y: 176},
             deletable: false,
             data: buildWorkflowRootNodeData(workflow),
         },
         ...INITIAL_WORKFLOW_NODE_TEMPLATE_IDS.map((templateId, index) => ({
             id: `${workflow.id}-${templateId}`,
             type: WORKFLOW_CANVAS_NODE_TYPE,
-            position: {x: 430 + (index * 350), y: 190},
+            position: {x: 236 + (index * 172), y: 176},
             data: buildNodeData(templateId),
         })),
     ];
@@ -270,7 +269,7 @@ function getNodeIcon({
     return <Sparkles className={cn('text-foreground', className)} />;
 }
 
-function getNodeIconBackgroundClass({
+function getNodePalette({
     icon,
     templateId,
 }: {
@@ -278,57 +277,101 @@ function getNodeIconBackgroundClass({
     templateId: WorkflowCanvasNodeTemplateId;
 }) {
     if (templateId === 'start') {
-        return 'bg-[#dff2ec]';
+        return {
+            iconClassName: 'text-[#2d6758]',
+            iconTileClassName: 'border-[#cfe3db] bg-white',
+            surfaceClassName: 'border-[#d7e9e3] bg-[#dff2ec]',
+        };
     }
 
     if (icon === 'agent') {
-        return 'bg-[#e8eef9]';
-    }
-
-    if (icon === 'end') {
-        return 'bg-[#f7ece8]';
+        return {
+            iconClassName: 'text-[#4957ad]',
+            iconTileClassName: 'border-[#dde3fb] bg-white',
+            surfaceClassName: 'border-[#dde4fb] bg-[#e9edff]',
+        };
     }
 
     if (icon === 'classify') {
-        return 'bg-[#efe9f8]';
+        return {
+            iconClassName: 'text-[#d68a2f]',
+            iconTileClassName: 'border-[#f5e3c6] bg-white',
+            surfaceClassName: 'border-[#f6e4ca] bg-[#fff3df]',
+        };
+    }
+
+    if (icon === 'end') {
+        return {
+            iconClassName: 'text-[#8c2f3c]',
+            iconTileClassName: 'border-[#f1d8dd] bg-white',
+            surfaceClassName: 'border-[#f0d7dd] bg-[#f9e6ea]',
+        };
     }
 
     if (icon === 'if-else') {
-        return 'bg-[#ece8fb]';
+        return {
+            iconClassName: 'text-[#e58e2d]',
+            iconTileClassName: 'border-[#f6e1c1] bg-white',
+            surfaceClassName: 'border-[#f7e4c8] bg-[#fff1dc]',
+        };
     }
 
     if (icon === 'loop') {
-        return 'bg-[#f4efdf]';
+        return {
+            iconClassName: 'text-[#5f59b8]',
+            iconTileClassName: 'border-[#dfdbfb] bg-white',
+            surfaceClassName: 'border-[#e1dcfb] bg-[#ece9ff]',
+        };
     }
 
     if (icon === 'user-approval') {
-        return 'bg-[#edf2e7]';
+        return {
+            iconClassName: 'text-[#a04f8c]',
+            iconTileClassName: 'border-[#f2d7ea] bg-white',
+            surfaceClassName: 'border-[#f3dbec] bg-[#fbe7f4]',
+        };
     }
 
     if (icon === 'mcp') {
-        return 'bg-[#e6f0f1]';
+        return {
+            iconClassName: 'text-[#cc6a42]',
+            iconTileClassName: 'border-[#f6ddcf] bg-white',
+            surfaceClassName: 'border-[#f6dfd3] bg-[#feece5]',
+        };
     }
 
     if (icon === 'http') {
-        return 'bg-[#e7eef8]';
+        return {
+            iconClassName: 'text-[#2f88a5]',
+            iconTileClassName: 'border-[#d2ecf2] bg-white',
+            surfaceClassName: 'border-[#d6edf3] bg-[#e4f7fb]',
+        };
     }
 
-    return 'bg-[#ececec]';
+    return {
+        iconClassName: 'text-foreground',
+        iconTileClassName: 'border-[#e6e6e6] bg-white',
+        surfaceClassName: 'border-[#ececec] bg-white',
+    };
 }
 
 function WorkflowCanvasNode({data}: NodeProps<Node<WorkflowCanvasNodeData>>) {
     const hasTargetHandle = data.templateId !== 'start';
+    const palette = getNodePalette(data);
 
     return (
         <CanvasNodeCard
-            className="relative w-[132px] rounded-[1.4rem] border-0 bg-white p-0 shadow-[0_6px_18px_rgba(0,0,0,0.06)]"
+            className={cn(
+                'relative h-[42px] w-[108px] rounded-[1rem] border p-0 shadow-[0_8px_18px_rgba(173,181,205,0.22)]',
+                palette.surfaceClassName
+            )}
             handles={{target: false, source: false}}
         >
             {hasTargetHandle ? (
                 <Handle
                     aria-label={`${data.title} end connection`}
                     className={cn(
-                        '!left-0 !size-4 !-translate-x-1/2 !rounded-full !border-2 !border-primary !bg-background shadow-sm'
+                        '!left-0 !size-3 !-translate-x-1/2 !rounded-full !border-2 !border-primary !bg-background shadow-sm'
                     )}
                     position={Position.Left}
                     type="target"
@@ -337,21 +380,24 @@ function WorkflowCanvasNode({data}: NodeProps<Node<WorkflowCanvasNodeData>>) {
             <Handle
                 aria-label={`${data.title} start connection`}
                 className={cn(
-                    '!right-0 !size-4 !translate-x-1/2 !rounded-full !border-2 !border-background !bg-primary !text-primary-foreground shadow-sm',
-                    "after:absolute after:inset-0 after:flex after:items-center after:justify-center after:text-[10px] after:font-semibold after:text-primary-foreground after:content-['+']"
+                    '!right-0 !size-3 !translate-x-1/2 !rounded-full !border-2 !border-background !bg-primary !text-primary-foreground shadow-sm',
+                    "after:absolute after:inset-0 after:flex after:items-center after:justify-center after:text-[8px] after:font-semibold after:text-primary-foreground after:content-['+']"
                 )}
                 position={Position.Right}
                 type="source"
             />
-            <div className="flex items-center gap-2.5 p-2.5">
+            <div className="flex h-full items-center gap-2 px-2 py-1.5">
                 <div className={cn(
-                    'flex size-10 shrink-0 items-center justify-center rounded-[0.95rem]',
-                    getNodeIconBackgroundClass(data)
+                    'flex size-[30px] shrink-0 items-center justify-center rounded-[0.75rem] border shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]',
+                    palette.iconTileClassName
                 )}>
-                    {getNodeIcon({...data, className: data.templateId === 'start' ? 'size-[18px]' : 'size-4'})}
+                    {getNodeIcon({
+                        ...data,
+                        className: cn(data.templateId === 'start' ? 'size-[13px]' : 'size-3.5', palette.iconClassName),
+                    })}
                 </div>
                 <div className="min-w-0 flex-1">
-                    <p className="truncate text-base leading-none font-medium tracking-[-0.04em] text-foreground">
+                    <p className="truncate text-[0.74rem] leading-none font-medium tracking-[-0.04em] text-foreground">
                         {data.title}
                     </p>
                 </div>
@@ -379,41 +425,43 @@ function WorkflowNodePicker({
             <TooltipProvider>
                 <Card
                     aria-label="Workflow node picker"
-                    className="max-w-[calc(100vw-120px)] gap-0 overflow-hidden py-2 shadow-sm"
+                    className="max-w-[calc(100vw-120px)] gap-0 overflow-hidden border bg-background py-2 shadow-sm"
                     data-node-picker-surface="true"
                     data-testid="workflow-node-picker"
                     id="workflow-node-picker"
                     role="dialog"
-                    style={{width: 'min(260px, calc(100vw - 120px))'}}
+                    style={{width: 'min(236px, calc(100vw - 120px))'}}
                 >
                     {WORKFLOW_NODE_GROUPS.map((group, groupIndex) => (
-                        <div key={group.name}>
-                            {groupIndex > 0 ? <Separator /> : null}
-                            <div className="px-3 pb-1 pt-2">
+                        <div className={cn(groupIndex > 0 ? 'pt-3' : '')} key={group.name}>
+                            <div className="px-3 pb-1 pt-1">
                                 <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                                     {group.name}
                                 </p>
                             </div>
-                            <div className="space-y-0.5 px-2 pb-2">
+                            <div className="space-y-1 px-2 pb-1">
                                 {group.nodes.map((template) => (
                                     <Tooltip key={template.id}>
                                         <TooltipTrigger asChild>
                                             <Button
-                                                className="h-auto w-full justify-start rounded-[1.15rem] border-0 bg-white px-2.5 py-2 hover:bg-white"
+                                                className={cn(
+                                                    'h-[42px] w-full justify-start rounded-[1rem] border px-2 py-1.5 shadow-none hover:opacity-100 hover:bg-transparent',
+                                                    getNodePalette({icon: template.icon, templateId: template.id}).surfaceClassName
+                                                )}
                                                 onClick={() => onSelect(template.id)}
                                                 variant="ghost"
                                             >
                                                 <span className={cn(
-                                                    'flex size-8 shrink-0 items-center justify-center rounded-[0.85rem]',
-                                                    getNodeIconBackgroundClass({icon: template.icon, templateId: template.id})
+                                                    'flex size-[30px] shrink-0 items-center justify-center rounded-[0.75rem] border shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]',
+                                                    getNodePalette({icon: template.icon, templateId: template.id}).iconTileClassName
                                                 )}>
                                                     {getNodeIcon({
                                                         icon: template.icon,
                                                         templateId: template.id,
-                                                        className: 'size-3.5',
+                                                        className: cn('size-[13px]', getNodePalette({icon: template.icon, templateId: template.id}).iconClassName),
                                                     })}
                                                 </span>
-                                                <span className="truncate text-sm font-medium tracking-[-0.03em] text-foreground">
+                                                <span className="truncate text-[0.74rem] font-medium tracking-[-0.04em] text-foreground">
                                                     {template.title}
                                                 </span>
                                             </Button>
@@ -634,8 +682,8 @@ function WorkflowCanvasContent({workflow}: {workflow: WorkflowListItem}) {
                     id: `${workflow.id}-custom-${newNodeIndex}`,
                     type: WORKFLOW_CANVAS_NODE_TYPE,
                     position: {
-                        x: 180 + (column * 320),
-                        y: 410 + (row * 180),
+                        x: 140 + (column * 172),
+                        y: 292 + (row * 108),
                     },
                     data: buildNodeData(templateId),
                 },
