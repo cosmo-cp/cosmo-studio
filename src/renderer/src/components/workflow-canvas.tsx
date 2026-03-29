@@ -4,10 +4,6 @@ import {Canvas} from '@/components/ai-elements/canvas';
 import {Controls} from '@/components/ai-elements/controls';
 import {
     Node as CanvasNodeCard,
-    NodeContent,
-    NodeDescription,
-    NodeHeader,
-    NodeTitle,
 } from '@/components/ai-elements/node';
 import {Panel} from '@/components/ai-elements/panel';
 import {Button} from '@/components/ui/button';
@@ -24,13 +20,13 @@ import {
     GripHorizontal,
     Hand,
     MousePointer2,
+    Play,
     Plus,
     PlugZap,
     Repeat,
     ShieldCheck,
     Sparkles,
     Tags,
-    Workflow,
 } from 'lucide-react';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {Connection, Edge, Node, NodeProps} from '@xyflow/react';
@@ -221,30 +217,108 @@ function buildInitialEdges(workflow: WorkflowListItem): Edge[] {
     ];
 }
 
+function getNodeIcon({
+    icon,
+    templateId,
+    className,
+}: {
+    className: string;
+    icon: WorkflowCanvasNodeIcon;
+    templateId: WorkflowCanvasNodeTemplateId;
+}) {
+    if (templateId === 'start') {
+        return <Play className={cn('stroke-[2.25] text-foreground', className)} />;
+    }
+
+    if (icon === 'agent') {
+        return <Bot className={cn('text-foreground', className)} />;
+    }
+
+    if (icon === 'end') {
+        return <CircleStop className={cn('text-foreground', className)} />;
+    }
+
+    if (icon === 'classify') {
+        return <Tags className={cn('text-foreground', className)} />;
+    }
+
+    if (icon === 'if-else') {
+        return <GitBranch className={cn('text-foreground', className)} />;
+    }
+
+    if (icon === 'loop') {
+        return <Repeat className={cn('text-foreground', className)} />;
+    }
+
+    if (icon === 'user-approval') {
+        return <ShieldCheck className={cn('text-foreground', className)} />;
+    }
+
+    if (icon === 'mcp') {
+        return <PlugZap className={cn('text-foreground', className)} />;
+    }
+
+    if (icon === 'http') {
+        return <Globe className={cn('text-foreground', className)} />;
+    }
+
+    return <Sparkles className={cn('text-foreground', className)} />;
+}
+
+function getNodeIconBackgroundClass({
+    icon,
+    templateId,
+}: {
+    icon: WorkflowCanvasNodeIcon;
+    templateId: WorkflowCanvasNodeTemplateId;
+}) {
+    if (templateId === 'start') {
+        return 'bg-[#dff2ec]';
+    }
+
+    if (icon === 'agent') {
+        return 'bg-[#e8eef9]';
+    }
+
+    if (icon === 'end') {
+        return 'bg-[#f7ece8]';
+    }
+
+    if (icon === 'classify') {
+        return 'bg-[#efe9f8]';
+    }
+
+    if (icon === 'if-else') {
+        return 'bg-[#ece8fb]';
+    }
+
+    if (icon === 'loop') {
+        return 'bg-[#f4efdf]';
+    }
+
+    if (icon === 'user-approval') {
+        return 'bg-[#edf2e7]';
+    }
+
+    if (icon === 'mcp') {
+        return 'bg-[#e6f0f1]';
+    }
+
+    if (icon === 'http') {
+        return 'bg-[#e7eef8]';
+    }
+
+    return 'bg-[#ececec]';
+}
+
 function WorkflowCanvasNode({data}: NodeProps<Node<WorkflowCanvasNodeData>>) {
-    const icon = data.icon === 'workflow' ?
-        <Workflow className="size-4 text-muted-foreground" /> :
-        data.icon === 'agent' ?
-            <Bot className="size-4 text-muted-foreground" /> :
-            data.icon === 'end' ?
-                <CircleStop className="size-4 text-muted-foreground" /> :
-                data.icon === 'classify' ?
-                    <Tags className="size-4 text-muted-foreground" /> :
-                    data.icon === 'if-else' ?
-                        <GitBranch className="size-4 text-muted-foreground" /> :
-                        data.icon === 'loop' ?
-                            <Repeat className="size-4 text-muted-foreground" /> :
-                            data.icon === 'user-approval' ?
-                                <ShieldCheck className="size-4 text-muted-foreground" /> :
-                                data.icon === 'mcp' ?
-                                    <PlugZap className="size-4 text-muted-foreground" /> :
-                                    data.icon === 'http' ?
-                                        <Globe className="size-4 text-muted-foreground" /> :
-                                        <Sparkles className="size-4 text-muted-foreground" />;
     const hasTargetHandle = data.templateId !== 'start';
 
     return (
-        <CanvasNodeCard className="relative w-72" handles={{target: false, source: false}}>
+        <CanvasNodeCard
+            className="relative w-[132px] rounded-[1.4rem] border-0 bg-white p-0 shadow-[0_6px_18px_rgba(0,0,0,0.06)]"
+            handles={{target: false, source: false}}
+        >
             {hasTargetHandle ? (
                 <Handle
                     aria-label={`${data.title} end connection`}
@@ -258,19 +332,25 @@ function WorkflowCanvasNode({data}: NodeProps<Node<WorkflowCanvasNodeData>>) {
             <Handle
                 aria-label={`${data.title} start connection`}
                 className={cn(
-                    '!right-0 !size-6 !translate-x-1/2 !rounded-full !border-2 !border-background !bg-primary !text-primary-foreground shadow-sm',
-                    "after:absolute after:inset-0 after:flex after:items-center after:justify-center after:text-sm after:font-semibold after:text-primary-foreground after:content-['+']"
+                    '!right-0 !size-4 !translate-x-1/2 !rounded-full !border-2 !border-background !bg-primary !text-primary-foreground shadow-sm',
+                    "after:absolute after:inset-0 after:flex after:items-center after:justify-center after:text-[10px] after:font-semibold after:text-primary-foreground after:content-['+']"
                 )}
                 position={Position.Right}
                 type="source"
             />
-            <NodeHeader className="flex flex-row items-center gap-2">
-                {icon}
-                <NodeTitle>{data.title}</NodeTitle>
-            </NodeHeader>
-            <NodeContent>
-                <NodeDescription>{data.description}</NodeDescription>
-            </NodeContent>
+            <div className="flex items-center gap-2.5 p-2.5">
+                <div className={cn(
+                    'flex size-10 shrink-0 items-center justify-center rounded-[0.95rem]',
+                    getNodeIconBackgroundClass(data)
+                )}>
+                    {getNodeIcon({...data, className: data.templateId === 'start' ? 'size-[18px]' : 'size-4'})}
+                </div>
+                <div className="min-w-0 flex-1">
+                    <p className="truncate text-base leading-none font-medium tracking-[-0.04em] text-foreground">
+                        {data.title}
+                    </p>
+                </div>
+            </div>
         </CanvasNodeCard>
     );
 }
@@ -299,7 +379,7 @@ function WorkflowNodePicker({
                     data-testid="workflow-node-picker"
                     id="workflow-node-picker"
                     role="dialog"
-                    style={{width: 'min(280px, calc(100vw - 120px))'}}
+                    style={{width: 'min(260px, calc(100vw - 120px))'}}
                 >
                     {WORKFLOW_NODE_GROUPS.map((group, groupIndex) => (
                         <div key={group.name}>
@@ -314,21 +394,21 @@ function WorkflowNodePicker({
                                     <Tooltip key={template.id}>
                                         <TooltipTrigger asChild>
                                             <Button
-                                                className="h-9 w-full justify-start gap-2.5 px-2.5 text-left"
+                                                className="h-auto w-full justify-start rounded-[1.15rem] border-0 bg-white px-2.5 py-2 hover:bg-white"
                                                 onClick={() => onSelect(template.id)}
                                                 variant="ghost"
                                             >
-                                                <span className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-muted/40">
-                                                    {template.icon === 'agent' ? <Bot className="size-3.5 text-muted-foreground" /> :
-                                                        template.icon === 'end' ? <CircleStop className="size-3.5 text-muted-foreground" /> :
-                                                            template.icon === 'classify' ? <Tags className="size-3.5 text-muted-foreground" /> :
-                                                                template.icon === 'if-else' ? <GitBranch className="size-3.5 text-muted-foreground" /> :
-                                                                    template.icon === 'loop' ? <Repeat className="size-3.5 text-muted-foreground" /> :
-                                                                        template.icon === 'user-approval' ? <ShieldCheck className="size-3.5 text-muted-foreground" /> :
-                                                                            template.icon === 'mcp' ? <PlugZap className="size-3.5 text-muted-foreground" /> :
-                                                                                <Globe className="size-3.5 text-muted-foreground" />}
+                                                <span className={cn(
+                                                    'flex size-8 shrink-0 items-center justify-center rounded-[0.85rem]',
+                                                    getNodeIconBackgroundClass({icon: template.icon, templateId: template.id})
+                                                )}>
+                                                    {getNodeIcon({
+                                                        icon: template.icon,
+                                                        templateId: template.id,
+                                                        className: 'size-3.5',
+                                                    })}
                                                 </span>
-                                                <span className="truncate text-sm font-medium">
+                                                <span className="truncate text-sm font-medium tracking-[-0.03em] text-foreground">
                                                     {template.title}
                                                 </span>
                                             </Button>
@@ -414,7 +494,6 @@ function WorkflowCanvasToolbar({
             data-testid="workflow-toolbar-panel"
             position="top-left"
             style={{
-                left: '16px',
                 top: '50%',
                 transform: `translate(${toolbarOffset.x}px, calc(-50% + ${toolbarOffset.y}px))`,
             }}

@@ -36,6 +36,9 @@ describe('WorkflowPageContent', () => {
         expect(screen.getByRole('button', {name: /hand mode/i})).toBeInTheDocument();
         expect(screen.queryByText(/^pointer$/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/^hand$/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/entry point for untitled workflow/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/run an ai-powered task or decision step/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/mark where a workflow path completes/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/start a new workflow/i)).not.toBeInTheDocument();
         expect(screen.getAllByText(/^start$/i)).not.toHaveLength(0);
         expect(screen.getByRole('button', {name: /delete untitled workflow/i})).toBeInTheDocument();
