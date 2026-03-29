@@ -31,6 +31,7 @@ export function TokenUsageIndicator({ messages, modelId, personaId }: TokenUsage
     const [personaLength, setPersonaLength] = useState(0);
 
     const [maxTokens, setMaxTokens] = useState<number>(128000);
+    const [maxOutputTokens, setMaxOutputTokens] = useState<number>(4096);
 
     useEffect(() => {
         const fetchMaxTokens = async () => {
@@ -39,19 +40,34 @@ export function TokenUsageIndicator({ messages, modelId, personaId }: TokenUsage
                 const providers = await window.api.modelProvider.getProvidersWithModels();
                 for (const provider of providers) {
                     const found = provider.models.find(m => m.modelId === modelId);
-                    if (found && found.contextWindow && found.contextWindow > 0) {
-                        setMaxTokens(found.contextWindow);
+                    if (found) {
+                        if (found.contextWindow && found.contextWindow > 0) setMaxTokens(found.contextWindow);
+                        if (found.maxOutputWindow && found.maxOutputWindow > 0) setMaxOutputTokens(found.maxOutputWindow);
                         return;
                     }
                 }
 
                 // Fallback
                 const lowerModel = modelId.toLowerCase();
-                if (lowerModel.includes('claude-3-5') || lowerModel.includes('claude-3-opus')) setMaxTokens(200000);
-                else if (lowerModel.includes('gemini-1.5-pro')) setMaxTokens(2000000);
-                else if (lowerModel.includes('gemini-1.5-flash')) setMaxTokens(1000000);
-                else if (lowerModel.includes('gpt-4') || lowerModel.includes('gpt-4o')) setMaxTokens(128000);
-                else if (lowerModel.includes('o1') || lowerModel.includes('o3')) setMaxTokens(200000);
+                if (lowerModel.includes('claude-3-5') || lowerModel.includes('claude-3-opus')) {
+                    setMaxTokens(200000);
+                    setMaxOutputTokens(8192);
+                } else if (lowerModel.includes('gemini-1.5-pro')) {
+                    setMaxTokens(2000000);
+                    setMaxOutputTokens(8192);
+                } else if (lowerModel.includes('gemini-1.5-flash')) {
+                    setMaxTokens(1000000);
+                    setMaxOutputTokens(8192);
+                } else if (lowerModel.includes('gpt-4') || lowerModel.includes('gpt-4o')) {
+                    setMaxTokens(128000);
+                    setMaxOutputTokens(4096);
+                } else if (lowerModel.includes('o1') || lowerModel.includes('o3')) {
+                    setMaxTokens(200000);
+                    setMaxOutputTokens(100000);
+                } else {
+                    setMaxTokens(128000);
+                    setMaxOutputTokens(4096);
+                }
             } catch (err) {
                 console.error('Failed to parse models for token usage indicator', err);
             }
@@ -183,8 +199,8 @@ export function TokenUsageIndicator({ messages, modelId, personaId }: TokenUsage
             <HoverCardContent align="end" className="w-[300px] p-0" side="top" sideOffset={8}>
                 <div className="p-4 space-y-4">
                     <div>
-                        <div className="flex items-center gap-1.5 mb-1">
-                            <h4 className="font-semibold text-sm">Context Window</h4>
+                        <div className="flex items-center gap-1.5 mb-2">
+                            <h4 className="font-semibold text-sm">Token Limits</h4>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -198,14 +214,22 @@ export function TokenUsageIndicator({ messages, modelId, personaId }: TokenUsage
                                 </Tooltip>
                             </TooltipProvider>
                         </div>
-                        <p className="text-sm text-muted-foreground flex items-center gap-2">
-                            <span>
-                                {formatTokens(tokens.totalTokens)} / {formatTokens(maxTokens)} tokens
-                            </span>
-                            <span className="text-xs px-1.5 py-0.5 rounded-md bg-secondary text-secondary-foreground font-medium">
-                                {totalPercentage.toFixed(1)}%
-                            </span>
-                        </p>
+                        
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                <span>Context Range</span>
+                                <div className="flex items-center gap-2">
+                                    <span>{formatTokens(tokens.totalTokens)} / {formatTokens(maxTokens)}</span>
+                                    <span className="px-1.5 py-0.5 rounded-md bg-secondary text-secondary-foreground font-medium">
+                                        {totalPercentage.toFixed(1)}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                <span>Max Output</span>
+                                <span>{formatTokens(maxOutputTokens)}</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="space-y-3">
