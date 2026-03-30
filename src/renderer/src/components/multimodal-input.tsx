@@ -43,6 +43,7 @@ import {
     usePromptInputAttachments,
     usePromptInputController,
 } from './ai-elements/prompt-input';
+import { TokenUsageIndicator } from './token-usage-indicator';
 
 const parsePersonaDirective = (text: string) => {
     const match = text.match(/^\s*@persona(?:\s*[:=])?\s*(?:"([^"]+)"|'([^']+)'|([^\s]+))\s*/i);
@@ -61,6 +62,7 @@ const parsePersonaDirective = (text: string) => {
 export function MultimodalInput({
     chat,
     status,
+    messages,
     sendMessage,
     onModelChange,
     onPersonaChange,
@@ -214,6 +216,7 @@ export function MultimodalInput({
                 status={status}
                 submitForm={submitForm}
                 stop={stop}
+                messages={messages}
             />
         </PromptInputProvider>
     );
@@ -236,6 +239,7 @@ function PromptInputContent({
     status,
     submitForm,
     stop,
+    messages,
 }: {
     chat: Chat;
     handlePersonaSelection: (personaId: string | null) => void;
@@ -252,6 +256,7 @@ function PromptInputContent({
     status: UseChatHelpers<UIMessage>['status'];
     submitForm: (message: PromptInputMessage) => Promise<void>;
     stop?: UseChatHelpers<UIMessage>['stop'];
+    messages: Array<UIMessage>;
 }) {
     const attachments = usePromptInputAttachments();
     const controller = usePromptInputController();
@@ -535,6 +540,7 @@ function PromptInputContent({
                             </ModelSelectorContent>
                         </ModelSelector>
                         <McpToolsSelector />
+                        <TokenUsageIndicator messages={messages} modelId={chat.selectedModelId ?? undefined} personaId={selectedPersonaId} />
                     </PromptInputTools>
                     <PromptInputSubmit
                         disabled={!chat.selectedModelId || (!input && status !== 'submitted' && status !== 'streaming')}

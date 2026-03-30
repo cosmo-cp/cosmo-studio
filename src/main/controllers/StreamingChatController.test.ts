@@ -14,6 +14,7 @@ const ai = vi.hoisted(() => ({
     convertToModelMessages: vi.fn(),
     smoothStream: vi.fn(),
     streamText: vi.fn(),
+    stepCountIs: vi.fn(),
     RetryError: {
         isInstance: vi.fn(() => false),
     },
@@ -27,6 +28,7 @@ vi.mock('ai', () => ({
     convertToModelMessages: ai.convertToModelMessages,
     smoothStream: ai.smoothStream,
     streamText: ai.streamText,
+    stepCountIs: ai.stepCountIs,
     RetryError: ai.RetryError,
 }));
 

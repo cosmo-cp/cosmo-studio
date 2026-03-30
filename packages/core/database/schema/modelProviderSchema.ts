@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { boolean, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, pgEnum, pgTable, text, timestamp, uuid, integer } from 'drizzle-orm/pg-core';
 
 // --- ENUM and Base Fields ---
 export enum ModelProviderTypeEnum {
@@ -80,6 +80,8 @@ export const model = pgTable('Model', {
     outputModalities: modelModalityEnum('output_modalities').array().notNull().default([]),
     releaseDate: timestamp('releaseDate'),
     lastUpdatedByProvider: timestamp('lastUpdatedByProvider'),
+    contextWindow: integer('contextWindow').default(128000),
+    maxOutputWindow: integer('maxOutputWindow').default(4096),
 });
 
 export const modelProviderRelations = relations(modelProvider, ({ many }) => ({

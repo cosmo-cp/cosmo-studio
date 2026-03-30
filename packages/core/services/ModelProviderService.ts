@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify';
 import { CORETYPES } from '../types/types';
 import { ModelProviderRepository } from '../repositories/ModelProviderRepository';
 import { ModelProvider, ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels } from '../dto';
-import { ModelProviderTypeEnum } from '../database/schema/modelProviderSchema';
+import { ModelProviderTypeEnum, ModelModalityEnum } from '../database/schema/modelProviderSchema';
 import { safeStorage } from 'electron';
 import { ProviderV3 } from '@ai-sdk/provider';
 import { AnthropicProviderSettings, createAnthropic } from '@ai-sdk/anthropic';
@@ -30,13 +30,26 @@ export type RemoteProviderOptions =
 
 export type LocalProviderOptions = OllamaProviderSettings;
 
+interface LMStudioModelPayload {
+    id: string;
+    key?: string;
+    display_name?: string;
+    description?: string;
+    max_context_length?: number;
+    capabilities?: {
+        reasoning?: boolean;
+        vision?: boolean;
+        trained_for_tool_use?: boolean;
+    };
+}
+
 @injectable()
 export class ModelProviderService {
     private readonly repository: ModelProviderRepository;
     private modelProviderRegistry: ProviderRegistryProvider;
     private static MODELS_DOT_DEV_URL = 'https://models.dev/api.json';
     private static MODELS_OLLAMA_URL = 'http://127.0.0.1:11434/api';
-    private static MODELS_LMSTUDIO_URL = 'http://localhost:1234/v1';
+    private static MODELS_LMSTUDIO_URL = 'http://localhost:1234/api';
     private readonly providerFactoryByType: Record<ModelProviderTypeEnum, (provider: ModelProviderLite) => ProviderV3> =
         {
             [ModelProviderTypeEnum.ANTHROPIC]: (provider) => createAnthropic(this.createRemoteOptions(provider)),
@@ -249,17 +262,55 @@ export class ModelProviderService {
                 lastUpdatedByProvider: new Date(m.modified_at),
             }),
         );
+
+        await Promise.all(
+            result.map(async (m) => {
+                try {
+                    const res = await fetch(baseUrl + '/show', {
+                        method: 'POST',
+                        body: JSON.stringify({ model: m.modelId }),
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.model_info) {
+                            const ctxKey = Object.keys(data.model_info).find((k) => k.endsWith('.context_length'));
+                            if (ctxKey && typeof data.model_info[ctxKey] === 'number') {
+                                m.contextWindow = data.model_info[ctxKey];
+                            }
+                        }
+                    }
+                } catch (e) {
+                    logger.error(`Ollama /show failed for ${m.modelId}`, e);
+                }
+            }),
+        );
+
         return result.sort((a, b) => (b.lastUpdatedByProvider >= a.lastUpdatedByProvider ? 1 : -1));
     }
 
     private async getModelsFromLMStudio(provider: ModelProviderCreateInput): Promise<NewModel[]> {
         const baseUrl = (provider.apiUrl && provider.apiUrl.trim()) || ModelProviderService.MODELS_LMSTUDIO_URL;
-        return this.fetchLocalModels<{ id: string }>(baseUrl + '/models', 'LM Studio', 'data', (m) => ({
-            name: m.id,
-            modelId: m.id,
-            releaseDate: new Date(),
-            lastUpdatedByProvider: new Date(),
-        }));
+
+        return this.fetchLocalModels<LMStudioModelPayload>(
+            baseUrl.replace(/\/?$/, '') + '/v1/models',
+            'LM Studio',
+            'models',
+            (m) => ({
+                name: m.display_name || m.id || m.key || '',
+                modelId: m.key || m.id,
+                releaseDate: new Date(),
+                lastUpdatedByProvider: new Date(),
+                description: m.description || m.display_name || m.id || m.key,
+                contextWindow: m.max_context_length,
+                reasoning: !!m.capabilities?.reasoning,
+                inputModalities: m.capabilities?.vision
+                    ? [ModelModalityEnum.TEXT, ModelModalityEnum.IMAGE]
+                    : [ModelModalityEnum.TEXT],
+                outputModalities: [ModelModalityEnum.TEXT],
+                toolCall: !!m.capabilities?.trained_for_tool_use,
+            }),
+        );
     }
 
     public async getModelsForProviderUsingModelsDotDev(provider: ModelProviderCreateInput): Promise<NewModel[]> {
@@ -312,6 +363,8 @@ export class ModelProviderService {
                     toolCall: m.tool_call,
                     inputModalities: m.modalities.input,
                     outputModalities: m.modalities.output,
+                    ...(m.limit?.context !== undefined && { contextWindow: m.limit.context }),
+                    ...(m.limit?.output !== undefined && { maxOutputWindow: m.limit.output }),
                     ...(m.status !== undefined && { status: m.status }),
                 });
             }
