@@ -299,6 +299,8 @@ export class ModelProviderService {
             (m) => ({
                 name: m.display_name || m.id || m.key || '',
                 modelId: m.key || m.id,
+                releaseDate: new Date(),
+                lastUpdatedByProvider: new Date(),
                 description: m.description || m.display_name || m.id || m.key,
                 contextWindow: m.max_context_length,
                 reasoning: !!m.capabilities?.reasoning,
