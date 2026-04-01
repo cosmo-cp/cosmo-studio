@@ -138,8 +138,8 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 /.vite
 
-# packages-lock.json files
-package-lock.json
+# npm lockfiles
+# Keep the workspace lockfile committed so CI can use `npm ci`.
 src/renderer/package-lock.json
 src/renderer/next-env.d.ts
 /.idea
