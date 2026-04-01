@@ -680,7 +680,13 @@ function WorkflowCanvasToolbar({
     );
 }
 
-function WorkflowCanvasContent({workflow}: {workflow: WorkflowListItem}) {
+function WorkflowCanvasContent({
+    workflow,
+    editable = true,
+}: {
+    workflow: WorkflowListItem;
+    editable?: boolean;
+}) {
     const canvasRef = useRef<HTMLDivElement | null>(null);
     const reactFlowInstanceRef = useRef<ReactFlowInstance<Node<WorkflowCanvasNodeData>, Edge> | null>(null);
     const [interactionMode, setInteractionMode] = useState<InteractionMode>('pointer');
@@ -691,7 +697,7 @@ function WorkflowCanvasContent({workflow}: {workflow: WorkflowListItem}) {
     const isNodePickerOpen = nodePickerState !== null;
 
     useEffect(() => {
-        if (!isNodePickerOpen) {
+        if (!editable || !isNodePickerOpen) {
             return;
         }
 
@@ -715,11 +721,29 @@ function WorkflowCanvasContent({workflow}: {workflow: WorkflowListItem}) {
         return () => {
             document.removeEventListener('pointerdown', handlePointerDown, true);
         };
-    }, [isNodePickerOpen]);
+    }, [editable, isNodePickerOpen]);
+
+    useEffect(() => {
+        if (editable) {
+            return;
+        }
+
+        const closePickerTimer = window.setTimeout(() => {
+            setNodePickerState(null);
+        }, 0);
+
+        return () => {
+            window.clearTimeout(closePickerTimer);
+        };
+    }, [editable]);
 
     const handleAddNode = useCallback(() => {
+        if (!editable) {
+            return;
+        }
+
         setNodePickerState((currentValue) => currentValue ? null : {kind: 'toolbar'});
-    }, []);
+    }, [editable]);
 
     const handleNodeTemplateSelect = useCallback((templateId: WorkflowNodeTemplate['id']) => {
         const newNodeIndex = nextNodeIndexRef.current;
@@ -828,31 +852,36 @@ function WorkflowCanvasContent({workflow}: {workflow: WorkflowListItem}) {
         <div className="flex h-full flex-1 min-h-0 overflow-hidden bg-background" ref={canvasRef}>
             <Canvas
                 className="h-full w-full"
-                connectOnClick
+                connectOnClick={editable}
+                deleteKeyCode={editable ? ['Backspace', 'Delete'] : null}
                 edges={edges}
+                elementsSelectable={editable}
                 fitViewOptions={{padding: 0.2}}
                 nodeTypes={CANVAS_NODE_TYPES}
-                nodesDraggable={interactionMode === 'pointer'}
+                nodesConnectable={editable}
+                nodesDraggable={editable && interactionMode === 'pointer'}
                 nodes={nodes}
-                onConnect={handleConnect}
-                onConnectEnd={handleConnectEnd}
-                onConnectStart={handleConnectStart}
+                onConnect={editable ? handleConnect : undefined}
+                onConnectEnd={editable ? handleConnectEnd : undefined}
+                onConnectStart={editable ? handleConnectStart : undefined}
                 onEdgesChange={onEdgesChange}
                 onInit={(instance) => {
                     reactFlowInstanceRef.current = instance;
                 }}
                 onNodesChange={onNodesChange}
-                panOnDrag={interactionMode === 'hand'}
+                panOnDrag={editable ? interactionMode === 'hand' : true}
                 proOptions={{hideAttribution: true}}
-                selectionOnDrag={interactionMode === 'pointer'}
+                selectionOnDrag={editable && interactionMode === 'pointer'}
             >
-                <WorkflowCanvasToolbar
-                    onAddNode={handleAddNode}
-                    isNodePickerOpen={isNodePickerOpen}
-                    interactionMode={interactionMode}
-                    onInteractionModeChange={setInteractionMode}
-                />
-                {isNodePickerOpen ? (
+                {editable ? (
+                    <WorkflowCanvasToolbar
+                        onAddNode={handleAddNode}
+                        isNodePickerOpen={isNodePickerOpen}
+                        interactionMode={interactionMode}
+                        onInteractionModeChange={setInteractionMode}
+                    />
+                ) : null}
+                {editable && isNodePickerOpen ? (
                     <WorkflowNodePicker
                         anchor={nodePickerState?.kind === 'connection-drop' ? nodePickerState.anchor : undefined}
                         onSelect={handleNodeTemplateSelect}
@@ -864,6 +893,12 @@ function WorkflowCanvasContent({workflow}: {workflow: WorkflowListItem}) {
     );
 }
 
-export function WorkflowCanvas({workflow}: {workflow: WorkflowListItem}) {
-    return <WorkflowCanvasContent key={workflow.id} workflow={workflow} />;
+export function WorkflowCanvas({
+    workflow,
+    editable = true,
+}: {
+    workflow: WorkflowListItem;
+    editable?: boolean;
+}) {
+    return <WorkflowCanvasContent editable={editable} key={workflow.id} workflow={workflow} />;
 }

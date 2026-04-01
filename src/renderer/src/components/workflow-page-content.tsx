@@ -3,8 +3,8 @@
 import {Button} from '@/components/ui/button';
 import {Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle} from '@/components/ui/empty';
 import {ConfirmDialog} from '@/components/confirm-dialog';
-import {WorkflowCanvas} from '@/components/workflow-canvas';
 import {WorkflowHistory, type WorkflowListItem} from '@/components/workflow-history';
+import {WorkflowWorkspace} from '@/components/workflow-workspace';
 import {Workflow} from 'lucide-react';
 import {useRef, useState} from 'react';
 
@@ -91,7 +91,7 @@ export function WorkflowPageContent() {
                         </Empty>
                     </div>
                 ) : selectedWorkflow ? (
-                    <WorkflowCanvas workflow={selectedWorkflow} />
+                    <WorkflowWorkspace key={selectedWorkflow.id} workflow={selectedWorkflow} />
                 ) : (
                     <div className="flex h-full flex-1 flex-col items-center justify-center">
                         <Empty>

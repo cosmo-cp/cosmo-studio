@@ -3,6 +3,9 @@ import userEvent from '@testing-library/user-event';
 import {beforeAll, describe, expect, it} from 'vitest';
 import {WorkflowPageContent} from '@/components/workflow-page-content';
 import {getDropPickerAnchorPosition, getNodePositionFromDrop} from '@/components/workflow-canvas';
+import {StoreProvider} from '@/lib/store/store-provider';
+import {createMockAppDataSource} from '@/test/mock-app-data-source';
+import {ThemeProvider} from 'next-themes';
 
 beforeAll(() => {
     class ResizeObserverMock {
@@ -14,7 +17,30 @@ beforeAll(() => {
     }
 
     globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+    Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: (query: string) => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addEventListener: () => undefined,
+            removeEventListener: () => undefined,
+            addListener: () => undefined,
+            removeListener: () => undefined,
+            dispatchEvent: () => false,
+        }),
+    });
 });
+
+function renderWorkflowPageContent() {
+    return render(
+        <StoreProvider appDataSource={createMockAppDataSource()}>
+            <ThemeProvider attribute="class" forcedTheme="light">
+                <WorkflowPageContent />
+            </ThemeProvider>
+        </StoreProvider>
+    );
+}
 
 describe('WorkflowPageContent', () => {
     it('clamps drop-open picker placement and centers new nodes around the drop point', () => {
@@ -37,13 +63,20 @@ describe('WorkflowPageContent', () => {
     it('creates workflows from the history panel and deletes them from the same list', async () => {
         const user = userEvent.setup();
 
-        render(<WorkflowPageContent />);
+        renderWorkflowPageContent();
 
         expect(screen.getByText(/no workflows yet/i)).toBeInTheDocument();
         expect(screen.getByText(/start a new workflow/i)).toBeInTheDocument();
 
         await user.click(screen.getAllByRole('button', {name: /new workflow/i})[0]);
 
+        expect(screen.getByTestId('workflow-mode-toggle')).toBeInTheDocument();
+        expect(screen.getByTestId('workflow-mode-toggle')).toHaveClass('top-4', 'left-1/2', '-translate-x-1/2', 'flex-row');
+        expect(await screen.findByRole('button', {name: /^edit$/i})).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', {name: /^run$/i})).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.queryByText(/^edit$/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/^run$/i)).not.toBeInTheDocument();
+        expect(screen.getByTestId('workflow-run-drawer')).toHaveAttribute('data-state', 'closed');
         expect(await screen.findByTestId('workflow-toolbar')).toBeInTheDocument();
         expect(screen.getByTestId('workflow-toolbar-panel')).toHaveStyle({
             top: '50%',
@@ -60,6 +93,35 @@ describe('WorkflowPageContent', () => {
         expect(screen.queryByText(/start a new workflow/i)).not.toBeInTheDocument();
         expect(screen.getAllByText(/^start$/i)).not.toHaveLength(0);
         expect(screen.getByRole('button', {name: /delete untitled workflow/i})).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: /^run$/i}));
+
+        expect(screen.getByRole('button', {name: /^run$/i})).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', {name: /^edit$/i})).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.getByTestId('workflow-run-drawer')).toHaveAttribute('data-state', 'open');
+        expect(screen.queryByTestId('workflow-toolbar')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /close workflow runner/i})).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: /close workflow runner/i}));
+
+        expect(screen.getByRole('button', {name: /^edit$/i})).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', {name: /^run$/i})).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.getByTestId('workflow-run-drawer')).toHaveAttribute('data-state', 'closed');
+        expect(await screen.findByTestId('workflow-toolbar')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: /^run$/i}));
+
+        const workflowInput = screen.getByTestId('workflow-run-input');
+        await user.type(workflowInput, 'Review the workflow execution path{enter}');
+
+        expect(screen.getByText('Review the workflow execution path')).toBeInTheDocument();
+        expect(await screen.findByText('Started running "Untitled Workflow" with: Review the workflow execution path')).toBeInTheDocument();
+        expect(workflowInput).toHaveValue('');
+
+        await user.click(screen.getByRole('button', {name: /^edit$/i}));
+
+        expect(await screen.findByTestId('workflow-toolbar')).toBeInTheDocument();
+        expect(screen.getByTestId('workflow-run-drawer')).toHaveAttribute('data-state', 'closed');
 
         await user.click(screen.getByRole('button', {name: /add node/i}));
 
