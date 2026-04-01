@@ -197,6 +197,112 @@ describe('StreamingChatController', () => {
         ).toBe(false);
     });
 
+    it('emits an error when persisting the assistant message fails on finish', async () => {
+        const registry = { languageModel: vi.fn(() => 'lm') };
+        const modelProviderService = {
+            getModelProviderRegistry: vi.fn().mockResolvedValue(registry),
+        } as unknown as ModelProviderService;
+        const assistantPersistError = new Error('persist failed');
+        const messageService = {
+            createMessage: vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(assistantPersistError),
+        } as unknown as MessageService;
+        const personaService = {
+            getById: vi.fn().mockResolvedValue(undefined),
+            getByName: vi.fn().mockResolvedValue(undefined),
+        } as unknown as PersonaService;
+        const mcpClientManager = {
+            getAllTools: vi.fn().mockResolvedValue({}),
+        } as unknown as McpClientManager;
+
+        ai.convertToModelMessages.mockResolvedValue([{ role: 'user', content: 'hi' }]);
+        ai.streamText.mockImplementation((options: StreamTextMockOptions) => ({
+            toUIMessageStream: async function* () {
+                yield { chunk: 1 };
+                await options.onFinish?.({ text: null, reasoningText: 'reasoning' });
+            },
+        }));
+
+        const controller = new StreamingChatController(
+            modelProviderService,
+            messageService,
+            personaService,
+            mcpClientManager,
+        );
+        const webContents = {
+            isDestroyed: vi.fn(() => false),
+            send: vi.fn(),
+        };
+        const event = createIpcEvent(webContents);
+
+        await controller.sendMessage(
+            {
+                chatId: 'chat-id',
+                streamChannel: 'chan',
+                modelIdentifier: 'provider:model' as never,
+                messages: [createUserMessage([{ type: 'text', text: 'Hello' }])],
+            },
+            event,
+        );
+
+        expect(logger.error).toHaveBeenCalledWith(
+            'Failed to persist assistant message after streaming:',
+            assistantPersistError,
+        );
+        expect(webContents.send).toHaveBeenCalledWith('chan-error', assistantPersistError);
+        expect(webContents.send).not.toHaveBeenCalledWith('chan-end');
+        expect(
+            (controller as unknown as { activeStreams: Map<string, AbortController> }).activeStreams.has('chan'),
+        ).toBe(false);
+    });
+
+    it('emits an error and skips stream startup when persisting the user message fails', async () => {
+        const modelProviderService = {
+            getModelProviderRegistry: vi.fn().mockResolvedValue({ languageModel: vi.fn(() => 'lm') }),
+        } as unknown as ModelProviderService;
+        const userPersistError = new Error('save failed');
+        const messageService = {
+            createMessage: vi.fn().mockRejectedValue(userPersistError),
+        } as unknown as MessageService;
+        const personaService = {
+            getById: vi.fn().mockResolvedValue(undefined),
+            getByName: vi.fn().mockResolvedValue(undefined),
+        } as unknown as PersonaService;
+        const mcpClientManager = {
+            getAllTools: vi.fn().mockResolvedValue({}),
+        } as unknown as McpClientManager;
+
+        ai.convertToModelMessages.mockResolvedValue([]);
+
+        const controller = new StreamingChatController(
+            modelProviderService,
+            messageService,
+            personaService,
+            mcpClientManager,
+        );
+        const webContents = {
+            isDestroyed: vi.fn(() => false),
+            send: vi.fn(),
+        };
+        const event = createIpcEvent(webContents);
+
+        await controller.sendMessage(
+            {
+                chatId: 'chat-id',
+                streamChannel: 'chan',
+                modelIdentifier: 'provider:model' as never,
+                messages: [createUserMessage([{ type: 'text', text: 'Hello' }])],
+            },
+            event,
+        );
+
+        expect(logger.error).toHaveBeenCalledWith('Failed to persist user message before streaming:', userPersistError);
+        expect(webContents.send).toHaveBeenCalledWith('chan-error', userPersistError);
+        expect(ai.streamText).not.toHaveBeenCalled();
+        expect(
+            (controller as unknown as { activeStreams: Map<string, AbortController> }).activeStreams.has('chan'),
+        ).toBe(false);
+    });
+
     it('uses personaName lookup when personaId is not provided', async () => {
         const registry = { languageModel: vi.fn(() => 'lm') };
         const modelProviderService = {

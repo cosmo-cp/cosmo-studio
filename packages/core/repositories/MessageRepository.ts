@@ -38,11 +38,13 @@ export class MessageRepository {
                 })
                 .returning();
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const chatUpdate: any = {
-                lastMessage: newMessage.text.slice(0, 200),
+            const chatUpdate: Partial<typeof chat.$inferInsert> = {
                 lastMessageAt: now,
             };
+
+            if (newMessage.text) {
+                chatUpdate.lastMessage = newMessage.text.slice(0, 200);
+            }
 
             if (existingMessages.length === 0 && newMessage.text) {
                 chatUpdate.title = newMessage.text.slice(0, 50);
