@@ -18,7 +18,7 @@ const config: ForgeConfig = {
             icon: './icons/cosmo',
             appBundleId: "com.cosmocp.cosmostudio",
             osxSign: {
-                keychain: "signing.keychain-db",
+                keychain: process.env.KEYCHAIN_PATH || "signing.keychain-db",
                 identity: process.env.SIGN_IDENTITY,
                 optionsForFile: () => {
                     return {
