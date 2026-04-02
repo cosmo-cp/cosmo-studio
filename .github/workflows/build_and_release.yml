@@ -7,6 +7,7 @@ on:
 
 jobs:
     release:
+        timeout-minutes: 60
         name: Release for ${{ matrix.os }}
         strategy:
             matrix:
@@ -18,36 +19,15 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
+
             - name: Set up Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: '22.19.0'
+                  cache: 'npm'
 
-            - name: Install the Apple certificate
-              if: runner.os == 'macOS'
-              env:
-                  BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
-                  P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-                  KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-              run: |
-                  # create variables
-                  BUILD_CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-                  KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
-
-                  # import certificate from secrets
-                  echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $BUILD_CERTIFICATE_PATH
-
-                  # create temporary keychain
-                  security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-                  security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-                  security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-
-                  # import certificate to keychain
-                  security import $BUILD_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-                  security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-                  security list-keychain -d user -s $KEYCHAIN_PATH
             - name: Install dependencies
-              run: npm install
+              run: npm ci
 
             - name: Run root tests (coverage)
               if: matrix.os == 'ubuntu-latest'
@@ -73,6 +53,42 @@ jobs:
                   path: |
                       coverage
                       src/renderer/coverage
+
+            - name: Install the Apple certificate for Signing
+              if: runner.os == 'macOS'
+              env:
+                BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+                P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+                KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+              run: |
+                set -euo pipefail
+
+                if [ -z "${BUILD_CERTIFICATE_BASE64}" ] || [ -z "${P12_PASSWORD}" ] || [ -z "${KEYCHAIN_PASSWORD}" ]; then
+                  echo "Missing one or more signing certificate secrets."
+                  exit 1
+                fi
+
+                # create variables
+                BUILD_CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
+                KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+
+                # import certificate from secrets
+                printf '%s' "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$BUILD_CERTIFICATE_PATH"
+
+                # create temporary keychain
+                security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+                security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+                security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+                security default-keychain -d user -s "$KEYCHAIN_PATH"
+                security list-keychains -d user -s "$KEYCHAIN_PATH"
+
+                # import certificate to keychain
+                security import "$BUILD_CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+                security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+                security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+                echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+
             - name: Extract version from tag
               shell: bash
               run: |
@@ -84,8 +100,19 @@ jobs:
                   VERSION_NUMBER="${TAG_NAME#v}"
                   # Update version in package.json from tag(don't commit)
                   npm version --no-git-tag-version $VERSION_NUMBER
-            - name: Publish release
+            - name: Build and Publish release
               env:
+                  APPLE_ID: ${{ secrets.APPLE_ID }}
+                  APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+                  SIGN_IDENTITY: ${{ secrets.SIGN_IDENTITY }}
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               #publish internally calls `make` command that builds distributable
-              run: npm run publish
+              run: |
+                set -euo pipefail
+
+                if [ -z "${APPLE_ID}" ] || [ -z "${APPLE_ID_PASSWORD}" ] || [ -z "${APPLE_TEAM_ID}" ] || [ -z "${SIGN_IDENTITY}" ]; then
+                  echo "Missing one or more Apple notarization/signing secrets."
+                  exit 1
+                fi
+                npm run publish
