@@ -52,6 +52,8 @@ jobs:
                       src/renderer/coverage
 
             - name: Package application
+              env:
+                ENABLE_MAC_SIGNING: 'false'
               run: npm run package
 
             - name: Upload package artifact

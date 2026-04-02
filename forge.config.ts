@@ -10,6 +10,8 @@ import NextPlugin from './src/NextPlugin';
 import path from 'path';
 import fs from 'fs';
 
+const isMacSigning = process.env.ENABLE_MAC_SIGNING === 'true';
+
 const config: ForgeConfig = {
     packagerConfig: {
         name: 'Cosmo Studio',
@@ -17,21 +19,24 @@ const config: ForgeConfig = {
         asar: true,
         icon: './icons/cosmo',
         appBundleId: 'com.cosmocp.cosmostudio',
-        osxSign: {
-            keychain: process.env.KEYCHAIN_PATH || 'signing.keychain-db',
-            identity: process.env.SIGN_IDENTITY,
-            optionsForFile: () => {
-                return {
-                    entitlements: './entitlements.plist',
-                    hardenedRuntime: true,
-                };
+        ...(isMacSigning
+            ? {
+            osxSign: {
+                keychain: process.env.KEYCHAIN_PATH || 'signing.keychain-db',
+                identity: process.env.SIGN_IDENTITY,
+                optionsForFile: () => {
+                    return {
+                        entitlements: './entitlements.plist',
+                        hardenedRuntime: true,
+                    };
+                },
             },
-        },
-        osxNotarize: {
-            appleId: process.env.APPLE_ID,
-            appleIdPassword: process.env.APPLE_ID_PASSWORD,
-            teamId: process.env.APPLE_TEAM_ID,
-        },
+            osxNotarize: {
+                appleId: process.env.APPLE_ID,
+                appleIdPassword: process.env.APPLE_ID_PASSWORD,
+                teamId: process.env.APPLE_TEAM_ID,
+            },
+        } : {})
     },
     rebuildConfig: {},
     makers: [
