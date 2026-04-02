@@ -1,5 +1,5 @@
-import {ModelProviderTypeEnum} from "core/database/schema/modelProviderSchema";
-
+import { ModelProviderTypeEnum } from 'core/database/schema/modelProviderSchema';
+import { ProviderCatalogByType } from 'core/providerCatalog';
 
 export interface Attachment {
     name: string;
@@ -7,25 +7,12 @@ export interface Attachment {
     contentType: string;
 }
 
-export const ProviderInfo: Record<ModelProviderTypeEnum, { name: string; description: string }> = {
-    [ModelProviderTypeEnum.OPENAI]: {
-        name: 'OpenAI',
-        description: 'Access state-of-the-art models like GPT-4 and GPT-3.5.'
+export const ProviderInfo: Record<ModelProviderTypeEnum, { name: string; description: string }> = Object.values(
+    ProviderCatalogByType,
+).reduce(
+    (acc, entry) => {
+        acc[entry.type] = { name: entry.name, description: entry.description };
+        return acc;
     },
-    [ModelProviderTypeEnum.ANTHROPIC]: {
-        name: 'Anthropic',
-        description: 'Utilize the Claude family of models, known for safety and performance.'
-    },
-    [ModelProviderTypeEnum.GOOGLE]: {
-        name: 'Google',
-        description: 'Leverage the powerful Gemini family of models from Google AI.'
-    },
-    [ModelProviderTypeEnum.OLLAMA]: {
-        name: 'Ollama',
-        description: 'Chat & build with open models using Ollama.'
-    },
-    [ModelProviderTypeEnum.CUSTOM]: {
-        name: 'Custom',
-        description: 'Connect to any OpenAI-compatible API endpoint.'
-    }
-};
+    {} as Record<ModelProviderTypeEnum, { name: string; description: string }>,
+);

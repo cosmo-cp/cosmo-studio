@@ -55,9 +55,18 @@ Cosmo Studio is an Electron desktop application with a static-exported Next.js U
 ### Core package (`packages/core`)
 
 - Shared DTOs and types (`packages/core/dto.ts`).
+- Provider catalog metadata shared across processes (`packages/core/providerCatalog.ts`).
 - Drizzle schema and DB manager (`packages/core/database/*`).
 - Repositories and services (`packages/core/repositories/*`, `packages/core/services/*`).
 - DI container (`packages/core/inversify.config.ts`) used as the parent container for main.
+- Command registry and parsing utilities (`packages/core/commands/*`), including built-ins and user-defined commands stored in the DB.
+
+### Command flow (high-level)
+
+1. Renderer gathers commands for UI (settings + dropdown) via `window.api.command.listAll()`.
+2. User submits a command (typed or selected).
+3. Main resolves the command through `CommandController` → `CommandService`.
+4. The resolved prompt is sent through the normal chat streaming pipeline.
 
 ## Build pipeline (how packaging works)
 
@@ -69,9 +78,8 @@ Cosmo Studio is an Electron desktop application with a static-exported Next.js U
 ### Production (`npm run make` / `npm run package`)
 
 1. Build renderer: `cd src/renderer && npm run build`
-   - Produces static output under `src/renderer/out/`.
+    - Produces static output under `src/renderer/out/`.
 2. Electron Forge packaging:
-   - Vite plugin builds main and preload (`vite.main.config.ts`, `vite.preload.config.ts`).
-   - `NextPlugin` copies `src/renderer/out/` into the packaged renderer directory.
-   - `@electric-sql/*` is copied into the package so PGlite works at runtime.
-
+    - Vite plugin builds main and preload (`vite.main.config.ts`, `vite.preload.config.ts`).
+    - `NextPlugin` copies `src/renderer/out/` into the packaged renderer directory.
+    - `@electric-sql/*` is copied into the package so PGlite works at runtime.

@@ -1,9 +1,9 @@
-import {inject, injectable} from "inversify";
-import {model, modelProvider,} from "../database/schema/modelProviderSchema"; // Use Drizzle-derived types
-import {and, eq, getTableColumns} from "drizzle-orm";
-import {CORETYPES} from "../types/types";
-import {safeStorage} from 'electron';
-import {DatabaseManager} from "../database/DatabaseManager";
+import { inject, injectable } from 'inversify';
+import { model, modelProvider } from '../database/schema/modelProviderSchema'; // Use Drizzle-derived types
+import { and, eq, getTableColumns } from 'drizzle-orm';
+import { CORETYPES } from '../types/types';
+import { safeStorage } from 'electron';
+import { DatabaseManager } from '../database/DatabaseManager';
 import {
     Model,
     ModelProvider,
@@ -12,8 +12,7 @@ import {
     ModelProviderLite,
     NewModel,
     ProviderWithModels,
-} from "../dto";
-
+} from '../dto';
 
 @injectable()
 export class ModelProviderRepository {
@@ -28,31 +27,34 @@ export class ModelProviderRepository {
             return this.db.select().from(modelProvider);
         } else {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const {apiKey, ...rest} = getTableColumns(modelProvider);
-            return this.db.select({...rest}).from(modelProvider);
+            const { apiKey, ...rest } = getTableColumns(modelProvider);
+            return this.db.select({ ...rest }).from(modelProvider);
         }
     }
 
     public async findDuplicates(provider: ModelProviderCreateInput): Promise<ModelProvider[]> {
-        return this.db.select().from(modelProvider).where(
-            and(
-                eq(modelProvider.type, provider.type),
-                eq(modelProvider.apiKey, provider.apiKey),
-                eq(modelProvider.apiUrl, provider.apiUrl),
-                eq(modelProvider.name, provider.name),
-            )
-        );
+        return this.db
+            .select()
+            .from(modelProvider)
+            .where(
+                and(
+                    eq(modelProvider.type, provider.type),
+                    eq(modelProvider.apiKey, provider.apiKey),
+                    eq(modelProvider.apiUrl, provider.apiUrl),
+                    eq(modelProvider.name, provider.name),
+                ),
+            );
     }
 
     public async findProviderById(id: string): Promise<ProviderWithModels | undefined> {
         const result = await this.db.query.modelProvider.findFirst({
             columns: {
-                apiKey: false
+                apiKey: false,
             },
             where: eq(modelProvider.id, id),
             with: {
-                models: true
-            }
+                models: true,
+            },
         });
         return result;
     }
@@ -60,17 +62,20 @@ export class ModelProviderRepository {
     public async getAllWithModels(): Promise<ProviderWithModels[]> {
         const result = await this.db.query.modelProvider.findMany({
             columns: {
-                apiKey: false
+                apiKey: false,
             },
             with: {
-                models: true
-            }
+                models: true,
+            },
         });
         return result;
     }
 
     // Accepts the type-checked input from the service
-    public async addProvider(newProvider: ModelProviderCreateInput, newModels: NewModel[]): Promise<ProviderWithModels> {
+    public async addProvider(
+        newProvider: ModelProviderCreateInput,
+        newModels: NewModel[],
+    ): Promise<ProviderWithModels> {
         // Encrypt the key before hitting the database
         const encryptedData: ModelProviderInsert = {
             ...newProvider,
@@ -78,71 +83,82 @@ export class ModelProviderRepository {
         };
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const {apiKey, ...providerRest} = getTableColumns(modelProvider);
+        const { apiKey, ...providerRest } = getTableColumns(modelProvider);
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const {providerId, ...modelRest} = getTableColumns(model);
+        const { providerId, ...modelRest } = getTableColumns(model);
 
         return this.db.transaction(async (tx) => {
-            const [savedProvider] = await tx.insert(modelProvider)
+            const [savedProvider] = await tx
+                .insert(modelProvider)
                 .values(encryptedData)
-                .returning({...providerRest}); // Returning the DB record (with encrypted key)
+                .returning({ ...providerRest }); // Returning the DB record (with encrypted key)
             if (newModels && newModels.length > 0) {
-                const modelsWithProvider = newModels.map(newModel => ({
+                const modelsWithProvider = newModels.map((newModel) => ({
                     ...newModel,
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     providerId: savedProvider.id,
                 }));
-                const savedModels = await tx.insert(model).values(modelsWithProvider).returning({...modelRest});
+                const savedModels = await tx
+                    .insert(model)
+                    .values(modelsWithProvider)
+                    .returning({ ...modelRest });
                 return {
                     ...savedProvider,
-                    models: savedModels
+                    models: savedModels,
                 };
             }
             return {
                 ...savedProvider,
-                models: []
+                models: [],
             };
         });
-
     }
 
     public async deleteProviderById(id: string): Promise<void> {
         await this.db.delete(modelProvider).where(eq(modelProvider.id, id));
     }
 
-    public async updateProvider(providerId: string, updateObject: Partial<ModelProviderCreateInput>, newModels?: NewModel[]): Promise<ProviderWithModels> {
+    public async updateProvider(
+        providerId: string,
+        updateObject: Partial<ModelProviderCreateInput>,
+        newModels?: NewModel[],
+    ): Promise<ProviderWithModels> {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const {apiKey, ...providerRest} = getTableColumns(modelProvider);
+        const { apiKey, ...providerRest } = getTableColumns(modelProvider);
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const {providerId: _, ...modelRest} = getTableColumns(model);
+        const { providerId: _, ...modelRest } = getTableColumns(model);
 
-        // If apiKey is being updated, encrypt it
-        if (updateObject.apiKey) {
+        // If apiKey is being updated, always encrypt it before persistence.
+        if (updateObject.apiKey !== undefined) {
             updateObject.apiKey = this.encryptApiKey(updateObject.apiKey);
         }
 
         return this.db.transaction(async (tx) => {
-            const [updatedProvider] = await tx.update(modelProvider)
+            const [updatedProvider] = await tx
+                .update(modelProvider)
                 .set(updateObject)
                 .where(eq(modelProvider.id, providerId))
-                .returning({...providerRest});
+                .returning({ ...providerRest });
 
             if (newModels && newModels.length > 0) {
                 // Delete existing models for this provider
                 await tx.delete(model).where(eq(model.providerId, providerId));
 
                 // Insert new models
-                const modelsWithProvider = newModels.map(newModel => ({
+                const modelsWithProvider = newModels.map((newModel) => ({
                     ...newModel,
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     providerId: providerId,
                 }));
-                const savedModels = await tx.insert(model).values(modelsWithProvider).returning({...modelRest});
+                const savedModels = await tx
+                    .insert(model)
+                    .values(modelsWithProvider)
+                    .returning({ ...modelRest });
                 return {
                     ...updatedProvider,
-                    models: savedModels
+                    models: savedModels,
                 };
             }
 
@@ -150,7 +166,7 @@ export class ModelProviderRepository {
             const existingModels = await tx.select().from(model).where(eq(model.providerId, providerId));
             return {
                 ...updatedProvider,
-                models: existingModels
+                models: existingModels,
             };
         });
     }
@@ -161,9 +177,8 @@ export class ModelProviderRepository {
 
     private encryptApiKey = (apiKey: string): string => {
         if (safeStorage.isEncryptionAvailable()) {
-            return safeStorage.encryptString(apiKey).toString("base64");
+            return safeStorage.encryptString(apiKey).toString('base64');
         }
-        return Buffer.from(apiKey, "utf-8").toString("base64");
+        return Buffer.from(apiKey, 'utf-8').toString('base64');
     };
-
 }

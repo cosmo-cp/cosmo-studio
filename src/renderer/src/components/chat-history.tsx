@@ -1,45 +1,43 @@
-'use client'
-import {Button} from "@/components/ui/button";
-import {Chat} from "core/dto";
-import {MessageCirclePlus, Pin, Search} from "lucide-react";
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
-import {Input} from "@/components/ui/input";
-import {ScrollArea} from "@/components/ui/scroll-area";
-import {cn} from "@/lib/utils";
-import {format, isThisWeek, isThisYear, isToday, isYesterday} from "date-fns"
+'use client';
+import { Button } from '@/components/ui/button';
+import { Chat } from 'core/dto';
+import { MessageCirclePlus, Pin, Search } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { format, isThisWeek, isThisYear, isToday, isYesterday } from 'date-fns';
 
 export function ChatHistory({
-                                chats,
-                                selectedChat,
-                                onChangeSelectedChat,
-                                onNewChat,
-                                onSearch
-                            }: {
+    chats,
+    selectedChat,
+    onChangeSelectedChat,
+    onNewChat,
+    onSearch,
+}: {
     chats: Chat[];
-    selectedChat: Chat;
-    onChangeSelectedChat: (chat: Chat) => void,
-    onNewChat: () => void,
-    onSearch: (query: string) => void
-
+    selectedChat: Chat | null;
+    onChangeSelectedChat: (chat: Chat) => void;
+    onNewChat: () => void;
+    onSearch: (query: string) => void;
 }) {
-
     // Enhanced time formatting function
     function formatMessageTime(timestamp: Date | null): string {
         if (!timestamp) {
             return '';
         }
-        const date = new Date(timestamp)
+        const date = new Date(timestamp);
 
         if (isToday(date)) {
-            return format(date, 'h:mm a') // 3:30 PM
+            return format(date, 'h:mm a'); // 3:30 PM
         } else if (isYesterday(date)) {
-            return 'Yesterday'
+            return 'Yesterday';
         } else if (isThisWeek(date)) {
-            return format(date, 'EEEE') // Day name
+            return format(date, 'EEEE'); // Day name
         } else if (isThisYear(date)) {
-            return format(date, 'MMM d') // Jan 15
+            return format(date, 'MMM d'); // Jan 15
         } else {
-            return format(date, 'dd/MM/yy') // 15/01/24
+            return format(date, 'dd/MM/yy'); // 15/01/24
         }
     }
 
@@ -53,7 +51,7 @@ export function ChatHistory({
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="cursor-pointer" onClick={onNewChat}>
-                                    <MessageCirclePlus className="h-4 w-4"/>
+                                    <MessageCirclePlus className="h-4 w-4" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -65,8 +63,7 @@ export function ChatHistory({
             </div>
             <div className="px-4 py-3 border-b border-r flex-shrink-0">
                 <div className="relative">
-                    <Search
-                        className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         type="text"
                         placeholder="Search history..."
@@ -81,10 +78,8 @@ export function ChatHistory({
                         <div
                             key={chat.id}
                             className={cn(
-                                "flex items-center gap-3 p-3 rounded-lg cursor-pointer relative overflow-hidden hover:bg-accent/50 transition-colors",
-                                selectedChat?.id === chat.id
-                                    ? "bg-accent text-accent-foreground"
-                                    : ""
+                                'flex items-center gap-3 p-3 rounded-lg cursor-pointer relative overflow-hidden hover:bg-accent/50 transition-colors',
+                                selectedChat?.id === chat.id ? 'bg-accent text-accent-foreground' : '',
                             )}
                             onClick={() => onChangeSelectedChat(chat)}
                         >
@@ -92,10 +87,11 @@ export function ChatHistory({
                             <div className="flex-1 min-w-0 overflow-hidden">
                                 <div className="flex items-center justify-between mb-1 min-w-0">
                                     <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden pr-2">
-                                        <h3 className="font-medium truncate min-w-0 max-w-[160px] lg:max-w-[180px]">{chat.title}</h3>
+                                        <h3 className="font-medium truncate min-w-0 max-w-[160px] lg:max-w-[180px]">
+                                            {chat.title}
+                                        </h3>
                                     </div>
-                                    <span
-                                        className="text-xs text-muted-foreground flex-shrink-0 whitespace-nowrap">
+                                    <span className="text-xs text-muted-foreground flex-shrink-0 whitespace-nowrap">
                                         {formatMessageTime(chat.lastMessageAt)}
                                     </span>
                                 </div>
@@ -105,8 +101,7 @@ export function ChatHistory({
                                         {chat.lastMessage}
                                     </p>
                                     {chat.pinned && (
-                                        <Pin className="h-3 w-3 text-muted-foreground flex-shrink-0"
-                                             fill="black"/>
+                                        <Pin className="h-3 w-3 text-muted-foreground flex-shrink-0" fill="black" />
                                     )}
                                 </div>
                             </div>

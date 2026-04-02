@@ -1,62 +1,75 @@
-import {inject, injectable} from "inversify";
-import {CORETYPES} from "core/types/types";
-import {ChatService} from "core/services/ChatService";
-import {IpcController, IpcHandler} from "../ipc/Decorators";
-import {Controller} from "./Controller";
-import {Chat, ChatWithMessages, ModelIdentifier, NewChat, PersonaIdentifier} from "core/dto";
+import { inject, injectable } from 'inversify';
+import { z } from 'zod';
+import { CORETYPES } from 'core/types/types';
+import { ChatService } from 'core/services/ChatService';
+import { IpcController, IpcHandler } from '../ipc/Decorators';
+import { Controller } from './Controller';
+import { Chat, ChatWithMessages, ModelIdentifier, NewChat, PersonaIdentifier } from 'core/dto';
+
+const personaIdentifierSchema = z
+    .object({
+        selectedPersonaId: z.preprocess((value) => {
+            if (typeof value !== 'string') {
+                return value;
+            }
+            const trimmedValue = value.trim();
+            return trimmedValue === '' ? null : trimmedValue;
+        }, z.string().nullable()),
+    })
+    .strict();
 
 @injectable()
-@IpcController("chat")
+@IpcController('chat')
 export class ChatController implements Controller {
-    constructor(@inject(CORETYPES.ChatService) private chatService: ChatService) {
-    }
+    constructor(@inject(CORETYPES.ChatService) private chatService: ChatService) {}
 
-    @IpcHandler("getAllChats")
+    @IpcHandler('getAllChats')
     public async getAllChats(searchQuery: string | null): Promise<Chat[]> {
         return this.chatService.getAllChats(searchQuery);
     }
 
-    @IpcHandler("getChatById")
+    @IpcHandler('getChatById')
     public async getChatById(id: string): Promise<ChatWithMessages | undefined> {
         return this.chatService.getChatById(id);
     }
 
-    @IpcHandler("createChat")
+    @IpcHandler('createChat')
     public async createChat(newChat: NewChat): Promise<void> {
         return this.chatService.createChat(newChat);
     }
 
-    @IpcHandler("updateChat")
+    @IpcHandler('updateChat')
     public async updateChat(id: string, updates: Partial<NewChat>): Promise<Chat> {
         return this.chatService.updateChat(id, updates);
     }
 
-    @IpcHandler("deleteChat")
+    @IpcHandler('deleteChat')
     public async deleteChat(id: string): Promise<void> {
         return this.chatService.deleteChat(id);
     }
 
-    @IpcHandler("updatePinnedStatusForChat")
+    @IpcHandler('updatePinnedStatusForChat')
     public async updatePinnedStatusForChat(id: string, pinned: boolean): Promise<void> {
         return this.chatService.updatePinnedStatusForChat(id, pinned);
     }
 
-    @IpcHandler("getSelectedModelForChat")
+    @IpcHandler('getSelectedModelForChat')
     public async getSelectedModelForChat(id: string): Promise<string | null> {
         return this.chatService.getSelectedModelForChat(id);
     }
 
-    @IpcHandler("updateSelectedModelForChat")
+    @IpcHandler('updateSelectedModelForChat')
     public async updateSelectedModelForChat(id: string, modelIdentifier: ModelIdentifier): Promise<void> {
         return this.chatService.updateSelectedModelForChat(id, modelIdentifier);
     }
 
-    @IpcHandler("updateSelectedPersonaForChat")
+    @IpcHandler('updateSelectedPersonaForChat')
     public async updateSelectedPersonaForChat(id: string, personaIdentifier: PersonaIdentifier): Promise<void> {
-        return this.chatService.updateSelectedPersonaForChat(id, personaIdentifier);
+        const parsedPersonaIdentifier = personaIdentifierSchema.parse(personaIdentifier);
+        return this.chatService.updateSelectedPersonaForChat(id, parsedPersonaIdentifier);
     }
 
-    @IpcHandler("updateSelectedChat")
+    @IpcHandler('updateSelectedChat')
     public async updateSelectedChat(id: string): Promise<void> {
         return this.chatService.updateSelectedChat(id);
     }

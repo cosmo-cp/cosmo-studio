@@ -1,23 +1,22 @@
-import {inject, injectable} from "inversify";
-import {createMCPClient} from "@ai-sdk/mcp";
-import {CORETYPES} from "../types/types";
-import {McpServerService} from "./McpServerService";
-import {HttpTransportConfig, SseTransportConfig, StdioTransportConfig} from "../dto";
+import { inject, injectable } from 'inversify';
+import { createMCPClient, type MCPClient } from '@ai-sdk/mcp';
+import type { ToolSet } from 'ai';
+import { CORETYPES } from '../types/types';
+import { McpServerService } from './McpServerService';
+import { HttpTransportConfig, SseTransportConfig, StdioTransportConfig } from '../dto';
 
 interface McpClientInstance {
-    client: Awaited<ReturnType<typeof createMCPClient>>;
+    client: MCPClient;
     serverId: string;
     serverName: string;
+    toolApprovals: Record<string, boolean>;
 }
 
 @injectable()
 export class McpClientManager {
     private clients: Map<string, McpClientInstance> = new Map();
 
-    constructor(
-        @inject(CORETYPES.McpServerService) private mcpServerService: McpServerService
-    ) {
-    }
+    constructor(@inject(CORETYPES.McpServerService) private mcpServerService: McpServerService) {}
 
     /**
      * Initialize all enabled MCP clients
@@ -79,9 +78,7 @@ export class McpClientManager {
             }
             case 'stdio': {
                 const config = server.config as StdioTransportConfig;
-                // Dynamic require to avoid ts-node module resolution issues
-                // eslint-disable-next-line @typescript-eslint/no-var-requires
-                const {Experimental_StdioMCPTransport} = require("@ai-sdk/mcp/mcp-stdio");
+                const { Experimental_StdioMCPTransport } = await import('@ai-sdk/mcp/mcp-stdio');
                 const stdioTransport = new Experimental_StdioMCPTransport({
                     command: config.command,
                     args: config.args,
@@ -101,33 +98,37 @@ export class McpClientManager {
             client,
             serverId: server.id,
             serverName: server.name,
+            toolApprovals: (server.toolApprovals as Record<string, boolean>) ?? {},
         });
     }
 
     /**
      * Get a client by server ID
      */
-    public getClient(serverId: string): Awaited<ReturnType<typeof createMCPClient>> | undefined {
+    public getClient(serverId: string): MCPClient | undefined {
         return this.clients.get(serverId)?.client;
     }
 
     /**
      * Get all active clients
      */
-    public getAllClients(): Array<Awaited<ReturnType<typeof createMCPClient>>> {
-        return Array.from(this.clients.values()).map(instance => instance.client);
+    public getAllClients(): MCPClient[] {
+        return Array.from(this.clients.values()).map((instance) => instance.client);
     }
 
     /**
-     * Get all tools from all active clients
+     * Get all tools from all active clients, applying per-tool needsApproval settings
      */
-    public async getAllTools(): Promise<Record<string, any>> {
-        const allTools: Record<string, any> = {};
+    public async getAllTools(): Promise<ToolSet> {
+        const allTools: ToolSet = {};
 
         for (const instance of this.clients.values()) {
             try {
                 const tools = await instance.client.tools();
-                Object.assign(allTools, tools);
+                for (const [name, tool] of Object.entries(tools)) {
+                    const needsApproval = instance.toolApprovals[name] ?? true;
+                    allTools[name] = { ...tool, needsApproval };
+                }
             } catch (error) {
                 console.error(`Failed to get tools from MCP server ${instance.serverName}:`, error);
             }
@@ -156,6 +157,30 @@ export class McpClientManager {
      */
     public clearAll(): void {
         this.clients.clear();
+    }
+
+    /**
+     * Get tools for a specific server (serializable format for IPC)
+     */
+    public async getToolsForServer(
+        serverId: string,
+    ): Promise<Array<{ name: string; title?: string; description?: string }>> {
+        const instance = this.clients.get(serverId);
+        if (!instance) {
+            return [];
+        }
+
+        try {
+            const tools = await instance.client.tools();
+            return Object.entries(tools).map(([name, tool]) => ({
+                name,
+                title: (tool as { title?: string }).title,
+                description: (tool as { description?: string }).description,
+            }));
+        } catch (error) {
+            console.error(`Failed to get tools from MCP server ${instance.serverName}:`, error);
+            return [];
+        }
     }
 
     /**

@@ -1,38 +1,39 @@
-import {relations} from "drizzle-orm";
-import {pgTable, text, timestamp, uuid, boolean, pgEnum} from "drizzle-orm/pg-core";
+import { relations } from 'drizzle-orm';
+import { pgTable, text, timestamp, uuid, boolean, pgEnum } from 'drizzle-orm/pg-core';
 
-export const chat = pgTable("Chat", {
-    id: uuid("id").primaryKey().notNull().defaultRandom(),
-    createdAt: timestamp("createdAt").notNull().defaultNow(),
-    title: text("title").notNull(),
-    pinned: boolean("pinned").default(false),
-    pinnedAt: timestamp("pinnedAt"),
-    selectedProvider: text("selectedProvider"),
-    selectedModelId: text("selectedModelId"),
-    selectedPersonaId: uuid("selectedPersonaId"),
+export const chat = pgTable('Chat', {
+    id: uuid('id').primaryKey().notNull().defaultRandom(),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+    title: text('title').notNull(),
+    pinned: boolean('pinned').default(false),
+    pinnedAt: timestamp('pinnedAt'),
+    selectedProvider: text('selectedProvider'),
+    selectedModelId: text('selectedModelId'),
+    selectedPersonaId: uuid('selectedPersonaId'),
     selected: boolean().default(false),
-    lastMessage: text("lastMessage"),
-    lastMessageAt: timestamp("lastMessageAt"),
+    lastMessage: text('lastMessage'),
+    lastMessageAt: timestamp('lastMessageAt'),
 });
 
-export const chatRelations = relations(chat, ({many}) => ({
+export const chatRelations = relations(chat, ({ many }) => ({
     messages: many(message),
 }));
 
-export const messageRole = pgEnum("message_role", ["user", "assistant", "system"]);
+export const messageRole = pgEnum('message_role', ['user', 'assistant', 'system']);
 
-export const message = pgTable("Message", {
-    id: uuid("id").primaryKey().notNull().defaultRandom(),
-    chatId: uuid("chatId")
+export const message = pgTable('Message', {
+    id: uuid('id').primaryKey().notNull().defaultRandom(),
+    chatId: uuid('chatId')
         .notNull()
-        .references(() => chat.id, {onDelete: 'cascade'}),
-    role: messageRole("role"),
-    text: text("text"),
-    reasoning: text("reasoning"),
-    createdAt: timestamp("createdAt").notNull(),
+        .references(() => chat.id, { onDelete: 'cascade' }),
+    role: messageRole('role'),
+    text: text('text'),
+    reasoning: text('reasoning'),
+    modelIdentifier: text('modelIdentifier'),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
 });
 
-export const messageRelations = relations(message, ({one}) => ({
+export const messageRelations = relations(message, ({ one }) => ({
     chat: one(chat, {
         fields: [message.chatId],
         references: [chat.id],

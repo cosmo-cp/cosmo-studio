@@ -1,6 +1,6 @@
 'use client';
 
-import {useRouter} from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
     Sidebar,
     SidebarContent,
@@ -11,27 +11,37 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    useSidebar
+    useSidebar,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import {CircleUserRound, MessageCircle, SettingsIcon} from "lucide-react";
-import {CosmoIcon} from "@/components/cosmo-icon";
+import { Cable, CircleUserRound, MessageCircle, SettingsIcon, Slash } from 'lucide-react';
+import { CosmoIcon } from '@/components/cosmo-icon';
 
 export function AppSidebar() {
     useSidebar();
     useRouter();
     const menuItems = [
         {
-            title: "Chat",
-            url: "./",
+            title: 'Chat',
+            url: './',
             icon: MessageCircle,
         },
         {
-            title: "Persona",
-            url: "./persona",
+            title: 'Persona',
+            url: './persona',
             icon: CircleUserRound,
-        }
-    ]
+        },
+        {
+            title: 'Command',
+            url: './command',
+            icon: Slash,
+        },
+        {
+            title: 'MCP Servers',
+            url: './mcp-server',
+            icon: Cable,
+        },
+    ];
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -40,7 +50,7 @@ export function AppSidebar() {
                         <SidebarMenuButton size="lg" asChild>
                             <Link href="./" prefetch={false}>
                                 <div className="flex items-start justify-center">
-                                    <CosmoIcon size={48}/>
+                                    <CosmoIcon size={48} />
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-medium">Cosmo</span>
@@ -59,7 +69,7 @@ export function AppSidebar() {
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton asChild>
                                         <Link href={item.url} prefetch={false}>
-                                            <item.icon/>
+                                            <item.icon />
                                             <span>{item.title}</span>
                                         </Link>
                                     </SidebarMenuButton>
@@ -74,7 +84,7 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild>
                             <Link href="./settings" prefetch={false}>
-                                <SettingsIcon/>
+                                <SettingsIcon />
                                 <span>Settings</span>
                             </Link>
                         </SidebarMenuButton>

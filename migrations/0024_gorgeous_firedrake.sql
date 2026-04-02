@@ -1,0 +1,1 @@
+ALTER TABLE "McpServer" ADD COLUMN "tool_approvals" jsonb DEFAULT '{}'::jsonb NOT NULL;

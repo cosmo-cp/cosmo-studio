@@ -13,11 +13,11 @@ Preload is the **only** place where we bridge data/capabilities from Electron to
 ## Security rules (non-negotiable)
 
 - Expose **minimal capability APIs** only. Never expose:
-  - `fs`, `path`, `child_process`, or any Node/Electron modules
-  - raw `ipcRenderer`
+    - `fs`, `path`, `child_process`, or any Node/Electron modules
+    - raw `ipcRenderer`
 - All inputs from the renderer are untrusted:
-  - validate arguments (prefer `zod`) at the first trust boundary (usually in main controllers)
-  - keep data serializable (structured clone friendly)
+    - validate arguments (prefer `zod`) at the first trust boundary (usually in main controllers)
+    - keep data serializable (structured clone friendly)
 - Don’t create new global objects in `window` other than what’s explicitly required.
 
 ## Generated file policy (`api.ts`)
@@ -39,7 +39,6 @@ Preload is the **only** place where we bridge data/capabilities from Electron to
 ## Testing expectations (preload)
 
 - Add tests that assert:
-  - `contextBridge.exposeInMainWorld('api', ...)` exports the expected shape.
-  - No forbidden modules are exposed.
-  - API surface changes are reflected in the renderer types.
-
+    - `contextBridge.exposeInMainWorld('api', ...)` exports the expected shape.
+    - No forbidden modules are exposed.
+    - API surface changes are reflected in the renderer types.

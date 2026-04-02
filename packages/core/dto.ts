@@ -1,6 +1,6 @@
-import {InferInsertModel, InferSelectModel} from "drizzle-orm";
-import {chat, mcpServer, message, model, modelProvider, persona} from "./database/schema/schema";
-import {UIMessage} from "ai";
+import { InferInsertModel, InferSelectModel } from 'drizzle-orm';
+import { chat, mcpServer, message, model, modelProvider, persona, command } from './database/schema/schema';
+import { UIMessage } from 'ai';
 
 type Optional<T, K extends keyof T> = Omit<T, K> & Pick<Partial<T>, K>;
 
@@ -10,7 +10,7 @@ export type Chat = InferSelectModel<typeof chat>;
 
 // DTOs for new database entry
 export type NewChat = InferInsertModel<typeof chat>;
-export type NewMessage = Omit<Message, "id" | "createdAt">;
+export type NewMessage = InferInsertModel<typeof message>;
 
 // The full model, retrieved from the database with a decrypted apiKey.
 export type ModelProvider = InferSelectModel<typeof modelProvider>;
@@ -21,9 +21,9 @@ export type ModelProviderInsert = InferInsertModel<typeof modelProvider>;
 export type ModelProviderCreateInput = Omit<ModelProviderInsert, 'id' | 'createdAt' | 'updatedAt'>;
 
 // The safe model for sending to the renderer process (no API key).
-export type ModelProviderLite = Optional<ModelProvider, "apiKey">;
-export type ModelIdentifier = Pick<Chat, "selectedProvider" | "selectedModelId">;
-export type PersonaIdentifier = Pick<Chat, "selectedPersonaId">;
+export type ModelProviderLite = Optional<ModelProvider, 'apiKey'>;
+export type ModelIdentifier = Pick<Chat, 'selectedProvider' | 'selectedModelId'>;
+export type PersonaIdentifier = Pick<Chat, 'selectedPersonaId'>;
 
 // Simple Model interface (kept here for full context)
 export type Model = InferSelectModel<typeof model>;
@@ -36,13 +36,33 @@ export type Persona = InferSelectModel<typeof persona>;
 export type NewPersona = InferInsertModel<typeof persona>;
 export type PersonaCreateInput = Omit<NewPersona, 'id' | 'createdAt' | 'updatedAt'>;
 
-export type ProviderWithModels = ModelProviderLite & {
-    models: ModelLite[]
+export type Command = InferSelectModel<typeof command>;
+export type NewCommand = InferInsertModel<typeof command>;
+export type CommandCreateInput = Omit<NewCommand, 'id' | 'createdAt' | 'updatedAt'>;
+export type CommandUpdateInput = Partial<CommandCreateInput>;
+
+export interface CommandDefinition {
+    id?: string;
+    name: string;
+    description: string;
+    template: string;
+    argumentLabel?: string | null;
+    builtIn: boolean;
 }
 
-export type ChatWithMessages = Chat & {
-    messages: UIMessage[]
+export interface CommandExecution {
+    name: string;
+    argument?: string;
+    resolvedText: string;
 }
+
+export type ProviderWithModels = ModelProviderLite & {
+    models: ModelLite[];
+};
+
+export type ChatWithMessages = Chat & {
+    messages: UIMessage[];
+};
 
 export interface ChatSendMessageArgs {
     chatId: string;
