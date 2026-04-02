@@ -185,9 +185,14 @@ export function TokenUsageIndicator({ messages, modelId, personaId }: TokenUsage
         <HoverCard openDelay={100}>
             <HoverCardTrigger asChild>
                 <Button
+                    type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 border border-border/40 bg-background/50 hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-all duration-200"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }}
+                    className="h-9 w-9 border border-border/40 bg-background/50 hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-all duration-200 cursor-default select-none pointer-events-auto"
                 >
                     <PieChart className="h-4 w-4" />
                 </Button>
