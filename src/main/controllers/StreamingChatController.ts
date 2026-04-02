@@ -1,4 +1,5 @@
 import { convertToModelMessages, ModelMessage, RetryError, smoothStream, streamText, stepCountIs } from 'ai';
+import type { UIMessageChunk } from 'ai';
 import { IpcMainEvent, WebContents } from 'electron';
 import { inject, injectable } from 'inversify';
 import { IpcController, IpcOn, IpcRendererOn } from '../ipc/Decorators';
@@ -167,7 +168,7 @@ export class StreamingChatController implements Controller {
 
     @IpcRendererOn('data')
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    public onData(channel: string, listener: (data: unknown) => void): () => void {
+    public onData(channel: string, listener: (data: UIMessageChunk) => void): () => void {
         return () => {};
     }
 

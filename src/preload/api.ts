@@ -23,7 +23,7 @@ import {
     CommandExecution,
     CommandUpdateInput,
 } from '../../packages/core/dto';
-import { UIMessage } from 'ai';
+import { UIMessage, UIMessageChunk } from 'ai';
 export interface ChatApi {
     getAllChats(searchQuery: string | null): Promise<Chat[]>;
     getChatById(id: string): Promise<ChatWithMessages | undefined>;
@@ -94,7 +94,7 @@ export interface McpServerApi {
 export interface StreamingApi {
     sendMessage(args: ChatSendMessageArgs): void;
     abortMessage(args: ChatAbortArgs): void;
-    onData: (channel: string, listener: (data: unknown) => void) => void;
+    onData: (channel: string, listener: (data: UIMessageChunk) => void) => void;
     onEnd: (channel: string, listener: () => void) => void;
     onError: (channel: string, listener: (error: unknown) => void) => void;
     removeListeners: (channel: string) => void;
@@ -178,8 +178,8 @@ export const api: Api = {
     streaming: {
         sendMessage: (args: ChatSendMessageArgs) => ipcRenderer.send('streamingChat:sendMessage', args),
         abortMessage: (args: ChatAbortArgs) => ipcRenderer.send('streamingChat:abortMessage', args),
-        onData: (channel: string, listener: (data: unknown) => void) => {
-            const subscription = (_event: unknown, data: unknown) => listener(data);
+        onData: (channel: string, listener: (data: UIMessageChunk) => void) => {
+            const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);
             ipcRenderer.on(`${channel}-data`, subscription);
         },
         onEnd: (channel: string, listener: () => void) => {

@@ -16,6 +16,22 @@ const config: ForgeConfig = {
         executableName: 'CosmoStudio', //Needed for linux
         asar: true,
         icon: './icons/cosmo',
+        appBundleId: 'com.cosmocp.cosmostudio',
+        osxSign: {
+            keychain: process.env.KEYCHAIN_PATH || 'signing.keychain-db',
+            identity: process.env.SIGN_IDENTITY,
+            optionsForFile: () => {
+                return {
+                    entitlements: './entitlements.plist',
+                    hardenedRuntime: true,
+                };
+            },
+        },
+        osxNotarize: {
+            appleId: process.env.APPLE_ID,
+            appleIdPassword: process.env.APPLE_ID_PASSWORD,
+            teamId: process.env.APPLE_TEAM_ID,
+        },
     },
     rebuildConfig: {},
     makers: [
@@ -103,6 +119,9 @@ const config: ForgeConfig = {
                     fs.cpSync(sourcePath, destPath, { recursive: true });
                 }),
             );
+        },
+        postPackage: async (forgeConfig, options) => {
+            console.info('Packages built at:', options.outputPaths);
         },
     },
 };

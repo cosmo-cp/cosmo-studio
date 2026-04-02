@@ -540,7 +540,11 @@ function PromptInputContent({
                             </ModelSelectorContent>
                         </ModelSelector>
                         <McpToolsSelector />
-                        <TokenUsageIndicator messages={messages} modelId={chat.selectedModelId ?? undefined} personaId={selectedPersonaId} />
+                        <TokenUsageIndicator
+                            messages={messages}
+                            modelId={chat.selectedModelId ?? undefined}
+                            personaId={selectedPersonaId}
+                        />
                     </PromptInputTools>
                     <PromptInputSubmit
                         disabled={!chat.selectedModelId || (!input && status !== 'submitted' && status !== 'streaming')}
