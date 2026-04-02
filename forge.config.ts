@@ -96,7 +96,7 @@ const config: ForgeConfig = {
                     owner: 'Cosmo-cp',
                     name: 'cosmo-studio',
                 },
-                draft: false,
+                draft: true,
                 force: true,
                 generateReleaseNotes: true,
                 prerelease: false,
