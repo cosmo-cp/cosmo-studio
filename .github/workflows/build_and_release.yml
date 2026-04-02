@@ -100,20 +100,28 @@ jobs:
                   VERSION_NUMBER="${TAG_NAME#v}"
                   # Update version in package.json from tag(don't commit)
                   npm version --no-git-tag-version $VERSION_NUMBER
-            - name: Build and Publish release
+            - name: Check Apple release env vars
+              if: runner.os == 'macOS'
+              env:
+                  APPLE_ID: ${{ secrets.APPLE_ID }}
+                  APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+                  SIGN_IDENTITY: ${{ secrets.SIGN_IDENTITY }}
+              run: |
+                  set -euo pipefail 
+
+                  if [ -z "${APPLE_ID}" ] || [ -z "${APPLE_ID_PASSWORD}" ] || [ -z "${APPLE_TEAM_ID}" ] || [ -z "${SIGN_IDENTITY}" ]; then
+                    echo "Missing one or more Apple notarization/signing secrets."
+                    exit 1
+                  fi
+
+            - name: Publish release
               env:
                   APPLE_ID: ${{ secrets.APPLE_ID }}
                   APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
                   APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
                   SIGN_IDENTITY: ${{ secrets.SIGN_IDENTITY }}
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  ENABLE_MAC_SIGNING: 'true'
+                  ENABLE_MAC_SIGNING: ${{ runner.os == 'macOS' && 'true' || 'false' }}
               #publish internally calls `make` command that builds distributable
-              run: |
-                  set -euo pipefail
-
-                  if [ -z "${APPLE_ID}" ] || [ -z "${APPLE_ID_PASSWORD}" ] || [ -z "${APPLE_TEAM_ID}" ] || [ -z "${SIGN_IDENTITY}" ]; then
-                    echo "Missing one or more Apple notarization/signing secrets."
-                    exit 1
-                  fi
-                  npm run publish
+              run: npm run publish
