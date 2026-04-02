@@ -218,6 +218,13 @@
       "when": 1774809888999,
       "tag": "0030_friendly_skrulls",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1774881782000,
+      "tag": "0031_drop_message_text_not_null",
+      "breakpoints": true
     }
   ]
 }
