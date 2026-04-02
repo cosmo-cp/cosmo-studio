@@ -119,9 +119,8 @@ import {
     McpServer,
     McpServerCreateInput,
     McpServerUpdateInput
-    NewPersona
 } from '../../packages/core/dto';
-import {UIMessage} from "ai";
+import {UIMessage, UIMessageChunk} from "ai";
 `
 
   const mainApiInterfaceMembers: string[] = []
@@ -139,7 +138,7 @@ import {UIMessage} from "ai";
   if (onHandlers.length > 0) {
     const streamingInterfaceMembers = [
       ...onHandlerInterfaceMembers,
-      "    onData: (channel: string, listener: (data: unknown) => void) => void;",
+      "    onData: (channel: string, listener: (data: UIMessageChunk) => void) => void;",
       "    onEnd: (channel: string, listener: () => void) => void;",
       "    onError: (channel: string, listener: (error: unknown) => void) => void;",
       "    removeListeners: (channel: string) => void;",
@@ -164,8 +163,8 @@ import {UIMessage} from "ai";
 
   if (onHandlers.length > 0) {
     apiContent += `  streaming: {\n${onHandlers.join(",\n")},\n`
-    apiContent += `    onData: (channel: string, listener: (data: unknown) => void) => {\n`
-    apiContent += `      const subscription = (_event: unknown, data: unknown) => listener(data);\n`
+    apiContent += `    onData: (channel: string, listener: (data: UIMessageChunk) => void) => {\n`
+    apiContent += `      const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);\n`
     apiContent += `      ipcRenderer.on(\`\${channel}-data\`, subscription);\n`
     apiContent += `    },\n`
     apiContent += `    onEnd: (channel: string, listener: () => void) => {\n`
