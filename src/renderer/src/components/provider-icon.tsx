@@ -9,8 +9,9 @@ type ProviderIconProps = {
     className?: string;
 };
 
+// Uses document-relative asset paths so icons resolve in packaged file:// exports.
 const ProviderIcon = ({ type, size = 20, theme, className }: ProviderIconProps) => {
-    const iconPath = `/providers/${type}.svg`;
+    const iconPath = `providers/${type}.svg`;
 
     return (
         <div className={cn('mr-2 inline-flex items-center justify-center', className)}>
