@@ -79,4 +79,36 @@ describe('MessageRepository', () => {
         const remaining = await repository.getMessagesByChatId(chatId);
         expect(remaining.map((m) => m.id)).toEqual([created2.id]);
     });
+
+    it('persists reasoning-only assistant messages without clearing chat previews', async () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
+
+        await repository.create({
+            chatId,
+            role: 'user',
+            text: 'hello',
+            reasoning: null,
+        } as unknown as NewMessage);
+
+        vi.setSystemTime(new Date('2024-01-01T00:00:10Z'));
+        const created = await repository.create({
+            chatId,
+            role: 'assistant',
+            text: null,
+            reasoning: 'tool planning only',
+            modelIdentifier: 'provider:model',
+        } as unknown as NewMessage);
+
+        expect(created.text).toBeNull();
+        expect(created.reasoning).toBe('tool planning only');
+        expect(created.modelIdentifier).toBe('provider:model');
+
+        const [updatedChat] = await testDb.db.select().from(chat).where(eq(chat.id, chatId)).limit(1);
+        expect(updatedChat.title).toBe('hello');
+        expect(updatedChat.lastMessage).toBe('hello');
+        expect(new Date(updatedChat.lastMessageAt as unknown as Date).toISOString()).toBe(
+            '2024-01-01T00:00:10.000Z',
+        );
+    });
 });
