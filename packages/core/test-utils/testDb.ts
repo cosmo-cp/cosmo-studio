@@ -1,8 +1,6 @@
 import { PGlite } from '@electric-sql/pglite';
 import { migrate } from 'drizzle-orm/pglite/migrator';
 import { drizzle, type PgliteDatabase } from 'drizzle-orm/pglite';
-import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import * as schema from '../database/schema/schema';
 
@@ -11,11 +9,11 @@ export type TestDb = {
     close: () => Promise<void>;
 };
 
+/**
+ * Creates an isolated migrated database for repository tests without filesystem overhead.
+ */
 export async function createTestDb(): Promise<TestDb> {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cosmo-test-db-'));
-    const dbPath = path.join(dir, 'db');
-
-    const connection = await PGlite.create(dbPath);
+    const connection = await PGlite.create('memory://');
     const db = drizzle(connection, { schema });
 
     await migrate(db, { migrationsFolder: path.resolve(__dirname, '../../../migrations') });
@@ -24,7 +22,6 @@ export async function createTestDb(): Promise<TestDb> {
         db,
         close: async () => {
             await connection.close();
-            fs.rmSync(dir, { recursive: true, force: true });
         },
     };
 }
