@@ -23,7 +23,7 @@ import {
     CommandExecution,
     CommandUpdateInput,
 } from '../../packages/core/dto';
-import { UIMessage , UIMessageChunk} from 'ai';
+import { UIMessage, UIMessageChunk } from 'ai';
 export interface ChatApi {
     getAllChats(searchQuery: string | null): Promise<Chat[]>;
     getChatById(id: string): Promise<ChatWithMessages | undefined>;
