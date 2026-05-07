@@ -34,21 +34,21 @@ export class WebSearchController implements Controller {
     }
 
     // Load one renderer-safe web-search provider config for the settings page.
-    @IpcHandler("getConfig")
+    @IpcHandler("getConfig", z.tuple([providerTypeSchema]))
     public async getConfig(type: WebSearchProviderTypeEnum): Promise<WebSearchConfigView | null> {
         const parsedType = providerTypeSchema.parse(type);
         return this.webSearchConfigService.getConfig(parsedType);
     }
 
     // Save the Exa configuration after validating the untrusted IPC payload.
-    @IpcHandler("saveConfig")
+    @IpcHandler("saveConfig", z.tuple([webSearchConfigSaveSchema]))
     public async saveConfig(input: WebSearchConfigSaveInput): Promise<WebSearchConfigView> {
         const parsedInput = webSearchConfigSaveSchema.parse(input);
         return this.webSearchConfigService.saveConfig(parsedInput);
     }
 
     // Remove the stored Exa configuration for this workspace.
-    @IpcHandler("deleteConfig")
+    @IpcHandler("deleteConfig", z.tuple([providerTypeSchema]))
     public async deleteConfig(type: WebSearchProviderTypeEnum): Promise<void> {
         const parsedType = providerTypeSchema.parse(type);
         return this.webSearchConfigService.deleteConfig(parsedType);

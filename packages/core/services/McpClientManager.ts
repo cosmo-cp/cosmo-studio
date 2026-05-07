@@ -81,20 +81,21 @@ export class McpClientManager {
             }
             case 'stdio': {
                 const config = server.config as StdioTransportConfig;
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
                 const {Experimental_StdioMCPTransport} = require("@ai-sdk/mcp/mcp-stdio") as {
                     Experimental_StdioMCPTransport: new (options: {
                         command: string;
                         args?: string[];
                         env?: Record<string, string>;
                         cwd?: string;
-                    }) => MCPTransport;
+                    }) => unknown;
                 };
                 const stdioTransport = new Experimental_StdioMCPTransport({
                     command: config.command,
                     args: config.args,
                     env: config.env,
                     cwd: config.cwd,
-                });
+                }) as unknown as MCPTransport;
                 client = await createMCPClient({
                     transport: stdioTransport,
                 });

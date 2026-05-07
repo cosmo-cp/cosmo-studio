@@ -56,7 +56,6 @@ function buildProvider(): ProviderWithModels {
                 id: "model-1",
                 createdAt: new Date("2026-03-18T00:00:00.000Z"),
                 updatedAt: null,
-                providerId: "provider-1",
                 name: "Model A",
                 modelId: "model-a",
                 description: null,

@@ -2,13 +2,13 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 import type {WebSearchConfigRepository} from "../repositories/WebSearchConfigRepository";
 import {WebSearchConfigService} from "./WebSearchConfigService";
 import {WebSearchProviderTypeEnum} from "../database/schema/webSearchConfigSchema";
+import type {SecretStore} from "../platform/SecretStore";
 
-vi.mock("electron", () => ({
-    safeStorage: {
-        isEncryptionAvailable: vi.fn(() => true),
-        decryptString: vi.fn(() => "decrypted-key"),
-    },
-}));
+const secretStore: SecretStore = {
+    isEncryptionAvailable: () => true,
+    encrypt: (value) => Buffer.from(value, "utf-8").toString("base64"),
+    decrypt: vi.fn(() => "decrypted-key"),
+};
 
 describe("WebSearchConfigService", () => {
     let repository: WebSearchConfigRepository;
@@ -30,7 +30,7 @@ describe("WebSearchConfigService", () => {
             type: WebSearchProviderTypeEnum.EXA,
             enabled: true,
         });
-        const service = new WebSearchConfigService(repository);
+        const service = new WebSearchConfigService(repository, secretStore);
 
         const result = await service.getConfig(WebSearchProviderTypeEnum.EXA);
 
@@ -46,7 +46,7 @@ describe("WebSearchConfigService", () => {
 
     it("requires an api key when creating a new config", async () => {
         repository.getByType = vi.fn().mockResolvedValue(undefined);
-        const service = new WebSearchConfigService(repository);
+        const service = new WebSearchConfigService(repository, secretStore);
 
         await expect(service.saveConfig({
             type: WebSearchProviderTypeEnum.EXA,
@@ -70,7 +70,7 @@ describe("WebSearchConfigService", () => {
             type: WebSearchProviderTypeEnum.EXA,
             enabled: false,
         });
-        const service = new WebSearchConfigService(repository);
+        const service = new WebSearchConfigService(repository, secretStore);
 
         const result = await service.saveConfig({
             type: WebSearchProviderTypeEnum.EXA,
@@ -95,7 +95,7 @@ describe("WebSearchConfigService", () => {
             enabled: true,
             apiKey: Buffer.from("secret").toString("base64"),
         });
-        const service = new WebSearchConfigService(repository);
+        const service = new WebSearchConfigService(repository, secretStore);
 
         const result = await service.getEnabledExaConfig();
 
@@ -112,7 +112,7 @@ describe("WebSearchConfigService", () => {
             enabled: false,
             apiKey: Buffer.from("secret").toString("base64"),
         });
-        const service = new WebSearchConfigService(repository);
+        const service = new WebSearchConfigService(repository, secretStore);
 
         await expect(service.getEnabledExaConfig()).resolves.toBeNull();
     });

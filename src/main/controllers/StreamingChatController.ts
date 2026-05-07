@@ -1,24 +1,15 @@
-import {
-    convertToModelMessages,
-    ModelMessage,
-    RetryError,
-    smoothStream,
-    stepCountIs,
-    streamText,
-    type ToolSet,
-} from 'ai';
 import {IpcMainEvent, WebContents} from "electron";
 import {inject, injectable} from "inversify";
+import {z} from "zod";
 import {IpcController, IpcOn, IpcRendererOn} from "../ipc/Decorators";
 import {ChatAbortArgs, ChatSendMessageArgs} from "core/dto";
 import {Controller} from "./Controller";
-import {CORETYPES} from "core/types/types";
-import {ModelProviderService} from "core/services/ModelProviderService";
-import {MessageService} from "core/services/MessageService";
-import {PersonaService} from "core/services/PersonaService";
-import {McpClientManager} from "core/services/McpClientManager";
-import {WebSearchConfigService} from "core/services/WebSearchConfigService";
 import {logger} from "../logger";
+import {TYPES} from "../types";
+import {ChatStreamingService} from "../services/ChatStreamingService";
+
+const chatSendMessageArgsSchema = z.custom<ChatSendMessageArgs>();
+const chatAbortArgsSchema = z.custom<ChatAbortArgs>();
 
 @injectable()
 @IpcController("streamingChat")
@@ -26,139 +17,30 @@ export class StreamingChatController implements Controller {
     private readonly activeStreams = new Map<string, AbortController>();
 
     constructor(
-        @inject(CORETYPES.ModelProviderService)
-        private modelProviderService: ModelProviderService,
-        @inject(CORETYPES.MessageService)
-        private messageService: MessageService,
-        @inject(CORETYPES.PersonaService)
-        private personaService: PersonaService,
-        @inject(CORETYPES.McpClientManager)
-        private mcpClientManager: McpClientManager,
-        @inject(CORETYPES.WebSearchConfigService)
-        private webSearchConfigService: WebSearchConfigService) {
+        @inject(TYPES.ChatStreamingService)
+        private readonly chatStreamingService: ChatStreamingService
+    ) {
     }
 
-    // Merge MCP tools with the optional Exa web-search tool for chat turns that need fresh web data.
-    private async buildTools(): Promise<ToolSet> {
-        const tools = await this.mcpClientManager.getAllTools();
-        const exaConfig = await this.webSearchConfigService.getEnabledExaConfig();
-
-        if (!exaConfig) {
-            return tools;
-        }
-
-        const {webSearch} = await import("@exalabs/ai-sdk");
-
-        return {
-            ...tools,
-            webSearch: webSearch({
-                apiKey: exaConfig.apiKey,
-            }),
-        };
-    }
-
-    @IpcOn("sendMessage")
+    @IpcOn("sendMessage", z.tuple([chatSendMessageArgsSchema]))
     public async sendMessage(args: ChatSendMessageArgs, event: IpcMainEvent) {
-        const modelProviderRegistry = await this.modelProviderService.getModelProviderRegistry();
-        const tools = await this.buildTools();
-        const hasTools = Object.keys(tools).length > 0;
         const webContents = event.sender as WebContents;
-        const modelMessages: ModelMessage[] = await convertToModelMessages(args.messages);
-        const persona = args.personaId
-            ? await this.personaService.getById(args.personaId)
-            : args.personaName
-                ? await this.personaService.getByName(args.personaName)
-                : undefined;
-        if (persona?.details) {
-            modelMessages.unshift({
-                role: "system",
-                content: persona.details,
-            });
-        }
-
         const controller = new AbortController();
         this.activeStreams.set(args.streamChannel, controller);
-        const lastUserMsg = args.messages[args.messages.length - 1];
-        const txtMsg = lastUserMsg.parts.find(part => part.type === 'text')?.text;
-        const rsnMsg = lastUserMsg.parts.find(part => part.type === 'reasoning')?.text;
 
-
-        // Validate modelIdentifier before proceeding
-        if (!args.modelIdentifier) {
-            const errorMsg = "modelIdentifier is required but was not provided";
-            logger.error(errorMsg, args);
-            if (!webContents.isDestroyed()) {
-                webContents.send(`${args.streamChannel}-error`, { message: errorMsg });
-            }
-            return;
-        }
-
-        await this.messageService.createMessage({
-            chatId: args.chatId,
-            role: lastUserMsg.role,
-            text: txtMsg ?? null,
-            reasoning: rsnMsg ?? null,
-            modelIdentifier: args.modelIdentifier,
-        });
         try {
-
-            const result = streamText({
-                // @ts-expect-error/type-does-not-exist
-                model: modelProviderRegistry.languageModel(args.modelIdentifier),
-                messages: modelMessages,
-                tools,
-                stopWhen: hasTools ? stepCountIs(5) : undefined,
-                abortSignal: controller.signal,
-                experimental_transform: smoothStream({delayInMs: 30}),
-                onFinish: (result) => {
-                    this.messageService.createMessage({
-                        chatId: args.chatId,
-                        role: 'assistant',
-                        text: result.text ?? null,
-                        reasoning: result.reasoningText ?? null,
-                        modelIdentifier: args.modelIdentifier,
-                    });
-                    this.activeStreams.delete(args.streamChannel);
-                    if (!webContents.isDestroyed()) {
-                        webContents.send(`${args.streamChannel}-end`);
-                    }
-                },
-                onAbort: () => {
-                    this.activeStreams.delete(args.streamChannel);
-                },
-                onError: (error) => {
-                    logger.error("Stream error:", error);
-                    let msg = error.error;
-                    if (RetryError.isInstance(error)) {
-                        msg = error.lastError;
-                    }
-                    if (!webContents.isDestroyed()) {
-                        webContents.send(`${args.streamChannel}-error`, msg);
-                    }
-                    controller.abort();
-                    this.activeStreams.delete(args.streamChannel);
-                }
-            });
-
-            if (!webContents.isDestroyed()) {
-                webContents.send(`${args.streamChannel}-data`, {
-                    type: 'message-metadata',
-                    messageMetadata: {
-                        modelId: args.modelIdentifier,
-                    },
-                });
-            }
-
-            for await (const chunk of result.toUIMessageStream({
-                sendReasoning: true,
-                sendSources: true
-            })) {
+            const stream = await this.chatStreamingService.createMessageStream(args, controller.signal);
+            for await (const chunk of stream) {
                 if (webContents.isDestroyed()) {
                     logger.info("WebContents destroyed, stopping stream.");
                     controller.abort();
                     break;
                 }
                 webContents.send(`${args.streamChannel}-data`, chunk);
+            }
+            this.activeStreams.delete(args.streamChannel);
+            if (!webContents.isDestroyed()) {
+                webContents.send(`${args.streamChannel}-end`);
             }
         } catch (error) {
             logger.error("Failed to start streamText:", error);
@@ -170,7 +52,7 @@ export class StreamingChatController implements Controller {
         }
     }
 
-    @IpcOn("abortMessage")
+    @IpcOn("abortMessage", z.tuple([chatAbortArgsSchema]))
     public abortMessage(args: ChatAbortArgs) {
         const controller = this.activeStreams.get(args.streamChannel);
         if (controller) {

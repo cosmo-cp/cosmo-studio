@@ -1,16 +1,19 @@
 # IPC
 
-Cosmo Studio uses a decorator-based IPC pattern so the preload API can be generated and kept type-safe.
+Cosmo Studio uses a decorator-based IPC pattern so the Electron preload API and HTTP RPC surface can be generated from the same controller source of truth.
 
 ## Building blocks
 
 - Decorators: `src/main/ipc/Decorators.ts`
   - `@IpcController("prefix")`
-  - `@IpcHandler("name")` → request/response (`ipcMain.handle`)
-  - `@IpcOn("name")` → fire-and-forget (`ipcMain.on`)
+  - `@IpcHandler("name", z.tuple([...]))` -> request/response (`ipcMain.handle`) and HTTP RPC.
+  - `@IpcOn("name", z.tuple([...]))` -> fire-and-forget (`ipcMain.on`), used for Electron streaming only.
 - Registry: `src/main/ipc/index.ts` (`IpcHandlerRegistry`)
   - Discovers controller metadata and registers channels.
   - Channel naming: `${prefix}:${name}`
+- HTTP RPC: `src/main/http/RpcController.ts`
+  - Dispatches generated route metadata through `POST /api/rpc/:controller/:handler`.
+  - Uses the same zod tuple schemas as IPC.
 
 ## Controller pattern
 
@@ -18,18 +21,39 @@ Cosmo Studio uses a decorator-based IPC pattern so the preload API can be genera
 - Controllers are bound via DI in `src/main/inversify.config.ts` and injected into `IpcHandlerRegistry`.
 - The registry passes the Electron event object as the **last** argument when calling controller methods.
   - If you need `event.sender` or `webContents`, declare an `event` parameter at the end.
+- HTTP RPC does not pass an Electron event. Handlers that require Electron primitives should be `@IpcOn` adapters or Electron-only code.
 
 ## Generated preload API
 
 - Generator: `scripts/generate-api.ts`
-- Output: `src/preload/api.ts`
+- Outputs:
+  - `src/preload/api.ts`
+  - `src/main/http/rpc-manifest.ts`
+  - `src/renderer/src/lib/generated-http-api.ts`
 
 The generator:
 - Reads controller decorator metadata via `reflect-metadata`.
 - Uses a regex on controller source files to infer method signatures.
+- Fails when any `@IpcHandler` is missing a zod tuple schema.
 - Emits a typed `api` object that calls:
   - `ipcRenderer.invoke(...)` for `@IpcHandler`
   - `ipcRenderer.send(...)` for `@IpcOn`
+- Emits a typed HTTP client that calls:
+  - `fetch("/api/rpc/:controller/:handler")` for `@IpcHandler`
+  - no client methods for `@IpcOn`
+
+## HTTP RPC conventions
+
+- Route: `POST /api/rpc/:controller/:handler`
+- Body: `{ "args": [...] }`
+- Codec: SuperJSON for request and response payloads so `Date` values round-trip.
+- Envelope:
+  - success: `{ "ok": true, "result": value }`
+  - failure: `{ "ok": false, "error": { "code": "...", "message": "..." } }`
+- Stable error codes:
+  - `NOT_FOUND`
+  - `BAD_REQUEST`
+  - `INTERNAL_ERROR`
 
 ### Streaming conventions
 
@@ -42,15 +66,17 @@ Streaming uses fire-and-forget channels plus renderer subscriptions:
 - Renderer wiring lives in:
   - `src/renderer/src/chat-transport.ts` (AI SDK transport)
   - `src/preload/api.ts` (subscription helpers)
+- HTTP streaming uses `POST /api/chat` and `ChatHttpController`.
+- `GET /api/chat/:chatId/stream` returns `204` in v1 and is reserved for future resume-stream support.
 
 ## Adding/changing an IPC API (required steps)
 
 1. Implement the new handler in a controller:
    - Add `@IpcHandler(...)` or `@IpcOn(...)` to a public method.
-2. Validate inputs (prefer `zod`) at the boundary.
+2. Add a `z.tuple([...])` args schema to the decorator and keep any deeper domain validation in the controller/service.
 3. Bind the controller (if new) in `src/main/inversify.config.ts`.
-4. Run `npm run generate-api`.
-5. Update renderer usage through `window.api`.
+4. Bind RPC-reusable controllers through the generated manifest by rerunning `npm run generate-api`.
+5. Update renderer usage through the app data source adapter or chat transport, not presentation components.
 6. Add tests covering success + failure paths.
 
 ## Command endpoints

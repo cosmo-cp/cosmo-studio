@@ -1,5 +1,4 @@
 import {inject, injectable} from "inversify";
-import {safeStorage} from "electron";
 import {CORETYPES} from "../types/types";
 import {
     WebSearchConfig,
@@ -8,12 +7,15 @@ import {
 } from "../dto";
 import {WebSearchConfigRepository} from "../repositories/WebSearchConfigRepository";
 import {WebSearchProviderTypeEnum} from "../database/schema/webSearchConfigSchema";
+import {Base64SecretStore, type SecretStore} from "../platform/SecretStore";
 
 @injectable()
 export class WebSearchConfigService {
     constructor(
         @inject(CORETYPES.WebSearchConfigRepository)
-        private repository: WebSearchConfigRepository
+        private repository: WebSearchConfigRepository,
+        @inject(CORETYPES.SecretStore)
+        private readonly secretStore: SecretStore = new Base64SecretStore()
     ) {
     }
 
@@ -98,10 +100,6 @@ export class WebSearchConfigService {
     }
 
     private decryptApiKey(encryptedKey: string): string {
-        const buffer = Buffer.from(encryptedKey, "base64");
-        if (safeStorage.isEncryptionAvailable()) {
-            return safeStorage.decryptString(buffer);
-        }
-        return buffer.toString("utf-8");
+        return this.secretStore.decrypt(encryptedKey);
     }
 }

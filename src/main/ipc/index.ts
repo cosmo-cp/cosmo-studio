@@ -1,6 +1,11 @@
 import {ipcMain} from 'electron';
 import {injectable, multiInject} from "inversify";
-import {IPC_CONTROLLER_METADATA_KEY, IPC_HANDLE_METADATA_KEY, IPC_ON_METADATA_KEY} from "./Decorators";
+import {
+    IPC_ARGS_SCHEMA_METADATA_KEY,
+    IPC_CONTROLLER_METADATA_KEY,
+    IPC_HANDLE_METADATA_KEY,
+    IPC_ON_METADATA_KEY
+} from "./Decorators";
 import {TYPES} from "../types";
 import {Controller} from "../controllers/Controller";
 
@@ -41,10 +46,12 @@ export class IpcHandlerRegistry {
             ) => unknown
         ) => void
     ): void {
+        const argSchemas = Reflect.getMetadata(IPC_ARGS_SCHEMA_METADATA_KEY, controller.constructor) || {};
         for (const methodName in handlers) {
             if (Object.prototype.hasOwnProperty.call(handlers, methodName)) {
                 const handlerName = handlers[methodName];
                 const channel = `${prefix}:${handlerName}`;
+                const argSchema = argSchemas[methodName];
 
                 registerFn(channel, async (event, ...args) => {
                     const maybeMethod = (controller as Record<string, unknown>)[methodName];
@@ -53,8 +60,9 @@ export class IpcHandlerRegistry {
                     }
 
                     const method = maybeMethod as (...handlerArgs: unknown[]) => unknown;
+                    const parsedArgs = argSchema ? argSchema.parse(args) : args;
                     // Pass the event object as the final argument to the handler method.
-                    return method.apply(controller, [...args, event]);
+                    return method.apply(controller, [...parsedArgs, event]);
                 });
             }
         }

@@ -6,26 +6,31 @@ If you change architecture, workflows, scripts, or conventions, **update this fi
 
 ## Project map (read this first)
 
-Cosmo Studio is an Electron desktop app with a static-exported Next.js UI.
+Cosmo Studio is a dual-runtime app with a static-exported Next.js UI. It builds as an Electron desktop app and as a local NestJS HTTP service.
 
 - **Electron main process**: `src/main/` (entry: `src/main/index.ts`)
   - Owns windows, app lifecycle, database initialization, IPC registration.
+- **HTTP main process**: `src/main/http/` (entry: `src/main/http/index.ts`)
+  - Owns Nest bootstrap, static renderer serving, generated RPC dispatch, HTTP chat streaming.
 - **Preload (security boundary)**: `src/preload/` (entry: `src/preload/index.ts`)
   - Exposes a minimal, typed `window.api` via `contextBridge`.
   - `src/preload/api.ts` is generated (see “IPC & API generation”).
 - **Renderer (Next.js UI)**: `src/renderer/` (Next app: `src/renderer/src/`)
-  - Runs in the BrowserWindow, talks to main **only** via `window.api`.
+  - Runs in the BrowserWindow or browser, talks to the active backend through adapter modules.
   - Next config is `output: "export"` (static build to `src/renderer/out/`).
   - Uses a single root Redux store; renderer components should dispatch thunks/selectors instead of calling preload APIs directly.
+  - `NEXT_PUBLIC_COSMO_BACKEND=electron|http` selects preload or generated HTTP RPC.
 - **Core package (domain + DB + AI)**: `packages/core/` (workspace package name: `core`)
   - Drizzle schema, repositories/services, DTOs shared across processes.
   - Imported as `core/...` from main/renderer/preload.
+  - Platform concerns use injected interfaces such as `SecretStore` and `CoreLogger`.
 - **Tooling/scripts**: `scripts/` (currently: `scripts/generate-api.ts`)
-  - Generates the preload API surface from main IPC controllers.
+  - Generates the preload API, HTTP RPC manifest, and renderer HTTP client from main IPC controllers.
 - **Database**: Drizzle ORM + PGlite
   - Schema: `packages/core/database/schema/`
   - Migrations output: `migrations/`
   - Drizzle config: `drizzle.config.ts`
+  - Electron and HTTP use separate default data directories.
 
 Internal docs live in `docs/` (keep them updated):
 - `docs/ARCHITECTURE.md`
@@ -34,6 +39,9 @@ Internal docs live in `docs/` (keep them updated):
 - `docs/RENDERER_DESIGN.md`
 - `docs/TESTING_STRATEGY.md`
 - `docs/DEPENDENCIES.md`
+- `docs/specs/dual-runtime/runtime-targets.md`
+- `docs/specs/dual-runtime/transport-contract.md`
+- `docs/specs/dual-runtime/build-packaging.md`
 
 ## 1) Feature planning & code placement (strict)
 
@@ -44,29 +52,36 @@ Before coding, decide **where the feature belongs**. Default to keeping the rend
 1. **Pure UI/UX change (layout, styling, components, interaction)**  
    → `src/renderer/src/...`
 
-2. **Needs OS access / Electron APIs / filesystem / app lifecycle**  
-   → `src/main/...`  
+2. **Needs OS access / Electron APIs / desktop app lifecycle**
+   → `src/main/...`
    If the renderer needs it, expose a minimal IPC API via preload (see below).
 
-3. **Database work (schema/repository/service) or cross-process domain logic**  
-   → `packages/core/...`  
+3. **Needs HTTP service behavior / Nest endpoint / static serving**
+   → `src/main/http/...`
+   Keep reusable business logic outside Nest controllers when Electron also needs it.
+
+4. **Database work (schema/repository/service) or cross-process domain logic**
+   → `packages/core/...`
    - Schema changes → also create migrations (`npm run db:generate`) and validate (`npm run db:check`).
 
-4. **AI/model provider logic** (providers, streaming, prompt assembly, tool calls)  
-   → Prefer `packages/core/...` for provider registry + model selection logic.  
-   → Keep streaming orchestration that needs `webContents.send` in `src/main/controllers/StreamingChatController.ts`.
+5. **AI/model provider logic** (providers, streaming, prompt assembly, tool calls)
+   → Prefer `packages/core/...` for provider registry + model selection logic.
+   → Keep shared chat streaming in `src/main/services/ChatStreamingService.ts`.
+   → Keep Electron delivery in `StreamingChatController`; keep HTTP delivery in `ChatHttpController`.
 
-5. **Shared types/DTOs**  
+6. **Shared types/DTOs**
    → `packages/core/dto.ts` (and types under `packages/core/types/`)
 
-6. **Anything crossing the process boundary** (renderer ⇄ main)  
-   → Add IPC handler in `src/main/controllers/*` + expose via generated preload API.
+7. **Anything crossing the process boundary** (renderer ⇄ main/backend)
+   → Add `@IpcHandler` in `src/main/controllers/*` with a zod tuple schema, then regenerate APIs.
+   → Renderer components should use Redux thunks, `AppDataSource`, or `createChatTransport()`.
 
 ### Non‑negotiables
 
 - Renderer **must not** import Node/Electron APIs directly.
 - Preload is a security boundary: expose **capabilities**, not modules.
-- All IPC input is untrusted: validate/sanitize with `zod` at the boundary.
+- All IPC and HTTP RPC input is untrusted: validate/sanitize with `zod` at the boundary.
+- `packages/core` must not import Electron, `safeStorage`, or `src/main/logger`.
 
 ## 2) IPC & API generation (how `window.api` works)
 
@@ -74,9 +89,9 @@ We use a declarative IPC pattern:
 
 - Decorators live in `src/main/ipc/Decorators.ts`
   - `@IpcController("prefix")` on controller classes
-  - `@IpcHandler("method")` for `ipcMain.handle` request/response APIs
-  - `@IpcOn("event")` for `ipcMain.on` fire-and-forget events (used for streaming)
-- Controllers live in `src/main/controllers/*` and are bound in `src/main/inversify.config.ts`.
+  - `@IpcHandler("method", z.tuple([...]))` for request/response APIs shared by Electron IPC and HTTP RPC
+  - `@IpcOn("event", z.tuple([...]))` for Electron-only fire-and-forget events (used for streaming)
+- Controllers live in `src/main/controllers/*` and are bound in `src/main/inversify.config.ts`; HTTP imports reusable controller constructors through the generated manifest.
 - IPC registration happens in `src/main/ipc/index.ts` via `IpcHandlerRegistry`.
 
 ### Adding a new IPC API (checklist)
@@ -84,16 +99,17 @@ We use a declarative IPC pattern:
 1. Add method to an existing controller (or create a new controller):
    - File: `src/main/controllers/<Something>Controller.ts`
    - Add `@IpcHandler("...")` (for invoke) or `@IpcOn("...")` (for send).
-2. Validate input with `zod` **inside** the controller (or at the first boundary layer).
-3. Bind the controller in `src/main/inversify.config.ts`.
-4. Bind Every new controller in `src/main/inversify.config.ts` with the same ServiceIdentifier type `TYPES.Controller`
-4. Run `npm run generate-api` (root) to regenerate `src/preload/api.ts`.
+2. Add a `z.tuple([...])` schema to the decorator and keep any deeper domain validation in the controller/service.
+3. Bind every new controller in `src/main/inversify.config.ts` with the same ServiceIdentifier type `TYPES.Controller`.
+4. Run `npm run generate-api` (root) to regenerate `src/preload/api.ts`, `src/main/http/rpc-manifest.ts`, and `src/renderer/src/lib/generated-http-api.ts`.
 5. Ensure renderer components use the shared Redux store/thunks for request-response flows, and keep any direct `window.api` calls isolated to renderer adapter/transport modules.
 6. Add tests (unit + integration) for the new behavior.
 
 ### Generated files policy
 
 - `src/preload/api.ts` is generated by `scripts/generate-api.ts`. Prefer **not** editing it manually.
+- `src/main/http/rpc-manifest.ts` is generated by `scripts/generate-api.ts`. Prefer **not** editing it manually.
+- `src/renderer/src/lib/generated-http-api.ts` is generated by `scripts/generate-api.ts`. Prefer **not** editing it manually.
 - If the generator can’t express a new shape, update the generator and regenerate.
 
 ## 3) Frontend design guidelines (intuitive, accessible, mobile‑first)
@@ -138,15 +154,20 @@ For renderer-specific implementation conventions, see `src/renderer/AGENTS.overr
 
 ### Day-to-day commands (root)
 
-- `npm run dev` — Run Next dev server + Electron in development.
+- `npm run dev` / `npm run dev:electron` — Run Next dev server + Electron in development.
+- `npm run dev:http` — Run Nest HTTP service on `4000` + Next dev on `3000`.
 - `npm run start` — Start Electron (development). Note: currently runs `npm i` first.
-- `npm run generate-api` — Regenerate preload API (`src/preload/api.ts`) from controllers.
+- `npm run generate-api` — Regenerate preload API, HTTP RPC manifest, and HTTP client from controllers.
+- `npm run build:renderer:electron` — Static renderer export configured for Electron packaging.
+- `npm run build:renderer:http` — Static renderer export configured for HTTP serving at `/`.
+- `npm run build:http` — Generate APIs, build HTTP renderer, build Nest entry, copy renderer output and migrations.
+- `npm run start:http` — Start the built HTTP service from `.vite/http/main.js`.
 - `npm run lint` / `npm run fix` — Google TypeScript style (`gts`) lint/fix for main/preload/core/scripts.
 - `npm run test` / `npm run test:watch` — Run Vitest suites for main/preload/core/scripts.
 - `npm run db:generate` — Generate new migrations from schema changes.
 - `npm run db:migrate` — Apply migrations to the configured DB (see `drizzle.config.ts`).
 - `npm run db:studio` — Launch Drizzle Studio.
-- `npm run package` / `npm run make` / `npm run publish` — Build renderer then package/make/publish via Electron Forge.
+- `npm run package` / `npm run make` / `npm run publish` — Build Electron renderer then package/make/publish via Electron Forge.
 
 ### Renderer commands (`src/renderer`)
 
@@ -160,7 +181,7 @@ For renderer-specific implementation conventions, see `src/renderer/AGENTS.overr
 When you change code, always run:
 1. Lints: `npm run lint` (root) and `npm run lint` in `src/renderer`
 2. Tests: add/run targeted tests first, then full suite(`npm run test`) and Coverage(`npm run test:coverage`)
-3. Build check (after every major change): Full build(`npm run package`) and start(`npm run dev`)
+3. Build check (after every major change): HTTP build (`npm run build:http`) and Electron package (`npm run package`) when the change touches shared runtime/build surfaces.
 
 ## 5) Testing policy (strict, 100%+ mindset)
 
@@ -183,10 +204,11 @@ If a test harness is missing for an area, create it as part of the change. If yo
 
 ## 6) Security & vulnerability review (must)
 
-- IPC is untrusted input: validate with `zod` and reject unknown fields.
+- IPC and HTTP RPC are untrusted input: validate with `zod` and reject unknown fields.
 - Never expose `fs`, `ipcRenderer`, or arbitrary Node APIs to the renderer.
 - Keep `contextIsolation: true`, `nodeIntegration: false`.
 - Never log secrets (API keys, tokens, full prompt content if it contains sensitive data).
+- HTTP v1 is local single-user only; keep `COSMO_HTTP_HOST` defaulted to `127.0.0.1` unless an accepted auth/deployment spec says otherwise.
 - Run dependency audits regularly:
   - `npm audit` at repo root
   - `npm audit` in `src/renderer`
@@ -211,8 +233,9 @@ Follow these rules:
 
 Logging:
 - Use `electron-log` scopes:
-  - main: `src/main/logger.ts` (`logger = log.scope("main")`)
+  - Electron main: `src/main/logger.ts` (`logger = log.scope("main")`)
   - renderer: `src/renderer/logger.ts` (`logger = log.scope("renderer")`)
+- Core code uses `CoreLogger`; bind runtime-specific implementations at startup instead of importing runtime loggers from `packages/core`.
 - Log at critical steps (startup, DB init/migrations, IPC entry/exit, AI stream start/end/error).
 - Include stable identifiers (chatId, providerId) but never include secrets.
 

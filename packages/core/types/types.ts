@@ -1,5 +1,6 @@
 const CORETYPES = {
     DatabaseManager: Symbol.for("DatabaseManager"),
+    SecretStore: Symbol.for("SecretStore"),
     // repositories
     ChatRepository: Symbol.for("ChatRepository"),
     MessageRepository: Symbol.for("MessageRepository"),

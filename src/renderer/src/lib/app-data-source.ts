@@ -29,6 +29,7 @@ import {
     type FrontendWebSearchProviderConfig,
     type WebSearchOption,
 } from "@/lib/web-search-options";
+import {httpApi, type HttpApi} from "@/lib/generated-http-api";
 
 type BackendKind = "electron" | "http";
 
@@ -324,128 +325,136 @@ function buildDummyHttpState(): DummyHttpState {
     };
 }
 
-function createElectronAppDataSource(): AppDataSource {
+function createApiBackedAppDataSource(api: HttpApi, backend: BackendKind): AppDataSource {
     return {
-        backend: "electron",
+        backend,
         chat: {
             getAllChats(searchQuery) {
-                return window.api.chat.getAllChats(searchQuery);
+                return api.chat.getAllChats(searchQuery);
             },
             getMessagesByChat(chatId) {
-                return window.api.message.getByChat(chatId);
+                return api.message.getByChat(chatId);
             },
             async createChat(input) {
-                await window.api.chat.createChat(input);
+                await api.chat.createChat(input);
             },
             async updateSelectedChat(chatId) {
-                await window.api.chat.updateSelectedChat(chatId);
+                await api.chat.updateSelectedChat(chatId);
             },
             async deleteChat(chatId) {
-                await window.api.chat.deleteChat(chatId);
+                await api.chat.deleteChat(chatId);
             },
             async updatePinnedStatusForChat(chatId, pinned) {
-                await window.api.chat.updatePinnedStatusForChat(chatId, pinned);
+                await api.chat.updatePinnedStatusForChat(chatId, pinned);
             },
             async updateSelectedModelForChat(chatId, identifier) {
-                await window.api.chat.updateSelectedModelForChat(chatId, identifier);
+                await api.chat.updateSelectedModelForChat(chatId, identifier);
             },
             async updateSelectedPersonaForChat(chatId, identifier) {
-                await window.api.chat.updateSelectedPersonaForChat(chatId, identifier);
+                await api.chat.updateSelectedPersonaForChat(chatId, identifier);
             },
         },
         command: {
             listAll() {
-                return window.api.command.listAll();
+                return api.command.listAll();
             },
             create(input) {
-                return window.api.command.create(input);
+                return api.command.create(input);
             },
             update(id, input) {
-                return window.api.command.update(id, input);
+                return api.command.update(id, input);
             },
             async delete(id) {
-                await window.api.command.delete(id);
+                await api.command.delete(id);
             },
             execute(input) {
-                return window.api.command.execute(input);
+                return api.command.execute(input);
             },
         },
         persona: {
             getAll() {
-                return window.api.persona.getAll();
+                return api.persona.getAll();
             },
             create(input) {
-                return window.api.persona.create(input);
+                return api.persona.create(input);
             },
             update(id, input) {
-                return window.api.persona.update(id, input);
+                return api.persona.update(id, input);
             },
             async delete(id) {
-                await window.api.persona.delete(id);
+                await api.persona.delete(id);
             },
         },
         modelProvider: {
             getProvidersWithModels() {
-                return window.api.modelProvider.getProvidersWithModels();
+                return api.modelProvider.getProvidersWithModels();
             },
             getAvailableModelsFromProviders(provider) {
-                return window.api.modelProvider.getAvailableModelsFromProviders(provider);
+                return api.modelProvider.getAvailableModelsFromProviders(provider);
             },
             addProvider(providerData, models) {
-                return window.api.modelProvider.addProvider(providerData, models);
+                return api.modelProvider.addProvider(providerData, models);
             },
             updateProvider(providerId, updateObject, modelsData) {
-                return window.api.modelProvider.updateProvider(providerId, updateObject, modelsData);
+                return api.modelProvider.updateProvider(providerId, updateObject, modelsData);
             },
             async deleteProvider(providerId) {
-                await window.api.modelProvider.deleteProvider(providerId);
+                await api.modelProvider.deleteProvider(providerId);
             },
         },
         webSearch: {
             async getConfig(type) {
-                return window.api.webSearch.getConfig(type);
+                return api.webSearch.getConfig(type);
             },
             async listOptions() {
-                const config = await window.api.webSearch.getConfig(WebSearchProviderTypeEnum.EXA);
+                const config = await api.webSearch.getConfig(WebSearchProviderTypeEnum.EXA);
                 return buildWebSearchOptions({
                     exaConfig: config,
                     parallelConfig: null,
                 });
             },
             saveConfig(input) {
-                return window.api.webSearch.saveConfig(input);
+                return api.webSearch.saveConfig(input);
             },
             async deleteConfig(type) {
-                await window.api.webSearch.deleteConfig(type);
+                await api.webSearch.deleteConfig(type);
             },
         },
         mcpServer: {
             getAll() {
-                return window.api.mcpServer.getAll();
+                return api.mcpServer.getAll();
             },
             create(input) {
-                return window.api.mcpServer.create(input);
+                return api.mcpServer.create(input);
             },
             update(id, updates) {
-                return window.api.mcpServer.update(id, updates);
+                return api.mcpServer.update(id, updates);
             },
             async delete(id) {
-                await window.api.mcpServer.delete(id);
+                await api.mcpServer.delete(id);
             },
             enable(id) {
-                return window.api.mcpServer.enable(id);
+                return api.mcpServer.enable(id);
             },
             disable(id) {
-                return window.api.mcpServer.disable(id);
+                return api.mcpServer.disable(id);
             },
             getServerTools(id) {
-                return window.api.mcpServer.getServerTools(id);
+                return api.mcpServer.getServerTools(id);
             },
             updateToolApproval(serverId, toolName, needsApproval) {
-                return window.api.mcpServer.updateToolApproval(serverId, toolName, needsApproval);
+                return api.mcpServer.updateToolApproval(serverId, toolName, needsApproval);
             },
         },
     };
+}
+
+function createElectronAppDataSource(): AppDataSource {
+    return createApiBackedAppDataSource(window.api, "electron");
+}
+
+function createHttpAppDataSource(): AppDataSource {
+    return createApiBackedAppDataSource(httpApi, "http");
 }
 
 function createDummyHttpAppDataSource(): AppDataSource {
@@ -782,10 +791,11 @@ export function resolveAppDataSource(
 ): AppDataSource {
     const preferredBackend =
         options.preferredBackend ??
-        (process.env.NEXT_PUBLIC_CHAT_DATA_SOURCE === "http" ? "http" : "electron");
+        (process.env.NEXT_PUBLIC_COSMO_BACKEND === "http" ||
+        process.env.NEXT_PUBLIC_CHAT_DATA_SOURCE === "http" ? "http" : "electron");
 
     if (preferredBackend === "http") {
-        return createDummyHttpAppDataSource();
+        return createHttpAppDataSource();
     }
 
     if (hasElectronApis()) {

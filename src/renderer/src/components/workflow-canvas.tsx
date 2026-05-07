@@ -28,7 +28,7 @@ import {
     Tags,
 } from 'lucide-react';
 import {useCallback, useEffect, useRef, useState} from 'react';
-import type {Connection, Edge, Node, NodeProps, ReactFlowInstance, XYPosition} from '@xyflow/react';
+import type {Connection, Edge, Node, NodeProps, OnNodesChange, ReactFlowInstance, XYPosition} from '@xyflow/react';
 import {addEdge, Handle, MarkerType, Position, useEdgesState, useNodesState} from '@xyflow/react';
 import type {PointerEvent as ReactPointerEvent} from 'react';
 
@@ -688,11 +688,11 @@ function WorkflowCanvasContent({
     editable?: boolean;
 }) {
     const canvasRef = useRef<HTMLDivElement | null>(null);
-    const reactFlowInstanceRef = useRef<ReactFlowInstance<Node<WorkflowCanvasNodeData>, Edge> | null>(null);
+    const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
     const [interactionMode, setInteractionMode] = useState<InteractionMode>('pointer');
     const [nodePickerState, setNodePickerState] = useState<NodePickerState | null>(null);
-    const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowCanvasNodeData>(buildInitialNodes(workflow));
-    const [edges, setEdges, onEdgesChange] = useEdgesState(buildInitialEdges(workflow));
+    const [nodes, setNodes, onNodesChange] = useNodesState<Node<WorkflowCanvasNodeData>>(buildInitialNodes(workflow));
+    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(buildInitialEdges(workflow));
     const nextNodeIndexRef = useRef(1);
     const isNodePickerOpen = nodePickerState !== null;
 
@@ -868,7 +868,7 @@ function WorkflowCanvasContent({
                 onInit={(instance) => {
                     reactFlowInstanceRef.current = instance;
                 }}
-                onNodesChange={onNodesChange}
+                onNodesChange={onNodesChange as OnNodesChange<Node>}
                 panOnDrag={editable ? interactionMode === 'hand' : true}
                 proOptions={{hideAttribution: true}}
                 selectionOnDrag={editable && interactionMode === 'pointer'}

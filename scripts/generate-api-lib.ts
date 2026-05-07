@@ -1,4 +1,9 @@
-import {IPC_CONTROLLER_METADATA_KEY, IPC_HANDLE_METADATA_KEY, IPC_ON_METADATA_KEY} from "../src/main/ipc/Decorators"
+import {
+  IPC_ARGS_SCHEMA_METADATA_KEY,
+  IPC_CONTROLLER_METADATA_KEY,
+  IPC_HANDLE_METADATA_KEY,
+  IPC_ON_METADATA_KEY
+} from "../src/main/ipc/Decorators"
 
 export type ControllerSource = {
   controller: (abstract new (...args: unknown[]) => unknown) & {name: string}
@@ -11,10 +16,20 @@ type MethodSignature = {
   returnType: string
 }
 
+type HandlerDescriptor = {
+  controllerName: string
+  controllerPrefix: string
+  methodName: string
+  handlerName: string
+  params: string
+  args: string
+  returnType: string
+}
+
 // Parses controller method signatures so generated APIs reflect current IPC types.
 export function getMethodSignature(controllerFileContent: string, methodName: string): MethodSignature {
   const methodRegex = new RegExp(
-    `(?:@IpcHandler\\(|@IpcOn\\()(?:'[^']+'|\\"[^\\"]+\\")\\)[\\s\\S]*?public (?:async )?${methodName}\\s*\\(([^)]*)\\)(?::\\s*([^{]*))?`,
+    `(?:@IpcHandler\\(|@IpcOn\\()[\\s\\S]*?public (?:async )?${methodName}\\s*\\(([^)]*)\\)(?::\\s*([^{]*))?`,
     "m"
   )
   const match = controllerFileContent.match(methodRegex)
@@ -193,4 +208,154 @@ import {UIMessage} from "ai";
   apiContent += `};\n`
 
   return apiContent
+}
+
+function getHandleDescriptors(controllers: ControllerSource[]): HandlerDescriptor[] {
+  const descriptors: HandlerDescriptor[] = []
+
+  for (const { controller, source } of controllers) {
+    const controllerName = controller.name
+    if (!source) {
+      console.error(`Could not read content of controller ${controllerName}`)
+      continue
+    }
+
+    const controllerPrefix = Reflect.getMetadata(IPC_CONTROLLER_METADATA_KEY, controller)
+    if (controllerPrefix === undefined) {
+      continue
+    }
+
+    const handleMetadata = Reflect.getMetadata(IPC_HANDLE_METADATA_KEY, controller) || {}
+    const argSchemas = Reflect.getMetadata(IPC_ARGS_SCHEMA_METADATA_KEY, controller) || {}
+    for (const methodName in handleMetadata) {
+      if (!argSchemas[methodName]) {
+        throw new Error(`${controllerName}.${methodName} is missing an IPC args zod tuple schema.`)
+      }
+      const { params, args, returnType } = getMethodSignature(source, methodName)
+      descriptors.push({
+        controllerName,
+        controllerPrefix,
+        methodName,
+        handlerName: handleMetadata[methodName],
+        params,
+        args,
+        returnType,
+      })
+    }
+  }
+
+  return descriptors
+}
+
+// Builds a tiny generated manifest so the Nest runtime can import the same controller source of truth.
+export function generateHttpRpcManifestContent(controllers: ControllerSource[]): string {
+  const descriptors = getHandleDescriptors(controllers)
+  const controllerNames = Array.from(new Set(descriptors.map((descriptor) => descriptor.controllerName)))
+  const controllerImports = controllerNames
+    .map((controllerName) => `import {${controllerName}} from "../controllers/${controllerName}";`)
+    .join("\n")
+
+  return `${controllerImports}
+
+export const rpcControllerConstructors = [${controllerNames.join(", ")}] as const;
+`
+}
+
+// Builds the renderer HTTP client with the same method groups as the preload API.
+export function generateHttpClientContent(controllers: ControllerSource[]): string {
+  const descriptors = getHandleDescriptors(controllers)
+  const apiGroups: Record<string, string[]> = {}
+  const apiGroupInterfaces: Record<string, string[]> = {}
+  const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
+
+  for (const descriptor of descriptors) {
+    if (!apiGroups[descriptor.controllerPrefix]) {
+      apiGroups[descriptor.controllerPrefix] = []
+      apiGroupInterfaces[descriptor.controllerPrefix] = []
+    }
+
+    apiGroups[descriptor.controllerPrefix].push(
+      `    ${descriptor.methodName}: (${descriptor.params}) => callRpc<${descriptor.returnType}>('${descriptor.controllerPrefix}', '${descriptor.handlerName}', [${descriptor.args}])`
+    )
+    apiGroupInterfaces[descriptor.controllerPrefix].push(
+      `    ${descriptor.methodName}(${descriptor.params}): Promise<${descriptor.returnType}>;`
+    )
+  }
+
+  let content = `import superjson from "superjson";
+import type {
+    NewChat,
+    ModelProviderLite,
+    Chat,
+    ModelProviderCreateInput,
+    NewMessage,
+    Message,
+    NewModel,
+    ProviderWithModels,
+    ChatWithMessages,
+    ModelIdentifier,
+    PersonaIdentifier,
+    Persona,
+    NewPersona,
+    McpServer,
+    McpServerCreateInput,
+    McpServerUpdateInput,
+    McpToolDefinition,
+    CommandCreateInput,
+    CommandDefinition,
+    CommandExecution,
+    CommandUpdateInput,
+    WebSearchConfigSaveInput,
+    WebSearchConfigView,
+} from "core/dto";
+import type {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
+import type {UIMessage} from "ai";
+
+type RpcEnvelope<T> =
+    | {ok: true; result: T}
+    | {ok: false; error: {code: string; message: string}};
+
+const apiBase = process.env.NEXT_PUBLIC_COSMO_API_BASE ?? "/api";
+
+function buildRpcUrl(group: string, handler: string): string {
+    const base = apiBase.endsWith("/") ? apiBase.slice(0, -1) : apiBase;
+    return \`\${base}/rpc/\${group}/\${handler}\`;
+}
+
+async function callRpc<T>(group: string, handler: string, args: unknown[]): Promise<T> {
+    const response = await fetch(buildRpcUrl(group, handler), {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+        },
+        body: superjson.stringify({args}),
+    });
+    const envelope = superjson.parse<RpcEnvelope<T>>(await response.text());
+    if (!envelope.ok) {
+        throw new Error(envelope.error.message || "HTTP RPC request failed.");
+    }
+    if (!response.ok) {
+        throw new Error(response.statusText || "HTTP RPC request failed.");
+    }
+    return envelope.result;
+}
+
+`
+
+  const mainApiInterfaceMembers: string[] = []
+  for (const groupName in apiGroupInterfaces) {
+    const interfaceName = `${capitalize(groupName)}HttpApi`
+    content += `export interface ${interfaceName} {\n${apiGroupInterfaces[groupName].join("\n")}\n}\n\n`
+    mainApiInterfaceMembers.push(`  ${groupName}: ${interfaceName};`)
+  }
+
+  content += `export interface HttpApi {\n${mainApiInterfaceMembers.join("\n")}\n}\n\n`
+  content += `export const httpApi: HttpApi = {\n`
+  for (const groupName in apiGroups) {
+    content += `  ${groupName}: {\n${apiGroups[groupName].join(",\n")}\n  },\n`
+  }
+  content += `};\n`
+
+  return content
 }

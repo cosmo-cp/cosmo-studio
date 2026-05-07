@@ -17,11 +17,13 @@ import {McpServerService} from "./services/McpServerService";
 import {McpClientManager} from "./services/McpClientManager";
 import {WebSearchConfigRepository} from "./repositories/WebSearchConfigRepository";
 import {WebSearchConfigService} from "./services/WebSearchConfigService";
+import {Base64SecretStore, type SecretStore} from "./platform/SecretStore";
 
 const coreContainer = new Container();
 
 // Database
 coreContainer.bind<DatabaseManager>(CORETYPES.DatabaseManager).to(DatabaseManager).inSingletonScope();
+coreContainer.bind<SecretStore>(CORETYPES.SecretStore).to(Base64SecretStore).inSingletonScope();
 
 // Repositories
 coreContainer.bind<ChatRepository>(CORETYPES.ChatRepository).to(ChatRepository).inSingletonScope();

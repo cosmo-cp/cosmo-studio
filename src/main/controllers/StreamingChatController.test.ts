@@ -5,6 +5,8 @@ import type {MessageService} from "core/services/MessageService";
 import type {ModelProviderService} from "core/services/ModelProviderService";
 import type {PersonaService} from "core/services/PersonaService";
 import type {WebSearchConfigService} from "core/services/WebSearchConfigService";
+import {setCoreLogger} from "core/platform/CoreLogger";
+import {ChatStreamingService} from "../services/ChatStreamingService";
 
 const logger = vi.hoisted(() => ({
     info: vi.fn(),
@@ -116,13 +118,14 @@ function createControllerDependencies(overrides: {
         getEnabledExaConfig: overrides.getEnabledExaConfig ?? vi.fn().mockResolvedValue(null),
     } as unknown as WebSearchConfigService;
 
-    const controller = new StreamingChatController(
+    const chatStreamingService = new ChatStreamingService(
         modelProviderService,
         messageService,
         personaService,
         mcpClientManager,
         webSearchConfigService
     );
+    const controller = new StreamingChatController(chatStreamingService);
 
     return {
         controller,
@@ -138,6 +141,7 @@ function createControllerDependencies(overrides: {
 describe("StreamingChatController", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        setCoreLogger(logger);
         ai.convertToModelMessages.mockResolvedValue([]);
         ai.smoothStream.mockReturnValue("transform");
         ai.RetryError.isInstance.mockReturnValue(false);
@@ -231,10 +235,6 @@ describe("StreamingChatController", () => {
             modelIdentifier: "provider:model",
         });
 
-        expect(webContents.send).toHaveBeenCalledWith("chan-data", {
-            type: "message-metadata",
-            messageMetadata: {modelId: "provider:model"},
-        });
         expect(webContents.send).toHaveBeenCalledWith("chan-data", {chunk: 1});
         expect(webContents.send).toHaveBeenCalledWith("chan-data", {chunk: 2});
         expect(webContents.send).toHaveBeenCalledWith("chan-end");
@@ -385,7 +385,7 @@ describe("StreamingChatController", () => {
         expect(streamOptions.stopWhen).toBe("step:5");
     });
 
-    it("emits streamText onError messages and prefers RetryError.lastError", async () => {
+    it("logs streamText onError messages and prefers RetryError.lastError", async () => {
         const {controller} = createControllerDependencies();
 
         ai.convertToModelMessages.mockResolvedValue([]);
@@ -415,10 +415,11 @@ describe("StreamingChatController", () => {
         );
 
         ai.RetryError.isInstance.mockReturnValue(true);
-        await capturedOptions?.onError?.({error: "original", lastError: "retry-last"});
+        await expect(async () => {
+            await capturedOptions?.onError?.({error: "original", lastError: "retry-last"});
+        }).rejects.toBe("retry-last");
 
         expect(logger.error).toHaveBeenCalledWith("Stream error:", expect.anything());
-        expect(webContents.send).toHaveBeenCalledWith("chan-error", "retry-last");
         expect(
             (controller as unknown as {activeStreams: Map<string, AbortController>})
                 .activeStreams

@@ -1,4 +1,4 @@
-import { ChatRequestOptions, ChatTransport, UIMessage, UIMessageChunk } from 'ai'
+import {ChatRequestOptions, ChatTransport, DefaultChatTransport, UIMessage, UIMessageChunk} from 'ai'
 
 // Note: The global AbortSignal type is used directly, no import needed for modern browsers/environments.
 // Note: The browser's native ReadableStream is used, no import needed.
@@ -142,4 +142,30 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
         });
         return Promise.resolve(stream);
     }
+}
+
+export function createChatTransport(): ChatTransport<UIMessage> {
+    const backend = process.env.NEXT_PUBLIC_COSMO_BACKEND ??
+        process.env.NEXT_PUBLIC_CHAT_DATA_SOURCE ??
+        "electron";
+
+    if (backend === "http") {
+        const apiBase = process.env.NEXT_PUBLIC_COSMO_API_BASE ?? "/api";
+        const normalizedBase = apiBase.endsWith("/") ? apiBase.slice(0, -1) : apiBase;
+        return new DefaultChatTransport({
+            api: `${normalizedBase}/chat`,
+            prepareSendMessagesRequest: (options) => ({
+                body: {
+                    ...options.body,
+                    id: options.id,
+                    messages: options.messages,
+                    trigger: options.trigger,
+                    messageId: options.messageId,
+                    metadata: options.requestMetadata,
+                },
+            }),
+        });
+    }
+
+    return new IpcChatTransport();
 }

@@ -1,39 +1,37 @@
-'use client'
-import {JSX, useCallback, useEffect, useMemo} from "react";
-import { ChatHistory } from "@/components/chat-history";
-import type {Chat} from "core/dto";
-import { ChatHeader } from "@/components/chat-header";
-import { Messages } from "@/components/messages";
-import { MultimodalInput } from "@/components/multimodal-input";
-import { useChat } from "@ai-sdk/react";
-import { IpcChatTransport } from "@/chat-transport";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { MessageCirclePlus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { lastAssistantMessageIsCompleteWithApprovalResponses, UIMessage } from "ai";
-import { toast } from "sonner"
-import { logger } from "../../../logger";
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
+'use client';
+import { JSX, useCallback, useEffect, useMemo } from 'react';
+import { ChatHistory } from '@/components/chat-history';
+import type { Chat } from 'core/dto';
+import { ChatHeader } from '@/components/chat-header';
+import { Messages } from '@/components/messages';
+import { MultimodalInput } from '@/components/multimodal-input';
+import { useChat } from '@ai-sdk/react';
+import { IpcChatTransport } from '@/chat-transport';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { MessageCirclePlus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { lastAssistantMessageIsCompleteWithApprovalResponses, UIMessage } from 'ai';
+import { toast } from 'sonner';
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import {
     clearConversationSearch,
-    setChatHistorySearchQuery,
-    setConversationSearchQuery,
-    setCurrentMatchIndex,
-    setSelectedWebSearchOption,
-    setTotalMatches,
-    updateChatInHistory as updateChatInHistoryAction,
-} from "@/lib/store/main-chat-page-slice";
-import {
     createChat,
     deleteChat,
     loadChatHistory,
     loadChatMessages,
     selectChat,
+    setChatHistorySearchQuery,
+    setConversationSearchQuery,
+    setCurrentMatchIndex,
+    setSelectedWebSearchOption,
+    setTotalMatches,
     togglePinnedChat,
+    updateChatInHistory as updateChatInHistoryAction,
     updateSelectedModel,
     updateSelectedPersona,
-} from "@/lib/store/main-chat-page-thunks";
-import {WEB_SEARCH_NONE_OPTION_ID} from "@/lib/web-search-options";
+} from '@/lib/store/chat-store';
+import { WEB_SEARCH_NONE_OPTION_ID } from '@/lib/web-search-options';
+import { logger } from '../../../../logger';
 
 function MainChatPage(): JSX.Element {
     const dispatch = useAppDispatch();
@@ -45,11 +43,11 @@ function MainChatPage(): JSX.Element {
         currentMatchIndex,
         selectedWebSearchOptionByChatId,
         totalMatches,
-    } = useAppSelector((state) => state.mainChatPage);
+    } = useAppSelector((state) => state.chat);
     const transport = useMemo(() => new IpcChatTransport(), []);
 
     const syncChatInStore = useCallback((chatId: string, updates: Partial<Chat>) => {
-        dispatch(updateChatInHistoryAction({chatId, updates}));
+        dispatch(updateChatInHistoryAction({ chatId, updates }));
     }, [dispatch]);
 
     const {
@@ -58,7 +56,7 @@ function MainChatPage(): JSX.Element {
         status,
         setMessages,
         addToolApprovalResponse,
-        stop
+        stop,
     } = useChat<UIMessage>({
         id: selectedChat?.id,
         transport,
@@ -75,7 +73,10 @@ function MainChatPage(): JSX.Element {
             // Update title on first exchange (matches backend logic in MessageRepository)
             const userMessages = messages.filter(m => m.role === 'user');
             if (userMessages.length === 1) {
-                const userTextPart = userMessages[0].parts?.find(p => p.type === 'text') as { type: 'text'; text: string } | undefined;
+                const userTextPart = userMessages[0].parts?.find(p => p.type === 'text') as {
+                    type: 'text';
+                    text: string
+                } | undefined;
                 if (userTextPart?.text) {
                     updates.title = userTextPart.text.slice(0, 50);
                 }
@@ -83,9 +84,9 @@ function MainChatPage(): JSX.Element {
             syncChatInStore(selectedChat.id, updates);
         },
         onError: (error) => {
-            toast.error("Failed to Stream Data", {
+            toast.error('Failed to Stream Data', {
                 description: error.message,
-            })
+            });
         },
     });
 
@@ -104,8 +105,8 @@ function MainChatPage(): JSX.Element {
                     return;
                 }
                 logger.error(error);
-                toast.error("Failed to load chats", {
-                    description: typeof error === "string" ? error : undefined,
+                toast.error('Failed to load chats', {
+                    description: typeof error === 'string' ? error : undefined,
                 });
             });
 
@@ -137,8 +138,8 @@ function MainChatPage(): JSX.Element {
                     return;
                 }
                 logger.error(error);
-                toast.error("Failed to load chat messages", {
-                    description: typeof error === "string" ? error : undefined,
+                toast.error('Failed to load chat messages', {
+                    description: typeof error === 'string' ? error : undefined,
                 });
             });
 
@@ -149,11 +150,11 @@ function MainChatPage(): JSX.Element {
 
     const handleNewChat = useCallback(async () => {
         try {
-            await dispatch(createChat({title: "New Chat"})).unwrap();
+            await dispatch(createChat({ title: 'New Chat' })).unwrap();
         } catch (error) {
             logger.error(error);
-            toast.error("Failed to create chat", {
-                description: typeof error === "string" ? error : undefined,
+            toast.error('Failed to create chat', {
+                description: typeof error === 'string' ? error : undefined,
             });
         }
     }, [dispatch]);
@@ -167,8 +168,8 @@ function MainChatPage(): JSX.Element {
             await dispatch(selectChat(chat)).unwrap();
         } catch (error) {
             logger.error(error);
-            toast.error("Failed to select chat", {
-                description: typeof error === "string" ? error : undefined,
+            toast.error('Failed to select chat', {
+                description: typeof error === 'string' ? error : undefined,
             });
         }
     }, [dispatch]);
@@ -178,19 +179,19 @@ function MainChatPage(): JSX.Element {
             await dispatch(deleteChat(chat.id)).unwrap();
         } catch (error) {
             logger.error(error);
-            toast.error("Failed to delete chat", {
-                description: typeof error === "string" ? error : undefined,
+            toast.error('Failed to delete chat', {
+                description: typeof error === 'string' ? error : undefined,
             });
         }
     }, [dispatch]);
 
     const handlePinChat = useCallback(async (chat: Chat) => {
         try {
-            await dispatch(togglePinnedChat({chatId: chat.id, pinned: !chat.pinned})).unwrap();
+            await dispatch(togglePinnedChat({ chatId: chat.id, pinned: !chat.pinned })).unwrap();
         } catch (error) {
             logger.error(error);
-            toast.error("Failed to update chat pin status", {
-                description: typeof error === "string" ? error : undefined,
+            toast.error('Failed to update chat pin status', {
+                description: typeof error === 'string' ? error : undefined,
             });
         }
     }, [dispatch]);
@@ -239,10 +240,10 @@ function MainChatPage(): JSX.Element {
 
         const updates: Partial<Chat> = {
             selectedProvider: providerName,
-            selectedModelId: modelId
+            selectedModelId: modelId,
         };
 
-        dispatch(updateChatInHistoryAction({chatId: selectedChat.id, updates}));
+        dispatch(updateChatInHistoryAction({ chatId: selectedChat.id, updates }));
 
         dispatch(updateSelectedModel({
             chatId: selectedChat.id,
@@ -252,8 +253,8 @@ function MainChatPage(): JSX.Element {
             .unwrap()
             .catch((error) => {
                 logger.error(error);
-                toast.error("Failed to update chat model", {
-                    description: typeof error === "string" ? error : undefined,
+                toast.error('Failed to update chat model', {
+                    description: typeof error === 'string' ? error : undefined,
                 });
             });
     }, [dispatch, selectedChat]);
@@ -262,10 +263,10 @@ function MainChatPage(): JSX.Element {
         if (!selectedChat) return;
 
         const updates: Partial<Chat> = {
-            selectedPersonaId: personaId
+            selectedPersonaId: personaId,
         };
 
-        dispatch(updateChatInHistoryAction({chatId: selectedChat.id, updates}));
+        dispatch(updateChatInHistoryAction({ chatId: selectedChat.id, updates }));
 
         dispatch(updateSelectedPersona({
             chatId: selectedChat.id,
@@ -274,8 +275,8 @@ function MainChatPage(): JSX.Element {
             .unwrap()
             .catch((error) => {
                 logger.error(error);
-                toast.error("Failed to update chat persona", {
-                    description: typeof error === "string" ? error : undefined,
+                toast.error('Failed to update chat persona', {
+                    description: typeof error === 'string' ? error : undefined,
                 });
             });
     }, [dispatch, selectedChat]);
@@ -284,7 +285,7 @@ function MainChatPage(): JSX.Element {
         if (!selectedChat) {
             return;
         }
-        dispatch(setSelectedWebSearchOption({chatId: selectedChat.id, optionId}));
+        dispatch(setSelectedWebSearchOption({ chatId: selectedChat.id, optionId }));
     }, [dispatch, selectedChat]);
 
     const selectedWebSearchOptionId = selectedChat ?

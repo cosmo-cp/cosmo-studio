@@ -1,24 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { ModelProviderTypeEnum } from "../database/schema/modelProviderSchema"
 import type { ModelProviderCreateInput } from "../dto"
+import {setCoreLogger} from "../platform/CoreLogger"
+import type {SecretStore} from "../platform/SecretStore"
 import type { ModelProviderRepository } from "../repositories/ModelProviderRepository"
 import { ModelProviderService } from "./ModelProviderService"
-import { logger } from "../../../src/main/logger"
 
-vi.mock("electron", () => ({
-  safeStorage: {
-    isEncryptionAvailable: vi.fn(() => true),
-    decryptString: vi.fn(() => "decrypted-key"),
-  },
-}))
+const logger = {
+  error: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
+}
 
-vi.mock("../../../src/main/logger", () => ({
-  logger: {
-    error: vi.fn(),
-    warn: vi.fn(),
-    info: vi.fn(),
-  },
-}))
+const secretStore: SecretStore = {
+  isEncryptionAvailable: () => true,
+  encrypt: (value) => Buffer.from(value, "utf-8").toString("base64"),
+  decrypt: vi.fn(() => "decrypted-key"),
+}
 
 vi.mock("@ai-sdk/anthropic", () => ({
   createAnthropic: vi.fn(() => "anthropic-provider"),
@@ -44,6 +42,7 @@ describe("ModelProviderService", () => {
   let repository: ModelProviderRepository
 
   beforeEach(() => {
+    setCoreLogger(logger)
     repository = {
       findDuplicates: vi.fn().mockResolvedValue([]),
       addProvider: vi.fn(),
@@ -62,7 +61,7 @@ describe("ModelProviderService", () => {
 
   it("rejects duplicate provider entries", async () => {
     repository.findDuplicates = vi.fn().mockResolvedValue([{}])
-    const service = new ModelProviderService(repository)
+    const service = new ModelProviderService(repository, secretStore)
 
     const provider: ModelProviderCreateInput = {
       name: "OpenAI",
@@ -76,7 +75,7 @@ describe("ModelProviderService", () => {
   })
 
   it("requires provider names when adding providers", async () => {
-    const service = new ModelProviderService(repository)
+    const service = new ModelProviderService(repository, secretStore)
     const provider: ModelProviderCreateInput = {
       name: "   ",
       apiKey: "secret",
@@ -101,7 +100,7 @@ describe("ModelProviderService", () => {
         updatedAt: null,
       },
     ])
-    const service = new ModelProviderService(repository)
+    const service = new ModelProviderService(repository, secretStore)
 
     const providers = await service.getProviders({ withApiKey: true })
 
@@ -110,7 +109,7 @@ describe("ModelProviderService", () => {
   })
 
   it("skips custom providers when listing models", async () => {
-    const service = new ModelProviderService(repository)
+    const service = new ModelProviderService(repository, secretStore)
     const provider: ModelProviderCreateInput = {
       name: "Custom",
       apiKey: "",
@@ -149,7 +148,7 @@ describe("ModelProviderService", () => {
       }),
     })
     vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch)
-    const service = new ModelProviderService(repository)
+    const service = new ModelProviderService(repository, secretStore)
 
     const provider: ModelProviderCreateInput = {
       name: "OpenAI",
@@ -167,11 +166,11 @@ describe("ModelProviderService", () => {
   })
 
   it("rethrows provider deletion failures so renderer can surface errors", async () => {
-    const service = new ModelProviderService(repository)
+    const service = new ModelProviderService(repository, secretStore)
     const error = new Error("delete failed")
     repository.deleteProviderById = vi.fn().mockRejectedValue(error)
 
     await expect(service.deleteProvider("provider-id")).rejects.toThrow("delete failed")
-    expect(logger.error).toHaveBeenCalledWith(error)
+    expect(logger.error).toHaveBeenCalledWith("Failed to delete provider", error)
   })
 })

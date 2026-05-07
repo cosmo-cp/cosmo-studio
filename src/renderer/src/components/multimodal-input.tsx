@@ -456,7 +456,7 @@ function PromptInputContent({
                                     <div className="flex flex-col">
                                         <span>{option.label}</span>
                                         <span className="text-xs text-muted-foreground">
-                                            {option.description}
+                                            {option.label}
                                         </span>
                                     </div>
                                 </PromptInputSelectItem>

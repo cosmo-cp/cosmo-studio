@@ -10,6 +10,9 @@ import {updateElectronApp, UpdateSourceType} from "update-electron-app";
 import {logger} from "./logger";
 import {McpClientManager} from "core/services/McpClientManager";
 import {CORETYPES} from "core/types/types";
+import {setCoreLogger} from "core/platform/CoreLogger";
+
+setCoreLogger(logger);
 
 
 export class Main {

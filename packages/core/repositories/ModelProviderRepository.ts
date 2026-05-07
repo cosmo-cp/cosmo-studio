@@ -2,8 +2,8 @@ import {inject, injectable} from "inversify";
 import {model, modelProvider,} from "../database/schema/modelProviderSchema"; // Use Drizzle-derived types
 import {and, eq, getTableColumns} from "drizzle-orm";
 import {CORETYPES} from "../types/types";
-import {safeStorage} from 'electron';
 import {DatabaseManager} from "../database/DatabaseManager";
+import {Base64SecretStore, type SecretStore} from "../platform/SecretStore";
 import {
     Model,
     ModelProvider,
@@ -19,7 +19,10 @@ import {
 export class ModelProviderRepository {
     private db;
 
-    constructor(@inject(CORETYPES.DatabaseManager) databaseManager: DatabaseManager) {
+    constructor(
+        @inject(CORETYPES.DatabaseManager) databaseManager: DatabaseManager,
+        @inject(CORETYPES.SecretStore) private readonly secretStore: SecretStore = new Base64SecretStore()
+    ) {
         this.db = databaseManager.getInstance();
     }
 
@@ -160,10 +163,7 @@ export class ModelProviderRepository {
     }
 
     private encryptApiKey = (apiKey: string): string => {
-        if (safeStorage.isEncryptionAvailable()) {
-            return safeStorage.encryptString(apiKey).toString("base64");
-        }
-        return Buffer.from(apiKey, "utf-8").toString("base64");
+        return this.secretStore.encrypt(apiKey);
     };
 
 }

@@ -13,7 +13,7 @@ describe('SettingsPage', () => {
         const replace = vi.fn();
         vi.mocked(useRouter).mockReturnValue({
             replace,
-        } as ReturnType<typeof useRouter>);
+        } as unknown as ReturnType<typeof useRouter>);
 
         render(<SettingsPage />);
 

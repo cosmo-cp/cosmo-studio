@@ -15,6 +15,9 @@ const personaIdentifierSchema = z.object({
         return trimmedValue === "" ? null : trimmedValue;
     }, z.string().nullable())
 }).strict();
+const newChatSchema = z.custom<NewChat>();
+const newChatUpdateSchema = z.custom<Partial<NewChat>>();
+const modelIdentifierSchema = z.custom<ModelIdentifier>();
 
 @injectable()
 @IpcController("chat")
@@ -22,47 +25,47 @@ export class ChatController implements Controller {
     constructor(@inject(CORETYPES.ChatService) private chatService: ChatService) {
     }
 
-    @IpcHandler("getAllChats")
+    @IpcHandler("getAllChats", z.tuple([z.string().nullable()]))
     public async getAllChats(searchQuery: string | null): Promise<Chat[]> {
         return this.chatService.getAllChats(searchQuery);
     }
 
-    @IpcHandler("getChatById")
+    @IpcHandler("getChatById", z.tuple([z.string().min(1)]))
     public async getChatById(id: string): Promise<ChatWithMessages | undefined> {
         return this.chatService.getChatById(id);
     }
 
-    @IpcHandler("createChat")
+    @IpcHandler("createChat", z.tuple([newChatSchema]))
     public async createChat(newChat: NewChat): Promise<void> {
         return this.chatService.createChat(newChat);
     }
 
-    @IpcHandler("updateChat")
+    @IpcHandler("updateChat", z.tuple([z.string().min(1), newChatUpdateSchema]))
     public async updateChat(id: string, updates: Partial<NewChat>): Promise<Chat> {
         return this.chatService.updateChat(id, updates);
     }
 
-    @IpcHandler("deleteChat")
+    @IpcHandler("deleteChat", z.tuple([z.string().min(1)]))
     public async deleteChat(id: string): Promise<void> {
         return this.chatService.deleteChat(id);
     }
 
-    @IpcHandler("updatePinnedStatusForChat")
+    @IpcHandler("updatePinnedStatusForChat", z.tuple([z.string().min(1), z.boolean()]))
     public async updatePinnedStatusForChat(id: string, pinned: boolean): Promise<void> {
         return this.chatService.updatePinnedStatusForChat(id, pinned);
     }
 
-    @IpcHandler("getSelectedModelForChat")
+    @IpcHandler("getSelectedModelForChat", z.tuple([z.string().min(1)]))
     public async getSelectedModelForChat(id: string): Promise<string | null> {
         return this.chatService.getSelectedModelForChat(id);
     }
 
-    @IpcHandler("updateSelectedModelForChat")
+    @IpcHandler("updateSelectedModelForChat", z.tuple([z.string().min(1), modelIdentifierSchema]))
     public async updateSelectedModelForChat(id: string, modelIdentifier: ModelIdentifier): Promise<void> {
         return this.chatService.updateSelectedModelForChat(id, modelIdentifier);
     }
 
-    @IpcHandler("updateSelectedPersonaForChat")
+    @IpcHandler("updateSelectedPersonaForChat", z.tuple([z.string().min(1), personaIdentifierSchema]))
     public async updateSelectedPersonaForChat(id: string, personaIdentifier: PersonaIdentifier): Promise<void> {
         const parsedPersonaIdentifier: PersonaIdentifier = {
             selectedPersonaId: personaIdentifierSchema.parse(personaIdentifier).selectedPersonaId ?? null,
@@ -70,7 +73,7 @@ export class ChatController implements Controller {
         return this.chatService.updateSelectedPersonaForChat(id, parsedPersonaIdentifier);
     }
 
-    @IpcHandler("updateSelectedChat")
+    @IpcHandler("updateSelectedChat", z.tuple([z.string().min(1)]))
     public async updateSelectedChat(id: string): Promise<void> {
         return this.chatService.updateSelectedChat(id);
     }

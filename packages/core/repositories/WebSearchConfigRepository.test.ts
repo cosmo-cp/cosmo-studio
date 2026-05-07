@@ -6,15 +6,13 @@ import {
     webSearchConfig,
     WebSearchProviderTypeEnum,
 } from "../database/schema/webSearchConfigSchema";
+import type {SecretStore} from "../platform/SecretStore";
 import {WebSearchConfigRepository} from "./WebSearchConfigRepository";
 
-const safeStorage = vi.hoisted(() => ({
+const secretStore = vi.hoisted(() => ({
     isEncryptionAvailable: vi.fn(() => true),
-    encryptString: vi.fn((value: string) => Buffer.from(`enc:${value}`)),
-}));
-
-vi.mock("electron", () => ({
-    safeStorage,
+    encrypt: vi.fn((value: string) => Buffer.from(`enc:${value}`).toString("base64")),
+    decrypt: vi.fn((value: string) => Buffer.from(value, "base64").toString("utf-8")),
 }));
 
 describe("WebSearchConfigRepository", () => {
@@ -26,7 +24,7 @@ describe("WebSearchConfigRepository", () => {
         const databaseManager = {
             getInstance: () => testDb.db,
         } as unknown as DatabaseManager;
-        repository = new WebSearchConfigRepository(databaseManager);
+        repository = new WebSearchConfigRepository(databaseManager, secretStore as SecretStore);
     });
 
     afterAll(async () => {
@@ -34,8 +32,9 @@ describe("WebSearchConfigRepository", () => {
     });
 
     beforeEach(async () => {
-        safeStorage.isEncryptionAvailable.mockReturnValue(true);
-        safeStorage.encryptString.mockClear();
+        secretStore.isEncryptionAvailable.mockReturnValue(true);
+        secretStore.encrypt.mockImplementation((value: string) => Buffer.from(`enc:${value}`).toString("base64"));
+        secretStore.encrypt.mockClear();
         await testDb.db.delete(webSearchConfig);
     });
 
@@ -47,7 +46,7 @@ describe("WebSearchConfigRepository", () => {
         });
 
         expect(created.type).toBe(WebSearchProviderTypeEnum.EXA);
-        expect(safeStorage.encryptString).toHaveBeenCalledWith("secret");
+        expect(secretStore.encrypt).toHaveBeenCalledWith("secret");
 
         const storedRows = await testDb.db.select().from(webSearchConfig);
         expect(storedRows[0].apiKey).toBe(Buffer.from("enc:secret").toString("base64"));
@@ -74,7 +73,7 @@ describe("WebSearchConfigRepository", () => {
         });
 
         expect(updated.enabled).toBe(false);
-        expect(safeStorage.encryptString).toHaveBeenCalledWith("rotated");
+        expect(secretStore.encrypt).toHaveBeenCalledWith("rotated");
 
         const [stored] = await testDb.db.select()
             .from(webSearchConfig)
@@ -84,7 +83,8 @@ describe("WebSearchConfigRepository", () => {
     });
 
     it("falls back to base64 when encryption is unavailable", async () => {
-        safeStorage.isEncryptionAvailable.mockReturnValue(false);
+        secretStore.isEncryptionAvailable.mockReturnValue(false);
+        secretStore.encrypt.mockImplementation((value: string) => Buffer.from(value, "utf-8").toString("base64"));
 
         await repository.create({
             type: WebSearchProviderTypeEnum.EXA,
@@ -92,7 +92,7 @@ describe("WebSearchConfigRepository", () => {
             apiKey: "plain",
         });
 
-        expect(safeStorage.encryptString).not.toHaveBeenCalled();
+        expect(secretStore.encrypt).toHaveBeenCalledWith("plain");
 
         const [stored] = await testDb.db.select().from(webSearchConfig).limit(1);
         expect(stored.apiKey).toBe(Buffer.from("plain", "utf-8").toString("base64"));
