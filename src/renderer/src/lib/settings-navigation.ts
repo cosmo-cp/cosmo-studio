@@ -39,13 +39,8 @@ export function isSettingsPath(pathname: string): boolean {
 }
 
 export function getHomeHref(pathname: string): string {
-    const depth = pathname.split('/').filter(Boolean).length;
-
-    if (depth <= 1) {
-        return './';
-    }
-
-    return '../'.repeat(depth - 1);
+    void pathname;
+    return '/chat';
 }
 
 export function getSettingsLandingHref(slug: SettingsSectionSlug): string {
