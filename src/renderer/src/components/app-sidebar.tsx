@@ -37,8 +37,8 @@ import {
 const menuItems = [
     {
         title: 'Chat',
-        href: './',
-        pathname: '/',
+        href: './chat',
+        pathname: '/chat',
         icon: MessageCircle,
     },
     {
@@ -68,11 +68,7 @@ const menuItems = [
 ] as const;
 
 function isMenuItemActive(currentPathname: string, targetPathname: string): boolean {
-    if (targetPathname === '/') {
-        return currentPathname === '/';
-    }
-
-    return (
+        return (
         currentPathname === targetPathname ||
         currentPathname.startsWith(`${targetPathname}/`)
     );

@@ -8,10 +8,10 @@ export default function SplashPage() {
   const router = useRouter()
 
   useEffect(() => {
-    router.prefetch('./')
+    router.prefetch('/chat')
 
     const timeout = setTimeout(() => {
-      router.push('./')
+      router.push('/chat')
     }, 1000)
 
     return () => clearTimeout(timeout)
