@@ -10,7 +10,7 @@ import {rpcControllerConstructors} from "./rpc-manifest";
 
 coreContainer.rebindSync<SecretStore>(CORETYPES.SecretStore).to(NodeSecretStore).inSingletonScope();
 
-const httpCon   tainer = new Container({parent: coreContainer});
+const httpContainer = new Container({parent: coreContainer});
 
 httpContainer.bind<ChatStreamingService>(TYPES.ChatStreamingService).to(ChatStreamingService).inSingletonScope();
 
