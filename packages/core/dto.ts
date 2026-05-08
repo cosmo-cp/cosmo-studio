@@ -1,5 +1,14 @@
 import { InferInsertModel, InferSelectModel } from 'drizzle-orm';
-import { chat, command, mcpServer, message, model, modelProvider, persona } from './database/schema/schema';
+import {
+    chat,
+    command,
+    mcpServer,
+    message,
+    model,
+    modelProvider,
+    persona,
+    webSearchConfig,
+} from './database/schema/schema';
 import { UIMessage } from 'ai';
 
 type Optional<T, K extends keyof T> = Omit<T, K> & Pick<Partial<T>, K>;

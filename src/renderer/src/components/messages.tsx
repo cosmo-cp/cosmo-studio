@@ -422,8 +422,6 @@ function PureMessages({
     const providers = useAppSelector((state) => state.providers.items);
     const providersStatus = useAppSelector((state) => state.providers.status);
     const { resolvedTheme } = useTheme();
-    const [matches, setMatches] = useState<{ messageId: string, partIndex: number }[]>([]);
-    const [matchStartIndexMap, setMatchStartIndexMap] = useState<Record<string, number>>({});
     const prevMatchIndexRef = useRef<number | null>(null);
 
     useEffect(() => {

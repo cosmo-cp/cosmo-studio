@@ -122,6 +122,8 @@ function buildNewModel(name: string, modelId: string): NewModel {
         outputModalities: [ModelModalityEnum.TEXT],
         releaseDate: null,
         lastUpdatedByProvider: null,
+        contextWindow: null,
+        maxOutputWindow: null,
     };
 }
 
@@ -141,6 +143,8 @@ function materializeModel(model: NewModel): ModelLite {
         outputModalities: model.outputModalities ?? [],
         releaseDate: model.releaseDate ?? null,
         lastUpdatedByProvider: model.lastUpdatedByProvider ?? null,
+        contextWindow: null,
+        maxOutputWindow: null,
     };
 }
 

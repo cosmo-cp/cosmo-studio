@@ -10,6 +10,7 @@ import {ChatStreamingService} from "../services/ChatStreamingService";
 
 const logger = vi.hoisted(() => ({
     info: vi.fn(),
+    warn: vi.fn(),
     error: vi.fn(),
 }));
 

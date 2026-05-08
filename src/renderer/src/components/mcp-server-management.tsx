@@ -26,7 +26,7 @@ import {
     loadMcpServers,
     loadMcpServerTools,
     saveMcpServer,
-    toggleMcpServerEnabled,
+    toggleMcpServerEnabled, updateMcpToolApproval,
 } from '@/lib/store/mcp-servers-store';
 
 type TransportType = 'stdio' | 'sse' | 'http';

@@ -2,7 +2,7 @@ import {inject, injectable} from "inversify";
 import {CORETYPES} from "../types/types";
 import {ModelProviderRepository} from "../repositories/ModelProviderRepository";
 import {ModelProvider, ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels} from "../dto";
-import {ModelProviderTypeEnum} from "../database/schema/modelProviderSchema";
+import { ModelModalityEnum, ModelProviderTypeEnum } from '../database/schema/modelProviderSchema';
 import {ProviderV3} from "@ai-sdk/provider";
 import {AnthropicProviderSettings, createAnthropic} from "@ai-sdk/anthropic";
 import {createGoogleGenerativeAI, GoogleGenerativeAIProviderSettings} from "@ai-sdk/google";
@@ -281,7 +281,7 @@ export class ModelProviderService {
                         }
                     }
                 } catch (e) {
-                    logger.error(`Ollama /show failed for ${m.modelId}`, e);
+                    getCoreLogger().error(`Ollama /show failed for ${m.modelId}`, e);
                 }
             }),
         );
