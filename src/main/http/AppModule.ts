@@ -11,7 +11,7 @@ const rendererOutDir = path.resolve(__dirname, "public");
     imports: [
         ServeStaticModule.forRoot({
             rootPath: rendererOutDir,
-            exclude: ["/api/(.*)"],
+            exclude: ["/api{/*path}"],
         }),
     ],
     controllers: [
