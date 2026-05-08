@@ -27,7 +27,7 @@ function createHandlerDecorator(metadataKey: string) {
                 Reflect.defineMetadata(IPC_ARGS_SCHEMA_METADATA_KEY, schemas, target.constructor);
             }
         };
-    }
+    };
 }
 
 export const IpcHandler = createHandlerDecorator(IPC_HANDLE_METADATA_KEY);

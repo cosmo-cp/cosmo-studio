@@ -1,67 +1,127 @@
 name: Build and Release
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+    push:
+        tags:
+            - 'v*.*.*'
 
 jobs:
-  release:
-    name: Release for ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-    runs-on: ${{ matrix.os }}
-    if: startsWith(github.ref, 'refs/tags/')
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.19.0'
-      - name: Install dependencies
-        run: npm install
+    release:
+        timeout-minutes: 60
+        name: Release for ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [ubuntu-latest, macos-latest, windows-latest]
+        runs-on: ${{ matrix.os }}
+        if: startsWith(github.ref, 'refs/tags/')
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Run root tests (coverage)
-        if: matrix.os == 'ubuntu-latest'
-        run: npm run test:coverage
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22.19.0'
+                  cache: 'npm'
 
-      - name: Run root tests
-        if: matrix.os != 'ubuntu-latest'
-        run: npm run test
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Run renderer tests (coverage)
-        if: matrix.os == 'ubuntu-latest'
-        run: npm run test:coverage --prefix src/renderer
+            - name: Run root tests (coverage)
+              if: matrix.os == 'ubuntu-latest'
+              run: npm run test:coverage
 
-      - name: Run renderer tests
-        if: matrix.os != 'ubuntu-latest'
-        run: npm run test --prefix src/renderer
+            - name: Run root tests
+              if: matrix.os != 'ubuntu-latest'
+              run: npm run test
 
-      - name: Upload coverage artifacts
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.os }}
-          path: |
-            coverage
-            src/renderer/coverage
-      - name: Extract version from tag
-        shell: bash
-        run: |
-            # Get the full tag name (e.g., refs/tags/v1.2.3)
-            FULL_TAG_REF="${{ github.ref }}"
-            # Extract the tag name (e.g., v1.2.3)
-            TAG_NAME="${FULL_TAG_REF#refs/tags/}"
-            # Remove a leading 'v' if present (e.g., 1.2.3)
-            VERSION_NUMBER="${TAG_NAME#v}"
-            # Update version in package.json from tag(don't commit)
-            npm version --no-git-tag-version $VERSION_NUMBER
-      - name: Publish release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        #publish internally calls `make` command that builds distributable
-        run: npm run publish
+            - name: Run renderer tests (coverage)
+              if: matrix.os == 'ubuntu-latest'
+              run: npm run test:coverage --prefix src/renderer
+
+            - name: Run renderer tests
+              if: matrix.os != 'ubuntu-latest'
+              run: npm run test --prefix src/renderer
+
+            - name: Upload coverage artifacts
+              if: matrix.os == 'ubuntu-latest'
+              uses: actions/upload-artifact@v4
+              with:
+                  name: coverage-${{ matrix.os }}
+                  path: |
+                      coverage
+                      src/renderer/coverage
+
+            - name: Install the Apple certificate for Signing
+              if: runner.os == 'macOS'
+              env:
+                  BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+                  P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+                  KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+              run: |
+                  set -euo pipefail
+
+                  if [ -z "${BUILD_CERTIFICATE_BASE64}" ] || [ -z "${P12_PASSWORD}" ] || [ -z "${KEYCHAIN_PASSWORD}" ]; then
+                    echo "Missing one or more signing certificate secrets."
+                    exit 1
+                  fi
+
+                  # create variables
+                  BUILD_CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
+                  KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+
+                  # import certificate from secrets
+                  printf '%s' "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$BUILD_CERTIFICATE_PATH"
+
+                  # create temporary keychain
+                  security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+                  security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+                  security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+                  security default-keychain -d user -s "$KEYCHAIN_PATH"
+                  security list-keychains -d user -s "$KEYCHAIN_PATH"
+
+                  # import certificate to keychain
+                  security import "$BUILD_CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+                  security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+                  security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+                  echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+
+            - name: Extract version from tag
+              shell: bash
+              run: |
+                  # Get the full tag name (e.g., refs/tags/v1.2.3)
+                  FULL_TAG_REF="${{ github.ref }}"
+                  # Extract the tag name (e.g., v1.2.3)
+                  TAG_NAME="${FULL_TAG_REF#refs/tags/}"
+                  # Remove a leading 'v' if present (e.g., 1.2.3)
+                  VERSION_NUMBER="${TAG_NAME#v}"
+                  # Update version in package.json from tag(don't commit)
+                  npm version --no-git-tag-version $VERSION_NUMBER
+            - name: Check Apple release env vars
+              if: runner.os == 'macOS'
+              env:
+                  APPLE_ID: ${{ secrets.APPLE_ID }}
+                  APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+                  SIGN_IDENTITY: ${{ secrets.SIGN_IDENTITY }}
+              run: |
+                  set -euo pipefail 
+
+                  if [ -z "${APPLE_ID}" ] || [ -z "${APPLE_ID_PASSWORD}" ] || [ -z "${APPLE_TEAM_ID}" ] || [ -z "${SIGN_IDENTITY}" ]; then
+                    echo "Missing one or more Apple notarization/signing secrets."
+                    exit 1
+                  fi
+
+            - name: Publish release
+              env:
+                  APPLE_ID: ${{ secrets.APPLE_ID }}
+                  APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+                  SIGN_IDENTITY: ${{ secrets.SIGN_IDENTITY }}
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  ENABLE_MAC_SIGNING: ${{ runner.os == 'macOS' && 'true' || 'false' }}
+              #publish internally calls `make` command that builds distributable
+              run: npm run publish

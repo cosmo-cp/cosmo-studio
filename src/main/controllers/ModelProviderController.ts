@@ -1,10 +1,10 @@
-import {inject, injectable} from 'inversify';
-import {z} from "zod";
-import {IpcController, IpcHandler} from '../ipc/Decorators';
-import {ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels} from 'core/dto';
-import {CORETYPES} from 'core/types/types';
-import {ModelProviderService} from 'core/services/ModelProviderService';
-import {Controller} from "./Controller";
+import { inject, injectable } from 'inversify';
+import { z} from "zod";
+import {IpcController, IpcHandler } from '../ipc/Decorators';
+import { ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels } from 'core/dto';
+import { CORETYPES } from 'core/types/types';
+import { ModelProviderService } from 'core/services/ModelProviderService';
+import { Controller } from './Controller';
 
 const modelProviderCreateInputSchema = z.custom<ModelProviderCreateInput>();
 const newModelsSchema = z.array(z.custom<NewModel>());
@@ -13,10 +13,10 @@ const modelProviderUpdateSchema = z.custom<Partial<ModelProviderCreateInput>>();
 @injectable()
 @IpcController('modelProvider')
 export class ModelProviderController implements Controller {
-    constructor(@inject(CORETYPES.ModelProviderService)
-                private modelProviderService: ModelProviderService
-    ) {
-    }
+    constructor(
+        @inject(CORETYPES.ModelProviderService)
+        private modelProviderService: ModelProviderService,
+    ) {}
 
     @IpcHandler('addProvider', z.tuple([modelProviderCreateInputSchema, newModelsSchema]))
     public async addProvider(providerData: ModelProviderCreateInput, models: NewModel[]): Promise<ProviderWithModels> {
@@ -30,7 +30,7 @@ export class ModelProviderController implements Controller {
 
     @IpcHandler('getProviders', z.tuple([]))
     public async getProviders(): Promise<ModelProviderLite[]> {
-        return this.modelProviderService.getProviders({withApiKey: false});
+        return this.modelProviderService.getProviders({ withApiKey: false });
     }
 
     @IpcHandler('getProvidersWithModels', z.tuple([]))
@@ -44,7 +44,11 @@ export class ModelProviderController implements Controller {
     }
 
     @IpcHandler('updateProvider', z.tuple([z.string().min(1), modelProviderUpdateSchema, newModelsSchema]))
-    public async updateProvider(providerId: string, updateObject: Partial<ModelProviderCreateInput>, modelsData: NewModel[]): Promise<ProviderWithModels> {
+    public async updateProvider(
+        providerId: string,
+        updateObject: Partial<ModelProviderCreateInput>,
+        modelsData: NewModel[],
+    ): Promise<ProviderWithModels> {
         return this.modelProviderService.updateProvider(providerId, updateObject, modelsData);
     }
 

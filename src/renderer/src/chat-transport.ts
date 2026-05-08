@@ -1,4 +1,4 @@
-import {ChatRequestOptions, ChatTransport, DefaultChatTransport, UIMessage, UIMessageChunk} from 'ai'
+import {ChatRequestOptions, ChatTransport, DefaultChatTransport, UIMessage, UIMessageChunk} from 'ai';
 
 // Note: The global AbortSignal type is used directly, no import needed for modern browsers/environments.
 // Note: The browser's native ReadableStream is used, no import needed.
@@ -6,8 +6,8 @@ import {ChatRequestOptions, ChatTransport, DefaultChatTransport, UIMessage, UIMe
 export class IpcChatTransport implements ChatTransport<UIMessage> {
     reconnectToStream(
         options: {
-            chatId: string
-        } & ChatRequestOptions
+            chatId: string;
+        } & ChatRequestOptions,
     ): Promise<ReadableStream<UIMessageChunk> | null> {
         const chatId = options.chatId;
         const streamChannel = `chat-stream-${chatId}`;
@@ -19,7 +19,7 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
             start(controller) {
                 const onData = (chunk: unknown) => {
                     controller.enqueue(chunk as UIMessageChunk);
-                }
+                };
                 const onEnd = () => {
                     cleanup();
                     controller.close();
@@ -29,7 +29,7 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
                     cleanup();
                     const msg = err?.error?.message || err?.message || err || 'Stream Error';
                     controller.error(new Error(msg));
-                }
+                };
 
                 cleanup = () => {
                     window.api.streaming.removeListeners(streamChannel);
@@ -38,23 +38,22 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
                 window.api.streaming.onData(`${streamChannel}`, onData);
                 window.api.streaming.onEnd(`${streamChannel}`, onEnd);
                 window.api.streaming.onError(`${streamChannel}`, onError);
-
             },
             cancel() {
                 cleanup();
-            }
+            },
         });
         return Promise.resolve(stream);
     }
 
     async sendMessages(
         options: {
-            trigger: 'submit-message' | 'regenerate-message'
-            chatId: string
-            messageId: string | undefined
-            messages: UIMessage[]
-            abortSignal: AbortSignal | undefined
-        } & ChatRequestOptions
+            trigger: 'submit-message' | 'regenerate-message';
+            chatId: string;
+            messageId: string | undefined;
+            messages: UIMessage[];
+            abortSignal: AbortSignal | undefined;
+        } & ChatRequestOptions,
     ): Promise<ReadableStream<UIMessageChunk>> {
         const chatId = options.chatId;
         const streamChannel = `chat-stream-${chatId}`;
@@ -90,7 +89,7 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
 
                 const onData = (chunk: unknown) => {
                     controller.enqueue(chunk as UIMessageChunk);
-                }
+                };
                 const onEnd = () => {
                     cleanup();
                     controller.close();
@@ -101,10 +100,10 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
                     // we don't know the structure of err, so being defensive
                     const msg = err?.error?.message || err?.message || err || 'Stream Error';
                     controller.error(new Error(msg));
-                }
+                };
                 const handleAbort = () => {
                     cleanup();
-                    window.api.streaming.abortMessage({streamChannel});
+                    window.api.streaming.abortMessage({ streamChannel });
                     controller.error(new Error('Aborted by user'));
                 };
 
@@ -122,7 +121,9 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
 
                 try {
                     window.api.streaming.sendMessage({
-                        chatId, messages, streamChannel,
+                        chatId,
+                        messages,
+                        streamChannel,
                         modelIdentifier: modelId,
                         personaId,
                     });
@@ -133,12 +134,13 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
                 }
 
                 if (abortSignal) {
-                    abortSignal.addEventListener('abort', handleAbort, {once: true});
+                    abortSignal.addEventListener('abort', handleAbort, { once: true });
                 }
-            }, cancel() {
+            },
+            cancel() {
                 cleanup();
                 window.api.streaming.abortMessage({ streamChannel });
-            }
+            },
         });
         return Promise.resolve(stream);
     }

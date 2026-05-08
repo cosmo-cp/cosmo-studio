@@ -1,19 +1,18 @@
-import {inject, injectable} from "inversify";
-import {z} from "zod";
-import {CORETYPES} from "../../../packages/core/types/types";
-import {MessageService} from "../../../packages/core/services/MessageService";
-import {Message, NewMessage} from "../../../packages/core/dto";
-import {IpcController, IpcHandler} from "../ipc/Decorators";
-import {UIMessage} from "ai";
+import { inject, injectable } from 'inversify';
+import { z} from "zod";
+import {CORETYPES } from '../../../packages/core/types/types';
+import { MessageService } from '../../../packages/core/services/MessageService';
+import { Message, NewMessage } from '../../../packages/core/dto';
+import { IpcController, IpcHandler } from '../ipc/Decorators';
+import { UIMessage } from 'ai';
 
 const newMessageSchema = z.custom<NewMessage>();
 const messageUpdateSchema = z.custom<Partial<NewMessage>>();
 
 @injectable()
-@IpcController("message")
+@IpcController('message')
 export class MessageController {
-    constructor(@inject(CORETYPES.MessageService) private messageService: MessageService) {
-    }
+    constructor(@inject(CORETYPES.MessageService) private messageService: MessageService) {}
 
     @IpcHandler("getByChat", z.tuple([z.string().min(1)]))
     public async getByChat(chatId: string): Promise<UIMessage[]> {

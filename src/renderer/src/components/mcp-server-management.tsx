@@ -1,29 +1,35 @@
 'use client';
 
-import { ConfirmDialog } from "@/components/confirm-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
-import type { McpServer, McpServerCreateInput, McpServerUpdateInput } from "core/dto";
-import { ChevronDown, ChevronRight, Edit, Plus, RefreshCw, Trash2, Wrench } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
-import { toast } from "sonner";
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import type { McpServer, McpServerCreateInput, McpServerUpdateInput } from 'core/dto';
+import { ChevronDown, ChevronRight, Edit, Plus, RefreshCw, Trash2, Wrench } from 'lucide-react';
+import { Fragment, useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import {
     deleteMcpServer,
-    loadMcpServerTools,
     loadMcpServers,
+    loadMcpServerTools,
     saveMcpServer,
     toggleMcpServerEnabled,
-    updateMcpToolApproval,
-} from "@/lib/store/mcp-servers-store";
+} from '@/lib/store/mcp-servers-store';
 
-type TransportType = "stdio" | "sse" | "http";
+type TransportType = 'stdio' | 'sse' | 'http';
 
 interface McpTool {
     name: string;
@@ -33,27 +39,19 @@ interface McpTool {
 
 const CONFIG_PLACEHOLDER: Record<TransportType, string> = {
     stdio: JSON.stringify(
-        { command: "npx", args: ["-y", "@modelcontextprotocol/server-everything"], env: {}, cwd: "" },
+        { command: 'npx', args: ['-y', '@modelcontextprotocol/server-everything'], env: {}, cwd: '' },
         null,
-        2
+        2,
     ),
-    sse: JSON.stringify(
-        { url: "http://localhost:3001/sse", headers: {} },
-        null,
-        2
-    ),
-    http: JSON.stringify(
-        { url: "http://localhost:3001", headers: {} },
-        null,
-        2
-    ),
+    sse: JSON.stringify({ url: 'http://localhost:3001/sse', headers: {} }, null, 2),
+    http: JSON.stringify({ url: 'http://localhost:3001', headers: {} }, null, 2),
 };
 
 const buildDefaultFormState = () => ({
-    name: "",
-    description: "",
-    transportType: "stdio" as TransportType,
-    configJson: CONFIG_PLACEHOLDER["stdio"],
+    name: '',
+    description: '',
+    transportType: 'stdio' as TransportType,
+    configJson: CONFIG_PLACEHOLDER['stdio'],
     enabled: true,
 });
 
@@ -101,7 +99,7 @@ export function McpServerManagement() {
         setEditingServer(server);
         setFormState({
             name: server.name,
-            description: (server.description as string) ?? "",
+            description: (server.description as string) ?? '',
             transportType: server.transportType as TransportType,
             configJson: JSON.stringify(server.config, null, 2),
             enabled: server.enabled,
@@ -119,12 +117,12 @@ export function McpServerManagement() {
         try {
             parsedConfig = JSON.parse(formState.configJson);
         } catch {
-            setJsonError("Invalid JSON configuration.");
+            setJsonError('Invalid JSON configuration.');
             return;
         }
 
-        if (typeof parsedConfig !== "object" || parsedConfig === null || Array.isArray(parsedConfig)) {
-            setJsonError("Configuration must be a JSON object.");
+        if (typeof parsedConfig !== 'object' || parsedConfig === null || Array.isArray(parsedConfig)) {
+            setJsonError('Configuration must be a JSON object.');
             return;
         }
 
@@ -144,7 +142,7 @@ export function McpServerManagement() {
                     serverId: editingServer.id,
                     input: updates as McpServerCreateInput,
                 })).unwrap();
-                toast.success("MCP server updated");
+                toast.success('MCP server updated');
             } else {
                 const createPayload: McpServerCreateInput = {
                     name: formState.name.trim(),
@@ -154,11 +152,11 @@ export function McpServerManagement() {
                     enabled: formState.enabled,
                 };
                 await dispatch(saveMcpServer({input: createPayload})).unwrap();
-                toast.success("MCP server added");
+                toast.success('MCP server added');
             }
             handleCloseDialog();
         } catch (error) {
-            const message = error instanceof Error ? error.message : "Failed to save MCP server.";
+            const message = error instanceof Error ? error.message : 'Failed to save MCP server.';
             toast.error(message);
         } finally {
             setIsSubmitting(false);
@@ -186,9 +184,9 @@ export function McpServerManagement() {
             if (expandedServerId === serverId) {
                 setExpandedServerId(null);
             }
-            toast.success("MCP server deleted");
+            toast.success('MCP server deleted');
         } catch (error) {
-            const message = error instanceof Error ? error.message : "Failed to delete MCP server.";
+            const message = error instanceof Error ? error.message : 'Failed to delete MCP server.';
             toast.error(message);
         }
     };
@@ -199,9 +197,9 @@ export function McpServerManagement() {
                 serverId: server.id,
                 enabled: !server.enabled,
             })).unwrap();
-            toast.success(`${server.name} ${updated.enabled ? "enabled" : "disabled"}`);
+            toast.success(`${server.name} ${updated.enabled ? 'enabled' : 'disabled'}`);
         } catch (error) {
-            const message = error instanceof Error ? error.message : "Failed to toggle server.";
+            const message = error instanceof Error ? error.message : 'Failed to toggle server.';
             toast.error(message);
         }
     };
@@ -221,7 +219,7 @@ export function McpServerManagement() {
                 const {tools} = await dispatch(loadMcpServerTools(serverId)).unwrap();
                 setServerTools((prev) => ({ ...prev, [serverId]: tools }));
             } catch (error) {
-                console.error("Failed to load tools for server", error);
+                console.error('Failed to load tools for server', error);
                 setServerTools((prev) => ({ ...prev, [serverId]: [] }));
             } finally {
                 setLoadingToolsFor(null);
@@ -235,7 +233,7 @@ export function McpServerManagement() {
             const {tools} = await dispatch(loadMcpServerTools(serverId)).unwrap();
             setServerTools((prev) => ({ ...prev, [serverId]: tools }));
         } catch (error) {
-            console.error("Failed to refresh tools for server", error);
+            console.error('Failed to refresh tools for server', error);
         } finally {
             setLoadingToolsFor(null);
         }
@@ -267,118 +265,132 @@ export function McpServerManagement() {
                 </Button>
             </div>
 
-                {hasServers ? (
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[40px]"></TableHead>
-                                    <TableHead className="w-[200px]">Name</TableHead>
-                                    <TableHead className="w-[120px]">Transport</TableHead>
-                                    <TableHead className="w-[100px]">Status</TableHead>
-                                    <TableHead className="w-[120px] text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {servers.map((server) => {
-                                    const isExpanded = expandedServerId === server.id;
-                                    const tools = serverTools[server.id];
-                                    const isLoadingTools = loadingToolsFor === server.id;
+            {hasServers ? (
+                <div className="rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[40px]"></TableHead>
+                                <TableHead className="w-[20px] pr-2"></TableHead>
+                                <TableHead className="w-[200px] pl-2">Name</TableHead>
+                                <TableHead className="w-[120px]">Transport</TableHead>
+                                <TableHead className="w-[120px] text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {servers.map((server) => {
+                                const isExpanded = expandedServerId === server.id;
+                                const tools = serverTools[server.id];
+                                const isLoadingTools = loadingToolsFor === server.id;
 
-                                    return (
-                                        <Fragment key={server.id}>
-                                            <TableRow>
-                                                <TableCell className="p-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-6 w-6"
-                                                        onClick={() => handleToggleTools(server.id)}
-                                                        disabled={!server.enabled}
-                                                        aria-label={isExpanded ? "Collapse tools" : "Expand tools"}
-                                                    >
-                                                        {isExpanded ? (
-                                                            <ChevronDown className="h-3.5 w-3.5" />
-                                                        ) : (
-                                                            <ChevronRight className="h-3.5 w-3.5" />
-                                                        )}
-                                                    </Button>
-                                                </TableCell>
-                                                <TableCell className="font-medium">
-                                                    <div>
-                                                        <span className="block truncate">{server.name}</span>
-                                                        {server.description && (
-                                                            <span className="block text-xs text-muted-foreground truncate">
-                                                                {server.description as string}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="secondary">
-                                                        {server.transportType}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Switch
-                                                        size="sm"
-                                                        checked={server.enabled}
-                                                        onCheckedChange={() => handleToggleEnabled(server)}
-                                                        aria-label={`Toggle ${server.name}`}
-                                                    />
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button
-                                                        size="icon"
-                                                        variant="ghost"
-                                                        aria-label={`Edit ${server.name}`}
-                                                        onClick={() => handleEdit(server)}
-                                                    >
-                                                        <Edit className="size-4" />
-                                                    </Button>
-                                                    <Button
-                                                        size="icon"
-                                                        variant="ghost"
-                                                        aria-label={`Delete ${server.name}`}
-                                                        onClick={() => handleDeleteClick(server.id)}
-                                                    >
-                                                        <Trash2 className="size-4" />
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                            {isExpanded && (
-                                                <TableRow key={`${server.id}-tools`}>
-                                                    <TableCell colSpan={5} className="bg-muted/30 p-0">
-                                                        <div className="px-6 py-3">
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                                                                    <Wrench className="h-3.5 w-3.5" />
-                                                                    Available Tools
-                                                                    {tools && (
-                                                                        <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0">
-                                                                            {tools.length}
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-6 w-6"
-                                                                    onClick={() => handleRefreshTools(server.id)}
-                                                                    disabled={isLoadingTools}
-                                                                    aria-label="Refresh tools"
-                                                                >
-                                                                    <RefreshCw className={`h-3 w-3 ${isLoadingTools ? "animate-spin" : ""}`} />
-                                                                </Button>
+                                return (
+                                    <Fragment key={server.id}>
+                                        <TableRow>
+                                            <TableCell className="p-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6"
+                                                    onClick={() => handleToggleTools(server.id)}
+                                                    disabled={!server.enabled}
+                                                    aria-label={isExpanded ? 'Collapse tools' : 'Expand tools'}
+                                                >
+                                                    {isExpanded ? (
+                                                        <ChevronDown className="h-3.5 w-3.5" />
+                                                    ) : (
+                                                        <ChevronRight className="h-3.5 w-3.5" />
+                                                    )}
+                                                </Button>
+                                            </TableCell>
+                                            <TableCell className="pr-2">
+                                                <Switch
+                                                    size="sm"
+                                                    checked={server.enabled}
+                                                    onCheckedChange={() => handleToggleEnabled(server)}
+                                                    aria-label={`Toggle ${server.name}`}
+                                                />
+                                            </TableCell>
+                                            <TableCell className="font-medium pl-2">
+                                                <div className="min-w-0">
+                                                    <span className="block whitespace-normal break-words">
+                                                        {server.name}
+                                                    </span>
+                                                    {server.description && (
+                                                        <span className="block text-xs text-muted-foreground whitespace-normal break-words">
+                                                            {server.description as string}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary">{server.transportType}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    aria-label={`Edit ${server.name}`}
+                                                    onClick={() => handleEdit(server)}
+                                                >
+                                                    <Edit className="size-4" />
+                                                </Button>
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    aria-label={`Delete ${server.name}`}
+                                                    onClick={() => handleDeleteClick(server.id)}
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                        {isExpanded && (
+                                            <TableRow key={`${server.id}-tools`}>
+                                                <TableCell colSpan={5} className="bg-muted/30 p-0">
+                                                    <div className="px-6 py-3">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                                                                <Wrench className="h-3.5 w-3.5" />
+                                                                Available Tools
+                                                                {tools && (
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className="ml-1 text-[10px] px-1.5 py-0"
+                                                                    >
+                                                                        {tools.length}
+                                                                    </Badge>
+                                                                )}
                                                             </div>
-                                                            {isLoadingTools ? (
-                                                                <p className="text-xs text-muted-foreground">Loading tools...</p>
-                                                            ) : tools && tools.length > 0 ? (
-                                                                <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                                                                    {tools.map((tool) => {
-                                                                        const serverData = servers.find(s => s.id === server.id);
-                                                                        const approvals = (serverData?.toolApprovals as Record<string, boolean>) ?? {};
-                                                                        const isApprovalRequired = approvals[tool.name] ?? true;
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-6 w-6"
+                                                                onClick={() => handleRefreshTools(server.id)}
+                                                                disabled={isLoadingTools}
+                                                                aria-label="Refresh tools"
+                                                            >
+                                                                <RefreshCw
+                                                                    className={`h-3 w-3 ${isLoadingTools ? 'animate-spin' : ''}`}
+                                                                />
+                                                            </Button>
+                                                        </div>
+                                                        {isLoadingTools ? (
+                                                            <p className="text-xs text-muted-foreground">
+                                                                Loading tools...
+                                                            </p>
+                                                        ) : tools && tools.length > 0 ? (
+                                                            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                                                {tools.map((tool) => {
+                                                                    const serverData = servers.find(
+                                                                        (s) => s.id === server.id,
+                                                                    );
+                                                                    const approvals =
+                                                                        (serverData?.toolApprovals as Record<
+                                                                            string,
+                                                                            boolean
+                                                                        >) ?? {};
+                                                                    const isApprovalRequired =
+                                                                        approvals[tool.name] ?? true;
 
                                                                         return (
                                                                             <div
@@ -446,18 +458,18 @@ export function McpServerManagement() {
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="sm:max-w-[550px]">
                     <DialogHeader>
-                        <DialogTitle>
-                            {editingServer ? "Edit MCP Server" : "Add MCP Server"}
-                        </DialogTitle>
+                        <DialogTitle>{editingServer ? 'Edit MCP Server' : 'Add MCP Server'}</DialogTitle>
                         <DialogDescription>
                             {editingServer
-                                ? "Update the server configuration."
-                                : "Configure a new MCP server connection."}
+                                ? 'Update the server configuration.'
+                                : 'Configure a new MCP server connection.'}
                         </DialogDescription>
                     </DialogHeader>
                     <form className="space-y-4" onSubmit={handleSubmit}>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium" htmlFor="server-name">Name</label>
+                            <label className="text-sm font-medium" htmlFor="server-name">
+                                Name
+                            </label>
                             <Input
                                 id="server-name"
                                 placeholder="e.g. filesystem-server"
@@ -524,7 +536,7 @@ export function McpServerManagement() {
                                 </p>
                             )}
                             <p className="text-[11px] text-muted-foreground">
-                                {formState.transportType === "stdio"
+                                {formState.transportType === 'stdio'
                                     ? 'Requires "command". Optional: "args", "env", "cwd".'
                                     : 'Requires "url". Optional: "headers".'}
                             </p>
@@ -536,9 +548,7 @@ export function McpServerManagement() {
                             <Switch
                                 id="server-enabled"
                                 checked={formState.enabled}
-                                onCheckedChange={(checked) =>
-                                    setFormState((prev) => ({ ...prev, enabled: checked }))
-                                }
+                                onCheckedChange={(checked) => setFormState((prev) => ({ ...prev, enabled: checked }))}
                             />
                         </div>
                         <DialogFooter>
@@ -546,7 +556,7 @@ export function McpServerManagement() {
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={isSubmitting || !formState.name.trim()}>
-                                {isSubmitting ? "Saving..." : editingServer ? "Save" : "Add Server"}
+                                {isSubmitting ? 'Saving...' : editingServer ? 'Save' : 'Add Server'}
                             </Button>
                         </DialogFooter>
                     </form>

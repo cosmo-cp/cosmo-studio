@@ -5,12 +5,12 @@ Cosmo Studio uses a decorator-based IPC pattern so the Electron preload API and 
 ## Building blocks
 
 - Decorators: `src/main/ipc/Decorators.ts`
-  - `@IpcController("prefix")`
-  - `@IpcHandler("name", z.tuple([...]))` -> request/response (`ipcMain.handle`) and HTTP RPC.
-  - `@IpcOn("name", z.tuple([...]))` -> fire-and-forget (`ipcMain.on`), used for Electron streaming only.
+    - `@IpcController("prefix")`
+    - `@IpcHandler("name", z.tuple([...]))` -> request/response (`ipcMain.handle`) and HTTP RPC.
+    - `@IpcOn("name", z.tuple([...]))` -> fire-and-forget (`ipcMain.on`), used for Electron streaming only.
 - Registry: `src/main/ipc/index.ts` (`IpcHandlerRegistry`)
-  - Discovers controller metadata and registers channels.
-  - Channel naming: `${prefix}:${name}`
+    - Discovers controller metadata and registers channels.
+    - Channel naming: `${prefix}:${name}`
 - HTTP RPC: `src/main/http/RpcController.ts`
   - Dispatches generated route metadata through `POST /api/rpc/:controller/:handler`.
   - Uses the same zod tuple schemas as IPC.
@@ -20,7 +20,7 @@ Cosmo Studio uses a decorator-based IPC pattern so the Electron preload API and 
 - Controllers live in `src/main/controllers/*`.
 - Controllers are bound via DI in `src/main/inversify.config.ts` and injected into `IpcHandlerRegistry`.
 - The registry passes the Electron event object as the **last** argument when calling controller methods.
-  - If you need `event.sender` or `webContents`, declare an `event` parameter at the end.
+    - If you need `event.sender` or `webContents`, declare an `event` parameter at the end.
 - HTTP RPC does not pass an Electron event. Handlers that require Electron primitives should be `@IpcOn` adapters or Electron-only code.
 
 ## Generated preload API
@@ -32,12 +32,13 @@ Cosmo Studio uses a decorator-based IPC pattern so the Electron preload API and 
   - `src/renderer/src/lib/generated-http-api.ts`
 
 The generator:
+
 - Reads controller decorator metadata via `reflect-metadata`.
 - Uses a regex on controller source files to infer method signatures.
 - Fails when any `@IpcHandler` is missing a zod tuple schema.
 - Emits a typed `api` object that calls:
-  - `ipcRenderer.invoke(...)` for `@IpcHandler`
-  - `ipcRenderer.send(...)` for `@IpcOn`
+    - `ipcRenderer.invoke(...)` for `@IpcHandler`
+    - `ipcRenderer.send(...)` for `@IpcOn`
 - Emits a typed HTTP client that calls:
   - `fetch("/api/rpc/:controller/:handler")` for `@IpcHandler`
   - no client methods for `@IpcOn`
@@ -60,19 +61,19 @@ The generator:
 Streaming uses fire-and-forget channels plus renderer subscriptions:
 
 - Main emits to renderer:
-  - `${streamChannel}-data`
-  - `${streamChannel}-end`
-  - `${streamChannel}-error`
+    - `${streamChannel}-data`
+    - `${streamChannel}-end`
+    - `${streamChannel}-error`
 - Renderer wiring lives in:
-  - `src/renderer/src/chat-transport.ts` (AI SDK transport)
-  - `src/preload/api.ts` (subscription helpers)
+    - `src/renderer/src/chat-transport.ts` (AI SDK transport)
+    - `src/preload/api.ts` (subscription helpers)
 - HTTP streaming uses `POST /api/chat` and `ChatHttpController`.
 - `GET /api/chat/:chatId/stream` returns `204` in v1 and is reserved for future resume-stream support.
 
 ## Adding/changing an IPC API (required steps)
 
 1. Implement the new handler in a controller:
-   - Add `@IpcHandler(...)` or `@IpcOn(...)` to a public method.
+    - Add `@IpcHandler(...)` or `@IpcOn(...)` to a public method.
 2. Add a `z.tuple([...])` args schema to the decorator and keep any deeper domain validation in the controller/service.
 3. Bind the controller (if new) in `src/main/inversify.config.ts`.
 4. Bind RPC-reusable controllers through the generated manifest by rerunning `npm run generate-api`.

@@ -1,15 +1,6 @@
-import {InferInsertModel, InferSelectModel} from "drizzle-orm";
-import {
-    chat,
-    mcpServer,
-    message,
-    model,
-    modelProvider,
-    persona,
-    command,
-    webSearchConfig,
-} from "./database/schema/schema";
-import {UIMessage} from "ai";
+import { InferInsertModel, InferSelectModel } from 'drizzle-orm';
+import { chat, command, mcpServer, message, model, modelProvider, persona } from './database/schema/schema';
+import { UIMessage } from 'ai';
 
 type Optional<T, K extends keyof T> = Omit<T, K> & Pick<Partial<T>, K>;
 
@@ -30,9 +21,9 @@ export type ModelProviderInsert = InferInsertModel<typeof modelProvider>;
 export type ModelProviderCreateInput = Omit<ModelProviderInsert, 'id' | 'createdAt' | 'updatedAt'>;
 
 // The safe model for sending to the renderer process (no API key).
-export type ModelProviderLite = Optional<ModelProvider, "apiKey">;
-export type ModelIdentifier = Pick<Chat, "selectedProvider" | "selectedModelId">;
-export type PersonaIdentifier = Pick<Chat, "selectedPersonaId">;
+export type ModelProviderLite = Optional<ModelProvider, 'apiKey'>;
+export type ModelIdentifier = Pick<Chat, 'selectedProvider' | 'selectedModelId'>;
+export type PersonaIdentifier = Pick<Chat, 'selectedPersonaId'>;
 
 // Simple Model interface (kept here for full context)
 export type Model = InferSelectModel<typeof model>;
@@ -47,10 +38,7 @@ export type PersonaCreateInput = Omit<NewPersona, 'id' | 'createdAt' | 'updatedA
 
 export type Command = InferSelectModel<typeof command>;
 export type NewCommand = InferInsertModel<typeof command>;
-export type CommandCreateInput = Omit<
-    NewCommand,
-    'id' | 'createdAt' | 'updatedAt'
->;
+export type CommandCreateInput = Omit<NewCommand, 'id' | 'createdAt' | 'updatedAt'>;
 export type CommandUpdateInput = Partial<CommandCreateInput>;
 
 export interface CommandDefinition {
@@ -75,8 +63,8 @@ export interface McpToolDefinition {
 }
 
 export type ProviderWithModels = ModelProviderLite & {
-    models: ModelLite[]
-}
+    models: ModelLite[];
+};
 
 export type WebSearchConfig = InferSelectModel<typeof webSearchConfig>;
 export type WebSearchConfigInsert = InferInsertModel<typeof webSearchConfig>;
@@ -99,8 +87,8 @@ export interface WebSearchConfigSaveInput {
 }
 
 export type ChatWithMessages = Chat & {
-    messages: UIMessage[]
-}
+    messages: UIMessage[];
+};
 
 export interface ChatSendMessageArgs {
     chatId: string;

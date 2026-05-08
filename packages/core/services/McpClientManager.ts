@@ -1,9 +1,9 @@
-import { inject, injectable } from "inversify";
-import { createMCPClient, type MCPClient, type MCPTransport } from "@ai-sdk/mcp";
-import type { ToolSet } from "ai";
-import { CORETYPES } from "../types/types";
-import { McpServerService } from "./McpServerService";
-import { HttpTransportConfig, McpToolDefinition, SseTransportConfig, StdioTransportConfig } from "../dto";
+import { inject, injectable } from 'inversify';
+import { createMCPClient, type MCPClient, type MCPTransport } from '@ai-sdk/mcp';
+import type { ToolSet } from 'ai';
+import { CORETYPES } from '../types/types';
+import { McpServerService } from './McpServerService';
+import { HttpTransportConfig, McpToolDefinition, SseTransportConfig, StdioTransportConfig } from '../dto';
 
 interface McpClientInstance {
     client: MCPClient;
@@ -16,10 +16,7 @@ interface McpClientInstance {
 export class McpClientManager {
     private clients: Map<string, McpClientInstance> = new Map();
 
-    constructor(
-        @inject(CORETYPES.McpServerService) private mcpServerService: McpServerService
-    ) {
-    }
+    constructor(@inject(CORETYPES.McpServerService) private mcpServerService: McpServerService) {}
 
     /**
      * Initialize all enabled MCP clients
@@ -82,7 +79,7 @@ export class McpClientManager {
             case 'stdio': {
                 const config = server.config as StdioTransportConfig;
                 // eslint-disable-next-line @typescript-eslint/no-require-imports
-                const {Experimental_StdioMCPTransport} = require("@ai-sdk/mcp/mcp-stdio") as {
+                const {Experimental_StdioMCPTransport} = require('@ai-sdk/mcp/mcp-stdio') as {
                     Experimental_StdioMCPTransport: new (options: {
                         command: string;
                         args?: string[];
@@ -124,7 +121,7 @@ export class McpClientManager {
      * Get all active clients
      */
     public getAllClients(): MCPClient[] {
-        return Array.from(this.clients.values()).map(instance => instance.client);
+        return Array.from(this.clients.values()).map((instance) => instance.client);
     }
 
     /**
@@ -173,7 +170,9 @@ export class McpClientManager {
     /**
      * Get tools for a specific server (serializable format for IPC)
      */
-    public async getToolsForServer(serverId: string): Promise<McpToolDefinition[]> {
+    public async getToolsForServer(
+        serverId: string,
+    ): Promise<McpToolDefinition[]> {
         const instance = this.clients.get(serverId);
         if (!instance) {
             return [];

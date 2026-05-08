@@ -1,29 +1,30 @@
-import {inject, injectable} from "inversify";
-import {z} from "zod";
-import {CORETYPES} from "core/types/types";
-import {ChatService} from "core/services/ChatService";
-import {IpcController, IpcHandler} from "../ipc/Decorators";
-import {Controller} from "./Controller";
-import {Chat, ChatWithMessages, ModelIdentifier, NewChat, PersonaIdentifier} from "core/dto";
+import { inject, injectable } from 'inversify';
+import { z } from 'zod';
+import { CORETYPES } from 'core/types/types';
+import { ChatService } from 'core/services/ChatService';
+import { IpcController, IpcHandler } from '../ipc/Decorators';
+import { Controller } from './Controller';
+import { Chat, ChatWithMessages, ModelIdentifier, NewChat, PersonaIdentifier } from 'core/dto';
 
-const personaIdentifierSchema = z.object({
-    selectedPersonaId: z.preprocess((value) => {
-        if (typeof value !== "string") {
-            return value;
-        }
-        const trimmedValue = value.trim();
-        return trimmedValue === "" ? null : trimmedValue;
-    }, z.string().nullable())
-}).strict();
+const personaIdentifierSchema = z
+    .object({
+        selectedPersonaId: z.preprocess((value) => {
+            if (typeof value !== 'string') {
+                return value;
+            }
+            const trimmedValue = value.trim();
+            return trimmedValue === '' ? null : trimmedValue;
+        }, z.string().nullable()),
+    })
+    .strict();
 const newChatSchema = z.custom<NewChat>();
 const newChatUpdateSchema = z.custom<Partial<NewChat>>();
 const modelIdentifierSchema = z.custom<ModelIdentifier>();
 
 @injectable()
-@IpcController("chat")
+@IpcController('chat')
 export class ChatController implements Controller {
-    constructor(@inject(CORETYPES.ChatService) private chatService: ChatService) {
-    }
+    constructor(@inject(CORETYPES.ChatService) private chatService: ChatService) {}
 
     @IpcHandler("getAllChats", z.tuple([z.string().nullable()]))
     public async getAllChats(searchQuery: string | null): Promise<Chat[]> {

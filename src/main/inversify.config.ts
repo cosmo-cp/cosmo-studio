@@ -1,22 +1,22 @@
-import {Container} from "inversify";
-import {IpcHandlerRegistry} from "./ipc";
-import {coreContainer} from "../../packages/core/inversify.config";
-import {TYPES} from "./types";
-import {ChatController} from "./controllers/ChatController";
-import {ModelProviderController} from "./controllers/ModelProviderController";
-import {Controller} from "./controllers/Controller";
-import {StreamingChatController} from "./controllers/StreamingChatController";
-import {MessageController} from "./controllers/MessageController";
-import {PersonaController} from "./controllers/PersonaController";
-import {CommandController} from "./controllers/CommandController";
-import {McpServerController} from "./controllers/McpServerController";
+import { Container } from 'inversify';
+import { IpcHandlerRegistry } from './ipc';
+import { coreContainer } from '../../packages/core/inversify.config';
+import { TYPES } from './types';
+import { ChatController } from './controllers/ChatController';
+import { ModelProviderController } from './controllers/ModelProviderController';
+import { Controller } from './controllers/Controller';
+import { StreamingChatController } from './controllers/StreamingChatController';
+import { MessageController } from './controllers/MessageController';
+import { PersonaController } from './controllers/PersonaController';
+import { CommandController } from './controllers/CommandController';
+import { McpServerController } from './controllers/McpServerController';
 import {WebSearchController} from "./controllers/WebSearchController";
 import {CORETYPES} from "core/types/types";
 import type {SecretStore} from "core/platform/SecretStore";
 import {ElectronSecretStore} from "./platform/ElectronSecretStore";
 import {ChatStreamingService} from "./services/ChatStreamingService";
 
-const container = new Container({parent: coreContainer});
+const container = new Container({ parent: coreContainer });
 
 coreContainer.rebindSync<SecretStore>(CORETYPES.SecretStore).to(ElectronSecretStore).inSingletonScope();
 

@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const isDevelopment = process.env.NODE_ENV === "development";
 const backend = process.env.NEXT_PUBLIC_COSMO_BACKEND;

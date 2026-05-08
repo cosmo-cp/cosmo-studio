@@ -1,19 +1,18 @@
-import {inject, injectable} from "inversify";
-import {z} from "zod";
-import {IpcController, IpcHandler} from "../ipc/Decorators";
-import {CORETYPES} from "core/types/types";
-import {PersonaService} from "core/services/PersonaService";
-import {Controller} from "./Controller";
-import {NewPersona, Persona} from "core/dto";
+import { inject, injectable } from 'inversify';
+import { z} from "zod";
+import {IpcController, IpcHandler } from '../ipc/Decorators';
+import { CORETYPES } from 'core/types/types';
+import { PersonaService } from 'core/services/PersonaService';
+import { Controller } from './Controller';
+import { NewPersona, Persona } from 'core/dto';
 
 const newPersonaSchema = z.custom<NewPersona>();
 const personaUpdateSchema = z.custom<Partial<NewPersona>>();
 
 @injectable()
-@IpcController("persona")
+@IpcController('persona')
 export class PersonaController implements Controller {
-    constructor(@inject(CORETYPES.PersonaService) private personaService: PersonaService) {
-    }
+    constructor(@inject(CORETYPES.PersonaService) private personaService: PersonaService) {}
 
     @IpcHandler("getAll", z.tuple([]))
     public async getAll(): Promise<Persona[]> {

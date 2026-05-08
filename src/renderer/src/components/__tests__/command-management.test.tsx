@@ -1,10 +1,10 @@
-import {describe, expect, it, vi} from "vitest";
-import {render, screen, waitFor} from "@testing-library/react";
-import {StoreProvider} from "@/lib/store/store-provider";
+import { describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { StoreProvider} from "@/lib/store/store-provider";
 import {createMockAppDataSource} from "@/test/mock-app-data-source";
-import {CommandManagement} from "../command-management";
+import {CommandManagement } from '../command-management';
 
-vi.mock("electron-log/renderer", () => ({
+vi.mock('electron-log/renderer', () => ({
     default: {
         scope: () => ({
             error: vi.fn(),
@@ -15,13 +15,13 @@ vi.mock("electron-log/renderer", () => ({
     },
 }));
 
-describe("CommandManagement", () => {
-    it("renders built-in commands from the API", async () => {
+describe('CommandManagement', () => {
+    it('renders built-in commands from the API', async () => {
         const listAll = vi.fn().mockResolvedValue([
             {
-                name: "/summarize",
-                description: "Summarize the chat.",
-                template: "Summarize the chat.",
+                name: '/summarize',
+                description: 'Summarize the chat.',
+                template: 'Summarize the chat.',
                 builtIn: true,
             },
         ]);
@@ -42,7 +42,7 @@ describe("CommandManagement", () => {
             expect(listAll).toHaveBeenCalled();
         });
 
-        expect(screen.getByText("/summarize")).toBeInTheDocument();
-        expect(screen.getByText("Summarize the chat.")).toBeInTheDocument();
+        expect(screen.getByText('/summarize')).toBeInTheDocument();
+        expect(screen.getByText('Summarize the chat.')).toBeInTheDocument();
     });
 });

@@ -1,16 +1,11 @@
-import {inject, injectable} from "inversify";
-import {z} from "zod";
-import {IpcController, IpcHandler} from "../ipc/Decorators";
-import {CORETYPES} from "core/types/types";
-import {CommandService} from "core/services/CommandService";
-import type {
-    CommandCreateInput,
-    CommandDefinition,
-    CommandExecution,
-    CommandUpdateInput,
-} from "core/dto";
-import {Controller} from "./Controller";
-import {getCoreLogger} from "core/platform/CoreLogger";
+import { inject, injectable } from 'inversify';
+import { z } from 'zod';
+import { IpcController, IpcHandler } from '../ipc/Decorators';
+import { CORETYPES } from 'core/types/types';
+import { CommandService } from 'core/services/CommandService';
+import type { CommandCreateInput, CommandDefinition, CommandExecution, CommandUpdateInput } from 'core/dto';
+import { Controller } from './Controller';
+import { getCoreLogger } from 'core/platform/CoreLogger';
 
 const commandCreateSchema = z.object({
     name: z.string().min(1),
@@ -31,13 +26,12 @@ const commandExecuteSchema = z.object({
 });
 
 @injectable()
-@IpcController("command")
+@IpcController('command')
 export class CommandController implements Controller {
     constructor(
         @inject(CORETYPES.CommandService)
-        private commandService: CommandService
-    ) {
-    }
+        private commandService: CommandService,
+    ) {}
 
     // Provide commands to the renderer for discovery and selection.
     @IpcHandler("listAll", z.tuple([]))
@@ -72,7 +66,7 @@ export class CommandController implements Controller {
         try {
             return await this.commandService.execute(parsed.input);
         } catch (error) {
-            getCoreLogger().error("Failed to execute command", error);
+            getCoreLogger().error('Failed to execute command', error);
             throw error;
         }
     }

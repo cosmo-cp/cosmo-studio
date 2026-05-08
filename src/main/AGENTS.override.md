@@ -20,9 +20,9 @@ If logic can be **pure domain logic** (no Electron objects), it should live in `
 ## IPC conventions (required)
 
 - Controllers use decorators in `src/main/ipc/Decorators.ts`:
-  - `@IpcController("prefix")` on the class.
-  - `@IpcHandler("name", z.tuple([...]))` for request/response (`ipcMain.handle`) and generated HTTP RPC.
-  - `@IpcOn("name", z.tuple([...]))` for Electron-only fire-and-forget (`ipcMain.on`) used for streaming.
+    - `@IpcController("prefix")` on the class.
+    - `@IpcHandler("name", z.tuple([...]))` for request/response (`ipcMain.handle`) and generated HTTP RPC.
+    - `@IpcOn("name", z.tuple([...]))` for Electron-only fire-and-forget (`ipcMain.on`) used for streaming.
 - `IpcHandlerRegistry` appends the Electron event as the **last** argument when invoking controller methods. If you need `event.sender`, add an `event: IpcMainEvent` parameter at the end.
 - Do not call `ipcMain.handle/on` directly in controllers; keep the registration pattern centralized in `src/main/ipc/index.ts`.
 - HTTP RPC does not pass an Electron event. Do not put HTTP-reused handler logic behind required Electron event parameters.
@@ -41,8 +41,8 @@ If logic can be **pure domain logic** (no Electron objects), it should live in `
 ## Database + migrations (runtime facts)
 
 - Electron DB lives under `app.getPath('userData')`:
-  - Dev uses folder name from `process.env.DATABASE_NAME` (required) in `src/main/index.ts`.
-  - Prod uses folder name `"database"`.
+    - Dev uses folder name from `process.env.DATABASE_NAME` (required) in `src/main/index.ts`.
+    - Prod uses folder name `"database"`.
 - HTTP DB lives under `COSMO_HTTP_DATA_DIR/database`, defaulting to `.cosmo-http/database`.
 - Migrations are generated into `migrations/` via `drizzle-kit`.
 - `vite.main.config.ts` copies `migrations/` into `.vite/build/migrations` at build time so runtime migrations can run inside the packaged app.
@@ -52,8 +52,8 @@ If logic can be **pure domain logic** (no Electron objects), it should live in `
 
 - Keep `contextIsolation: true` and `nodeIntegration: false` (set in `src/main/index.ts`).
 - Never send secrets to the renderer:
-  - API keys remain encrypted at rest and should only be used in main/core where required.
-  - Avoid logging user prompts/messages if they may contain sensitive data.
+    - API keys remain encrypted at rest and should only be used in main/core where required.
+    - Avoid logging user prompts/messages if they may contain sensitive data.
 
 ## Packaging/build notes
 
@@ -70,7 +70,7 @@ If logic can be **pure domain logic** (no Electron objects), it should live in `
 ## Testing expectations (main)
 
 - Controllers must be tested for:
-  - Argument validation behavior.
-  - Error propagation/sanitization.
-  - Side-effects on the core services (mocked via DI).
+    - Argument validation behavior.
+    - Error propagation/sanitization.
+    - Side-effects on the core services (mocked via DI).
 - Streaming paths must be tested with a fake `webContents` and asserted event emissions (`*-data`, `*-end`, `*-error`).

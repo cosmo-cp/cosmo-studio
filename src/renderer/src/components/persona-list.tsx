@@ -1,7 +1,14 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
@@ -96,14 +103,14 @@ export function PersonaList() {
                     personaId: editingPersona.id,
                     input: {
                     name: trimmedName,
-                    details: trimmedDetails
+                    details: trimmedDetails,
                     },
                 })).unwrap();
             } else {
                 await dispatch(savePersona({
                     input: {
                     name: trimmedName,
-                    details: trimmedDetails
+                    details: trimmedDetails,
                     },
                 })).unwrap();
             }
@@ -157,9 +164,7 @@ export function PersonaList() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <h4 className="text-lg font-medium">Personas</h4>
-                        <p className="text-xs text-muted-foreground">
-                            Create and manage personas
-                        </p>
+                        <p className="text-xs text-muted-foreground">Create and manage personas</p>
                     </div>
                     <Button onClick={() => setIsOpen(true)}>
                         <Plus className="h-4 w-4" />
@@ -272,12 +277,7 @@ export function PersonaList() {
                         ) : null}
                     </div>
                     <DialogFooter className="gap-2">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() => setIsOpen(false)}
-                            disabled={isSaving}
-                        >
+                        <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} disabled={isSaving}>
                             Cancel
                         </Button>
                         <Button type="button" onClick={handleSave} disabled={!canSave}>

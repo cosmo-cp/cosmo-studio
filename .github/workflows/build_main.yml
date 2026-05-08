@@ -1,61 +1,63 @@
 name: Build Main
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
+    workflow_dispatch:
+    push:
+        branches:
+            - main
 
 jobs:
-  main-build:
-    name: Main build on ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    main-build:
+        name: Main build on ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [ubuntu-latest, macos-latest, windows-latest]
+        runs-on: ${{ matrix.os }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.19.0'
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22.19.0'
 
-      - name: Install dependencies
-        run: npm install
+            - name: Install dependencies
+              run: npm install
 
-      - name: Run root lint
-        run: npm run lint
+            - name: Run root lint
+              run: npm run lint
 
-      - name: Run renderer lint
-        run: npm run lint --prefix src/renderer
+            - name: Run renderer lint
+              run: npm run lint --prefix src/renderer
 
-      - name: Run root tests
-        run: npm run test
+            - name: Run root tests
+              run: npm run test
 
-      - name: Run renderer tests
-        run: npm run test --prefix src/renderer
+            - name: Run renderer tests
+              run: npm run test --prefix src/renderer
 
-      - name: Run root tests (coverage)
-        run: npm run test:coverage
+            - name: Run root tests (coverage)
+              run: npm run test:coverage
 
-      - name: Run renderer tests (coverage)
-        run: npm run test:coverage --prefix src/renderer
+            - name: Run renderer tests (coverage)
+              run: npm run test:coverage --prefix src/renderer
 
-      - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.os }}
-          path: |
-            coverage
-            src/renderer/coverage
+            - name: Upload coverage artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: coverage-${{ matrix.os }}
+                  path: |
+                      coverage
+                      src/renderer/coverage
 
-      - name: Build application
-        run: npm run make
+            - name: Build application
+              env:
+                ENABLE_MAC_SIGNING: 'false'
+              run: npm run make
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-${{ matrix.os }}
-          path: out/make
+            - name: Upload build artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: build-${{ matrix.os }}
+                  path: out/make

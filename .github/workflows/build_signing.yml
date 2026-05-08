@@ -1,62 +1,85 @@
 name: Build_signing
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - macos-signing
+    workflow_dispatch:
+    push:
+        branches:
+            - macos-signing
 
 jobs:
-  build:
-    name: Build on ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    build:
+        timeout-minutes: 60
+        name: Build on ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [macos-latest]
+        runs-on: ${{ matrix.os }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.19.0'
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22.19.0'
+                  cache: 'npm'
 
-      - name: Install the Apple certificate
-        env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
-          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-        run: |
-          # create variables
-          BUILD_CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/login.keychain-db
-          
-          # import certificate from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $BUILD_CERTIFICATE_PATH
-          
-          # create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          
-          # import certificate to keychain
-          security import $BUILD_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
+            - name: Install the Apple certificate
+              env:
+                  BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+                  P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+                  KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+              run: |
+                  set -euo pipefail
 
-      - name: Install dependencies
-        run: npm install
+                  if [ -z "${BUILD_CERTIFICATE_BASE64}" ] || [ -z "${P12_PASSWORD}" ] || [ -z "${KEYCHAIN_PASSWORD}" ]; then
+                    echo "Missing one or more signing certificate secrets."
+                    exit 1
+                  fi
 
-      - name: Build application
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: npm run make
+                  # create variables
+                  BUILD_CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
+                  KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-${{ matrix.os }}
-          path: out/make
+                  # import certificate from secrets
+                  printf '%s' "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$BUILD_CERTIFICATE_PATH"
+
+                  # create temporary keychain
+                  security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+                  security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+                  security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+                  security default-keychain -d user -s "$KEYCHAIN_PATH"
+                  security list-keychains -d user -s "$KEYCHAIN_PATH"
+
+                  # import certificate to keychain
+                  security import "$BUILD_CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+                  security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+                  security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+                  echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Build application
+              env:
+                  APPLE_ID: ${{ secrets.APPLE_ID }}
+                  APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+                  SIGN_IDENTITY: ${{ secrets.SIGN_IDENTITY }}
+                  ENABLE_MAC_SIGNING: 'true'
+              run: |
+                  set -euo pipefail
+
+                  if [ -z "${APPLE_ID}" ] || [ -z "${APPLE_ID_PASSWORD}" ] || [ -z "${APPLE_TEAM_ID}" ] || [ -z "${SIGN_IDENTITY}" ]; then
+                    echo "Missing one or more Apple notarization/signing secrets."
+                    exit 1
+                  fi
+
+                  DEBUG=* npm run make
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: build-${{ matrix.os }}
+                  path: out/make

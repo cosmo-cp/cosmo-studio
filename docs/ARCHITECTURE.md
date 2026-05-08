@@ -111,11 +111,11 @@ flowchart LR
 ### Electron production (`npm run make` / `npm run package`)
 
 1. Build renderer: `npm run build:renderer:electron`
-   - Produces static output under `src/renderer/out/`.
+    - Produces static output under `src/renderer/out/`.
 2. Electron Forge packaging:
-   - Vite plugin builds main and preload (`vite.main.config.ts`, `vite.preload.config.ts`).
-   - `NextPlugin` copies `src/renderer/out/` into the packaged renderer directory.
-   - `@electric-sql/*` is copied into the package so PGlite works at runtime.
+    - Vite plugin builds main and preload (`vite.main.config.ts`, `vite.preload.config.ts`).
+    - `NextPlugin` copies `src/renderer/out/` into the packaged renderer directory.
+    - `@electric-sql/*` is copied into the package so PGlite works at runtime.
 
 ### HTTP production (`npm run build:http` / `npm run start:http`)
 

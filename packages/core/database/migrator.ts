@@ -1,7 +1,7 @@
-import {migrate} from "drizzle-orm/pglite/migrator";
-import path from "path";
+import { migrate } from 'drizzle-orm/pglite/migrator';
+import path from 'path';
 import fs from "fs";
-import {PgliteDatabase} from "drizzle-orm/pglite";
+import { PgliteDatabase } from 'drizzle-orm/pglite';
 import * as schema from './schema/schema';
 import {getCoreLogger} from "../platform/CoreLogger";
 
@@ -32,7 +32,6 @@ export async function runMigrations(db: PgliteDatabase<typeof schema>) {
 
         const end = Date.now();
         getCoreLogger().info(`Migrations checked/applied successfully in ${end - start} ms.`);
-
     } catch (error) {
         getCoreLogger().error('FATAL: Database migration failed during application startup.', error);
         throw new Error('Database initialization failed due to migration error.');

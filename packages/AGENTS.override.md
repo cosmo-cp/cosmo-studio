@@ -5,12 +5,12 @@ This file applies to changes under `packages/`.
 ## Packages in this repo
 
 - `packages/core` (package name: `core`) is the shared domain + data layer:
-  - DTOs: `packages/core/dto.ts`
-  - DB manager + migrations runner: `packages/core/database/*`
-  - Drizzle schema: `packages/core/database/schema/*`
-  - Repositories: `packages/core/repositories/*`
-  - Services: `packages/core/services/*`
-  - Platform interfaces: `packages/core/platform/*`
+    - DTOs: `packages/core/dto.ts`
+    - DB manager + migrations runner: `packages/core/database/*`
+    - Drizzle schema: `packages/core/database/schema/*`
+    - Repositories: `packages/core/repositories/*`
+    - Services: `packages/core/services/*`
+    - Platform interfaces: `packages/core/platform/*`
   - DI container: `packages/core/inversify.config.ts`
 
 ## What belongs in `core`
@@ -23,8 +23,8 @@ This file applies to changes under `packages/`.
 ## Dependency and boundary rules
 
 - Keep `core` as environment-agnostic as practical:
-  - Prefer not importing from `src/main` or `src/renderer`.
-  - Prefer interfaces + DI over hard dependencies on Electron.
+    - Prefer not importing from `src/main` or `src/renderer`.
+    - Prefer interfaces + DI over hard dependencies on Electron.
 - `core` must not import Electron, `safeStorage`, or `src/main/logger`.
 - Platform concerns belong behind injectable adapters:
   - `SecretStore` for provider/web-search key encryption.
@@ -34,11 +34,11 @@ This file applies to changes under `packages/`.
 ## Database rules
 
 - Schema changes must be accompanied by:
-  - `npm run db:generate` (new migration files under `migrations/`)
-  - `npm run db:check` and/or `npm run db:migrate` validation
+    - `npm run db:generate` (new migration files under `migrations/`)
+    - `npm run db:check` and/or `npm run db:migrate` validation
 - Keep schema naming consistent:
-  - Tables are PascalCase (`Chat`, `Message`, `ModelProvider`, `Model`, `Persona`)
-  - Prefer explicit relations (Drizzle `relations(...)`) for query ergonomics.
+    - Tables are PascalCase (`Chat`, `Message`, `ModelProvider`, `Model`, `Persona`)
+    - Prefer explicit relations (Drizzle `relations(...)`) for query ergonomics.
 
 ## DTO/type export rules
 
@@ -48,7 +48,7 @@ This file applies to changes under `packages/`.
 ## Testing expectations (core)
 
 - Repositories/services must have unit tests that cover:
-  - Happy path results.
-  - Edge cases (empty results, invalid ids).
-  - Error paths (DB failures, encryption failures, fetch failures).
+    - Happy path results.
+    - Edge cases (empty results, invalid ids).
+    - Error paths (DB failures, encryption failures, fetch failures).
 - For DB tests, prefer isolated test databases (ephemeral folder or in-memory if supported) and deterministic migrations.

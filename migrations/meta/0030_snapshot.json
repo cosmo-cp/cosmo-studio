@@ -1,5 +1,5 @@
 {
-  "id": "f0b90fdb-1280-42fc-9d0b-96b93a1f69a0",
+  "id": "9b949dac-93e1-4de4-9b39-b1aa450ba71e",
   "prevId": "43c82838-00f4-482d-a22d-ecfafae4f2eb",
   "version": "7",
   "dialect": "postgresql",
@@ -263,6 +263,20 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
+        },
+        "contextWindow": {
+          "name": "contextWindow",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 128000
+        },
+        "maxOutputWindow": {
+          "name": "maxOutputWindow",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 4096
         }
       },
       "indexes": {},
@@ -545,66 +559,6 @@
           "nullsNotDistinct": false,
           "columns": [
             "name"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.WebSearchConfig": {
-      "name": "WebSearchConfig",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "type": {
-          "name": "type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "enabled": {
-          "name": "enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "apiKey": {
-          "name": "apiKey",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "WebSearchConfig_type_unique": {
-          "name": "WebSearchConfig_type_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "type"
           ]
         }
       },

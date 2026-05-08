@@ -1,23 +1,22 @@
-import { inject, injectable } from "inversify";
+import { inject, injectable } from 'inversify';
 import {z} from "zod";
-import { IpcController, IpcHandler } from "../ipc/Decorators";
-import { CORETYPES } from "core/types/types";
-import { McpServerService } from "core/services/McpServerService";
-import { McpClientManager } from "core/services/McpClientManager";
-import { Controller } from "./Controller";
-import { McpServer, McpServerCreateInput, McpServerUpdateInput, McpToolDefinition } from "core/dto";
+import { IpcController, IpcHandler } from '../ipc/Decorators';
+import { CORETYPES } from 'core/types/types';
+import { McpServerService } from 'core/services/McpServerService';
+import { McpClientManager } from 'core/services/McpClientManager';
+import { Controller } from './Controller';
+import { McpServer, McpServerCreateInput, McpServerUpdateInput, McpToolDefinition } from 'core/dto';
 
 const mcpServerCreateSchema = z.custom<McpServerCreateInput>();
 const mcpServerUpdateSchema = z.custom<McpServerUpdateInput>();
 
 @injectable()
-@IpcController("mcpServer")
+@IpcController('mcpServer')
 export class McpServerController implements Controller {
     constructor(
         @inject(CORETYPES.McpServerService) private mcpServerService: McpServerService,
-        @inject(CORETYPES.McpClientManager) private mcpClientManager: McpClientManager
-    ) {
-    }
+        @inject(CORETYPES.McpClientManager) private mcpClientManager: McpClientManager,
+    ) {}
 
     @IpcHandler("getAll", z.tuple([]))
     public async getAll(): Promise<McpServer[]> {

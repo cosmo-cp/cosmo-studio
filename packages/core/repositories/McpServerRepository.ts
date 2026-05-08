@@ -1,9 +1,9 @@
-import {inject, injectable} from "inversify";
-import {asc, eq} from "drizzle-orm";
-import {CORETYPES} from "../types/types";
-import {DatabaseManager} from "../database/DatabaseManager";
-import {mcpServer} from "../database/schema/schema";
-import {McpServer, McpServerInsert, McpServerUpdateInput} from "../dto";
+import { inject, injectable } from 'inversify';
+import { asc, eq } from 'drizzle-orm';
+import { CORETYPES } from '../types/types';
+import { DatabaseManager } from '../database/DatabaseManager';
+import { mcpServer } from '../database/schema/schema';
+import { McpServer, McpServerInsert, McpServerUpdateInput } from '../dto';
 
 @injectable()
 export class McpServerRepository {
@@ -33,19 +33,26 @@ export class McpServerRepository {
 
     public async create(data: McpServerInsert): Promise<McpServer> {
         const now = new Date();
-        const [createdServer] = await this.db.insert(mcpServer).values({
-            ...data,
-            createdAt: data.createdAt ?? now,
-            updatedAt: data.updatedAt ?? now,
-        }).returning();
+        const [createdServer] = await this.db
+            .insert(mcpServer)
+            .values({
+                ...data,
+                createdAt: data.createdAt ?? now,
+                updatedAt: data.updatedAt ?? now,
+            })
+            .returning();
         return createdServer;
     }
 
     public async update(id: string, updates: McpServerUpdateInput): Promise<McpServer> {
-        const [updatedServer] = await this.db.update(mcpServer).set({
-            ...updates,
-            updatedAt: new Date(),
-        }).where(eq(mcpServer.id, id)).returning();
+        const [updatedServer] = await this.db
+            .update(mcpServer)
+            .set({
+                ...updates,
+                updatedAt: new Date(),
+            })
+            .where(eq(mcpServer.id, id))
+            .returning();
         return updatedServer;
     }
 

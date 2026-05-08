@@ -1,0 +1,16 @@
+node_modules
+out
+dist
+build
+.vite
+.next
+coverage
+*.min.js
+*.min.css
+package-lock.json
+.agent
+.agents
+.codex
+Migrations
+migrations
+.devtools

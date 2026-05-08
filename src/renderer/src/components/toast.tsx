@@ -11,9 +11,7 @@ const iconsByType: Record<'success' | 'error', ReactNode> = {
 };
 
 export function toast(props: Omit<ToastProps, 'id'>) {
-    return sonnerToast.custom((id) => (
-        <Toast id={id} type={props.type} description={props.description} />
-    ));
+    return sonnerToast.custom((id) => <Toast id={id} type={props.type} description={props.description} />);
 }
 
 function Toast(props: ToastProps) {
@@ -51,10 +49,9 @@ function Toast(props: ToastProps) {
             >
                 <div
                     data-type={type}
-                    className={cn(
-                        'data-[type=error]:text-red-600 data-[type=success]:text-green-600',
-                        { 'pt-1': multiLine },
-                    )}
+                    className={cn('data-[type=error]:text-red-600 data-[type=success]:text-green-600', {
+                        'pt-1': multiLine,
+                    })}
                 >
                     {iconsByType[type]}
                 </div>

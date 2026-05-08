@@ -1,30 +1,30 @@
 'use client';
 
-import {ConfirmDialog} from "@/components/confirm-dialog";
-import {Badge} from "@/components/ui/badge";
-import {Button} from "@/components/ui/button";
-import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {Input} from "@/components/ui/input";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Textarea} from "@/components/ui/textarea";
-import type {CommandCreateInput, CommandDefinition, CommandUpdateInput} from "core/dto";
-import {Edit, Trash2} from "lucide-react";
-import {useEffect, useState} from "react";
-import {toast} from "sonner";
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import type { CommandCreateInput, CommandDefinition, CommandUpdateInput } from 'core/dto';
+import { Edit, Trash2 } from 'lucide-react';
+import { useEffect, useState} from 'react';
+import { toast } from 'sonner';
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
 import {deleteCommand, loadCommands, saveCommand} from "@/lib/store/commands-store";
-import {logger} from "../../logger";
+import { logger } from '../../logger';
 
-type ArgumentMode = "none" | "optional";
+type ArgumentMode = 'none' | 'optional';
 
 // Provide a clean form state when creating or resetting commands.
 const buildDefaultFormState = () => ({
-    name: "",
-    description: "",
-    template: "",
-    argumentMode: "none" as ArgumentMode,
-    argumentLabel: "",
+    name: '',
+    description: '',
+    template: '',
+    argumentMode: 'none' as ArgumentMode,
+    argumentLabel: '',
 });
 
 export function CommandManagement() {
@@ -71,8 +71,8 @@ export function CommandManagement() {
             name: command.name,
             description: command.description,
             template: command.template,
-            argumentMode: command.argumentLabel ? "optional" : "none",
-            argumentLabel: command.argumentLabel ?? "",
+            argumentMode: command.argumentLabel ? 'optional' : 'none',
+            argumentLabel: command.argumentLabel ?? '',
         });
         setIsDialogOpen(true);
     };
@@ -89,7 +89,7 @@ export function CommandManagement() {
             name: formState.name.trim(),
             description: formState.description.trim(),
             template: formState.template.trim(),
-            argumentLabel: formState.argumentMode === "optional" ? formState.argumentLabel.trim() || null : null,
+            argumentLabel: formState.argumentMode === 'optional' ? formState.argumentLabel.trim() || null : null,
         };
 
         try {
@@ -101,17 +101,17 @@ export function CommandManagement() {
                     commandId: editingCommand.id as string,
                     input: updatePayload as CommandCreateInput,
                 })).unwrap();
-                toast.success("Command updated");
+                toast.success('Command updated');
             } else {
                 const createPayload: CommandCreateInput = payloadBase;
                 await dispatch(saveCommand({input: createPayload})).unwrap();
-                toast.success("Command created");
+                toast.success('Command created');
             }
             handleCloseDialog();
         } catch (error) {
-            const message = error instanceof Error ? error.message : "Failed to save command.";
+            const message = error instanceof Error ? error.message : 'Failed to save command.';
             toast.error(message);
-            logger.error("Failed to save command", error);
+            logger.error('Failed to save command', error);
         } finally {
             setIsSubmitting(false);
         }
@@ -119,7 +119,7 @@ export function CommandManagement() {
 
     // Prompt for deletion confirmation for a custom command.
     const handleDeleteClick = (commandId: string) => {
-        setDeleteConfirmation({isOpen: true, commandId});
+        setDeleteConfirmation({ isOpen: true, commandId });
     };
 
     // Execute the delete after confirmation.
@@ -128,14 +128,14 @@ export function CommandManagement() {
             return;
         }
         const commandId = deleteConfirmation.commandId;
-        setDeleteConfirmation({isOpen: false, commandId: null});
+        setDeleteConfirmation({ isOpen: false, commandId: null });
         try {
             await dispatch(deleteCommand(commandId)).unwrap();
-            toast.success("Command deleted");
+            toast.success('Command deleted');
         } catch (error) {
-            const message = error instanceof Error ? error.message : "Failed to delete command.";
+            const message = error instanceof Error ? error.message : 'Failed to delete command.';
             toast.error(message);
-            logger.error("Failed to delete command", error);
+            logger.error('Failed to delete command', error);
         }
     };
 
@@ -178,16 +178,14 @@ export function CommandManagement() {
                             {commands.map((command) => (
                                 <TableRow key={command.id ?? command.name}>
                                     <TableCell className="font-medium">{command.name}</TableCell>
-                                    <TableCell className="text-muted-foreground">
-                                        {command.description}
-                                    </TableCell>
+                                    <TableCell className="text-muted-foreground">{command.description}</TableCell>
                                     <TableCell>
-                                        <Badge variant={command.builtIn ? "outline" : "secondary"}>
-                                            {command.builtIn ? "Built-in" : "Custom"}
+                                        <Badge variant={command.builtIn ? 'outline' : 'secondary'}>
+                                            {command.builtIn ? 'Built-in' : 'Custom'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-muted-foreground">
-                                        {command.argumentLabel ?? "—"}
+                                        {command.argumentLabel ?? '—'}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Button
@@ -197,7 +195,7 @@ export function CommandManagement() {
                                             onClick={() => handleEdit(command)}
                                             disabled={command.builtIn}
                                         >
-                                            <Edit className="size-4"/>
+                                            <Edit className="size-4" />
                                         </Button>
                                         <Button
                                             size="icon"
@@ -206,7 +204,7 @@ export function CommandManagement() {
                                             onClick={() => handleDeleteClick(command.id as string)}
                                             disabled={command.builtIn}
                                         >
-                                            <Trash2 className="size-4"/>
+                                            <Trash2 className="size-4" />
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -223,48 +221,58 @@ export function CommandManagement() {
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {editingCommand ? "Edit Command" : "Create Command"}
-                        </DialogTitle>
+                        <DialogTitle>{editingCommand ? 'Edit Command' : 'Create Command'}</DialogTitle>
                     </DialogHeader>
                     <form className="space-y-4" onSubmit={handleSubmit}>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium" htmlFor="command-name">Name</label>
+                            <label className="text-sm font-medium" htmlFor="command-name">
+                                Name
+                            </label>
                             <Input
                                 id="command-name"
                                 placeholder="/summarize"
                                 value={formState.name}
-                                onChange={(event) => setFormState((prev) => ({
-                                    ...prev,
-                                    name: event.target.value,
-                                }))}
+                                onChange={(event) =>
+                                    setFormState((prev) => ({
+                                        ...prev,
+                                        name: event.target.value,
+                                    }))
+                                }
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium" htmlFor="command-description">Description</label>
+                            <label className="text-sm font-medium" htmlFor="command-description">
+                                Description
+                            </label>
                             <Input
                                 id="command-description"
                                 placeholder="Describe what this command does."
                                 value={formState.description}
-                                onChange={(event) => setFormState((prev) => ({
-                                    ...prev,
-                                    description: event.target.value,
-                                }))}
+                                onChange={(event) =>
+                                    setFormState((prev) => ({
+                                        ...prev,
+                                        description: event.target.value,
+                                    }))
+                                }
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium" htmlFor="command-template">Template</label>
+                            <label className="text-sm font-medium" htmlFor="command-template">
+                                Template
+                            </label>
                             <Textarea
                                 id="command-template"
                                 placeholder="Summarize the last response. {{input}}"
                                 value={formState.template}
-                                onChange={(event) => setFormState((prev) => ({
-                                    ...prev,
-                                    template: event.target.value,
-                                }))}
+                                onChange={(event) =>
+                                    setFormState((prev) => ({
+                                        ...prev,
+                                        template: event.target.value,
+                                    }))
+                                }
                             />
                             <p className="text-xs text-muted-foreground">
-                                Use <code>{"{{input}}"}</code> to inject the optional argument.
+                                Use <code>{'{{input}}'}</code> to inject the optional argument.
                             </p>
                         </div>
                         <div className="space-y-2">
@@ -275,30 +283,33 @@ export function CommandManagement() {
                                     setFormState((prev) => ({
                                         ...prev,
                                         argumentMode: value as ArgumentMode,
-                                        argumentLabel: value === "none" ? "" : prev.argumentLabel,
+                                        argumentLabel: value === 'none' ? '' : prev.argumentLabel,
                                     }))
                                 }
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select argument mode"/>
+                                    <SelectValue placeholder="Select argument mode" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">No argument</SelectItem>
                                     <SelectItem value="optional">Optional argument</SelectItem>
                                 </SelectContent>
                             </Select>
-                            {formState.argumentMode === "optional" && (
+                            {formState.argumentMode === 'optional' && (
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium" htmlFor="command-argument-label">Argument
-                                        label</label>
+                                    <label className="text-sm font-medium" htmlFor="command-argument-label">
+                                        Argument label
+                                    </label>
                                     <Input
                                         id="command-argument-label"
                                         placeholder="Focus (optional)"
                                         value={formState.argumentLabel}
-                                        onChange={(event) => setFormState((prev) => ({
-                                            ...prev,
-                                            argumentLabel: event.target.value,
-                                        }))}
+                                        onChange={(event) =>
+                                            setFormState((prev) => ({
+                                                ...prev,
+                                                argumentLabel: event.target.value,
+                                            }))
+                                        }
                                     />
                                 </div>
                             )}
@@ -308,7 +319,7 @@ export function CommandManagement() {
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={isSubmitting}>
-                                {editingCommand ? "Save" : "Create"}
+                                {editingCommand ? 'Save' : 'Create'}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -319,7 +330,7 @@ export function CommandManagement() {
                 open={deleteConfirmation.isOpen}
                 onOpenChange={(open) => {
                     if (!open) {
-                        setDeleteConfirmation({isOpen: open, commandId: null})
+                        setDeleteConfirmation({ isOpen: open, commandId: null });
                     }
                 }}
                 onConfirm={handleConfirmDelete}

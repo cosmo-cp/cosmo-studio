@@ -1,9 +1,9 @@
-import {inject, injectable} from "inversify";
-import {asc, eq} from "drizzle-orm";
-import {CORETYPES} from "../types/types";
-import {DatabaseManager} from "../database/DatabaseManager";
-import {persona} from "../database/schema/schema";
-import {NewPersona, Persona} from "../dto";
+import { inject, injectable } from 'inversify';
+import { asc, eq } from 'drizzle-orm';
+import { CORETYPES } from '../types/types';
+import { DatabaseManager } from '../database/DatabaseManager';
+import { persona } from '../database/schema/schema';
+import { NewPersona, Persona } from '../dto';
 
 @injectable()
 export class PersonaRepository {
@@ -29,19 +29,26 @@ export class PersonaRepository {
 
     public async create(data: NewPersona): Promise<Persona> {
         const now = new Date();
-        const [createdPersona] = await this.db.insert(persona).values({
-            ...data,
-            createdAt: data.createdAt ?? now,
-            updatedAt: data.updatedAt ?? now,
-        }).returning();
+        const [createdPersona] = await this.db
+            .insert(persona)
+            .values({
+                ...data,
+                createdAt: data.createdAt ?? now,
+                updatedAt: data.updatedAt ?? now,
+            })
+            .returning();
         return createdPersona;
     }
 
     public async update(id: string, updates: Partial<NewPersona>): Promise<Persona> {
-        const [updatedPersona] = await this.db.update(persona).set({
-            ...updates,
-            updatedAt: new Date(),
-        }).where(eq(persona.id, id)).returning();
+        const [updatedPersona] = await this.db
+            .update(persona)
+            .set({
+                ...updates,
+                updatedAt: new Date(),
+            })
+            .where(eq(persona.id, id))
+            .returning();
         return updatedPersona;
     }
 

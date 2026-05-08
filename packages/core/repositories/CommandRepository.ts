@@ -1,9 +1,9 @@
-import {inject, injectable} from "inversify";
-import {asc, eq} from "drizzle-orm";
-import {CORETYPES} from "../types/types";
-import {DatabaseManager} from "../database/DatabaseManager";
-import {command} from "../database/schema/schema";
-import {NewCommand, Command} from "../dto";
+import { inject, injectable } from 'inversify';
+import { asc, eq } from 'drizzle-orm';
+import { CORETYPES } from '../types/types';
+import { DatabaseManager } from '../database/DatabaseManager';
+import { command } from '../database/schema/schema';
+import { NewCommand, Command } from '../dto';
 
 @injectable()
 export class CommandRepository {
@@ -33,20 +33,27 @@ export class CommandRepository {
     // Persist new user-defined commands.
     public async create(data: NewCommand): Promise<Command> {
         const now = new Date();
-        const [createdCommand] = await this.db.insert(command).values({
-            ...data,
-            createdAt: data.createdAt ?? now,
-            updatedAt: data.updatedAt ?? now,
-        }).returning();
+        const [createdCommand] = await this.db
+            .insert(command)
+            .values({
+                ...data,
+                createdAt: data.createdAt ?? now,
+                updatedAt: data.updatedAt ?? now,
+            })
+            .returning();
         return createdCommand;
     }
 
     // Update command metadata and templates while tracking modification time.
     public async update(id: string, updates: Partial<NewCommand>): Promise<Command> {
-        const [updatedCommand] = await this.db.update(command).set({
-            ...updates,
-            updatedAt: new Date(),
-        }).where(eq(command.id, id)).returning();
+        const [updatedCommand] = await this.db
+            .update(command)
+            .set({
+                ...updates,
+                updatedAt: new Date(),
+            })
+            .where(eq(command.id, id))
+            .returning();
         return updatedCommand;
     }
 

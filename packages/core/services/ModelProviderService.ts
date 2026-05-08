@@ -19,50 +19,65 @@ import {createMistral} from '@ai-sdk/mistral';
 import {ProviderCatalogByType} from "../providerCatalog";
 import {createDeepSeek} from "@ai-sdk/deepseek";
 // import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
-import { createCohere } from "@ai-sdk/cohere";
-import { createHuggingFace } from "@ai-sdk/huggingface";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { createPerplexity } from "@ai-sdk/perplexity";
-
+import { createCohere } from '@ai-sdk/cohere';
+import { createHuggingFace } from '@ai-sdk/huggingface';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createPerplexity } from '@ai-sdk/perplexity';
 
 export type RemoteProviderOptions =
-    AnthropicProviderSettings
+    | AnthropicProviderSettings
     | GoogleGenerativeAIProviderSettings
     | OpenAIProviderSettings;
 
 export type LocalProviderOptions = OllamaProviderSettings;
 
+interface LMStudioModelPayload {
+    id: string;
+    key?: string;
+    display_name?: string;
+    description?: string;
+    max_context_length?: number;
+    capabilities?: {
+        reasoning?: boolean;
+        vision?: boolean;
+        trained_for_tool_use?: boolean;
+    };
+}
+
 @injectable()
 export class ModelProviderService {
     private readonly repository: ModelProviderRepository;
     private modelProviderRegistry: ProviderRegistryProvider;
-    private static MODELS_DOT_DEV_URL = "https://models.dev/api.json";
-    private static MODELS_OLLAMA_URL = "http://127.0.0.1:11434/api";
-    private static MODELS_LMSTUDIO_URL = "http://localhost:1234/v1";
-    private readonly providerFactoryByType: Record<ModelProviderTypeEnum, (provider: ModelProviderLite) => ProviderV3> = {
-        [ModelProviderTypeEnum.ANTHROPIC]: (provider) => createAnthropic(this.createRemoteOptions(provider)),
-        [ModelProviderTypeEnum.GOOGLE]: (provider) => createGoogleGenerativeAI(this.createRemoteOptions(provider)),
-        [ModelProviderTypeEnum.OPENAI]: (provider) => createOpenAI(this.createRemoteOptions(provider)),
-        [ModelProviderTypeEnum.XAI]: (provider) => createXai(this.createRemoteOptions(provider)),
-        [ModelProviderTypeEnum.MOONSHOT]: (provider) => createMoonshotAI(this.createRemoteOptions(provider)),
-        [ModelProviderTypeEnum.GROQ]: (provider) => createGroq(this.createRemoteOptions(provider)),
-        [ModelProviderTypeEnum.MISTRAL]: (provider) => createMistral(this.createRemoteOptions(provider)),
-        [ModelProviderTypeEnum.DEEPSEEK]: (provider) => createDeepSeek(this.createRemoteOptions(provider)),
-        [ModelProviderTypeEnum.OLLAMA]: (provider) => createOllama(this.createLocalOptions(provider)),
-        [ModelProviderTypeEnum.PERPLEXITY]: (provider) => createPerplexity(this.createRemoteOptions(provider)),
-        // [ModelProviderTypeEnum.BEDROCK]: (provider) => createAmazonBedrock(this.createRemoteOptions(provider)),
-        [ModelProviderTypeEnum.COHERE]: (provider) => createCohere(this.createRemoteOptions(provider)),
-        [ModelProviderTypeEnum.LMSTUDIO]: (provider) => createOpenAICompatible({
-            name: provider.name,
-            baseURL: (provider.apiUrl && provider.apiUrl.trim()) || 'http://localhost:1234/v1',
-        }),
-        [ModelProviderTypeEnum.HUGGINGFACE]: (provider) => createHuggingFace(this.createRemoteOptions(provider)),
-        [ModelProviderTypeEnum.CUSTOM]: (provider) => createOpenAI({
-            name: provider.name,
-            apiKey: provider.apiKey,
-            baseURL: provider.apiUrl,
-        }),
-    };
+    private static MODELS_DOT_DEV_URL = 'https://models.dev/api.json';
+    private static MODELS_OLLAMA_URL = 'http://127.0.0.1:11434/api';
+    private static MODELS_LMSTUDIO_URL = 'http://localhost:1234/api';
+    private readonly providerFactoryByType: Record<ModelProviderTypeEnum, (provider: ModelProviderLite) => ProviderV3> =
+        {
+            [ModelProviderTypeEnum.ANTHROPIC]: (provider) => createAnthropic(this.createRemoteOptions(provider)),
+            [ModelProviderTypeEnum.GOOGLE]: (provider) => createGoogleGenerativeAI(this.createRemoteOptions(provider)),
+            [ModelProviderTypeEnum.OPENAI]: (provider) => createOpenAI(this.createRemoteOptions(provider)),
+            [ModelProviderTypeEnum.XAI]: (provider) => createXai(this.createRemoteOptions(provider)),
+            [ModelProviderTypeEnum.MOONSHOT]: (provider) => createMoonshotAI(this.createRemoteOptions(provider)),
+            [ModelProviderTypeEnum.GROQ]: (provider) => createGroq(this.createRemoteOptions(provider)),
+            [ModelProviderTypeEnum.MISTRAL]: (provider) => createMistral(this.createRemoteOptions(provider)),
+            [ModelProviderTypeEnum.DEEPSEEK]: (provider) => createDeepSeek(this.createRemoteOptions(provider)),
+            [ModelProviderTypeEnum.OLLAMA]: (provider) => createOllama(this.createLocalOptions(provider)),
+            [ModelProviderTypeEnum.PERPLEXITY]: (provider) => createPerplexity(this.createRemoteOptions(provider)),
+            // [ModelProviderTypeEnum.BEDROCK]: (provider) => createAmazonBedrock(this.createRemoteOptions(provider)),
+            [ModelProviderTypeEnum.COHERE]: (provider) => createCohere(this.createRemoteOptions(provider)),
+            [ModelProviderTypeEnum.LMSTUDIO]: (provider) =>
+                createOpenAICompatible({
+                    name: provider.name,
+                    baseURL: (provider.apiUrl && provider.apiUrl.trim()) || 'http://localhost:1234/v1',
+                }),
+            [ModelProviderTypeEnum.HUGGINGFACE]: (provider) => createHuggingFace(this.createRemoteOptions(provider)),
+            [ModelProviderTypeEnum.CUSTOM]: (provider) =>
+                createOpenAI({
+                    name: provider.name,
+                    apiKey: provider.apiKey,
+                    baseURL: provider.apiUrl,
+                }),
+        };
 
     constructor(
         @inject(CORETYPES.ModelProviderRepository) repository: ModelProviderRepository,
@@ -78,9 +93,12 @@ export class ModelProviderService {
     }
 
     // Accepts ModelProviderCreateInput directly, relying on the caller/UI for data integrity.
-    public async addProvider(providerData: ModelProviderCreateInput, modelsData: NewModel[]): Promise<ProviderWithModels> {
+    public async addProvider(
+        providerData: ModelProviderCreateInput,
+        modelsData: NewModel[],
+    ): Promise<ProviderWithModels> {
         if (!providerData.name || providerData.name.trim().length === 0) {
-            throw new Error("Provider name is required.");
+            throw new Error('Provider name is required.');
         }
 
         // Note: Runtime validation (like checking if apiUrl is a valid URL or
@@ -96,9 +114,8 @@ export class ModelProviderService {
             name: providerData.name,
             apiKey: providerData.apiKey, // Key is plain text here
             type: providerData.type,
-            apiUrl: providerData.type === ModelProviderTypeEnum.CUSTOM
-                ? providerData.apiUrl
-                : providerData.apiUrl ?? "",
+            apiUrl:
+                providerData.type === ModelProviderTypeEnum.CUSTOM ? providerData.apiUrl : (providerData.apiUrl ?? ''),
         };
 
         // 3. Repository handles insertion and encryption
@@ -112,7 +129,7 @@ export class ModelProviderService {
     }
 
     public async getProviders(input: { withApiKey: boolean }): Promise<ModelProviderLite[]> {
-        const providers = await this.repository.findAll({withApiKey: input.withApiKey});
+        const providers = await this.repository.findAll({ withApiKey: input.withApiKey });
         return providers.map(this.mapToModelProvider);
     }
 
@@ -128,10 +145,13 @@ export class ModelProviderService {
             this.logger.error("Failed to delete provider", error);
             throw error;
         }
-
     }
 
-    public async updateProvider(providerId: string, updateObject: Partial<ModelProviderCreateInput>, modelsData?: NewModel[]): Promise<ProviderWithModels> {
+    public async updateProvider(
+        providerId: string,
+        updateObject: Partial<ModelProviderCreateInput>,
+        modelsData?: NewModel[],
+    ): Promise<ProviderWithModels> {
         const result = await this.repository.updateProvider(providerId, updateObject, modelsData);
         this.updateModelProviderRegistry();
         return result;
@@ -146,8 +166,8 @@ export class ModelProviderService {
 
     private updateModelProviderRegistry() {
         const registryObject: Record<string, ProviderV3> = {};
-        this.getProviders({withApiKey: true})
-            .then(providers => {
+        this.getProviders({ withApiKey: true })
+            .then((providers) => {
                 for (const provider of providers) {
                     const factory = this.providerFactoryByType[provider.type];
                     if (!factory) {
@@ -157,12 +177,12 @@ export class ModelProviderService {
                 }
                 this.modelProviderRegistry = createProviderRegistry(registryObject);
             })
-            .catch(error => this.logger.error("Failed to update model provider registry", error));
+            .catch((error) => this.logger.error("Failed to update model provider registry", error));
     }
 
     private createLocalOptions(provider: ModelProviderLite): LocalProviderOptions {
         const options: LocalProviderOptions = {};
-        if (provider.apiUrl && provider.apiUrl.trim() !== "") {
+        if (provider.apiUrl && provider.apiUrl.trim() !== '') {
             options.baseURL = provider.apiUrl;
         }
         return options;
@@ -170,10 +190,10 @@ export class ModelProviderService {
 
     private createRemoteOptions(provider: ModelProviderLite): RemoteProviderOptions {
         const options: RemoteProviderOptions = {};
-        if (provider.apiUrl && provider.apiUrl.trim() !== "") {
+        if (provider.apiUrl && provider.apiUrl.trim() !== '') {
             options.baseURL = provider.apiUrl;
         }
-        if (provider.apiKey.trim() !== "") {
+        if (provider.apiKey.trim() !== '') {
             options.apiKey = provider.apiKey;
         }
         return options;
@@ -193,7 +213,7 @@ export class ModelProviderService {
 
     private decryptApiKey = (encryptedKey?: string): string => {
         if (!encryptedKey) {
-            return "";
+            return '';
         }
         return this.secretStore.decrypt(encryptedKey);
     };
@@ -206,20 +226,23 @@ export class ModelProviderService {
     ): Promise<NewModel[]> {
         try {
             const response = await fetch(url, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
             });
             if (!response.ok) {
                 this.logger.error(`${providerName} API Error:`, await response.text());
                 return [];
             }
             const data = await response.json();
-            return (data[dataKey] as T[]).map((item) => ({
-                reasoning: false,
-                inputModalities: [],
-                outputModalities: [],
-                ...mapper(item),
-            } as NewModel));
+            return (data[dataKey] as T[]).map(
+                (item) =>
+                    ({
+                        reasoning: false,
+                        inputModalities: [],
+                        outputModalities: [],
+                        ...mapper(item),
+                    }) as NewModel,
+            );
         } catch (err) {
             this.logger.error(`${providerName} Models fetch error:`, err);
             return [];
@@ -229,7 +252,9 @@ export class ModelProviderService {
     private async getModelsFromOllama(provider: ModelProviderCreateInput): Promise<NewModel[]> {
         const baseUrl = (provider.apiUrl && provider.apiUrl.trim()) || ModelProviderService.MODELS_OLLAMA_URL;
         const result = await this.fetchLocalModels<{ name: string; model: string; modified_at: number }>(
-            baseUrl + '/tags', 'Ollama', 'models',
+            baseUrl + '/tags',
+            'Ollama',
+            'models',
             (m) => ({
                 name: m.name,
                 modelId: m.model,
@@ -237,18 +262,53 @@ export class ModelProviderService {
                 lastUpdatedByProvider: new Date(m.modified_at),
             }),
         );
+
+        await Promise.all(
+            result.map(async (m) => {
+                try {
+                    const res = await fetch(baseUrl + '/show', {
+                        method: 'POST',
+                        body: JSON.stringify({ model: m.modelId }),
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.model_info) {
+                            const ctxKey = Object.keys(data.model_info).find((k) => k.endsWith('.context_length'));
+                            if (ctxKey && typeof data.model_info[ctxKey] === 'number') {
+                                m.contextWindow = data.model_info[ctxKey];
+                            }
+                        }
+                    }
+                } catch (e) {
+                    logger.error(`Ollama /show failed for ${m.modelId}`, e);
+                }
+            }),
+        );
+
         return result.sort((a, b) => (b.lastUpdatedByProvider >= a.lastUpdatedByProvider ? 1 : -1));
     }
 
     private async getModelsFromLMStudio(provider: ModelProviderCreateInput): Promise<NewModel[]> {
         const baseUrl = (provider.apiUrl && provider.apiUrl.trim()) || ModelProviderService.MODELS_LMSTUDIO_URL;
-        return this.fetchLocalModels<{ id: string }>(
-            baseUrl + '/models', 'LM Studio', 'data',
+
+        return this.fetchLocalModels<LMStudioModelPayload>(
+            baseUrl.replace(/\/?$/, '') + '/v1/models',
+            'LM Studio',
+            'models',
             (m) => ({
-                name: m.id,
-                modelId: m.id,
+                name: m.display_name || m.id || m.key || '',
+                modelId: m.key || m.id,
                 releaseDate: new Date(),
                 lastUpdatedByProvider: new Date(),
+                description: m.description || m.display_name || m.id || m.key,
+                contextWindow: m.max_context_length,
+                reasoning: !!m.capabilities?.reasoning,
+                inputModalities: m.capabilities?.vision
+                    ? [ModelModalityEnum.TEXT, ModelModalityEnum.IMAGE]
+                    : [ModelModalityEnum.TEXT],
+                outputModalities: [ModelModalityEnum.TEXT],
+                toolCall: !!m.capabilities?.trained_for_tool_use,
             }),
         );
     }
@@ -261,29 +321,29 @@ export class ModelProviderService {
             return result;
         }
 
-        if (catalogEntry.modelsSource === "ollama") {
+        if (catalogEntry.modelsSource === 'ollama') {
             return this.getModelsFromOllama(provider);
         }
 
-        if (catalogEntry.modelsSource === "lmstudio") {
+        if (catalogEntry.modelsSource === 'lmstudio') {
             return this.getModelsFromLMStudio(provider);
         }
 
-        if (catalogEntry.modelsSource === "none") {
+        if (catalogEntry.modelsSource === 'none') {
             this.logger.warn(`Model listing is not supported for provider type: ${provider.type}.`);
             return result;
         }
 
         try {
             const response = await fetch(ModelProviderService.MODELS_DOT_DEV_URL, {
-                method: "GET",
+                method: 'GET',
                 headers: {
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
             });
 
             if (!response.ok) {
-                this.logger.error("Models.dev API Error:", await response.text());
+                this.logger.error('Models.dev API Error:', await response.text());
                 return result;
             }
 
@@ -303,16 +363,17 @@ export class ModelProviderService {
                     toolCall: m.tool_call,
                     inputModalities: m.modalities.input,
                     outputModalities: m.modalities.output,
-                    ...(m.status !== undefined && {status: m.status}),
+                    ...(m.limit?.context !== undefined && { contextWindow: m.limit.context }),
+                    ...(m.limit?.output !== undefined && { maxOutputWindow: m.limit.output }),
+                    ...(m.status !== undefined && { status: m.status }),
                 });
             }
 
             result.sort((a, b) => {
                 return b.lastUpdatedByProvider >= a.lastUpdatedByProvider ? 1 : -1;
             });
-
         } catch (err) {
-            this.logger.error("Models.dev fetch error:", err);
+            this.logger.error('Models.dev fetch error:', err);
         }
 
         return result;
