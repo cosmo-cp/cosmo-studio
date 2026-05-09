@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 export const workflowStatus = pgEnum('workflow_status', ['active', 'archived']);
 export const workflowRunStatus = pgEnum('workflow_run_status', [
@@ -38,7 +38,9 @@ export const workflowVersion = pgTable('WorkflowVersion', {
     graph: jsonb('graph').notNull(),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-});
+}, (table) => ({
+    workflowVersionPerWorkflow: uniqueIndex('workflow_version_workflow_id_version_idx').on(table.workflowId, table.version),
+}));
 
 export const workflowRun = pgTable('WorkflowRun', {
     id: uuid('id').primaryKey().notNull().defaultRandom(),

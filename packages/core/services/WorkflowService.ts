@@ -32,6 +32,11 @@ export class WorkflowService {
         await this.workflowRepository.delete(id);
     }
 
+    // Returns all version snapshots for a workflow.
+    public async getWorkflowVersions(workflowId: string): Promise<WorkflowVersion[]> {
+        return this.workflowRepository.getVersionsForWorkflow(workflowId);
+    }
+
     // Produces a new immutable workflow version from a graph snapshot.
     public async createWorkflowVersion(workflowId: string, graph: WorkflowGraph): Promise<WorkflowVersion> {
         return this.workflowRepository.createVersion(workflowId, graph);

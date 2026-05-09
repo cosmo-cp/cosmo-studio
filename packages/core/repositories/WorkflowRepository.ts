@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { and, desc, eq, ilike, SQL } from 'drizzle-orm';
+import { desc, eq, ilike, or, SQL } from 'drizzle-orm';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { workflow, workflowVersion } from '../database/schema/schema';
 import { CORETYPES } from '../types/types';
@@ -17,12 +17,13 @@ export class WorkflowRepository {
     public async getAll(searchQuery: string | null): Promise<Workflow[]> {
         const conditions: SQL[] = [];
         if (searchQuery?.trim()) {
-            conditions.push(
-                ilike(workflow.title, `%${searchQuery.trim()}%`),
-            );
+            const query = `%${searchQuery.trim()}%`;
+            conditions.push(ilike(workflow.title, query));
+            conditions.push(ilike(workflow.summary, query));
         }
 
-        return this.db.select().from(workflow).where(and(...conditions)).orderBy(desc(workflow.updatedAt));
+        const whereClause = conditions.length > 0 ? or(...conditions) : undefined;
+        return this.db.select().from(workflow).where(whereClause).orderBy(desc(workflow.updatedAt));
     }
 
     // Looks up a workflow by id for CRUD flows.
@@ -57,6 +58,14 @@ export class WorkflowRepository {
     // Deletes a workflow and cascades related versions/runs/events.
     public async delete(id: string): Promise<void> {
         await this.db.delete(workflow).where(eq(workflow.id, id));
+    }
+
+    // Loads all versions for a workflow in descending order.
+    public async getVersionsForWorkflow(workflowId: string): Promise<WorkflowVersion[]> {
+        return this.db.query.workflowVersion.findMany({
+            where: eq(workflowVersion.workflowId, workflowId),
+            orderBy: desc(workflowVersion.version),
+        });
     }
 
     // Creates the next immutable version for a workflow graph snapshot.
