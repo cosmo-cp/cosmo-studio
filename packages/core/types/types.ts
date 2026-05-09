@@ -9,6 +9,8 @@ const CORETYPES = {
     CommandRepository: Symbol.for('CommandRepository'),
     McpServerRepository: Symbol.for('McpServerRepository'),
     WebSearchConfigRepository: Symbol.for("WebSearchConfigRepository"),
+    WorkflowRepository: Symbol.for('WorkflowRepository'),
+    WorkflowRunRepository: Symbol.for('WorkflowRunRepository'),
     // services
     ChatService: Symbol.for('ChatService'),
     MessageService: Symbol.for('MessageService'),
@@ -18,6 +20,8 @@ const CORETYPES = {
     McpServerService: Symbol.for('McpServerService'),
     McpClientManager: Symbol.for('McpClientManager'),
     WebSearchConfigService: Symbol.for("WebSearchConfigService"),
+    WorkflowService: Symbol.for('WorkflowService'),
+    WorkflowRunService: Symbol.for('WorkflowRunService'),
 };
 
 export { CORETYPES };

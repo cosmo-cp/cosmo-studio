@@ -18,6 +18,10 @@ import { McpClientManager } from './services/McpClientManager';
 import {WebSearchConfigRepository} from "./repositories/WebSearchConfigRepository";
 import {WebSearchConfigService} from "./services/WebSearchConfigService";
 import {Base64SecretStore, type SecretStore} from "./platform/SecretStore";
+import { WorkflowRepository } from './repositories/WorkflowRepository';
+import { WorkflowRunRepository } from './repositories/WorkflowRunRepository';
+import { WorkflowService } from './services/WorkflowService';
+import { WorkflowRunService } from './services/WorkflowRunService';
 
 const coreContainer = new Container();
 
@@ -38,6 +42,8 @@ coreContainer.bind<McpServerRepository>(CORETYPES.McpServerRepository).to(McpSer
 coreContainer.bind<WebSearchConfigRepository>(CORETYPES.WebSearchConfigRepository)
     .to(WebSearchConfigRepository)
     .inSingletonScope();
+coreContainer.bind<WorkflowRepository>(CORETYPES.WorkflowRepository).to(WorkflowRepository).inSingletonScope();
+coreContainer.bind<WorkflowRunRepository>(CORETYPES.WorkflowRunRepository).to(WorkflowRunRepository).inSingletonScope();
 
 // Services
 coreContainer.bind<ChatService>(CORETYPES.ChatService).to(ChatService).inSingletonScope();
@@ -50,5 +56,7 @@ coreContainer.bind<McpClientManager>(CORETYPES.McpClientManager).to(McpClientMan
 coreContainer.bind<WebSearchConfigService>(CORETYPES.WebSearchConfigService)
     .to(WebSearchConfigService)
     .inSingletonScope();
+coreContainer.bind<WorkflowService>(CORETYPES.WorkflowService).to(WorkflowService).inSingletonScope();
+coreContainer.bind<WorkflowRunService>(CORETYPES.WorkflowRunService).to(WorkflowRunService).inSingletonScope();
 
 export { coreContainer };
