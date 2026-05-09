@@ -131,7 +131,6 @@ import {
     NewPersona,
     McpServer,
     McpServerCreateInput,
-    McpServerUpdateInput
     McpServerUpdateInput,
     McpToolDefinition,
     CommandCreateInput,
@@ -140,6 +139,12 @@ import {
     CommandUpdateInput,
     WebSearchConfigSaveInput,
     WebSearchConfigView,
+    Workflow,
+    WorkflowCreateInput,
+    WorkflowGraph,
+    WorkflowVersion,
+    WorkflowRun,
+    WorkflowRunInsert,
 } from '../../packages/core/dto';
 import {WebSearchProviderTypeEnum} from '../../packages/core/database/schema/webSearchConfigSchema';
 import {UIMessage, UIMessageChunk} from "ai";
@@ -302,6 +307,12 @@ import type {
     CommandUpdateInput,
     WebSearchConfigSaveInput,
     WebSearchConfigView,
+    Workflow,
+    WorkflowCreateInput,
+    WorkflowGraph,
+    WorkflowVersion,
+    WorkflowRun,
+    WorkflowRunInsert,
 } from "core/dto";
 import type {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
 import type {UIMessage} from "ai";
