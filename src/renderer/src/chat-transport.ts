@@ -138,8 +138,9 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
                 }
             },
             cancel() {
+                // Preserve in-flight generation when the UI disconnects (e.g. switching chats).
+                // Explicit user cancellation is handled via the abort signal path above.
                 cleanup();
-                window.api.streaming.abortMessage({ streamChannel });
             },
         });
         return Promise.resolve(stream);

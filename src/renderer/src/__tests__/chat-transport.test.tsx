@@ -55,7 +55,7 @@ describe('IpcChatTransport', () => {
         expect(streaming.abortMessage).not.toHaveBeenCalled();
     });
 
-    it('removes listeners and aborts when send stream is canceled', async () => {
+    it('removes listeners without aborting when send stream is canceled', async () => {
         const streaming = createStreamingApiMock();
         setWindowApi(streaming);
 
@@ -80,7 +80,7 @@ describe('IpcChatTransport', () => {
         await stream.getReader().cancel();
 
         expect(streaming.removeListeners).toHaveBeenCalledWith('chat-stream-chat-2');
-        expect(streaming.abortMessage).toHaveBeenCalledWith({ streamChannel: 'chat-stream-chat-2' });
+        expect(streaming.abortMessage).not.toHaveBeenCalled();
     });
 
     it('surfaces sendMessage failures and cleans listeners', async () => {
@@ -104,6 +104,28 @@ describe('IpcChatTransport', () => {
         expect(streaming.removeListeners).toHaveBeenCalledWith('chat-stream-chat-3');
     });
 
+
+
+    it('aborts streaming when the abort signal fires', async () => {
+        const streaming = createStreamingApiMock();
+        setWindowApi(streaming);
+
+        const transport = new IpcChatTransport();
+        const controller = new AbortController();
+        await transport.sendMessages({
+            trigger: 'submit-message',
+            chatId: 'chat-5',
+            messageId: undefined,
+            messages: [] as UIMessage[],
+            abortSignal: controller.signal,
+            metadata: { modelId: 'openai:gpt-4o' },
+        });
+
+        controller.abort();
+
+        expect(streaming.abortMessage).toHaveBeenCalledWith({ streamChannel: 'chat-stream-chat-5' });
+        expect(streaming.removeListeners).toHaveBeenCalledWith('chat-stream-chat-5');
+    });
     it('fails early when model metadata is missing', async () => {
         const streaming = createStreamingApiMock();
         const chat = createChatApiMock();
