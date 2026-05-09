@@ -232,6 +232,13 @@
       "when": 1778258031718,
       "tag": "0032_aberrant_oracle",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1778330471695,
+      "tag": "0033_special_emma_frost",
+      "breakpoints": true
     }
   ]
 }
