@@ -1,5 +1,6 @@
 const CORETYPES = {
     DatabaseManager: Symbol.for('DatabaseManager'),
+    SecretStore: Symbol.for("SecretStore"),
     // repositories
     ChatRepository: Symbol.for('ChatRepository'),
     MessageRepository: Symbol.for('MessageRepository'),
@@ -7,6 +8,7 @@ const CORETYPES = {
     PersonaRepository: Symbol.for('PersonaRepository'),
     CommandRepository: Symbol.for('CommandRepository'),
     McpServerRepository: Symbol.for('McpServerRepository'),
+    WebSearchConfigRepository: Symbol.for("WebSearchConfigRepository"),
     // services
     ChatService: Symbol.for('ChatService'),
     MessageService: Symbol.for('MessageService'),
@@ -15,6 +17,7 @@ const CORETYPES = {
     CommandService: Symbol.for('CommandService'),
     McpServerService: Symbol.for('McpServerService'),
     McpClientManager: Symbol.for('McpClientManager'),
+    WebSearchConfigService: Symbol.for("WebSearchConfigService"),
 };
 
 export { CORETYPES };

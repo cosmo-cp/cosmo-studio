@@ -1,22 +1,23 @@
-import { inject, injectable } from 'inversify';
-import { CORETYPES } from '../types/types';
-import { ModelProviderRepository } from '../repositories/ModelProviderRepository';
-import { ModelProvider, ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels } from '../dto';
-import { ModelProviderTypeEnum, ModelModalityEnum } from '../database/schema/modelProviderSchema';
-import { safeStorage } from 'electron';
-import { ProviderV3 } from '@ai-sdk/provider';
-import { AnthropicProviderSettings, createAnthropic } from '@ai-sdk/anthropic';
-import { createGoogleGenerativeAI, GoogleGenerativeAIProviderSettings } from '@ai-sdk/google';
-import { createOpenAI, OpenAIProviderSettings } from '@ai-sdk/openai';
-import { createOllama, OllamaProviderSettings } from 'ollama-ai-provider-v2';
-import { createProviderRegistry, ProviderRegistryProvider } from 'ai';
-import { logger } from '../../../src/main/logger';
-import { createXai } from '@ai-sdk/xai';
-import { createMoonshotAI } from '@ai-sdk/moonshotai';
-import { createGroq } from '@ai-sdk/groq';
-import { createMistral } from '@ai-sdk/mistral';
-import { ProviderCatalogByType } from '../providerCatalog';
-import { createDeepSeek } from '@ai-sdk/deepseek';
+import {inject, injectable} from "inversify";
+import {CORETYPES} from "../types/types";
+import {ModelProviderRepository} from "../repositories/ModelProviderRepository";
+import {ModelProvider, ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels} from "../dto";
+import { ModelModalityEnum, ModelProviderTypeEnum } from '../database/schema/modelProviderSchema';
+import {ProviderV3} from "@ai-sdk/provider";
+import {AnthropicProviderSettings, createAnthropic} from "@ai-sdk/anthropic";
+import {createGoogleGenerativeAI, GoogleGenerativeAIProviderSettings} from "@ai-sdk/google";
+import {createOpenAI, OpenAIProviderSettings} from "@ai-sdk/openai";
+import {createOllama, OllamaProviderSettings} from "ollama-ai-provider-v2";
+import {createProviderRegistry, ProviderRegistryProvider} from "ai";
+import type {CoreLogger} from "../platform/CoreLogger";
+import {getCoreLogger} from "../platform/CoreLogger";
+import {Base64SecretStore, type SecretStore} from "../platform/SecretStore";
+import {createXai} from "@ai-sdk/xai";
+import {createMoonshotAI} from "@ai-sdk/moonshotai";
+import {createGroq} from '@ai-sdk/groq';
+import {createMistral} from '@ai-sdk/mistral';
+import {ProviderCatalogByType} from "../providerCatalog";
+import {createDeepSeek} from "@ai-sdk/deepseek";
 // import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { createCohere } from '@ai-sdk/cohere';
 import { createHuggingFace } from '@ai-sdk/huggingface';
@@ -78,7 +79,10 @@ export class ModelProviderService {
                 }),
         };
 
-    constructor(@inject(CORETYPES.ModelProviderRepository) repository: ModelProviderRepository) {
+    constructor(
+        @inject(CORETYPES.ModelProviderRepository) repository: ModelProviderRepository,
+        @inject(CORETYPES.SecretStore) private readonly secretStore: SecretStore = new Base64SecretStore()
+    ) {
         this.repository = repository;
         this.updateModelProviderRegistry();
     }
@@ -138,7 +142,7 @@ export class ModelProviderService {
             await this.repository.deleteProviderById(providerId);
             this.updateModelProviderRegistry();
         } catch (error) {
-            logger.error(error);
+            this.logger.error("Failed to delete provider", error);
             throw error;
         }
     }
@@ -173,7 +177,7 @@ export class ModelProviderService {
                 }
                 this.modelProviderRegistry = createProviderRegistry(registryObject);
             })
-            .catch((error) => logger.error(error));
+            .catch((error) => this.logger.error("Failed to update model provider registry", error));
     }
 
     private createLocalOptions(provider: ModelProviderLite): LocalProviderOptions {
@@ -211,11 +215,7 @@ export class ModelProviderService {
         if (!encryptedKey) {
             return '';
         }
-        const buffer = Buffer.from(encryptedKey, 'base64');
-        if (safeStorage.isEncryptionAvailable()) {
-            return safeStorage.decryptString(buffer);
-        }
-        return buffer.toString('utf-8');
+        return this.secretStore.decrypt(encryptedKey);
     };
 
     private async fetchLocalModels<T>(
@@ -230,7 +230,7 @@ export class ModelProviderService {
                 headers: { 'Content-Type': 'application/json' },
             });
             if (!response.ok) {
-                logger.error(`${providerName} API Error:`, await response.text());
+                this.logger.error(`${providerName} API Error:`, await response.text());
                 return [];
             }
             const data = await response.json();
@@ -244,7 +244,7 @@ export class ModelProviderService {
                     }) as NewModel,
             );
         } catch (err) {
-            logger.error(`${providerName} Models fetch error:`, err);
+            this.logger.error(`${providerName} Models fetch error:`, err);
             return [];
         }
     }
@@ -281,7 +281,7 @@ export class ModelProviderService {
                         }
                     }
                 } catch (e) {
-                    logger.error(`Ollama /show failed for ${m.modelId}`, e);
+                    getCoreLogger().error(`Ollama /show failed for ${m.modelId}`, e);
                 }
             }),
         );
@@ -317,7 +317,7 @@ export class ModelProviderService {
         const result: NewModel[] = [];
         const catalogEntry = ProviderCatalogByType[provider.type];
         if (!catalogEntry) {
-            logger.warn(`Model listing is not supported for provider type: ${provider.type}.`);
+            this.logger.warn(`Model listing is not supported for provider type: ${provider.type}.`);
             return result;
         }
 
@@ -330,7 +330,7 @@ export class ModelProviderService {
         }
 
         if (catalogEntry.modelsSource === 'none') {
-            logger.warn(`Model listing is not supported for provider type: ${provider.type}.`);
+            this.logger.warn(`Model listing is not supported for provider type: ${provider.type}.`);
             return result;
         }
 
@@ -343,7 +343,7 @@ export class ModelProviderService {
             });
 
             if (!response.ok) {
-                logger.error('Models.dev API Error:', await response.text());
+                this.logger.error('Models.dev API Error:', await response.text());
                 return result;
             }
 
@@ -373,9 +373,13 @@ export class ModelProviderService {
                 return b.lastUpdatedByProvider >= a.lastUpdatedByProvider ? 1 : -1;
             });
         } catch (err) {
-            logger.error('Models.dev fetch error:', err);
+            this.logger.error('Models.dev fetch error:', err);
         }
 
         return result;
+    }
+
+    private get logger(): CoreLogger {
+        return getCoreLogger();
     }
 }

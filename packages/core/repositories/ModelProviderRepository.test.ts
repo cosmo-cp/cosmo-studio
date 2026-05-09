@@ -3,17 +3,15 @@ import { eq } from 'drizzle-orm';
 import type { DatabaseManager } from '../database/DatabaseManager';
 import { model, modelProvider, ModelProviderTypeEnum } from '../database/schema/modelProviderSchema';
 import type { ModelProviderCreateInput, NewModel } from '../dto';
+import type {SecretStore} from "../platform/SecretStore"
 import { createTestDb, type TestDb } from '../test-utils/testDb';
 import { ModelProviderRepository } from './ModelProviderRepository';
 
-const safeStorage = vi.hoisted(() => ({
-    isEncryptionAvailable: vi.fn(() => true),
-    encryptString: vi.fn((value: string) => Buffer.from(`enc:${value}`)),
-}));
-
-vi.mock('electron', () => ({
-    safeStorage,
-}));
+const secretStore = vi.hoisted(() => ({
+  isEncryptionAvailable: vi.fn(() => true),
+  encrypt: vi.fn((value: string) => Buffer.from(`enc:${value}`).toString("base64")),
+  decrypt: vi.fn((value: string) => Buffer.from(value, "base64").toString("utf-8")),
+}))
 
 describe('ModelProviderRepository', () => {
     let testDb: TestDb;
@@ -24,7 +22,7 @@ describe('ModelProviderRepository', () => {
         const databaseManager = {
             getInstance: () => testDb.db,
         } as unknown as DatabaseManager;
-        repository = new ModelProviderRepository(databaseManager);
+        repository = new ModelProviderRepository(databaseManager, secretStore as SecretStore);
     });
 
     afterAll(async () => {
@@ -33,8 +31,9 @@ describe('ModelProviderRepository', () => {
 
     beforeEach(async () => {
         vi.useRealTimers();
-        safeStorage.isEncryptionAvailable.mockReturnValue(true);
-        safeStorage.encryptString.mockClear();
+        secretStore.isEncryptionAvailable.mockReturnValue(true);
+        secretStore.encrypt.mockImplementation((value: string) => Buffer.from(`enc:${value}`).toString("base64"))
+    secretStore.encrypt.mockClear();
         await testDb.db.delete(model);
         await testDb.db.delete(modelProvider);
     });
@@ -59,7 +58,7 @@ describe('ModelProviderRepository', () => {
         const created = await repository.addProvider(provider, models);
         expect(created.name).toBe('OpenAI');
         expect(created.models).toHaveLength(1);
-        expect(safeStorage.encryptString).toHaveBeenCalledWith('secret');
+        expect(secretStore.encrypt).toHaveBeenCalledWith('secret');
 
         const expectedEncrypted = Buffer.from('enc:secret').toString('base64');
         const storedProviders = await testDb.db.select().from(modelProvider);
@@ -124,13 +123,14 @@ describe('ModelProviderRepository', () => {
 
         await repository.updateProvider(created.id, { apiKey: '' } as Partial<ModelProviderCreateInput>);
 
-        expect(safeStorage.encryptString).toHaveBeenCalledWith('');
+        expect(secretStore.encrypt).toHaveBeenCalledWith('');
         const [stored] = await testDb.db.select().from(modelProvider).where(eq(modelProvider.id, created.id)).limit(1);
         expect(stored.apiKey).toBe(Buffer.from('enc:').toString('base64'));
     });
 
-    it('falls back to base64 when encryption is unavailable', async () => {
-        safeStorage.isEncryptionAvailable.mockReturnValue(false);
+  it("falls back to base64 when encryption is unavailable", async () => {
+    secretStore.isEncryptionAvailable.mockReturnValue(false)
+    secretStore.encrypt.mockImplementation((value: string) => Buffer.from(value, "utf-8").toString("base64"))
 
         await repository.addProvider(
             {
@@ -142,7 +142,7 @@ describe('ModelProviderRepository', () => {
             [],
         );
 
-        expect(safeStorage.encryptString).not.toHaveBeenCalled();
+        expect(secretStore.encrypt).toHaveBeenCalledWith("plain");
 
         const [stored] = await testDb.db.select().from(modelProvider).limit(1);
         expect(stored.apiKey).toBe(Buffer.from('plain', 'utf-8').toString('base64'));

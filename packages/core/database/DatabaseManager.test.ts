@@ -5,7 +5,8 @@ const drizzleMock = vi.hoisted(() => vi.fn());
 const runMigrationsMock = vi.hoisted(() => vi.fn());
 const logger = vi.hoisted(() => ({
     info: vi.fn(),
-    error: vi.fn(),
+    warn: vi.fn(),
+  error: vi.fn(),
 }));
 
 vi.mock('@electric-sql/pglite', () => ({
@@ -26,14 +27,16 @@ vi.mock('../../../src/main/logger', () => ({
     logger,
 }));
 
-import { DatabaseManager } from './DatabaseManager';
+import {DatabaseManager} from "./DatabaseManager"
+import {setCoreLogger} from "../platform/CoreLogger"
 
-describe('DatabaseManager', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        (DatabaseManager as unknown as { instance: unknown; initPromise: unknown }).instance = null;
-        (DatabaseManager as unknown as { instance: unknown; initPromise: unknown }).initPromise = null;
-    });
+describe("DatabaseManager", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setCoreLogger(logger)
+    ;(DatabaseManager as unknown as {instance: unknown; initPromise: unknown}).instance = null
+    ;(DatabaseManager as unknown as {instance: unknown; initPromise: unknown}).initPromise = null
+  })
 
     it('initializes drizzle once and exposes the instance', async () => {
         const connection = { connected: true };

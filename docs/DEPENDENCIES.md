@@ -15,6 +15,13 @@ This document maps `package.json` dependencies to their official documentation (
 | `reflect-metadata`          | Decorators + metadata (DI + IPC decorators)       | https://rbuckton.github.io/reflect-metadata/            |
 | `inversify`                 | Dependency injection container                    | https://inversify.io/                                   |
 | `zod`                       | Runtime validation (especially at IPC boundaries) | https://zod.dev/                                        |
+| `@nestjs/common` | NestJS decorators/controllers for the HTTP runtime | https://docs.nestjs.com/ |
+| `@nestjs/core` | NestJS application bootstrap for the HTTP runtime | https://docs.nestjs.com/ |
+| `@nestjs/platform-express` | Express platform adapter for NestJS | https://docs.nestjs.com/ |
+| `@nestjs/serve-static` | Serving the static renderer from the HTTP runtime | https://www.nestjs.com/packages/nestjs-serve-static |
+| `rxjs` | NestJS runtime peer dependency | https://rxjs.dev/ |
+| `superjson` | HTTP RPC payload codec for `Date` and structured values | https://github.com/flightcontrolhq/superjson#readme |
+| `@types/express` | Express response/request types for Nest controllers | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/express |
 | `drizzle-orm`               | ORM for the embedded database                     | https://orm.drizzle.team/docs/overview                  |
 | `drizzle-zod`               | Zod schemas from Drizzle schema                   | https://orm.drizzle.team/docs/zod                       |
 | `@electric-sql/pglite`      | Embedded Postgres (PGlite) runtime                | https://pglite.dev/                                     |
@@ -63,6 +70,8 @@ This document maps `package.json` dependencies to their official documentation (
 | -------------------------- | -------------------------------------------- | --------------------------------------------------------------------------- |
 | `next`                     | Next.js App Router                           | https://nextjs.org/docs                                                     |
 | `react` / `react-dom`      | UI runtime                                   | https://react.dev/                                                          |
+| `@reduxjs/toolkit` | Renderer-wide state management and async thunks | https://redux-toolkit.js.org/ |
+| `react-redux` | React bindings for Redux state | https://react-redux.js.org/ |
 | `next-themes`              | Theme switching                              | https://github.com/pacocoursey/next-themes#readme                           |
 | `tailwindcss`              | Styling                                      | https://tailwindcss.com/docs                                                |
 | `@tailwindcss/postcss`     | Tailwind PostCSS integration                 | https://tailwindcss.com/docs/installation/using-postcss                     |

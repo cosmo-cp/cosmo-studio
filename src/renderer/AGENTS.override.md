@@ -9,6 +9,9 @@ This file applies to changes under `src/renderer/`.
     - Production builds are **static** and written to `src/renderer/out/`.
     - Do not rely on server-only features (API routes, server actions, runtime secrets).
 - In Electron dev, the UI is served by `next dev` on `http://localhost:3000` and loaded by `src/main/index.ts`.
+- In HTTP dev, the UI is served by `next dev` on `http://localhost:3000` and talks to Nest on `http://127.0.0.1:4000/api`.
+- `NEXT_PUBLIC_COSMO_BACKEND=electron|http` selects the runtime adapter at build/dev time.
+- `NEXT_PUBLIC_COSMO_API_BASE` defaults to `/api` for HTTP builds.
 
 ## Development constraints (important)
 
@@ -17,7 +20,14 @@ This file applies to changes under `src/renderer/`.
 ## Process boundary rules
 
 - Renderer must not import Node/Electron APIs.
-- All privileged operations go through `window.api` (preload).
+- All privileged operations go through preload-backed capabilities.
+- Renderer components should not call `window.api` directly:
+  - Use the root Redux store, selectors, and thunks for cached request/response flows.
+  - Keep direct preload usage isolated to renderer adapters such as `src/renderer/src/lib/app-data-source.ts` and streaming transport code such as `src/renderer/src/chat-transport.ts`.
+- Renderer components should not branch on Electron versus HTTP:
+  - Request/response backend selection belongs in `src/renderer/src/lib/app-data-source.ts`.
+  - Streaming backend selection belongs in `src/renderer/src/chat-transport.ts`.
+  - Generated HTTP RPC calls live in `src/renderer/src/lib/generated-http-api.ts` and should not be hand-edited.
 - Prefer `import type` when consuming `core/dto` types to avoid bundling heavy runtime code:
     - Example: `import type {Chat} from "core/dto";`
 
@@ -66,12 +76,15 @@ Apply the highest-impact rules first:
 
 ## Data flow conventions
 
-- Prefer a single “source of truth” for cached UI state.
+- Prefer a single renderer-wide Redux store as the source of truth for cached UI state.
+- Keep side effects in Redux thunks or adapter modules, not in reducers or presentation components.
 - Keep renderer logic focused on presentation + orchestration:
     - DB queries, encryption, provider registries belong in `packages/core` and/or main controllers.
+- Resolve backend-specific data access behind `src/renderer/src/lib/app-data-source.ts` so the same thunk layer can talk to Electron preload or HTTP RPC.
 - For streaming chat:
-    - Renderer uses `@ai-sdk/react` + `IpcChatTransport` (`src/renderer/src/chat-transport.ts`).
-    - Ensure stream channels are stable (`chat-stream-${chatId}`) and all listeners are cleaned up.
+    - Renderer uses `@ai-sdk/react` and `createChatTransport()` (`src/renderer/src/chat-transport.ts`).
+    - Electron builds use `IpcChatTransport`; ensure stream channels are stable (`chat-stream-${chatId}`) and all listeners are cleaned up.
+  - HTTP builds use AI SDK `DefaultChatTransport` against `POST /api/chat`.
 
 ## Testing expectations (renderer)
 

@@ -34,6 +34,8 @@ import type { ProviderWithModels } from 'core/dto';
 import ProviderIcon from '@/components/provider-icon';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
+import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
+import {loadProviders} from "@/lib/store/providers-store";
 
 const MODEL_NAME_COLORS = [
     'text-emerald-600 dark:text-emerald-400',
@@ -402,7 +404,6 @@ interface MessagesProps {
     chatId: string;
     status: UseChatHelpers<UIMessage>['status'];
     messages: UIMessage[];
-    regenerate: UseChatHelpers<UIMessage>['regenerate'];
     searchQuery?: string;
     currentMatchIndex?: number;
     onMatchesFound?: (count: number) => void;
@@ -417,26 +418,17 @@ function PureMessages({
     onMatchesFound,
     addToolApprovalResponse,
 }: MessagesProps) {
+    const dispatch = useAppDispatch();
+    const providers = useAppSelector((state) => state.providers.items);
+    const providersStatus = useAppSelector((state) => state.providers.status);
     const { resolvedTheme } = useTheme();
-    const [providers, setProviders] = useState<ProviderWithModels[]>([]);
     const prevMatchIndexRef = useRef<number | null>(null);
 
     useEffect(() => {
-        let mounted = true;
-        window.api.modelProvider
-            .getProvidersWithModels()
-            .then((list) => {
-                if (mounted) {
-                    setProviders(list);
-                }
-            })
-            .catch((error) => {
-                console.error('Failed to load providers', error);
-            });
-        return () => {
-            mounted = false;
-        };
-    }, []);
+        if (providersStatus === "idle") {
+            void dispatch(loadProviders());
+        }
+    }, [dispatch, providersStatus]);
 
     const providersByName = useMemo(() => {
         return new Map(providers.map((provider) => [provider.name, provider]));

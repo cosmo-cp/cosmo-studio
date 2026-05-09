@@ -10,7 +10,8 @@ This file applies to changes under `packages/`.
     - Drizzle schema: `packages/core/database/schema/*`
     - Repositories: `packages/core/repositories/*`
     - Services: `packages/core/services/*`
-    - DI container: `packages/core/inversify.config.ts`
+    - Platform interfaces: `packages/core/platform/*`
+  - DI container: `packages/core/inversify.config.ts`
 
 ## What belongs in `core`
 
@@ -24,7 +25,11 @@ This file applies to changes under `packages/`.
 - Keep `core` as environment-agnostic as practical:
     - Prefer not importing from `src/main` or `src/renderer`.
     - Prefer interfaces + DI over hard dependencies on Electron.
-- Note: Today, `core` uses Electron’s `safeStorage` for API key encryption and imports the main logger in a few places. Avoid expanding this coupling; if you add more platform concerns, factor them behind injectable adapters.
+- `core` must not import Electron, `safeStorage`, or `src/main/logger`.
+- Platform concerns belong behind injectable adapters:
+  - `SecretStore` for provider/web-search key encryption.
+  - `CoreLogger` for runtime-independent logging.
+- Electron and HTTP provide their own bindings, so do not assume encrypted DB rows can move between runtime data directories.
 
 ## Database rules
 

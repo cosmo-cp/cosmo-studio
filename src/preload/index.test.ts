@@ -31,18 +31,19 @@ describe('preload index', () => {
         const { api } = await import('./api');
         await import('./index');
 
-        expect(exposeInMainWorld).toHaveBeenCalledWith('api', api);
-        expect(Object.keys(api)).toEqual([
-            'chat',
-            'modelProvider',
-            'message',
-            'persona',
-            'command',
-            'mcpServer',
-            'streaming',
-        ]);
-        expect(api).not.toHaveProperty('ipcRenderer');
-    });
+    expect(exposeInMainWorld).toHaveBeenCalledWith("api", api)
+    expect(Object.keys(api)).toEqual([
+      "chat",
+      "modelProvider",
+      "message",
+      "persona",
+      "command",
+      "mcpServer",
+      "webSearch",
+      "streaming",
+    ])
+    expect(api).not.toHaveProperty("ipcRenderer")
+  })
 
     it('wires streaming listeners and removes them', async () => {
         const { api } = await import('./api');

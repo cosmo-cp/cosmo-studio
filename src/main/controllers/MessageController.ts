@@ -1,31 +1,35 @@
 import { inject, injectable } from 'inversify';
-import { CORETYPES } from '../../../packages/core/types/types';
+import { z} from "zod";
+import {CORETYPES } from '../../../packages/core/types/types';
 import { MessageService } from '../../../packages/core/services/MessageService';
 import { Message, NewMessage } from '../../../packages/core/dto';
 import { IpcController, IpcHandler } from '../ipc/Decorators';
 import { UIMessage } from 'ai';
+
+const newMessageSchema = z.custom<NewMessage>();
+const messageUpdateSchema = z.custom<Partial<NewMessage>>();
 
 @injectable()
 @IpcController('message')
 export class MessageController {
     constructor(@inject(CORETYPES.MessageService) private messageService: MessageService) {}
 
-    @IpcHandler('getByChat')
+    @IpcHandler("getByChat", z.tuple([z.string().min(1)]))
     public async getByChat(chatId: string): Promise<UIMessage[]> {
         return this.messageService.getMessagesByChatId(chatId);
     }
 
-    @IpcHandler('save')
+    @IpcHandler("save", z.tuple([newMessageSchema]))
     public async save(newMessage: NewMessage): Promise<Message> {
         return this.messageService.createMessage(newMessage);
     }
 
-    @IpcHandler('update')
+    @IpcHandler("update", z.tuple([z.string().min(1), messageUpdateSchema]))
     public async update(id: string, updates: Partial<NewMessage>) {
         return this.messageService.updateMessage(id, updates);
     }
 
-    @IpcHandler('delete')
+    @IpcHandler("delete", z.tuple([z.string().min(1)]))
     public async delete(id: string) {
         return this.messageService.deleteMessage(id);
     }

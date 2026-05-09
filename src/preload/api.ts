@@ -18,11 +18,15 @@ import {
     McpServer,
     McpServerCreateInput,
     McpServerUpdateInput,
+    McpToolDefinition,
     CommandCreateInput,
     CommandDefinition,
     CommandExecution,
     CommandUpdateInput,
+    WebSearchConfigSaveInput,
+    WebSearchConfigView,
 } from '../../packages/core/dto';
+import {WebSearchProviderTypeEnum} from '../../packages/core/database/schema/webSearchConfigSchema';
 import { UIMessage, UIMessageChunk } from 'ai';
 export interface ChatApi {
     getAllChats(searchQuery: string | null): Promise<Chat[]>;
@@ -87,8 +91,14 @@ export interface McpServerApi {
     disable(id: string): Promise<McpServer>;
     refreshClient(id: string): Promise<void>;
     getClientCount(): Promise<number>;
-    getServerTools(id: string): Promise<Array<{ name: string; title?: string; description?: string }>>;
+    getServerTools(id: string): Promise<McpToolDefinition[]>;
     updateToolApproval(serverId: string, toolName: string, needsApproval: boolean): Promise<McpServer>;
+}
+
+export interface WebSearchApi {
+    getConfig(type: WebSearchProviderTypeEnum): Promise<WebSearchConfigView | null>;
+    saveConfig(input: WebSearchConfigSaveInput): Promise<WebSearchConfigView>;
+    deleteConfig(type: WebSearchProviderTypeEnum): Promise<void>;
 }
 
 export interface StreamingApi {
@@ -107,7 +117,8 @@ export interface Api {
     persona: PersonaApi;
     command: CommandApi;
     mcpServer: McpServerApi;
-    streaming: StreamingApi;
+    webSearch: WebSearchApi;
+  streaming: StreamingApi;
 }
 
 export const api: Api = {
@@ -175,10 +186,15 @@ export const api: Api = {
         updateToolApproval: (serverId: string, toolName: string, needsApproval: boolean) =>
             ipcRenderer.invoke('mcpServer:updateToolApproval', serverId, toolName, needsApproval),
     },
-    streaming: {
-        sendMessage: (args: ChatSendMessageArgs) => ipcRenderer.send('streamingChat:sendMessage', args),
-        abortMessage: (args: ChatAbortArgs) => ipcRenderer.send('streamingChat:abortMessage', args),
-        onData: (channel: string, listener: (data: UIMessageChunk) => void) => {
+    webSearch: {
+    getConfig: (type: WebSearchProviderTypeEnum) => ipcRenderer.invoke('webSearch:getConfig', type),
+    saveConfig: (input: WebSearchConfigSaveInput) => ipcRenderer.invoke('webSearch:saveConfig', input),
+    deleteConfig: (type: WebSearchProviderTypeEnum) => ipcRenderer.invoke('webSearch:deleteConfig', type)
+  },
+  streaming: {
+    sendMessage: (args: ChatSendMessageArgs) => ipcRenderer.send('streamingChat:sendMessage', args),
+    abortMessage: (args: ChatAbortArgs) => ipcRenderer.send('streamingChat:abortMessage', args),
+    onData: (channel: string, listener: (data: UIMessageChunk) => void) => {
             const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);
             ipcRenderer.on(`${channel}-data`, subscription);
         },

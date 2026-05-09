@@ -26,6 +26,12 @@ This document captures UI/UX conventions so new features match the existing Cosm
 - shadcn/ui component primitives + Radix for accessibility.
 - Icons via `lucide-react`.
 - Theme switching via `next-themes`.
+- Renderer-wide shared state lives in a single Redux Toolkit store at the app root.
+- Async renderer data flows should use Redux thunks that resolve the shared app data source adapter.
+- Runtime backend selection is build/dev-time configuration:
+  - `NEXT_PUBLIC_COSMO_BACKEND=electron` uses preload-backed `window.api`.
+  - `NEXT_PUBLIC_COSMO_BACKEND=http` uses the generated HTTP RPC client.
+  - `NEXT_PUBLIC_COSMO_API_BASE` defaults to `/api` for HTTP builds.
 
 ## Guidelines
 
@@ -53,8 +59,23 @@ This document captures UI/UX conventions so new features match the existing Cosm
 - Streaming chat:
     - Always handle failure states (toast + recoverable UI).
     - Clean up IPC listeners when streams end/cancel.
+- Chat page state:
+  - Keep chat history, selected chat, and conversation search state in the root Redux store so sibling panels and settings screens share one source of truth.
+- Settings/stateful resources:
+  - Commands, personas, providers, and MCP servers should load through Redux thunks instead of calling preload APIs directly from components.
+- Backend adapters:
+  - Request/response flows go through `src/renderer/src/lib/app-data-source.ts`.
+  - HTTP RPC calls go through `src/renderer/src/lib/generated-http-api.ts`.
+  - Presentation components should not branch on Electron versus HTTP.
 - Commands:
     - List commands dynamically (built-ins + custom).
     - Allow optional single-argument input and show hints in the UI.
 - Errors:
     - Use `sonner` for user-facing errors; use `logger` for diagnostic logs.
+
+## Streaming transport
+
+- Chat UI uses `createChatTransport()` from `src/renderer/src/chat-transport.ts`.
+- Electron builds use the IPC-backed transport and preload listener cleanup.
+- HTTP builds use AI SDK `DefaultChatTransport` against `POST /api/chat`.
+- Keep model/persona metadata in the transport request metadata, not component-specific backend branches.

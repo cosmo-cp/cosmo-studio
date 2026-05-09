@@ -1,5 +1,14 @@
 import { InferInsertModel, InferSelectModel } from 'drizzle-orm';
-import { chat, mcpServer, message, model, modelProvider, persona, command } from './database/schema/schema';
+import {
+    chat,
+    command,
+    mcpServer,
+    message,
+    model,
+    modelProvider,
+    persona,
+    webSearchConfig,
+} from './database/schema/schema';
 import { UIMessage } from 'ai';
 
 type Optional<T, K extends keyof T> = Omit<T, K> & Pick<Partial<T>, K>;
@@ -56,9 +65,35 @@ export interface CommandExecution {
     resolvedText: string;
 }
 
+export interface McpToolDefinition {
+    name: string;
+    title?: string;
+    description?: string;
+}
+
 export type ProviderWithModels = ModelProviderLite & {
     models: ModelLite[];
 };
+
+export type WebSearchConfig = InferSelectModel<typeof webSearchConfig>;
+export type WebSearchConfigInsert = InferInsertModel<typeof webSearchConfig>;
+export type WebSearchConfigCreateInput = Omit<
+    WebSearchConfigInsert,
+    'id' | 'createdAt' | 'updatedAt'
+>;
+export interface WebSearchConfigView {
+    id: string;
+    createdAt: Date;
+    updatedAt: Date | null;
+    type: WebSearchConfig["type"];
+    enabled: boolean;
+    hasApiKey: boolean;
+}
+export interface WebSearchConfigSaveInput {
+    type: WebSearchConfig["type"];
+    enabled: boolean;
+    apiKey?: string | null;
+}
 
 export type ChatWithMessages = Chat & {
     messages: UIMessage[];

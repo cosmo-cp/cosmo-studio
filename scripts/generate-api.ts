@@ -8,9 +8,17 @@ import { MessageController } from '../src/main/controllers/MessageController';
 import { PersonaController } from '../src/main/controllers/PersonaController';
 import { CommandController } from '../src/main/controllers/CommandController';
 import { McpServerController } from '../src/main/controllers/McpServerController';
-import { generateApiContent, type ControllerSource } from './generate-api-lib';
+import { WebSearchController} from "../src/main/controllers/WebSearchController";
+import {
+    generateApiContent,
+    generateHttpClientContent,
+    generateHttpRpcManifestContent,
+    type ControllerSource
+} from './generate-api-lib';
 
 const apiFilePath = path.resolve(__dirname, '../src/preload/api.ts');
+const httpManifestFilePath = path.resolve(__dirname, '../src/main/http/rpc-manifest.ts');
+const httpClientFilePath = path.resolve(__dirname, '../src/renderer/src/lib/generated-http-api.ts');
 
 const controllers = [
     ChatController,
@@ -20,6 +28,7 @@ const controllers = [
     PersonaController,
     CommandController,
     McpServerController,
+    WebSearchController
 ];
 
 const controllerPaths = {
@@ -30,6 +39,7 @@ const controllerPaths = {
     PersonaController: path.resolve(__dirname, '../src/main/controllers/PersonaController.ts'),
     McpServerController: path.resolve(__dirname, '../src/main/controllers/McpServerController.ts'),
     CommandController: path.resolve(__dirname, '../src/main/controllers/CommandController.ts'),
+    'WebSearchController': path.resolve(__dirname, '../src/main/controllers/WebSearchController.ts'),
 };
 
 const controllerFileContents: { [key: string]: string } = {};
@@ -46,7 +56,13 @@ const controllerSources: ControllerSource[] = controllers.map((controller) => ({
 }));
 
 const apiContent = generateApiContent(controllerSources);
+const httpManifestContent = generateHttpRpcManifestContent(controllerSources);
+const httpClientContent = generateHttpClientContent(controllerSources);
 
 fs.writeFileSync(apiFilePath, apiContent, { encoding: 'utf-8' });
+fs.mkdirSync(path.dirname(httpManifestFilePath), {recursive: true});
+fs.mkdirSync(path.dirname(httpClientFilePath), {recursive: true});
+fs.writeFileSync(httpManifestFilePath, httpManifestContent, {encoding: 'utf-8'});
+fs.writeFileSync(httpClientFilePath, httpClientContent, {encoding: 'utf-8'});
 
 console.log('Successfully generated api.ts');
