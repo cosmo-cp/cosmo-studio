@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "workflow_version_workflow_id_version_idx" ON "WorkflowVersion" USING btree ("workflowId","version");

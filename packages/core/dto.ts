@@ -8,6 +8,10 @@ import {
     modelProvider,
     persona,
     webSearchConfig,
+    workflow,
+    workflowRun,
+    workflowRunEvent,
+    workflowVersion,
 } from './database/schema/schema';
 import { UIMessage } from 'ai';
 
@@ -137,3 +141,23 @@ export type McpServer = InferSelectModel<typeof mcpServer>;
 export type McpServerInsert = InferInsertModel<typeof mcpServer>;
 export type McpServerCreateInput = Omit<McpServerInsert, 'id' | 'createdAt' | 'updatedAt'>;
 export type McpServerUpdateInput = Partial<Omit<McpServerInsert, 'id' | 'createdAt' | 'updatedAt'>>;
+
+
+export interface WorkflowGraph {
+    nodes: Record<string, unknown>[];
+    edges: Record<string, unknown>[];
+    config?: Record<string, unknown>;
+}
+
+export type Workflow = InferSelectModel<typeof workflow>;
+export type WorkflowInsert = InferInsertModel<typeof workflow>;
+export type WorkflowCreateInput = Omit<WorkflowInsert, 'id' | 'createdAt' | 'updatedAt' | 'latestVersion' | 'status'>;
+
+export type WorkflowVersion = InferSelectModel<typeof workflowVersion>;
+export type WorkflowVersionInsert = InferInsertModel<typeof workflowVersion>;
+
+export type WorkflowRun = InferSelectModel<typeof workflowRun>;
+export type WorkflowRunInsert = InferInsertModel<typeof workflowRun>;
+
+export type WorkflowRunEvent = InferSelectModel<typeof workflowRunEvent>;
+export type WorkflowRunEventInsert = InferInsertModel<typeof workflowRunEvent>;
