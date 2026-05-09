@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { and, desc, eq } from 'drizzle-orm';
 import { DatabaseManager } from '../database/DatabaseManager';
-import { workflowRun, workflowRunEvent } from '../database/schema/schema';
+import { workflowRun, workflowRunEvent, workflowVersion } from '../database/schema/schema';
 import { CORETYPES } from '../types/types';
 import { WorkflowRun, WorkflowRunEvent, WorkflowRunEventInsert, WorkflowRunInsert } from '../dto';
 
@@ -15,6 +15,18 @@ export class WorkflowRunRepository {
 
     // Creates a run record for workflow execution lifecycle tracking.
     public async create(input: WorkflowRunInsert): Promise<WorkflowRun> {
+        const matchingVersion = await this.db.query.workflowVersion.findFirst({
+            where: and(
+                eq(workflowVersion.id, input.workflowVersionId),
+                eq(workflowVersion.workflowId, input.workflowId),
+            ),
+            columns: { id: true },
+        });
+
+        if (!matchingVersion) {
+            throw new Error('Workflow version does not belong to the provided workflow');
+        }
+
         const [created] = await this.db.insert(workflowRun).values(input).returning();
         return created;
     }
