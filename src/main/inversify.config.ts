@@ -11,6 +11,7 @@ import { PersonaController } from './controllers/PersonaController';
 import { CommandController } from './controllers/CommandController';
 import { McpServerController } from './controllers/McpServerController';
 import {WebSearchController} from "./controllers/WebSearchController";
+import { WorkflowController } from './controllers/WorkflowController';
 import {CORETYPES} from "core/types/types";
 import type {SecretStore} from "core/platform/SecretStore";
 import {ElectronSecretStore} from "./platform/ElectronSecretStore";
@@ -32,5 +33,6 @@ container.bind<Controller>(TYPES.Controller).to(PersonaController).inSingletonSc
 container.bind<Controller>(TYPES.Controller).to(CommandController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(McpServerController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(WebSearchController).inSingletonScope();
+container.bind<Controller>(TYPES.Controller).to(WorkflowController).inSingletonScope();
 
 export default container;

@@ -126,6 +126,18 @@ export interface WebSearchHttpApi {
     deleteConfig(type: WebSearchProviderTypeEnum): Promise<void>;
 }
 
+export interface WorkflowHttpApi {
+    list(searchQuery: string | null): Promise<Workflow[]>;
+    get(id: string): Promise<Workflow | undefined>;
+    create(input: WorkflowCreateInput, graph: WorkflowGraph): Promise<Workflow>;
+    update(id: string, updates: Partial<WorkflowCreateInput>): Promise<Workflow | undefined>;
+    delete(id: string): Promise<void>;
+    saveGraph(id: string, graph: WorkflowGraph): Promise<WorkflowVersion>;
+    runStart(input: z.infer<typeof workflowRunStartSchema>): Promise<WorkflowRun>;
+    runCancel(input: z.infer<typeof workflowRunCancelSchema>): Promise<WorkflowRun | undefined>;
+    runGet(input: z.infer<typeof workflowRunGetSchema>): Promise<WorkflowRunStatusTimeline>;
+}
+
 export interface HttpApi {
   chat: ChatHttpApi;
   modelProvider: ModelProviderHttpApi;
@@ -134,6 +146,7 @@ export interface HttpApi {
   command: CommandHttpApi;
   mcpServer: McpServerHttpApi;
   webSearch: WebSearchHttpApi;
+  workflow: WorkflowHttpApi;
 }
 
 export const httpApi: HttpApi = {
@@ -198,5 +211,16 @@ export const httpApi: HttpApi = {
     getConfig: (type: WebSearchProviderTypeEnum) => callRpc<WebSearchConfigView | null>('webSearch', 'getConfig', [type]),
     saveConfig: (input: WebSearchConfigSaveInput) => callRpc<WebSearchConfigView>('webSearch', 'saveConfig', [input]),
     deleteConfig: (type: WebSearchProviderTypeEnum) => callRpc<void>('webSearch', 'deleteConfig', [type])
+  },
+  workflow: {
+    list: (searchQuery: string | null) => callRpc<Workflow[]>('workflow', 'list', [searchQuery]),
+    get: (id: string) => callRpc<Workflow | undefined>('workflow', 'get', [id]),
+    create: (input: WorkflowCreateInput, graph: WorkflowGraph) => callRpc<Workflow>('workflow', 'create', [input, graph]),
+    update: (id: string, updates: Partial<WorkflowCreateInput>) => callRpc<Workflow | undefined>('workflow', 'update', [id, updates]),
+    delete: (id: string) => callRpc<void>('workflow', 'delete', [id]),
+    saveGraph: (id: string, graph: WorkflowGraph) => callRpc<WorkflowVersion>('workflow', 'saveGraph', [id, graph]),
+    runStart: (input: z.infer<typeof workflowRunStartSchema>) => callRpc<WorkflowRun>('workflow', 'run.start', [input]),
+    runCancel: (input: z.infer<typeof workflowRunCancelSchema>) => callRpc<WorkflowRun | undefined>('workflow', 'run.cancel', [input]),
+    runGet: (input: z.infer<typeof workflowRunGetSchema>) => callRpc<WorkflowRunStatusTimeline>('workflow', 'run.get', [input])
   },
 };
