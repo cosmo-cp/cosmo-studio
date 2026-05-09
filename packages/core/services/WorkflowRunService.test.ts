@@ -42,4 +42,17 @@ describe('WorkflowRunService', () => {
         expect(repository.addEvent).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'started' }));
         expect(repository.addEvent).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'cancelled' }));
     });
+
+    it('maps queued status updates to created events', async () => {
+        const run = { id: 'r2', status: 'queued' } as WorkflowRun;
+        (repository.updateStatus as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(run);
+
+        await expect(service.updateRunStatus('r2', 'queued', 're-queued')).resolves.toEqual(run);
+
+        expect(repository.addEvent).toHaveBeenCalledWith(expect.objectContaining({
+            workflowRunId: 'r2',
+            eventType: 'created',
+            status: 'queued',
+        }));
+    });
 });

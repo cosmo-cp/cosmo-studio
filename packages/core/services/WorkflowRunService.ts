@@ -23,9 +23,10 @@ export class WorkflowRunService {
     public async updateRunStatus(runId: string, status: WorkflowRun['status'], message?: string): Promise<WorkflowRun | undefined> {
         const run = await this.workflowRunRepository.updateStatus(runId, status, status === 'failed' ? message : null);
         if (!run) return undefined;
+
         await this.workflowRunRepository.addEvent({
             workflowRunId: runId,
-            eventType: status === 'running' ? 'started' : status,
+            eventType: this.mapStatusToEventType(status),
             status,
             message: message ?? `Run status updated to ${status}`,
         });
@@ -40,5 +41,16 @@ export class WorkflowRunService {
     // Retrieves the latest status plus event timeline for a run.
     public async getRunStatus(runId: string): Promise<(WorkflowRun & { events: WorkflowRunEvent[] }) | undefined> {
         return this.workflowRunRepository.getById(runId);
+    }
+
+    // Keeps run status values aligned with the constrained event enum values.
+    private mapStatusToEventType(status: WorkflowRun['status']): WorkflowRunEvent['eventType'] {
+        if (status === 'queued') {
+            return 'created';
+        }
+        if (status === 'running') {
+            return 'started';
+        }
+        return status;
     }
 }
