@@ -4,7 +4,7 @@ import { IpcController, IpcHandler } from '../ipc/Decorators';
 import { CORETYPES } from 'core/types/types';
 import { WorkflowService } from 'core/services/WorkflowService';
 import { WorkflowRunService } from 'core/services/WorkflowRunService';
-import type { Workflow, WorkflowCreateInput, WorkflowGraph, WorkflowRun, WorkflowVersion } from 'core/dto';
+import type { Workflow, WorkflowCreateInput, WorkflowGraph, WorkflowRun, WorkflowRunInsert, WorkflowRunStatus, WorkflowVersion } from 'core/dto';
 import { Controller } from './Controller';
 
 const workflowGraphSchema = z.strictObject({
@@ -15,12 +15,12 @@ const workflowGraphSchema = z.strictObject({
 
 const workflowCreateSchema = z.strictObject({
     title: z.string().min(1),
-    description: z.string().nullable(),
+    summary: z.string().nullable(),
 });
 
 const workflowUpdateSchema = z.strictObject({
     title: z.string().min(1).optional(),
-    description: z.string().nullable().optional(),
+    summary: z.string().nullable().optional(),
 });
 
 const workflowRunStartSchema = z.strictObject({
@@ -40,8 +40,6 @@ const workflowRunCancelSchema = z.strictObject({
 const workflowRunGetSchema = z.strictObject({
     runId: z.string().uuid(),
 });
-
-type WorkflowRunStatusTimeline = Awaited<ReturnType<WorkflowRunService['getRunStatus']>>;
 
 @injectable()
 @IpcController('workflow')
@@ -91,20 +89,20 @@ export class WorkflowController implements Controller {
 
     // Start a workflow run and emit the initial queued lifecycle record.
     @IpcHandler('run.start', z.tuple([workflowRunStartSchema]))
-    public async runStart(input: z.infer<typeof workflowRunStartSchema>): Promise<WorkflowRun> {
+    public async runStart(input: WorkflowRunInsert): Promise<WorkflowRun> {
         return this.workflowRunService.startRun(workflowRunStartSchema.parse(input));
     }
 
     // Cancel an existing workflow run and record the cancellation event.
     @IpcHandler('run.cancel', z.tuple([workflowRunCancelSchema]))
-    public async runCancel(input: z.infer<typeof workflowRunCancelSchema>): Promise<WorkflowRun | undefined> {
+    public async runCancel(input: { runId: string; message?: string }): Promise<WorkflowRun | undefined> {
         const parsed = workflowRunCancelSchema.parse(input);
         return this.workflowRunService.cancelRun(parsed.runId, parsed.message);
     }
 
     // Fetch the current run status with timeline events for monitoring views.
     @IpcHandler('run.get', z.tuple([workflowRunGetSchema]))
-    public async runGet(input: z.infer<typeof workflowRunGetSchema>): Promise<WorkflowRunStatusTimeline> {
+    public async runGet(input: { runId: string }): Promise<WorkflowRunStatus | undefined> {
         const parsed = workflowRunGetSchema.parse(input);
         return this.workflowRunService.getRunStatus(parsed.runId);
     }

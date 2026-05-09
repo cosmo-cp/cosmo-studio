@@ -23,6 +23,13 @@ import type {
     CommandUpdateInput,
     WebSearchConfigSaveInput,
     WebSearchConfigView,
+    Workflow,
+    WorkflowCreateInput,
+    WorkflowGraph,
+    WorkflowRun,
+    WorkflowRunInsert,
+    WorkflowRunStatus,
+    WorkflowVersion,
 } from "core/dto";
 import type {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
 import type {UIMessage} from "ai";
@@ -133,9 +140,9 @@ export interface WorkflowHttpApi {
     update(id: string, updates: Partial<WorkflowCreateInput>): Promise<Workflow | undefined>;
     delete(id: string): Promise<void>;
     saveGraph(id: string, graph: WorkflowGraph): Promise<WorkflowVersion>;
-    runStart(input: z.infer<typeof workflowRunStartSchema>): Promise<WorkflowRun>;
-    runCancel(input: z.infer<typeof workflowRunCancelSchema>): Promise<WorkflowRun | undefined>;
-    runGet(input: z.infer<typeof workflowRunGetSchema>): Promise<WorkflowRunStatusTimeline>;
+    runStart(input: WorkflowRunInsert): Promise<WorkflowRun>;
+    runCancel(input: { runId: string; message?: string }): Promise<WorkflowRun | undefined>;
+    runGet(input: { runId: string }): Promise<WorkflowRunStatus | undefined>;
 }
 
 export interface HttpApi {
@@ -219,8 +226,8 @@ export const httpApi: HttpApi = {
     update: (id: string, updates: Partial<WorkflowCreateInput>) => callRpc<Workflow | undefined>('workflow', 'update', [id, updates]),
     delete: (id: string) => callRpc<void>('workflow', 'delete', [id]),
     saveGraph: (id: string, graph: WorkflowGraph) => callRpc<WorkflowVersion>('workflow', 'saveGraph', [id, graph]),
-    runStart: (input: z.infer<typeof workflowRunStartSchema>) => callRpc<WorkflowRun>('workflow', 'run.start', [input]),
-    runCancel: (input: z.infer<typeof workflowRunCancelSchema>) => callRpc<WorkflowRun | undefined>('workflow', 'run.cancel', [input]),
-    runGet: (input: z.infer<typeof workflowRunGetSchema>) => callRpc<WorkflowRunStatusTimeline>('workflow', 'run.get', [input])
+    runStart: (input: WorkflowRunInsert) => callRpc<WorkflowRun>('workflow', 'run.start', [input]),
+    runCancel: (input: { runId: string; message?: string }) => callRpc<WorkflowRun | undefined>('workflow', 'run.cancel', [input]),
+    runGet: (input: { runId: string }) => callRpc<WorkflowRunStatus | undefined>('workflow', 'run.get', [input])
   },
 };

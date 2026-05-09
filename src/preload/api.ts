@@ -17,7 +17,6 @@ import {
     NewPersona,
     McpServer,
     McpServerCreateInput,
-    McpServerUpdateInput
     McpServerUpdateInput,
     McpToolDefinition,
     CommandCreateInput,
@@ -26,6 +25,13 @@ import {
     CommandUpdateInput,
     WebSearchConfigSaveInput,
     WebSearchConfigView,
+    Workflow,
+    WorkflowCreateInput,
+    WorkflowGraph,
+    WorkflowRun,
+    WorkflowRunInsert,
+    WorkflowRunStatus,
+    WorkflowVersion,
 } from '../../packages/core/dto';
 import {WebSearchProviderTypeEnum} from '../../packages/core/database/schema/webSearchConfigSchema';
 import {UIMessage, UIMessageChunk} from "ai";
@@ -105,9 +111,9 @@ export interface WorkflowApi {
     update(id: string, updates: Partial<WorkflowCreateInput>): Promise<Workflow | undefined>;
     delete(id: string): Promise<void>;
     saveGraph(id: string, graph: WorkflowGraph): Promise<WorkflowVersion>;
-    runStart(input: z.infer<typeof workflowRunStartSchema>): Promise<WorkflowRun>;
-    runCancel(input: z.infer<typeof workflowRunCancelSchema>): Promise<WorkflowRun | undefined>;
-    runGet(input: z.infer<typeof workflowRunGetSchema>): Promise<WorkflowRunStatusTimeline>;
+    runStart(input: WorkflowRunInsert): Promise<WorkflowRun>;
+    runCancel(input: { runId: string; message?: string }): Promise<WorkflowRun | undefined>;
+    runGet(input: { runId: string }): Promise<WorkflowRunStatus | undefined>;
 }
 
 export interface StreamingApi {
@@ -201,9 +207,9 @@ export const api: Api = {
     update: (id: string, updates: Partial<WorkflowCreateInput>) => ipcRenderer.invoke('workflow:update', id, updates),
     delete: (id: string) => ipcRenderer.invoke('workflow:delete', id),
     saveGraph: (id: string, graph: WorkflowGraph) => ipcRenderer.invoke('workflow:saveGraph', id, graph),
-    runStart: (input: z.infer<typeof workflowRunStartSchema>) => ipcRenderer.invoke('workflow:run.start', input),
-    runCancel: (input: z.infer<typeof workflowRunCancelSchema>) => ipcRenderer.invoke('workflow:run.cancel', input),
-    runGet: (input: z.infer<typeof workflowRunGetSchema>) => ipcRenderer.invoke('workflow:run.get', input)
+    runStart: (input: WorkflowRunInsert) => ipcRenderer.invoke('workflow:run.start', input),
+    runCancel: (input: { runId: string; message?: string }) => ipcRenderer.invoke('workflow:run.cancel', input),
+    runGet: (input: { runId: string }) => ipcRenderer.invoke('workflow:run.get', input)
   },
   streaming: {
     sendMessage: (args: ChatSendMessageArgs) => ipcRenderer.send('streamingChat:sendMessage', args),

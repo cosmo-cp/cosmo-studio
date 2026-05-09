@@ -161,3 +161,4 @@ export type WorkflowRunInsert = InferInsertModel<typeof workflowRun>;
 
 export type WorkflowRunEvent = InferSelectModel<typeof workflowRunEvent>;
 export type WorkflowRunEventInsert = InferInsertModel<typeof workflowRunEvent>;
+export type WorkflowRunStatus = WorkflowRun & { events: WorkflowRunEvent[] };
