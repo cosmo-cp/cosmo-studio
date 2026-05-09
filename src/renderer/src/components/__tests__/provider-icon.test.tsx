@@ -6,6 +6,6 @@ describe('ProviderIcon', () => {
     it('uses a document-relative asset path for packaged builds', () => {
         render(<ProviderIcon type="openai" />);
 
-        expect(screen.getByRole('img', { name: 'openai icon' })).toHaveAttribute('src', 'providers/openai.svg');
+        expect(screen.getByRole('img', { name: 'openai icon' })).toHaveAttribute('src', '/providers/openai.svg');
     });
 });

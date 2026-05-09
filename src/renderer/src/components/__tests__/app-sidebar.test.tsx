@@ -65,7 +65,7 @@ describe('AppSidebar', () => {
         expect(backLink.closest('[data-sidebar="footer"]')).not.toBeNull();
         expect(screen.getByRole('link', {name: /back/i})).toHaveAttribute(
             'href',
-            './'
+            '/chat'
         );
         expect(screen.getByRole('link', {name: /provider/i})).toHaveAttribute(
             'href',
@@ -86,7 +86,7 @@ describe('AppSidebar', () => {
         expect(backLink.closest('[data-sidebar="footer"]')).not.toBeNull();
         expect(backLink).toHaveAttribute(
             'href',
-            '../'
+            '/chat'
         );
         expect(screen.getByRole('link', {name: /provider/i})).toHaveAttribute(
             'data-active',
