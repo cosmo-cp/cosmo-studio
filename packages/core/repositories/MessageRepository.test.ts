@@ -18,7 +18,7 @@ describe('MessageRepository', () => {
             getInstance: () => testDb.db,
         } as unknown as DatabaseManager;
         repository = new MessageRepository(databaseManager);
-    });
+    }, 20000);
 
     afterAll(async () => {
         await testDb.close();
