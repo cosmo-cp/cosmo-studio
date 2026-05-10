@@ -9,6 +9,7 @@ import { PersonaController } from '../src/main/controllers/PersonaController';
 import { CommandController } from '../src/main/controllers/CommandController';
 import { McpServerController } from '../src/main/controllers/McpServerController';
 import { WebSearchController} from "../src/main/controllers/WebSearchController";
+import { WorkflowController } from '../src/main/controllers/WorkflowController';
 import {
     generateApiContent,
     generateHttpClientContent,
@@ -28,7 +29,8 @@ const controllers = [
     PersonaController,
     CommandController,
     McpServerController,
-    WebSearchController
+    WebSearchController,
+    WorkflowController
 ];
 
 const controllerPaths = {
@@ -40,6 +42,7 @@ const controllerPaths = {
     McpServerController: path.resolve(__dirname, '../src/main/controllers/McpServerController.ts'),
     CommandController: path.resolve(__dirname, '../src/main/controllers/CommandController.ts'),
     'WebSearchController': path.resolve(__dirname, '../src/main/controllers/WebSearchController.ts'),
+    WorkflowController: path.resolve(__dirname, '../src/main/controllers/WorkflowController.ts'),
 };
 
 const controllerFileContents: { [key: string]: string } = {};

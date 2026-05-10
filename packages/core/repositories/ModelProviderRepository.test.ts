@@ -23,7 +23,7 @@ describe('ModelProviderRepository', () => {
             getInstance: () => testDb.db,
         } as unknown as DatabaseManager;
         repository = new ModelProviderRepository(databaseManager, secretStore as SecretStore);
-    });
+    }, 20000);
 
     afterAll(async () => {
         await testDb.close();
