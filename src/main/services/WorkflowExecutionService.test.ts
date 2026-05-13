@@ -40,7 +40,7 @@ function createService() {
     const registry = { languageModel: vi.fn(() => 'language-model') };
     const workflowRunService = {
         updateRunStatus: vi.fn().mockResolvedValue({ id: 'run-1' } as WorkflowRun),
-        cancelRun: vi.fn().mockResolvedValue({ id: 'run-1', status: 'canceled' } as WorkflowRun),
+        cancelRun: vi.fn().mockResolvedValue({ id: 'run-1', status: 'cancelled' } as WorkflowRun),
         recordProgressEvent: vi.fn().mockResolvedValue(undefined),
     } as unknown as WorkflowRunService;
     const modelProviderService = {
@@ -286,16 +286,16 @@ describe('WorkflowExecutionService', () => {
             ),
         });
 
-        await expect(service.cancelRun('run-1', 'User canceled')).resolves.toEqual({
+        await expect(service.cancelRun('run-1', 'User cancelled')).resolves.toEqual({
             id: 'run-1',
-            status: 'canceled',
+            status: 'cancelled',
         });
-        expect(result.status).toBe('canceled');
+        expect(result.status).toBe('cancelled');
         expect(workflowRunService.updateRunStatus).toHaveBeenCalledWith(
             'run-1',
-            'canceled',
-            'Workflow execution canceled',
+            'cancelled',
+            'Workflow execution cancelled',
         );
-        expect(workflowRunService.cancelRun).toHaveBeenCalledWith('run-1', 'User canceled');
+        expect(workflowRunService.cancelRun).toHaveBeenCalledWith('run-1', 'User cancelled');
     });
 });

@@ -28,7 +28,7 @@ const workflowUpdateSchema = z.strictObject({
 const workflowRunStartSchema = z.strictObject({
     workflowId: z.string().uuid(),
     workflowVersionId: z.string().uuid(),
-    status: z.enum(['queued', 'running', 'waiting_approval', 'completed', 'failed', 'canceled', 'cancelled']).optional(),
+    status: z.enum(['queued', 'running', 'waiting_approval', 'completed', 'failed', 'cancelled']).optional(),
     startedAt: z.date().nullable().optional(),
     completedAt: z.date().nullable().optional(),
     errorMessage: z.string().nullable().optional(),

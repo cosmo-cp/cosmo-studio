@@ -40,7 +40,7 @@ describe('WorkflowRunService', () => {
         await expect(service.getRunStatus('r1')).resolves.toEqual(timeline);
 
         expect(repository.addEvent).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'started' }));
-        expect(repository.addEvent).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'canceled' }));
+        expect(repository.addEvent).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'cancelled' }));
     });
 
     it('maps queued status updates to created events', async () => {

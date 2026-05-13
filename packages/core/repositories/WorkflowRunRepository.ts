@@ -48,7 +48,7 @@ export class WorkflowRunRepository {
     public async updateStatus(id: string, status: WorkflowRun['status'], errorMessage?: string | null): Promise<WorkflowRun | undefined> {
         const now = new Date();
         const startedAt = status === 'running' ? now : undefined;
-        const completedAt = ['completed', 'failed', 'canceled', 'cancelled'].includes(status) ? now : undefined;
+        const completedAt = ['completed', 'failed', 'cancelled'].includes(status) ? now : undefined;
         const [updated] = await this.db.update(workflowRun).set({
             status,
             errorMessage: errorMessage ?? null,

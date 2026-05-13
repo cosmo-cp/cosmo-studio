@@ -56,7 +56,7 @@ export class WorkflowRunService {
 
     // Cancels an active run and records the cancellation event.
     public async cancelRun(runId: string, message?: string): Promise<WorkflowRun | undefined> {
-        return this.updateRunStatus(runId, 'canceled', message ?? 'Run canceled');
+        return this.updateRunStatus(runId, 'cancelled', message ?? 'Run cancelled');
     }
 
     // Retrieves the latest status plus event timeline for a run.

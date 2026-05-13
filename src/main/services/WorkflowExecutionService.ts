@@ -193,7 +193,7 @@ export class WorkflowExecutionService {
                     continue;
                 }
 
-                this.throwIfCanceled(context);
+                this.throwIfCancelled(context);
 
                 if (node.type === 'start') {
                     this.activateNextNodes(plan, node, undefined, activeNodeIds);
@@ -242,10 +242,10 @@ export class WorkflowExecutionService {
             };
         } catch (error) {
             if (runController.signal.aborted || this.isAbortError(error)) {
-                await this.transitionRun(options.runId, 'canceled', 'Workflow execution canceled');
+                await this.transitionRun(options.runId, 'cancelled', 'Workflow execution cancelled');
                 return {
                     runId: options.runId,
-                    status: 'canceled',
+                    status: 'cancelled',
                     outputs: context.outputs,
                     visitedNodeIds,
                 };
@@ -261,14 +261,14 @@ export class WorkflowExecutionService {
     }
 
     // Cancels in-process execution and persists the terminal run state for external callers.
-    public async cancelRun(runId: string, message = 'Workflow execution canceled'): Promise<WorkflowRun | undefined> {
+    public async cancelRun(runId: string, message = 'Workflow execution cancelled'): Promise<WorkflowRun | undefined> {
         const controller = this.activeRunControllers.get(runId);
         controller?.abort();
         const run = await this.workflowRunService.cancelRun(runId, message);
         this.emitProgress({
             runId,
             type: 'run_status',
-            status: 'canceled',
+            status: 'cancelled',
             message,
             createdAt: new Date(),
         });
@@ -301,7 +301,7 @@ export class WorkflowExecutionService {
                 unsubscribe = this.subscribeToProgress(runId, (event) => {
                     controller.enqueue(event);
                     const isTerminalRunStatus = event.type === 'run_status'
-                        && ['completed', 'failed', 'canceled', 'cancelled'].includes(event.status ?? '');
+                        && ['completed', 'failed', 'cancelled'].includes(event.status ?? '');
                     if (isTerminalRunStatus) {
                         controller.close();
                         unsubscribe();
@@ -652,7 +652,7 @@ export class WorkflowExecutionService {
         const iterationCount = this.normalizeLoopIterations(configuredLimit, items?.length);
 
         for (let index = 0; index < iterationCount; index += 1) {
-            this.throwIfCanceled(context);
+            this.throwIfCancelled(context);
             await this.recordStepEvent(
                 context.runId,
                 node,
@@ -930,12 +930,12 @@ export class WorkflowExecutionService {
     }
 
     // Raises a normal AbortError when a node checks cancellation cooperatively.
-    private throwIfCanceled(context: WorkflowExecutionContext): void {
+    private throwIfCancelled(context: WorkflowExecutionContext): void {
         if (!context.signal.aborted) {
             return;
         }
 
-        throw new DOMException('Workflow execution canceled', 'AbortError');
+        throw new DOMException('Workflow execution cancelled', 'AbortError');
     }
 
     // Converts arbitrary step output into a JSONB-safe value.

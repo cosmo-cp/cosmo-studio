@@ -8,7 +8,6 @@ export const workflowRunStatus = pgEnum('workflow_run_status', [
     'waiting_approval',
     'completed',
     'failed',
-    'canceled',
     'cancelled',
 ]);
 
@@ -19,7 +18,6 @@ export const workflowRunEventType = pgEnum('workflow_run_event_type', [
     'waiting_approval',
     'completed',
     'failed',
-    'canceled',
     'cancelled',
 ]);
 
