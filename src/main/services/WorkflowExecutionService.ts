@@ -1,4 +1,3 @@
-<<<<<<< ours
 import {
     generateText,
     stepCountIs,
