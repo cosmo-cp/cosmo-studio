@@ -5,8 +5,10 @@ export const workflowStatus = pgEnum('workflow_status', ['active', 'archived']);
 export const workflowRunStatus = pgEnum('workflow_run_status', [
     'queued',
     'running',
+    'waiting_approval',
     'completed',
     'failed',
+    'canceled',
     'cancelled',
 ]);
 
@@ -14,8 +16,10 @@ export const workflowRunEventType = pgEnum('workflow_run_event_type', [
     'created',
     'started',
     'progress',
+    'waiting_approval',
     'completed',
     'failed',
+    'canceled',
     'cancelled',
 ]);
 

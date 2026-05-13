@@ -246,6 +246,13 @@
       "when": 1778331047270,
       "tag": "0034_yummy_robin_chapel",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1778430370080,
+      "tag": "0035_foamy_wither",
+      "breakpoints": true
     }
   ]
 }

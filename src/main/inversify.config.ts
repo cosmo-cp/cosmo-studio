@@ -10,12 +10,13 @@ import { MessageController } from './controllers/MessageController';
 import { PersonaController } from './controllers/PersonaController';
 import { CommandController } from './controllers/CommandController';
 import { McpServerController } from './controllers/McpServerController';
-import {WebSearchController} from "./controllers/WebSearchController";
+import { WebSearchController } from './controllers/WebSearchController';
 import { WorkflowController } from './controllers/WorkflowController';
-import {CORETYPES} from "core/types/types";
-import type {SecretStore} from "core/platform/SecretStore";
-import {ElectronSecretStore} from "./platform/ElectronSecretStore";
-import {ChatStreamingService} from "./services/ChatStreamingService";
+import { CORETYPES } from 'core/types/types';
+import type { SecretStore } from 'core/platform/SecretStore';
+import { ElectronSecretStore } from './platform/ElectronSecretStore';
+import { ChatStreamingService } from './services/ChatStreamingService';
+import { WorkflowExecutionService } from './services/WorkflowExecutionService';
 
 const container = new Container({ parent: coreContainer });
 
@@ -23,6 +24,7 @@ coreContainer.rebindSync<SecretStore>(CORETYPES.SecretStore).to(ElectronSecretSt
 
 container.bind<IpcHandlerRegistry>(TYPES.IpcHandlerRegistry).to(IpcHandlerRegistry).inSingletonScope();
 container.bind<ChatStreamingService>(TYPES.ChatStreamingService).to(ChatStreamingService).inSingletonScope();
+container.bind<WorkflowExecutionService>(TYPES.WorkflowExecutionService).to(WorkflowExecutionService).inSingletonScope();
 
 // Bind controllers
 container.bind<Controller>(TYPES.Controller).to(ChatController).inSingletonScope();

@@ -107,6 +107,7 @@
     "rxjs": "^7.8.2",
     "superjson": "^2.2.6",
     "update-electron-app": "^3.1.2",
+    "workflow": "^4.2.4",
     "zod": "4.3.5"
   }
 }
