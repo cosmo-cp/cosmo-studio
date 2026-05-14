@@ -95,7 +95,10 @@ export class WorkflowController implements Controller {
     @IpcHandler('run.start', z.tuple([workflowRunStartSchema]))
     public async runStart(input: WorkflowRunInsert): Promise<WorkflowRun> {
         const run = await this.workflowRunService.startRun(workflowRunStartSchema.parse(input));
-        void this.workflowExecutionService.executeRun(run);
+        void this.workflowExecutionService.executeRun({
+            runId: run.id,
+            graph: {nodes: [], edges: []},
+        });
         return run;
     }
 
