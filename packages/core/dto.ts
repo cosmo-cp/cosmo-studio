@@ -162,3 +162,30 @@ export type WorkflowRunInsert = InferInsertModel<typeof workflowRun>;
 export type WorkflowRunEvent = InferSelectModel<typeof workflowRunEvent>;
 export type WorkflowRunEventInsert = InferInsertModel<typeof workflowRunEvent>;
 export type WorkflowRunStatus = WorkflowRun & { events: WorkflowRunEvent[] };
+
+export type WorkflowRunStreamEventType =
+    | 'step.started'
+    | 'step.completed'
+    | 'tool.call'
+    | 'approval.required'
+    | 'error'
+    | 'finished';
+
+export interface WorkflowRunStreamEventEnvelope {
+    runId: string;
+    type: WorkflowRunStreamEventType;
+    timestamp: string;
+    sequence: number;
+    payload?: Record<string, unknown>;
+    message?: string;
+}
+
+export interface WorkflowRunStreamStartArgs {
+    runId: string;
+    streamChannel: string;
+    afterSequence?: number;
+}
+
+export interface WorkflowRunStreamAbortArgs {
+    streamChannel: string;
+}
