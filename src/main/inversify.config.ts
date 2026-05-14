@@ -16,6 +16,7 @@ import {CORETYPES} from "core/types/types";
 import type {SecretStore} from "core/platform/SecretStore";
 import {ElectronSecretStore} from "./platform/ElectronSecretStore";
 import {ChatStreamingService} from "./services/ChatStreamingService";
+import {WorkflowRunStreamingService} from './services/WorkflowRunStreamingService';
 
 const container = new Container({ parent: coreContainer });
 
@@ -23,6 +24,7 @@ coreContainer.rebindSync<SecretStore>(CORETYPES.SecretStore).to(ElectronSecretSt
 
 container.bind<IpcHandlerRegistry>(TYPES.IpcHandlerRegistry).to(IpcHandlerRegistry).inSingletonScope();
 container.bind<ChatStreamingService>(TYPES.ChatStreamingService).to(ChatStreamingService).inSingletonScope();
+container.bind<WorkflowRunStreamingService>(TYPES.WorkflowRunStreamingService).to(WorkflowRunStreamingService).inSingletonScope();
 
 // Bind controllers
 container.bind<Controller>(TYPES.Controller).to(ChatController).inSingletonScope();
