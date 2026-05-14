@@ -1,5 +1,4 @@
 import { inject, injectable } from 'inversify';
-import { sleep } from '@workflow/core';
 import { WorkflowRunService } from 'core/services/WorkflowRunService';
 import { CORETYPES } from 'core/types/types';
 import type { WorkflowGraph, WorkflowRun } from 'core/dto';
