@@ -20,8 +20,7 @@ import {IpcController, IpcHandler, IpcOn, IpcRendererOn} from '../ipc/Decorators
 import {WorkflowRunStreamingService} from '../services/WorkflowRunStreamingService';
 import {TYPES} from '../types';
 import {Controller} from './Controller';
-import { TYPES } from '../types';
-import { WorkflowExecutionService } from '../services/WorkflowExecutionService';
+import {WorkflowExecutionService} from '../services/WorkflowExecutionService';
 
 const workflowGraphSchema = z.strictObject({ nodes: z.array(z.record(z.string(), z.unknown())), edges: z.array(z.record(z.string(), z.unknown())), config: z.record(z.string(), z.unknown()).optional() });
 const workflowCreateSchema = z.strictObject({ title: z.string().min(1), summary: z.string().nullable() });
@@ -59,17 +58,30 @@ export class WorkflowController implements Controller {
     public async saveGraph(id: string, graph: WorkflowGraph): Promise<WorkflowVersion> { return this.workflowService.createWorkflowVersion(id, workflowGraphSchema.parse(graph)); }
     @IpcHandler('run.start', z.tuple([workflowRunStartSchema]))
     public async runStart(input: WorkflowRunInsert): Promise<WorkflowRun> {
-        const run = await this.workflowRunService.startRun(workflowRunStartSchema.parse(input));
+        const parsed = workflowRunStartSchema.parse(input);
+        const run = await this.workflowRunService.startRun(parsed);
+        const versions = await this.workflowService.getWorkflowVersions(parsed.workflowId);
+        const version = versions.find((workflowVersion) => workflowVersion.id === parsed.workflowVersionId);
+
+        if (!version) {
+            logger.error('Workflow version missing for run start', {
+                runId: run.id,
+                workflowId: parsed.workflowId,
+                workflowVersionId: parsed.workflowVersionId,
+            });
+            return run;
+        }
+
         void this.workflowExecutionService.executeRun({
             runId: run.id,
-            graph: {nodes: [], edges: []},
+            graph: version.graph as WorkflowGraph,
         });
         return run;
     }
 
     // Cancel an existing workflow run and record the cancellation event.
     @IpcHandler('run.cancel', z.tuple([workflowRunCancelSchema]))
-    public async runCancel(input: { runId: string; message?: string }): Promise<WorkflowRun | undefined> { const parsed = workflowRunCancelSchema.parse(input); return this.workflowRunService.cancelRun(parsed.runId, parsed.message); }
+    public async runCancel(input: { runId: string; message?: string }): Promise<WorkflowRun | undefined> { const parsed = workflowRunCancelSchema.parse(input); return this.workflowExecutionService.cancelRun(parsed.runId, parsed.message); }
     @IpcHandler('run.get', z.tuple([workflowRunGetSchema]))
     public async runGet(input: { runId: string }): Promise<WorkflowRunStatus | undefined> { const parsed = workflowRunGetSchema.parse(input); return this.workflowRunService.getRunStatus(parsed.runId); }
 
