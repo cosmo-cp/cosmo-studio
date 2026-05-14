@@ -184,7 +184,7 @@ When you change code, always run:
 
 1. Lints: `npm run lint` (root) and `npm run lint` in `src/renderer`
 2. Tests: add/run targeted tests first, then full suite(`npm run test`) and Coverage(`npm run test:coverage`)
-3. Build check (after every major change): HTTP build (`npm run build:http`) and Electron package (`npm run package`) when the change touches shared runtime/build surfaces.
+3. Build check: HTTP build (`npm run build:http`) and Electron package (`npm run package`)
 
 ## 5) Testing policy (strict, 100%+ mindset)
 
