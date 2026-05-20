@@ -316,17 +316,17 @@ export function AcpAgentManagement() {
                 </TabsContent>
             </Tabs>
             <Dialog open={registryDialogOpen} onOpenChange={handleRegistryOpenChange}>
-                <DialogContent className="max-h-[85dvh] overflow-hidden sm:max-w-[900px]">
-                    <DialogHeader>
+                <DialogContent className="flex max-h-[85dvh] w-[calc(100vw-2rem)] max-w-[900px] min-w-0 flex-col overflow-hidden p-0">
+                    <DialogHeader className="shrink-0 px-6 pt-6 pr-12">
                         <DialogTitle>ACP Registry</DialogTitle>
                         <DialogDescription>
                             Browse installable ACP agents from the public registry.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="flex min-h-0 flex-col gap-3">
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-6 pb-6">
+                        <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
                             <Input
-                                className="sm:max-w-sm"
+                                className="min-w-0 sm:max-w-sm"
                                 placeholder="Search agents"
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
@@ -346,14 +346,17 @@ export function AcpAgentManagement() {
                                 {registryError}
                             </div>
                         ) : null}
-                        <div className="min-h-[320px] overflow-auto rounded-md border">
-                            <Table>
+                        <div
+                            className="min-h-0 flex-1 overflow-auto rounded-md border"
+                            data-testid="acp-registry-table-scroll"
+                        >
+                            <Table className="table-fixed">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Distribution</TableHead>
-                                        <TableHead>Version</TableHead>
-                                        <TableHead className="w-[140px] text-right">Install</TableHead>
+                                        <TableHead className="w-[52%]">Name</TableHead>
+                                        <TableHead className="w-[120px]">Distribution</TableHead>
+                                        <TableHead className="w-[100px]">Version</TableHead>
+                                        <TableHead className="w-[128px] text-right">Install</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -377,10 +380,10 @@ export function AcpAgentManagement() {
                                         const installing = installingRegistryId === agent.id;
                                         return (
                                             <TableRow key={agent.id}>
-                                                <TableCell>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium">{agent.name}</span>
-                                                        <span className="line-clamp-2 text-xs text-muted-foreground">
+                                                <TableCell className="min-w-0 whitespace-normal">
+                                                    <div className="flex min-w-0 flex-col">
+                                                        <span className="truncate font-medium">{agent.name}</span>
+                                                        <span className="line-clamp-2 break-words text-xs text-muted-foreground">
                                                             {agent.description}
                                                         </span>
                                                     </div>

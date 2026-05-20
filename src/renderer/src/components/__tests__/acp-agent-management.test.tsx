@@ -139,9 +139,13 @@ describe("AcpAgentManagement", () => {
         expect(screen.queryByRole("tab", {name: /registry/i})).not.toBeInTheDocument();
         await user.click(screen.getByRole("button", {name: /registry/i}));
 
-        expect(await screen.findByRole("dialog")).toBeInTheDocument();
+        const dialog = await screen.findByRole("dialog");
+        expect(dialog).toHaveClass("w-[calc(100vw-2rem)]", "max-w-[900px]", "overflow-hidden");
         expect(await screen.findByRole("heading", {name: /acp registry/i})).toBeInTheDocument();
         await waitFor(() => expect(getRegistry).toHaveBeenCalledTimes(1));
+        const registryScrollArea = screen.getByTestId("acp-registry-table-scroll");
+        expect(registryScrollArea).toHaveClass("min-h-0", "flex-1", "overflow-auto");
+        expect(within(registryScrollArea).getByRole("table")).toHaveClass("table-fixed");
 
         const codexRow = screen.getByText("Codex CLI").closest("tr");
         expect(codexRow).not.toBeNull();
