@@ -16,6 +16,8 @@ import { CORETYPES } from 'core/types/types';
 import type { SecretStore } from 'core/platform/SecretStore';
 import { ElectronSecretStore } from './platform/ElectronSecretStore';
 import { ChatStreamingService } from './services/ChatStreamingService';
+import { WorkflowRunStreamingService } from './services/WorkflowRunStreamingService';
+import { WorkflowExecutionService } from './services/WorkflowExecutionService';
 
 const container = new Container({ parent: coreContainer });
 
