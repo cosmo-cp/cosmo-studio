@@ -20,6 +20,7 @@ import type {
     WorkflowCreateInput,
     WorkflowGraph,
     WorkflowRun,
+    WorkflowRunInsert,
     WorkflowRunStatus,
     WorkflowVersion,
 } from "core/dto";
@@ -38,6 +39,9 @@ import {
 import {httpApi, type HttpApi} from "@/lib/generated-http-api";
 
 type BackendKind = "electron" | "http";
+type WorkflowRunStartInput = Omit<WorkflowRunInsert, "workflowVersionId"> & {
+    workflowVersionId?: string;
+};
 
 export type McpTool = McpToolDefinition;
 
@@ -98,7 +102,7 @@ export interface AppDataSource {
         create(input: WorkflowCreateInput, graph: WorkflowGraph): Promise<Workflow>;
         delete(id: string): Promise<void>;
         saveGraph(id: string, graph: WorkflowGraph): Promise<WorkflowVersion>;
-        runStart(input: {workflowId: string; workflowVersionId?: string}): Promise<WorkflowRun>;
+        runStart(input: WorkflowRunStartInput): Promise<WorkflowRun>;
         runGet(runId: string): Promise<WorkflowRunStatus | undefined>;
     };
 }
@@ -478,7 +482,7 @@ function createApiBackedAppDataSource(api: HttpApi, backend: BackendKind): AppDa
                 return api.workflow.saveGraph(id, graph);
             },
             runStart(input) {
-                return api.workflow.runStart(input);
+                return api.workflow.runStart(input as WorkflowRunInsert);
             },
             runGet(runId) {
                 return api.workflow.runGet({runId});
@@ -497,6 +501,7 @@ function createHttpAppDataSource(): AppDataSource {
 
 function createDummyHttpAppDataSource(): AppDataSource {
     const state = buildDummyHttpState();
+    const workflowRuns = new Map<string, WorkflowRun>();
 
     return {
         backend: "http",
@@ -826,29 +831,46 @@ function createDummyHttpAppDataSource(): AppDataSource {
             },
             async delete() {},
             async saveGraph(id, graph) {
+                const now = new Date();
                 return {
                     id: crypto.randomUUID(),
                     workflowId: id,
                     version: 1,
                     graph,
-                    createdAt: new Date(),
+                    createdAt: now,
+                    updatedAt: now,
                 } satisfies WorkflowVersion;
             },
             async runStart(input) {
-                return {
+                const now = new Date();
+                const run: WorkflowRun = {
                     id: crypto.randomUUID(),
                     workflowId: input.workflowId,
-                    workflowVersionId: input.workflowVersionId,
+                    workflowVersionId: input.workflowVersionId ?? crypto.randomUUID(),
                     status: 'queued',
-                    startedAt: null,
+                    startedAt: now,
                     completedAt: null,
                     errorMessage: null,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
+                    createdAt: now,
+                    updatedAt: now,
                 } satisfies WorkflowRun;
+                workflowRuns.set(run.id, run);
+                return cloneValue(run);
             },
-            async runGet() {
-                return undefined;
+            async runGet(runId) {
+                const run = workflowRuns.get(runId);
+                if (!run) {
+                    return undefined;
+                }
+
+                const runStatus: WorkflowRunStatus = {
+                    ...run,
+                    status: 'completed',
+                    completedAt: new Date(),
+                    updatedAt: new Date(),
+                    events: [],
+                };
+                return runStatus;
             },
         },
     };

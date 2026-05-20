@@ -34,6 +34,11 @@ function buildTextMessage({
     };
 }
 
+// Acknowledge the user request immediately while the backend run lifecycle catches up.
+function buildWorkflowExecutionResponse(workflowTitle: string, prompt: string) {
+    return `Started running "${workflowTitle}" with: ${prompt}`;
+}
+
 function WorkflowRunDrawer({
     workflow,
     isOpen,
@@ -236,6 +241,8 @@ export function WorkflowWorkspace({workflow}: {workflow: WorkflowListItem}) {
         const messageIdPrefix = `${workflow.id}-run-message`;
         const nextUserMessageId = `${messageIdPrefix}-${nextMessageIdRef.current}`;
         nextMessageIdRef.current += 1;
+        const nextAssistantMessageId = `${messageIdPrefix}-${nextMessageIdRef.current}`;
+        nextMessageIdRef.current += 1;
 
         setMessages((currentMessages) => [
             ...currentMessages,
@@ -243,6 +250,11 @@ export function WorkflowWorkspace({workflow}: {workflow: WorkflowListItem}) {
                 id: nextUserMessageId,
                 role: 'user',
                 text: trimmedQuery,
+            }),
+            buildTextMessage({
+                id: nextAssistantMessageId,
+                role: 'assistant',
+                text: buildWorkflowExecutionResponse(workflow.title, trimmedQuery),
             }),
         ]);
         setQuery('');
