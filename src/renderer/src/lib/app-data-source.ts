@@ -16,6 +16,13 @@ import type {
     ProviderWithModels,
     WebSearchConfigSaveInput,
     WebSearchConfigView,
+    Workflow,
+    WorkflowCreateInput,
+    WorkflowGraph,
+    WorkflowRun,
+    WorkflowRunInsert,
+    WorkflowRunStatus,
+    WorkflowVersion,
 } from "core/dto";
 import {
     ModelModalityEnum,
@@ -32,6 +39,9 @@ import {
 import {httpApi, type HttpApi} from "@/lib/generated-http-api";
 
 type BackendKind = "electron" | "http";
+type WorkflowRunStartInput = Omit<WorkflowRunInsert, "workflowVersionId"> & {
+    workflowVersionId?: string;
+};
 
 export type McpTool = McpToolDefinition;
 
@@ -86,6 +96,14 @@ export interface AppDataSource {
         disable(id: string): Promise<McpServer>;
         getServerTools(id: string): Promise<McpTool[]>;
         updateToolApproval(serverId: string, toolName: string, needsApproval: boolean): Promise<McpServer>;
+    };
+    workflow: {
+        list(searchQuery: string | null): Promise<Workflow[]>;
+        create(input: WorkflowCreateInput, graph: WorkflowGraph): Promise<Workflow>;
+        delete(id: string): Promise<void>;
+        saveGraph(id: string, graph: WorkflowGraph): Promise<WorkflowVersion>;
+        runStart(input: WorkflowRunStartInput): Promise<WorkflowRun>;
+        runGet(runId: string): Promise<WorkflowRunStatus | undefined>;
     };
 }
 
@@ -450,6 +468,26 @@ function createApiBackedAppDataSource(api: HttpApi, backend: BackendKind): AppDa
                 return api.mcpServer.updateToolApproval(serverId, toolName, needsApproval);
             },
         },
+        workflow: {
+            list(searchQuery) {
+                return api.workflow.list(searchQuery);
+            },
+            create(input, graph) {
+                return api.workflow.create(input, graph);
+            },
+            async delete(id) {
+                await api.workflow.delete(id);
+            },
+            saveGraph(id, graph) {
+                return api.workflow.saveGraph(id, graph);
+            },
+            runStart(input) {
+                return api.workflow.runStart(input as WorkflowRunInsert);
+            },
+            runGet(runId) {
+                return api.workflow.runGet({runId});
+            },
+        },
     };
 }
 
@@ -463,6 +501,7 @@ function createHttpAppDataSource(): AppDataSource {
 
 function createDummyHttpAppDataSource(): AppDataSource {
     const state = buildDummyHttpState();
+    const workflowRuns = new Map<string, WorkflowRun>();
 
     return {
         backend: "http",
@@ -773,6 +812,65 @@ function createDummyHttpAppDataSource(): AppDataSource {
                 };
                 server.updatedAt = new Date();
                 return cloneValue(server);
+            },
+        },
+        workflow: {
+            async list() {
+                return [];
+            },
+            async create(input) {
+                return {
+                    id: crypto.randomUUID(),
+                    title: input.title,
+                    summary: input.summary ?? null,
+                    status: 'active',
+                    latestVersion: 1,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                } satisfies Workflow;
+            },
+            async delete() {},
+            async saveGraph(id, graph) {
+                const now = new Date();
+                return {
+                    id: crypto.randomUUID(),
+                    workflowId: id,
+                    version: 1,
+                    graph,
+                    createdAt: now,
+                    updatedAt: now,
+                } satisfies WorkflowVersion;
+            },
+            async runStart(input) {
+                const now = new Date();
+                const run: WorkflowRun = {
+                    id: crypto.randomUUID(),
+                    workflowId: input.workflowId,
+                    workflowVersionId: input.workflowVersionId ?? crypto.randomUUID(),
+                    status: 'queued',
+                    startedAt: now,
+                    completedAt: null,
+                    errorMessage: null,
+                    createdAt: now,
+                    updatedAt: now,
+                } satisfies WorkflowRun;
+                workflowRuns.set(run.id, run);
+                return cloneValue(run);
+            },
+            async runGet(runId) {
+                const run = workflowRuns.get(runId);
+                if (!run) {
+                    return undefined;
+                }
+
+                const runStatus: WorkflowRunStatus = {
+                    ...run,
+                    status: 'completed',
+                    completedAt: new Date(),
+                    updatedAt: new Date(),
+                    events: [],
+                };
+                return runStatus;
             },
         },
     };

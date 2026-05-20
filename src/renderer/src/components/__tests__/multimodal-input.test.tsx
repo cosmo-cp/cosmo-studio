@@ -67,6 +67,8 @@ function buildProvider(): ProviderWithModels {
                 outputModalities: [],
                 releaseDate: null,
                 lastUpdatedByProvider: null,
+                contextWindow: null,
+                maxOutputWindow: null,
             },
         ],
     };

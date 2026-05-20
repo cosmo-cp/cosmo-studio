@@ -11,7 +11,7 @@ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/compon
 import {cn} from '@/lib/utils';
 import type {UIMessage} from 'ai';
 import {PencilLine, Play, Workflow, X} from 'lucide-react';
-import {startTransition, useRef, useState} from 'react';
+import {startTransition, useEffect, useRef, useState} from 'react';
 
 type WorkflowWorkspaceMode = 'edit' | 'run';
 type WorkflowRunStatus = UseChatHelpers<UIMessage>['status'];
@@ -193,11 +193,20 @@ function WorkflowModeToggle({
 }
 
 export function WorkflowWorkspace({workflow}: {workflow: WorkflowListItem}) {
+    const executionTimerRef = useRef<number | null>(null);
     const nextMessageIdRef = useRef(1);
     const [mode, setMode] = useState<WorkflowWorkspaceMode>('edit');
     const [query, setQuery] = useState('');
+    const [status, setStatus] = useState<WorkflowRunStatus>('ready');
     const [messages, setMessages] = useState<UIMessage[]>([]);
-    const status: WorkflowRunStatus = 'ready';
+
+    useEffect(() => {
+        return () => {
+            if (executionTimerRef.current !== null) {
+                window.clearTimeout(executionTimerRef.current);
+            }
+        };
+    }, []);
 
     // Keep mode changes responsive because they mount a fairly heavy canvas + chat composition.
     const handleModeChange = (nextMode: WorkflowWorkspaceMode) => {
@@ -216,8 +225,6 @@ export function WorkflowWorkspace({workflow}: {workflow: WorkflowListItem}) {
         const messageIdPrefix = `${workflow.id}-run-message`;
         const nextUserMessageId = `${messageIdPrefix}-${nextMessageIdRef.current}`;
         nextMessageIdRef.current += 1;
-        const nextAssistantMessageId = `${messageIdPrefix}-${nextMessageIdRef.current}`;
-        nextMessageIdRef.current += 1;
 
         setMessages((currentMessages) => [
             ...currentMessages,
@@ -226,14 +233,29 @@ export function WorkflowWorkspace({workflow}: {workflow: WorkflowListItem}) {
                 role: 'user',
                 text: trimmedQuery,
             }),
-            buildTextMessage({
-                id: nextAssistantMessageId,
-                role: 'assistant',
-                text: buildWorkflowExecutionResponse(workflow.title, trimmedQuery),
-            }),
         ]);
         setQuery('');
+        setStatus('submitted');
         handleModeChange('run');
+
+        if (executionTimerRef.current !== null) {
+            window.clearTimeout(executionTimerRef.current);
+        }
+
+        executionTimerRef.current = window.setTimeout(() => {
+            const nextAssistantMessageId = `${messageIdPrefix}-${nextMessageIdRef.current}`;
+            nextMessageIdRef.current += 1;
+            setMessages((currentMessages) => [
+                ...currentMessages,
+                buildTextMessage({
+                    id: nextAssistantMessageId,
+                    role: 'assistant',
+                    text: buildWorkflowExecutionResponse(workflow.title, trimmedQuery),
+                }),
+            ]);
+            setStatus('ready');
+            executionTimerRef.current = null;
+        }, 450);
     };
 
     return (

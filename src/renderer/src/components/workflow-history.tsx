@@ -14,6 +14,7 @@ export interface WorkflowListItem {
     title: string;
     summary: string;
     updatedAt: Date;
+    latestVersion?: number;
 }
 
 // Keep workflow timestamps readable in the same compact style as chat history.

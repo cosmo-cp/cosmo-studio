@@ -9,6 +9,7 @@ type AppDataSourceOverrides = {
     modelProvider?: Partial<AppDataSource["modelProvider"]>;
     webSearch?: Partial<AppDataSource["webSearch"]>;
     mcpServer?: Partial<AppDataSource["mcpServer"]>;
+    workflow?: Partial<AppDataSource["workflow"]>;
 };
 
 export function createMockAppDataSource(
@@ -97,6 +98,46 @@ export function createMockAppDataSource(
                 throw new Error("mcpServer.updateToolApproval not mocked");
             },
             ...overrides.mcpServer,
+        },
+        workflow: {
+            list: async () => [],
+            create: async (input) => ({
+                id: crypto.randomUUID(),
+                title: input.title,
+                summary: input.summary ?? null,
+                status: "active",
+                latestVersion: 1,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }),
+            delete: async () => undefined,
+            saveGraph: async (id, graph) => {
+                const now = new Date();
+                return {
+                    id: crypto.randomUUID(),
+                    workflowId: id,
+                    version: 1,
+                    graph,
+                    createdAt: now,
+                    updatedAt: now,
+                };
+            },
+            runStart: async (input) => {
+                const now = new Date();
+                return {
+                    id: crypto.randomUUID(),
+                    workflowId: input.workflowId,
+                    workflowVersionId: input.workflowVersionId ?? crypto.randomUUID(),
+                    status: "queued",
+                    startedAt: now,
+                    completedAt: null,
+                    errorMessage: null,
+                    createdAt: now,
+                    updatedAt: now,
+                };
+            },
+            runGet: async () => undefined,
+            ...overrides.workflow,
         },
     };
 }
