@@ -15,6 +15,9 @@ import { CommandService } from './services/CommandService';
 import { McpServerRepository } from './repositories/McpServerRepository';
 import { McpServerService } from './services/McpServerService';
 import { McpClientManager } from './services/McpClientManager';
+import { AcpAgentRepository } from './repositories/AcpAgentRepository';
+import { AcpAgentService } from './services/AcpAgentService';
+import { AcpRegistryService } from './services/AcpRegistryService';
 import {WebSearchConfigRepository} from "./repositories/WebSearchConfigRepository";
 import {WebSearchConfigService} from "./services/WebSearchConfigService";
 import {Base64SecretStore, type SecretStore} from "./platform/SecretStore";
@@ -39,6 +42,7 @@ coreContainer
 coreContainer.bind<PersonaRepository>(CORETYPES.PersonaRepository).to(PersonaRepository).inSingletonScope();
 coreContainer.bind<CommandRepository>(CORETYPES.CommandRepository).to(CommandRepository).inSingletonScope();
 coreContainer.bind<McpServerRepository>(CORETYPES.McpServerRepository).to(McpServerRepository).inSingletonScope();
+coreContainer.bind<AcpAgentRepository>(CORETYPES.AcpAgentRepository).to(AcpAgentRepository).inSingletonScope();
 coreContainer.bind<WebSearchConfigRepository>(CORETYPES.WebSearchConfigRepository)
     .to(WebSearchConfigRepository)
     .inSingletonScope();
@@ -53,6 +57,8 @@ coreContainer.bind<PersonaService>(CORETYPES.PersonaService).to(PersonaService).
 coreContainer.bind<CommandService>(CORETYPES.CommandService).to(CommandService).inSingletonScope();
 coreContainer.bind<McpServerService>(CORETYPES.McpServerService).to(McpServerService).inSingletonScope();
 coreContainer.bind<McpClientManager>(CORETYPES.McpClientManager).to(McpClientManager).inSingletonScope();
+coreContainer.bind<AcpAgentService>(CORETYPES.AcpAgentService).to(AcpAgentService).inSingletonScope();
+coreContainer.bind<AcpRegistryService>(CORETYPES.AcpRegistryService).to(AcpRegistryService).inSingletonScope();
 coreContainer.bind<WebSearchConfigService>(CORETYPES.WebSearchConfigService)
     .to(WebSearchConfigService)
     .inSingletonScope();

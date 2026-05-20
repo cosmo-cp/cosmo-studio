@@ -24,6 +24,9 @@ Cosmo Studio is a dual-runtime app with a static-exported Next.js UI. It builds 
     - Drizzle schema, repositories/services, DTOs shared across processes.
     - Imported as `core/...` from main/renderer/preload.
   - Platform concerns use injected interfaces such as `SecretStore` and `CoreLogger`.
+- **ACP agents**: `packages/core/services/AcpAgentService.ts`, `packages/core/services/AcpRegistryService.ts`, `src/main/services/AcpAgentRuntimeService.ts`
+  - Agent definitions and registry cache are shared domain data; process spawning and ACP provider sessions stay in main/HTTP runtime.
+  - Renderer receives redacted agent views only; env values are never returned.
 - **Tooling/scripts**: `scripts/` (currently: `scripts/generate-api.ts`)
     - Generates the preload API, HTTP RPC manifest, and renderer HTTP client from main IPC controllers.
 - **Database**: Drizzle ORM + PGlite
@@ -69,6 +72,7 @@ Before coding, decide **where the feature belongs**. Default to keeping the rend
    → Prefer `packages/core/...` for provider registry + model selection logic.
    → Keep shared chat streaming in `src/main/services/ChatStreamingService.ts`.
    → Keep Electron delivery in `StreamingChatController`; keep HTTP delivery in `ChatHttpController`.
+   → ACP agent persistence/registry logic belongs in `packages/core`; ACP subprocess/session creation belongs in `src/main/services/AcpAgentRuntimeService.ts`.
 
 6. **Shared types/DTOs**
    → `packages/core/dto.ts` (and types under `packages/core/types/`)

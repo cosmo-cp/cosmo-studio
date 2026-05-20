@@ -90,6 +90,17 @@ The `command` IPC group provides dynamic command management:
 - `command:delete` → delete a custom command.
 - `command:execute` → resolve a command string into its final prompt.
 
+## ACP agent endpoints
+
+The `acpAgent` IPC/RPC group manages local Agent Client Protocol agents:
+
+- `acpAgent:getAll` → list redacted installed agents.
+- `acpAgent:create` / `update` / `delete` → manage custom or registry-installed agents.
+- `acpAgent:enable` / `disable` → toggle chat/workflow availability.
+- `acpAgent:getRegistry` / `refreshRegistry` → read or refresh the cached ACP registry.
+- `acpAgent:installFromRegistry` → create an installed agent from supported `npx`/`uvx` registry distributions.
+- `acpAgent:test` → initialize a backend ACP session and return a serializable status.
+
 ## Security checklist
 
 - Treat all renderer-provided values as untrusted.

@@ -16,12 +16,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';
 import { ModelModalityEnum } from "core/database/schema/modelProviderSchema";
-import type { Chat, ProviderWithModels } from "core/dto";
+import type { AcpAgentView, Chat, ProviderWithModels } from "core/dto";
 import { CheckIcon } from "lucide-react";
 import type { FocusEvent, KeyboardEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
+import {loadAcpAgents} from "@/lib/store/acp-agents-store";
 import {executeCommand} from "@/lib/store/commands-store";
 import {loadPersonas} from "@/lib/store/personas-store";
 import {loadProviders} from "@/lib/store/providers-store";
@@ -53,8 +54,10 @@ import {
     PromptInputTools,
     usePromptInputAttachments,
 } from './ai-elements/prompt-input';
+import {Input} from "@/components/ui/input";
 
 const PERSONA_NONE_VALUE = "__persona_none__";
+const AGENT_NONE_VALUE = "__agent_none__";
 
 const parsePersonaDirective = (text: string) => {
     const match = text.match(/^\s*@persona(?:\s*[:=])?\s*(?:"([^"]+)"|'([^']+)'|([^\s]+))\s*/i);
@@ -70,11 +73,24 @@ const parsePersonaDirective = (text: string) => {
     };
 };
 
+const parseAgentDirective = (text: string) => {
+    const match = text.match(/^\s*\/agent\s+(?:"([^"]+)"|'([^']+)'|([^\s]+))\s*/i);
+    if (!match) {
+        return {text, agentName: undefined};
+    }
+    const agentName = match[1] ?? match[2] ?? match[3];
+    return {
+        text: text.slice(match[0].length).trimStart(),
+        agentName,
+    };
+};
+
 export function MultimodalInput({
                                     chat,
                                     status,
                                     sendMessage,
                                     onModelChange,
+                                    onAgentChange,
                                     onPersonaChange,
                                     onWebSearchChange,
                                     selectedWebSearchOptionId,
@@ -87,6 +103,7 @@ export function MultimodalInput({
     className?: string;
     stillAnswering?: boolean,
     onModelChange: (providerName: string, modelId: string) => void;
+    onAgentChange: (agentId: string | null, runtime: 'model' | 'agent') => void;
     onPersonaChange: (personaId: string | null) => void;
     onWebSearchChange: (optionId: string) => void;
     selectedWebSearchOptionId: string;
@@ -99,7 +116,10 @@ export function MultimodalInput({
     const personasStatus = useAppSelector((state) => state.personas.status);
     const webSearchOptions = useAppSelector((state) => state.webSearch.options);
     const webSearchOptionsStatus = useAppSelector((state) => state.webSearch.optionsStatus);
+    const agents = useAppSelector((state) => state.acpAgents.items);
+    const agentsStatus = useAppSelector((state) => state.acpAgents.status);
     const [input, setInput] = useState<string>('');
+    const [agentCwd, setAgentCwd] = useState<string>('');
     const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
     const resolvedWebSearchOptions = webSearchOptions.length > 0 ? webSearchOptions : [
         {
@@ -125,6 +145,12 @@ export function MultimodalInput({
             void dispatch(loadWebSearchOptions());
         }
     }, [dispatch, webSearchOptionsStatus]);
+
+    useEffect(() => {
+        if (agentsStatus === "idle") {
+            void dispatch(loadAcpAgents());
+        }
+    }, [agentsStatus, dispatch]);
 
     const selectedModelInfo = useMemo(() => {
         if (providers.length === 0) return undefined;
@@ -155,16 +181,31 @@ export function MultimodalInput({
     }, [providers, chat.selectedProvider, chat.selectedModelId, onModelChange]);
 
     const submitForm = useCallback(async (message: PromptInputMessage) => {
-        if (!chat.selectedModelId) {
-            return;
-        }
-        const modelId = chat.selectedProvider + ":" + chat.selectedModelId
+        const selectedRuntime = chat.selectedRuntime ?? 'model';
+        let runtime = selectedRuntime;
+        let selectedAgentId = chat.selectedAgentId ?? null;
+        let modelId = chat.selectedProvider && chat.selectedModelId ?
+            chat.selectedProvider + ":" + chat.selectedModelId :
+            undefined;
         const {text: cleanedText} = parsePersonaDirective(message.text);
-        let resolvedText = cleanedText;
+        const agentDirective = parseAgentDirective(cleanedText);
+        let resolvedText = agentDirective.text;
 
-        if (cleanedText.trim().startsWith("/")) {
+        if (agentDirective.agentName) {
+            const directiveAgent = agents.find((agent) =>
+                agent.name.toLowerCase() === agentDirective.agentName!.toLowerCase()
+            );
+            if (!directiveAgent) {
+                toast.error(`ACP agent "${agentDirective.agentName}" was not found.`);
+                return;
+            }
+            runtime = 'agent';
+            selectedAgentId = directiveAgent.id;
+        }
+
+        if (resolvedText.trim().startsWith("/") && !resolvedText.trim().startsWith("/agent")) {
             try {
-                const result = await dispatch(executeCommand({input: cleanedText})).unwrap();
+                const result = await dispatch(executeCommand({input: resolvedText})).unwrap();
                 resolvedText = result.resolvedText;
             } catch (error) {
                 const message = error instanceof Error ? error.message : "Failed to execute command.";
@@ -173,12 +214,35 @@ export function MultimodalInput({
             }
         }
 
+        const activeAgent = agents.find((agent) => agent.id === selectedAgentId);
+        if (runtime === 'model' && !modelId) {
+            return;
+        }
+        if (runtime === 'agent') {
+            if (!activeAgent) {
+                toast.error('Select an ACP agent before sending.');
+                return;
+            }
+            if (!activeAgent.enabled) {
+                toast.error(`${activeAgent.name} is disabled.`);
+                return;
+            }
+            if (!agentCwd.trim() && !activeAgent.defaultCwd) {
+                toast.error(`${activeAgent.name} requires a workspace path.`);
+                return;
+            }
+            modelId = undefined;
+        }
+
         sendMessage({
             text: resolvedText,
             files: message.files
         }, {
             metadata: {
                 modelId,
+                runtime,
+                agentId: runtime === 'agent' ? selectedAgentId : null,
+                agentCwd: runtime === 'agent' ? agentCwd.trim() || activeAgent?.defaultCwd || null : null,
                 personaId: chat.selectedPersonaId ?? null,
                 webSearchOptionId: selectedWebSearchOptionId === WEB_SEARCH_NONE_OPTION_ID ?
                     null :
@@ -193,7 +257,11 @@ export function MultimodalInput({
         chat.selectedModelId,
         chat.selectedPersonaId,
         chat.selectedProvider,
+        chat.selectedRuntime,
+        chat.selectedAgentId,
         dispatch,
+        agents,
+        agentCwd,
         selectedWebSearchOptionId,
         sendMessage,
     ]);
@@ -216,12 +284,18 @@ export function MultimodalInput({
             <PromptInputContent
                 chat={chat}
                 handlePersonaSelection={handlePersonaSelection}
+                agents={agents}
+                agentCwd={agentCwd}
                 input={input}
                 modelSelectorOpen={modelSelectorOpen}
                 onModelChange={onModelChange}
+                onAgentChange={onAgentChange}
+                onAgentCwdChange={setAgentCwd}
                 personaOptions={personaOptions}
                 providers={providers}
                 selectedModelInfo={selectedModelInfo}
+                selectedRuntime={chat.selectedRuntime ?? 'model'}
+                selectedAgentId={chat.selectedAgentId ?? null}
                 selectedPersonaId={chat.selectedPersonaId ?? null}
                 selectedWebSearchOptionId={selectedWebSearchOptionId}
                 setInput={setInput}
@@ -240,13 +314,19 @@ export function MultimodalInput({
 function PromptInputContent({
                                 chat,
                                 handlePersonaSelection,
+                                agents,
+                                agentCwd,
                                 input,
                                 modelSelectorOpen,
+                                onAgentChange,
+                                onAgentCwdChange,
                                 onModelChange,
                                 onWebSearchChange,
                                 personaOptions,
                                 providers,
                                 selectedModelInfo,
+                                selectedRuntime,
+                                selectedAgentId,
                                 selectedPersonaId,
                                 selectedWebSearchOptionId,
                                 setInput,
@@ -255,16 +335,22 @@ function PromptInputContent({
                                 submitForm,
                                 webSearchOptions,
                                 stop
-                            }: {
+}: {
     chat: Chat;
     handlePersonaSelection: (personaId: string | null) => void;
+    agents: AcpAgentView[];
+    agentCwd: string;
     input: string;
     modelSelectorOpen: boolean;
+    onAgentChange: (agentId: string | null, runtime: 'model' | 'agent') => void;
+    onAgentCwdChange: (value: string) => void;
     onModelChange: (providerName: string, modelId: string) => void;
     onWebSearchChange: (optionId: string) => void;
     personaOptions: { id: string; name: string }[];
     providers: ProviderWithModels[];
     selectedModelInfo: { inputModalities: string[] } | undefined;
+    selectedRuntime: 'model' | 'agent';
+    selectedAgentId: string | null;
     selectedPersonaId: string | null;
     selectedWebSearchOptionId: string;
     setInput: (value: string) => void;
@@ -277,6 +363,7 @@ function PromptInputContent({
     const attachments = usePromptInputAttachments();
     const [personaSelectorOpen, setPersonaSelectorOpen] = useState(false);
     const [webSearchSelectorOpen, setWebSearchSelectorOpen] = useState(false);
+    const [agentSelectorOpen, setAgentSelectorOpen] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const personaSelectorTriggeredByShortcutRef = useRef(false);
 
@@ -294,6 +381,17 @@ function PromptInputContent({
             selectedWebSearchOptionId :
             WEB_SEARCH_NONE_OPTION_ID;
     }, [selectedWebSearchOptionId, webSearchOptions]);
+
+    const selectedAgentValue = useMemo(() => {
+        if (!selectedAgentId) {
+            return AGENT_NONE_VALUE;
+        }
+        return agents.some((agent) => agent.id === selectedAgentId) ? selectedAgentId : AGENT_NONE_VALUE;
+    }, [agents, selectedAgentId]);
+
+    const selectedAgent = useMemo(() => {
+        return selectedAgentId ? agents.find((agent) => agent.id === selectedAgentId) : undefined;
+    }, [agents, selectedAgentId]);
 
     const focusTextarea = useCallback(() => {
         window.requestAnimationFrame(() => {
@@ -319,6 +417,13 @@ function PromptInputContent({
         onWebSearchChange(value);
         focusTextarea();
     }, [focusTextarea, onWebSearchChange]);
+
+    const handleAgentValueChange = useCallback((value: string) => {
+        onAgentChange(value === AGENT_NONE_VALUE ? null : value, 'agent');
+        const nextAgent = agents.find((agent) => agent.id === value);
+        onAgentCwdChange(nextAgent?.defaultCwd ?? '');
+        focusTextarea();
+    }, [agents, focusTextarea, onAgentChange, onAgentCwdChange]);
 
     const handleTextareaFocus = useCallback((event: FocusEvent<HTMLTextAreaElement>) => {
         textareaRef.current = event.currentTarget;
@@ -365,6 +470,32 @@ function PromptInputContent({
             </PromptInputBody>
             <PromptInputFooter>
                 <PromptInputTools>
+                    <div className="flex h-8 items-center gap-0.5 rounded-md border bg-background p-0.5">
+                        <button
+                            aria-pressed={selectedRuntime === 'model'}
+                            className={
+                                selectedRuntime === 'model' ?
+                                    'h-6 rounded-sm bg-secondary px-2 text-xs font-medium text-secondary-foreground' :
+                                    'h-6 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground'
+                            }
+                            onClick={() => onAgentChange(null, 'model')}
+                            type="button"
+                        >
+                            Model
+                        </button>
+                        <button
+                            aria-pressed={selectedRuntime === 'agent'}
+                            className={
+                                selectedRuntime === 'agent' ?
+                                    'h-6 rounded-sm bg-secondary px-2 text-xs font-medium text-secondary-foreground' :
+                                    'h-6 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground'
+                            }
+                            onClick={() => onAgentChange(selectedAgentId, 'agent')}
+                            type="button"
+                        >
+                            Agent
+                        </button>
+                    </div>
                     <PromptInputActionMenu>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -386,54 +517,90 @@ function PromptInputContent({
                             <PromptInputActionAddAttachments/>
                         </PromptInputActionMenuContent>
                     </PromptInputActionMenu>
-                    <ModelSelector
-                        onOpenChange={setModelSelectorOpen}
-                        open={modelSelectorOpen}
-                    >
-                        <ModelSelectorTrigger asChild>
-                            <PromptInputButton className="w-max">
-                                {chat.selectedModelId ? (
-                                    <ModelSelectorName>
-                                        {chat.selectedModelId}
-                                    </ModelSelectorName>
-                                ) : ('Select Model')}
-                            </PromptInputButton>
-                        </ModelSelectorTrigger>
-                        <ModelSelectorContent>
-                            <ModelSelectorInput placeholder="Search models"/>
-                            <ModelSelectorList>
-                                <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
-                                {providers.map((provider) => (
-                                    <ModelSelectorGroup heading={provider.name}
-                                                        key={provider.name}>
-                                        {provider.models
-                                            .map((m) => (
-                                                <ModelSelectorItem
-                                                    key={m.modelId}
-                                                    onSelect={() => {
-                                                        setModelSelectorOpen(false);
-                                                        onModelChange(provider.name, m.modelId);
-                                                    }}
-                                                    value={m.modelId}
-                                                >
-                                                    <ModelSelectorName>{m.name}</ModelSelectorName>
-                                                    <ModelSelectorLogo
-                                                        key={provider.type.toString()}
-                                                        provider={provider.type.toString()}
-                                                    />
-                                                    {chat.selectedProvider === provider.name &&
-                                                    chat.selectedModelId === m.modelId ? (
-                                                        <CheckIcon className="ml-auto size-4"/>
-                                                    ) : (
-                                                        <div className="ml-auto size-4"/>
-                                                    )}
-                                                </ModelSelectorItem>
-                                            ))}
-                                    </ModelSelectorGroup>
-                                ))}
-                            </ModelSelectorList>
-                        </ModelSelectorContent>
-                    </ModelSelector>
+                    {selectedRuntime === 'model' ? (
+                        <ModelSelector
+                            onOpenChange={setModelSelectorOpen}
+                            open={modelSelectorOpen}
+                        >
+                            <ModelSelectorTrigger asChild>
+                                <PromptInputButton className="w-max">
+                                    {chat.selectedModelId ? (
+                                        <ModelSelectorName>
+                                            {chat.selectedModelId}
+                                        </ModelSelectorName>
+                                    ) : ('Select Model')}
+                                </PromptInputButton>
+                            </ModelSelectorTrigger>
+                            <ModelSelectorContent>
+                                <ModelSelectorInput placeholder="Search models"/>
+                                <ModelSelectorList>
+                                    <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
+                                    {providers.map((provider) => (
+                                        <ModelSelectorGroup heading={provider.name}
+                                                            key={provider.name}>
+                                            {provider.models
+                                                .map((m) => (
+                                                    <ModelSelectorItem
+                                                        key={m.modelId}
+                                                        onSelect={() => {
+                                                            setModelSelectorOpen(false);
+                                                            onModelChange(provider.name, m.modelId);
+                                                        }}
+                                                        value={m.modelId}
+                                                    >
+                                                        <ModelSelectorName>{m.name}</ModelSelectorName>
+                                                        <ModelSelectorLogo
+                                                            key={provider.type.toString()}
+                                                            provider={provider.type.toString()}
+                                                        />
+                                                        {chat.selectedProvider === provider.name &&
+                                                        chat.selectedModelId === m.modelId ? (
+                                                            <CheckIcon className="ml-auto size-4"/>
+                                                        ) : (
+                                                            <div className="ml-auto size-4"/>
+                                                        )}
+                                                    </ModelSelectorItem>
+                                                ))}
+                                        </ModelSelectorGroup>
+                                    ))}
+                                </ModelSelectorList>
+                            </ModelSelectorContent>
+                        </ModelSelector>
+                    ) : (
+                        <>
+                            <PromptInputSelect
+                                onOpenChange={setAgentSelectorOpen}
+                                onValueChange={handleAgentValueChange}
+                                open={agentSelectorOpen}
+                                value={selectedAgentValue}
+                            >
+                                <PromptInputSelectTrigger className="w-max">
+                                    <PromptInputSelectValue placeholder="Agent"/>
+                                </PromptInputSelectTrigger>
+                                <PromptInputSelectContent>
+                                    <PromptInputSelectItem value={AGENT_NONE_VALUE}>
+                                        None
+                                    </PromptInputSelectItem>
+                                    {agents.map((agent) => (
+                                        <PromptInputSelectItem
+                                            disabled={!agent.enabled}
+                                            key={agent.id}
+                                            value={agent.id}
+                                        >
+                                            {agent.name}
+                                        </PromptInputSelectItem>
+                                    ))}
+                                </PromptInputSelectContent>
+                            </PromptInputSelect>
+                            <Input
+                                aria-label="Agent workspace"
+                                className="h-8 w-48"
+                                onChange={(event) => onAgentCwdChange(event.target.value)}
+                                placeholder={selectedAgent?.defaultCwd || "Workspace path"}
+                                value={agentCwd}
+                            />
+                        </>
+                    )}
                     <PromptInputSelect
                         onOpenChange={setWebSearchSelectorOpen}
                         onValueChange={handleWebSearchValueChange}
@@ -488,7 +655,12 @@ function PromptInputContent({
                     </PromptInputSelect>
                 </PromptInputTools>
                 <PromptInputSubmit
-                    disabled={!chat.selectedModelId || (!input && status !== 'submitted' && status !== 'streaming')}
+                    disabled={
+                        (selectedRuntime === 'model' && !chat.selectedModelId) ||
+                        (selectedRuntime === 'agent' &&
+                            (!selectedAgentId || !selectedAgent?.enabled || (!agentCwd.trim() && !selectedAgent.defaultCwd))) ||
+                        (!input && status !== 'submitted' && status !== 'streaming')
+                    }
                     status={status}
                     onStop={stop}
                 />

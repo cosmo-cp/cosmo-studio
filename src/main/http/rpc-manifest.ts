@@ -6,5 +6,6 @@ import {CommandController} from "../controllers/CommandController";
 import {McpServerController} from "../controllers/McpServerController";
 import {WebSearchController} from "../controllers/WebSearchController";
 import {WorkflowController} from "../controllers/WorkflowController";
+import {AcpAgentController} from "../controllers/AcpAgentController";
 
-export const rpcControllerConstructors = [ChatController, ModelProviderController, MessageController, PersonaController, CommandController, McpServerController, WebSearchController, WorkflowController] as const;
+export const rpcControllerConstructors = [ChatController, ModelProviderController, MessageController, PersonaController, CommandController, McpServerController, WebSearchController, WorkflowController, AcpAgentController] as const;

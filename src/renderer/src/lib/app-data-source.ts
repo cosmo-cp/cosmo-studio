@@ -1,4 +1,10 @@
 import type {
+    AcpAgentCreateInput,
+    AcpAgentTestResult,
+    AcpAgentUpdateInput,
+    AcpAgentView,
+    AcpRegistryInstallInput,
+    AcpRegistryView,
     Chat,
     CommandCreateInput,
     CommandDefinition,
@@ -30,6 +36,10 @@ import {
     ModelStatusEnum,
 } from "core/database/schema/modelProviderSchema";
 import {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
+import {
+    AcpAgentInstallStatusEnum,
+    AcpAgentSourceEnum,
+} from "core/database/schema/acpAgentSchema";
 import type {UIMessage} from "ai";
 import {
     buildWebSearchOptions,
@@ -55,6 +65,10 @@ export interface AppDataSource {
         deleteChat(chatId: string): Promise<void>;
         updatePinnedStatusForChat(chatId: string, pinned: boolean): Promise<void>;
         updateSelectedModelForChat(chatId: string, identifier: ModelIdentifier): Promise<void>;
+        updateSelectedAgentForChat(
+            chatId: string,
+            identifier: {selectedAgentId: string | null; selectedRuntime: "agent" | "model"}
+        ): Promise<void>;
         updateSelectedPersonaForChat(chatId: string, identifier: PersonaIdentifier): Promise<void>;
     };
     command: {
@@ -97,6 +111,18 @@ export interface AppDataSource {
         getServerTools(id: string): Promise<McpTool[]>;
         updateToolApproval(serverId: string, toolName: string, needsApproval: boolean): Promise<McpServer>;
     };
+    acpAgent: {
+        getAll(): Promise<AcpAgentView[]>;
+        create(input: AcpAgentCreateInput): Promise<AcpAgentView>;
+        update(id: string, input: AcpAgentUpdateInput): Promise<AcpAgentView>;
+        delete(id: string): Promise<void>;
+        enable(id: string): Promise<AcpAgentView>;
+        disable(id: string): Promise<AcpAgentView>;
+        getRegistry(): Promise<AcpRegistryView>;
+        refreshRegistry(): Promise<AcpRegistryView>;
+        installFromRegistry(input: AcpRegistryInstallInput): Promise<AcpAgentView>;
+        test(id: string, cwd?: string | null): Promise<AcpAgentTestResult>;
+    };
     workflow: {
         list(searchQuery: string | null): Promise<Workflow[]>;
         create(input: WorkflowCreateInput, graph: WorkflowGraph): Promise<Workflow>;
@@ -121,6 +147,8 @@ interface DummyHttpState {
     parallelWebSearchConfig: FrontendWebSearchProviderConfig | null;
     mcpServers: McpServer[];
     mcpToolsByServerId: Record<string, McpTool[]>;
+    acpAgents: AcpAgentView[];
+    acpRegistry: AcpRegistryView;
 }
 
 function cloneValue<T>(value: T): T {
@@ -235,6 +263,8 @@ function buildDummyHttpState(): DummyHttpState {
                 pinnedAt: new Date("2026-03-18T09:05:00.000Z"),
                 selectedProvider: "Demo HTTP Provider",
                 selectedModelId: "gpt-demo",
+                selectedRuntime: "model",
+                selectedAgentId: null,
                 selectedPersonaId: null,
                 selected: true,
                 lastMessage: "This chat was loaded from the dummy HTTP adapter.",
@@ -248,6 +278,8 @@ function buildDummyHttpState(): DummyHttpState {
                 pinnedAt: null,
                 selectedProvider: null,
                 selectedModelId: null,
+                selectedRuntime: "model",
+                selectedAgentId: null,
                 selectedPersonaId: null,
                 selected: false,
                 lastMessage: "This is another dummy conversation.",
@@ -344,6 +376,45 @@ function buildDummyHttpState(): DummyHttpState {
                 },
             ],
         },
+        acpAgents: [
+            {
+                id: "http-acp-agent-1",
+                name: "Demo ACP Agent",
+                description: "Dummy ACP agent from the HTTP adapter.",
+                source: AcpAgentSourceEnum.CUSTOM,
+                registryId: null,
+                version: "0.0.0",
+                command: "npx",
+                args: ["-y", "@example/acp-agent"],
+                defaultCwd: "/tmp",
+                authMethodId: null,
+                enabled: true,
+                installStatus: AcpAgentInstallStatusEnum.INSTALLED,
+                mcpServerIds: [],
+                metadata: {},
+                createdAt: new Date("2026-03-18T06:00:00.000Z"),
+                updatedAt: new Date("2026-03-18T06:00:00.000Z"),
+                envKeys: [],
+            },
+        ],
+        acpRegistry: {
+            version: "demo",
+            fetchedAt: null,
+            agents: [
+                {
+                    id: "demo-acp-agent",
+                    name: "Demo Registry Agent",
+                    version: "1.0.0",
+                    description: "A dummy registry agent.",
+                    distribution: {
+                        npx: {
+                            package: "@example/acp-agent@1.0.0",
+                            args: ["--acp"],
+                        },
+                    },
+                },
+            ],
+        },
     };
 }
 
@@ -371,6 +442,9 @@ function createApiBackedAppDataSource(api: HttpApi, backend: BackendKind): AppDa
             },
             async updateSelectedModelForChat(chatId, identifier) {
                 await api.chat.updateSelectedModelForChat(chatId, identifier);
+            },
+            async updateSelectedAgentForChat(chatId, identifier) {
+                await api.chat.updateSelectedAgentForChat(chatId, identifier);
             },
             async updateSelectedPersonaForChat(chatId, identifier) {
                 await api.chat.updateSelectedPersonaForChat(chatId, identifier);
@@ -468,6 +542,38 @@ function createApiBackedAppDataSource(api: HttpApi, backend: BackendKind): AppDa
                 return api.mcpServer.updateToolApproval(serverId, toolName, needsApproval);
             },
         },
+        acpAgent: {
+            getAll() {
+                return api.acpAgent.getAll();
+            },
+            create(input) {
+                return api.acpAgent.create(input);
+            },
+            update(id, input) {
+                return api.acpAgent.update(id, input);
+            },
+            async delete(id) {
+                await api.acpAgent.delete(id);
+            },
+            enable(id) {
+                return api.acpAgent.enable(id);
+            },
+            disable(id) {
+                return api.acpAgent.disable(id);
+            },
+            getRegistry() {
+                return api.acpAgent.getRegistry();
+            },
+            refreshRegistry() {
+                return api.acpAgent.refreshRegistry();
+            },
+            installFromRegistry(input) {
+                return api.acpAgent.installFromRegistry(input);
+            },
+            test(id, cwd) {
+                return api.acpAgent.test(id, cwd ?? null);
+            },
+        },
         workflow: {
             list(searchQuery) {
                 return api.workflow.list(searchQuery);
@@ -529,6 +635,8 @@ function createDummyHttpAppDataSource(): AppDataSource {
                     pinnedAt: null,
                     selectedProvider: null,
                     selectedModelId: null,
+                    selectedRuntime: "model",
+                    selectedAgentId: null,
                     selectedPersonaId: null,
                     selected: true,
                     lastMessage: "This chat was created by the dummy HTTP adapter.",
@@ -561,6 +669,16 @@ function createDummyHttpAppDataSource(): AppDataSource {
                         ...chat,
                         selectedProvider: identifier.selectedProvider,
                         selectedModelId: identifier.selectedModelId,
+                        selectedRuntime: "model",
+                    } : chat
+                );
+            },
+            async updateSelectedAgentForChat(chatId, identifier) {
+                state.chats = state.chats.map((chat) =>
+                    chat.id === chatId ? {
+                        ...chat,
+                        selectedAgentId: identifier.selectedAgentId,
+                        selectedRuntime: identifier.selectedRuntime,
                     } : chat
                 );
             },
@@ -814,6 +932,101 @@ function createDummyHttpAppDataSource(): AppDataSource {
                 return cloneValue(server);
             },
         },
+        acpAgent: {
+            async getAll() {
+                return cloneValue(state.acpAgents);
+            },
+            async create(input) {
+                const now = new Date();
+                const created: AcpAgentView = {
+                    id: crypto.randomUUID(),
+                    name: input.name,
+                    description: input.description ?? null,
+                    source: input.source ?? AcpAgentSourceEnum.CUSTOM,
+                    registryId: input.registryId ?? null,
+                    version: input.version ?? null,
+                    command: input.command,
+                    args: input.args ?? [],
+                    defaultCwd: input.defaultCwd ?? null,
+                    authMethodId: input.authMethodId ?? null,
+                    enabled: input.enabled ?? true,
+                    installStatus: input.installStatus ?? AcpAgentInstallStatusEnum.INSTALLED,
+                    mcpServerIds: input.mcpServerIds ?? [],
+                    metadata: input.metadata ?? {},
+                    createdAt: now,
+                    updatedAt: now,
+                    envKeys: Object.keys(input.env ?? {}),
+                };
+                state.acpAgents.push(created);
+                return cloneValue(created);
+            },
+            async update(id, input) {
+                const existing = state.acpAgents.find((agent) => agent.id === id);
+                if (!existing) {
+                    throw new Error("ACP agent not found");
+                }
+                const updated: AcpAgentView = {
+                    ...existing,
+                    ...input,
+                    envKeys: input.env ? Object.keys(input.env) : existing.envKeys,
+                    updatedAt: new Date(),
+                } as AcpAgentView;
+                state.acpAgents = state.acpAgents.map((agent) => agent.id === id ? updated : agent);
+                return cloneValue(updated);
+            },
+            async delete(id) {
+                state.acpAgents = state.acpAgents.filter((agent) => agent.id !== id);
+            },
+            async enable(id) {
+                return this.update(id, {enabled: true});
+            },
+            async disable(id) {
+                return this.update(id, {enabled: false});
+            },
+            async getRegistry() {
+                return cloneValue(state.acpRegistry);
+            },
+            async refreshRegistry() {
+                state.acpRegistry = {
+                    ...state.acpRegistry,
+                    fetchedAt: new Date(),
+                };
+                return cloneValue(state.acpRegistry);
+            },
+            async installFromRegistry(input) {
+                const agent = state.acpRegistry.agents.find((item) => item.id === input.registryId);
+                if (!agent) {
+                    throw new Error("Registry agent not found");
+                }
+                const npx = agent.distribution.npx as {package?: string; args?: string[]} | undefined;
+                if (!npx?.package) {
+                    throw new Error("Only npx registry agents are supported by the dummy adapter.");
+                }
+                return this.create({
+                    name: agent.name,
+                    description: agent.description ?? null,
+                    source: AcpAgentSourceEnum.REGISTRY,
+                    registryId: agent.id,
+                    version: agent.version,
+                    command: "npx",
+                    args: ["-y", npx.package, ...(npx.args ?? [])],
+                    env: {},
+                    defaultCwd: input.defaultCwd ?? null,
+                    authMethodId: input.authMethodId ?? null,
+                    enabled: input.enabled ?? true,
+                    installStatus: AcpAgentInstallStatusEnum.INSTALLED,
+                    mcpServerIds: input.mcpServerIds ?? [],
+                    metadata: agent as unknown as Record<string, unknown>,
+                });
+            },
+            async test(id) {
+                const agent = state.acpAgents.find((item) => item.id === id);
+                return {
+                    ok: Boolean(agent?.enabled),
+                    message: agent?.enabled ? "Dummy ACP agent is configured." : "ACP agent is disabled.",
+                };
+            },
+        },
         workflow: {
             async list() {
                 return [];
@@ -884,7 +1097,8 @@ function hasElectronApis(): boolean {
         typeof window.api.persona !== "undefined" &&
         typeof window.api.modelProvider !== "undefined" &&
         typeof window.api.webSearch !== "undefined" &&
-        typeof window.api.mcpServer !== "undefined";
+        typeof window.api.mcpServer !== "undefined" &&
+        typeof window.api.acpAgent !== "undefined";
 }
 
 // Resolve the backend once when the root Redux store is created.

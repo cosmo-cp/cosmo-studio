@@ -3,7 +3,7 @@ import { and, asc, desc, eq, ilike, SQL } from 'drizzle-orm';
 import { CORETYPES } from '../types/types';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { chat, message } from '../database/schema/schema';
-import { Chat, ChatWithMessages, Message, ModelIdentifier, NewChat, PersonaIdentifier } from '../dto';
+import { AgentIdentifier, Chat, ChatWithMessages, Message, ModelIdentifier, NewChat, PersonaIdentifier } from '../dto';
 import { UIMessage } from 'ai';
 
 @injectable()
@@ -112,6 +112,17 @@ export class ChatRepository {
             .set({
                 selectedProvider: modelIdentifier.selectedProvider,
                 selectedModelId: modelIdentifier.selectedModelId,
+                selectedRuntime: 'model',
+            })
+            .where(eq(chat.id, chatId));
+    }
+
+    public async updateSelectedAgentForChatId(chatId: string, agentIdentifier: AgentIdentifier): Promise<void> {
+        await this.db
+            .update(chat)
+            .set({
+                selectedAgentId: agentIdentifier.selectedAgentId,
+                selectedRuntime: agentIdentifier.selectedRuntime ?? 'agent',
             })
             .where(eq(chat.id, chatId));
     }

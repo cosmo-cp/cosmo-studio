@@ -1,5 +1,6 @@
 import {configureStore, isPlain} from "@reduxjs/toolkit";
 import {resolveAppDataSource, type AppDataSource} from "@/lib/app-data-source";
+import {acpAgentsReducer} from "@/lib/store/acp-agents-store";
 import {commandsReducer} from "@/lib/store/commands-store";
 import {chatReducer} from "@/lib/store/chat-store";
 import {mcpServersReducer} from "@/lib/store/mcp-servers-store";
@@ -25,6 +26,7 @@ export function makeStore(options: MakeStoreOptions = {}) {
     return configureStore({
         reducer: {
             chat: chatReducer,
+            acpAgents: acpAgentsReducer,
             commands: commandsReducer,
             personas: personasReducer,
             providers: providersReducer,

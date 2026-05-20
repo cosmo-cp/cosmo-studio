@@ -41,6 +41,7 @@ describe('preload index', () => {
             'mcpServer',
             'webSearch',
             'workflow',
+            'acpAgent',
             'streaming',
         ]);
         expect(api).not.toHaveProperty('ipcRenderer');

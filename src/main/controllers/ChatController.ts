@@ -4,7 +4,7 @@ import { CORETYPES } from 'core/types/types';
 import { ChatService } from 'core/services/ChatService';
 import { IpcController, IpcHandler } from '../ipc/Decorators';
 import { Controller } from './Controller';
-import { Chat, ChatWithMessages, ModelIdentifier, NewChat, PersonaIdentifier } from 'core/dto';
+import { AgentIdentifier, Chat, ChatWithMessages, ModelIdentifier, NewChat, PersonaIdentifier } from 'core/dto';
 
 const personaIdentifierSchema = z
     .object({
@@ -20,6 +20,12 @@ const personaIdentifierSchema = z
 const newChatSchema = z.custom<NewChat>();
 const newChatUpdateSchema = z.custom<Partial<NewChat>>();
 const modelIdentifierSchema = z.custom<ModelIdentifier>();
+const agentIdentifierSchema = z
+    .object({
+        selectedAgentId: z.string().min(1).nullable().default(null),
+        selectedRuntime: z.enum(['model', 'agent']).default('agent'),
+    })
+    .strict();
 
 @injectable()
 @IpcController('chat')
@@ -64,6 +70,12 @@ export class ChatController implements Controller {
     @IpcHandler("updateSelectedModelForChat", z.tuple([z.string().min(1), modelIdentifierSchema]))
     public async updateSelectedModelForChat(id: string, modelIdentifier: ModelIdentifier): Promise<void> {
         return this.chatService.updateSelectedModelForChat(id, modelIdentifier);
+    }
+
+    @IpcHandler("updateSelectedAgentForChat", z.tuple([z.string().min(1), agentIdentifierSchema]))
+    public async updateSelectedAgentForChat(id: string, agentIdentifier: AgentIdentifier): Promise<void> {
+        const parsedAgentIdentifier = agentIdentifierSchema.parse(agentIdentifier);
+        return this.chatService.updateSelectedAgentForChat(id, parsedAgentIdentifier);
     }
 
     @IpcHandler("updateSelectedPersonaForChat", z.tuple([z.string().min(1), personaIdentifierSchema]))

@@ -6,7 +6,7 @@ import { ChatHeader } from '@/components/chat-header';
 import { Messages } from '@/components/messages';
 import { MultimodalInput } from '@/components/multimodal-input';
 import { useChat } from '@ai-sdk/react';
-import { IpcChatTransport } from '@/chat-transport';
+import { createChatTransport } from '@/chat-transport';
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { MessageCirclePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ import {
     setTotalMatches,
     togglePinnedChat,
     updateChatInHistory as updateChatInHistoryAction,
+    updateSelectedAgent,
     updateSelectedModel,
     updateSelectedPersona,
 } from '@/lib/store/chat-store';
@@ -44,7 +45,7 @@ function MainChatPage(): JSX.Element {
         selectedWebSearchOptionByChatId,
         totalMatches,
     } = useAppSelector((state) => state.chat);
-    const transport = useMemo(() => new IpcChatTransport(), []);
+    const transport = useMemo(() => createChatTransport(), []);
 
     const syncChatInStore = useCallback((chatId: string, updates: Partial<Chat>) => {
         dispatch(updateChatInHistoryAction({ chatId, updates }));
@@ -259,6 +260,30 @@ function MainChatPage(): JSX.Element {
             });
     }, [dispatch, selectedChat]);
 
+    const handleAgentChange = useCallback((agentId: string | null, runtime: 'model' | 'agent') => {
+        if (!selectedChat) return;
+
+        const updates: Partial<Chat> = {
+            selectedAgentId: agentId,
+            selectedRuntime: runtime,
+        };
+
+        dispatch(updateChatInHistoryAction({chatId: selectedChat.id, updates}));
+
+        dispatch(updateSelectedAgent({
+            chatId: selectedChat.id,
+            selectedAgentId: agentId,
+            selectedRuntime: runtime,
+        }))
+            .unwrap()
+            .catch((error) => {
+                logger.error(error);
+                toast.error('Failed to update chat agent', {
+                    description: typeof error === 'string' ? error : undefined,
+                });
+            });
+    }, [dispatch, selectedChat]);
+
     const handlePersonaChange = useCallback((personaId: string | null) => {
         if (!selectedChat) return;
 
@@ -339,6 +364,7 @@ function MainChatPage(): JSX.Element {
                                     messages={messages}
                                     sendMessage={sendMessage}
                                     onModelChange={handleModelChange}
+                                    onAgentChange={handleAgentChange}
                                     onPersonaChange={handlePersonaChange}
                                     onWebSearchChange={handleWebSearchChange}
                                     selectedWebSearchOptionId={selectedWebSearchOptionId}
