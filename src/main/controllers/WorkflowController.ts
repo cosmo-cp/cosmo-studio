@@ -6,6 +6,8 @@ import { WorkflowService } from 'core/services/WorkflowService';
 import { WorkflowRunService } from 'core/services/WorkflowRunService';
 import type { Workflow, WorkflowCreateInput, WorkflowGraph, WorkflowRun, WorkflowRunInsert, WorkflowRunStatus, WorkflowVersion } from 'core/dto';
 import { Controller } from './Controller';
+import { TYPES } from '../types';
+import { WorkflowExecutionService } from '../services/WorkflowExecutionService';
 
 const workflowGraphSchema = z.strictObject({
     nodes: z.array(z.record(z.string(), z.unknown())),
@@ -49,6 +51,8 @@ export class WorkflowController implements Controller {
         private workflowService: WorkflowService,
         @inject(CORETYPES.WorkflowRunService)
         private workflowRunService: WorkflowRunService,
+        @inject(TYPES.WorkflowExecutionService)
+        private workflowExecutionService: WorkflowExecutionService,
     ) {}
 
     // List workflows for the workflow history UI with optional search filtering.
@@ -90,7 +94,12 @@ export class WorkflowController implements Controller {
     // Start a workflow run and emit the initial queued lifecycle record.
     @IpcHandler('run.start', z.tuple([workflowRunStartSchema]))
     public async runStart(input: WorkflowRunInsert): Promise<WorkflowRun> {
-        return this.workflowRunService.startRun(workflowRunStartSchema.parse(input));
+        const run = await this.workflowRunService.startRun(workflowRunStartSchema.parse(input));
+        void this.workflowExecutionService.executeRun({
+            runId: run.id,
+            graph: {nodes: [], edges: []},
+        });
+        return run;
     }
 
     // Cancel an existing workflow run and record the cancellation event.
