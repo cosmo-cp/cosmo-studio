@@ -27,7 +27,7 @@ const workflowUpdateSchema = z.strictObject({
 
 const workflowRunStartSchema = z.strictObject({
     workflowId: z.string().uuid(),
-    workflowVersionId: z.string().uuid(),
+    workflowVersionId: z.string().uuid().optional(),
     status: z.enum(['queued', 'running', 'completed', 'failed', 'cancelled']).optional(),
     startedAt: z.date().nullable().optional(),
     completedAt: z.date().nullable().optional(),
@@ -94,7 +94,17 @@ export class WorkflowController implements Controller {
     // Start a workflow run and emit the initial queued lifecycle record.
     @IpcHandler('run.start', z.tuple([workflowRunStartSchema]))
     public async runStart(input: WorkflowRunInsert): Promise<WorkflowRun> {
-        const run = await this.workflowRunService.startRun(workflowRunStartSchema.parse(input));
+        const parsedInput = workflowRunStartSchema.parse(input);
+        const versions = await this.workflowService.getWorkflowVersions(parsedInput.workflowId);
+        const selectedVersionId = parsedInput.workflowVersionId ?? versions[0]?.id;
+        if (!selectedVersionId) {
+            throw new Error('Cannot start workflow run without an available workflow version');
+        }
+
+        const run = await this.workflowRunService.startRun({
+            ...parsedInput,
+            workflowVersionId: selectedVersionId,
+        });
         void this.workflowExecutionService.executeRun({
             runId: run.id,
             graph: {nodes: [], edges: []},

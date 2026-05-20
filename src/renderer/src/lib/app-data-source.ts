@@ -16,6 +16,12 @@ import type {
     ProviderWithModels,
     WebSearchConfigSaveInput,
     WebSearchConfigView,
+    Workflow,
+    WorkflowCreateInput,
+    WorkflowGraph,
+    WorkflowRun,
+    WorkflowRunStatus,
+    WorkflowVersion,
 } from "core/dto";
 import {
     ModelModalityEnum,
@@ -86,6 +92,14 @@ export interface AppDataSource {
         disable(id: string): Promise<McpServer>;
         getServerTools(id: string): Promise<McpTool[]>;
         updateToolApproval(serverId: string, toolName: string, needsApproval: boolean): Promise<McpServer>;
+    };
+    workflow: {
+        list(searchQuery: string | null): Promise<Workflow[]>;
+        create(input: WorkflowCreateInput, graph: WorkflowGraph): Promise<Workflow>;
+        delete(id: string): Promise<void>;
+        saveGraph(id: string, graph: WorkflowGraph): Promise<WorkflowVersion>;
+        runStart(input: {workflowId: string; workflowVersionId: string}): Promise<WorkflowRun>;
+        runGet(runId: string): Promise<WorkflowRunStatus | undefined>;
     };
 }
 
@@ -450,6 +464,26 @@ function createApiBackedAppDataSource(api: HttpApi, backend: BackendKind): AppDa
                 return api.mcpServer.updateToolApproval(serverId, toolName, needsApproval);
             },
         },
+        workflow: {
+            list(searchQuery) {
+                return api.workflow.list(searchQuery);
+            },
+            create(input, graph) {
+                return api.workflow.create(input, graph);
+            },
+            async delete(id) {
+                await api.workflow.delete(id);
+            },
+            saveGraph(id, graph) {
+                return api.workflow.saveGraph(id, graph);
+            },
+            runStart(input) {
+                return api.workflow.runStart(input);
+            },
+            runGet(runId) {
+                return api.workflow.runGet({runId});
+            },
+        },
     };
 }
 
@@ -773,6 +807,48 @@ function createDummyHttpAppDataSource(): AppDataSource {
                 };
                 server.updatedAt = new Date();
                 return cloneValue(server);
+            },
+        },
+        workflow: {
+            async list() {
+                return [];
+            },
+            async create(input) {
+                return {
+                    id: crypto.randomUUID(),
+                    title: input.title,
+                    summary: input.summary ?? null,
+                    status: 'active',
+                    latestVersion: 1,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                } satisfies Workflow;
+            },
+            async delete() {},
+            async saveGraph(id, graph) {
+                return {
+                    id: crypto.randomUUID(),
+                    workflowId: id,
+                    version: 1,
+                    graph,
+                    createdAt: new Date(),
+                } satisfies WorkflowVersion;
+            },
+            async runStart(input) {
+                return {
+                    id: crypto.randomUUID(),
+                    workflowId: input.workflowId,
+                    workflowVersionId: input.workflowVersionId,
+                    status: 'queued',
+                    startedAt: null,
+                    completedAt: null,
+                    errorMessage: null,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                } satisfies WorkflowRun;
+            },
+            async runGet() {
+                return undefined;
             },
         },
     };
