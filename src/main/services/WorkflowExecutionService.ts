@@ -100,7 +100,7 @@ export class WorkflowExecutionService {
         private readonly mcpClientManager: McpClientManager,
     ) {}
 
-    // Turns the stored graph snapshot into deterministic runtime state before execution mutates run status.
+    // Converts persisted canvas data into deterministic executable state before a run mutates status.
     public compileGraph(graph: WorkflowGraph): CompiledWorkflowGraph {
         const nodes = graph.nodes.map((node) => this.toWorkflowStep(node));
         const nodeById = new Map<string, WorkflowExecutableStep>();
@@ -163,7 +163,7 @@ export class WorkflowExecutionService {
         };
     }
 
-    // Lets UI delivery adapters observe in-process progress without waiting for polling-backed persistence.
+    // Allows streaming adapters to observe in-process progress before persisted polling catches up.
     public subscribeToProgress(runId: string, listener: (event: WorkflowProgressEvent) => void): () => void {
         const listeners = this.progressListeners.get(runId) ?? new Set<(event: WorkflowProgressEvent) => void>();
         listeners.add(listener);
@@ -277,7 +277,7 @@ export class WorkflowExecutionService {
         }
     }
 
-    // Gives controllers a single cancellation path that updates persistence and in-flight execution state.
+    // Gives controllers a single cancellation path for persistence and any active in-memory execution.
     public async cancelRun(runId: string, message?: string): Promise<WorkflowRun | undefined> {
         this.activeRunAbortControllers.get(runId)?.abort();
         this.emitProgress(runId, {
@@ -288,6 +288,7 @@ export class WorkflowExecutionService {
         return this.workflowRunService.cancelRun(runId, message);
     }
 
+    // Dispatches node execution to the primitive that owns the node's side effects.
     private async executeStep(
         step: WorkflowExecutableStep,
         compiled: CompiledWorkflowGraph,
@@ -354,6 +355,7 @@ export class WorkflowExecutionService {
         }
     }
 
+    // Executes an agent node through the configured provider registry and shared MCP tools.
     private async executeAgentStep(
         step: WorkflowExecutableStep,
         input: unknown,
@@ -387,6 +389,7 @@ export class WorkflowExecutionService {
         };
     }
 
+    // Executes an HTTP node while preserving response metadata for downstream nodes.
     private async executeHttpStep(step: WorkflowExecutableStep, signal: AbortSignal): Promise<Record<string, unknown>> {
         const url = this.getString(step.data.url);
         if (!url) {
@@ -416,6 +419,7 @@ export class WorkflowExecutionService {
         };
     }
 
+    // Executes a named MCP tool from the current tool registry.
     private async executeMcpStep(step: WorkflowExecutableStep): Promise<unknown> {
         const toolName = this.getString(step.data.toolName);
         if (!toolName) {
@@ -432,6 +436,7 @@ export class WorkflowExecutionService {
         return tool.execute(toolInput);
     }
 
+    // Persists and emits step start so stream consumers see progress immediately.
     private async startStep(runId: string, step: WorkflowExecutableStep): Promise<void> {
         await this.workflowRunService.recordProgressEvent(
             runId,
@@ -446,6 +451,7 @@ export class WorkflowExecutionService {
         });
     }
 
+    // Persists and emits step completion with output for stream consumers and auditing.
     private async completeStep(runId: string, step: WorkflowExecutableStep, output: unknown): Promise<void> {
         await this.workflowRunService.recordProgressEvent(
             runId,
@@ -461,6 +467,7 @@ export class WorkflowExecutionService {
         });
     }
 
+    // Keeps run status persistence and progress listeners in sync.
     private async updateRunStatus(
         runId: string,
         status: WorkflowRun['status'],
@@ -475,6 +482,7 @@ export class WorkflowExecutionService {
         return run;
     }
 
+    // Centralizes cancellation result formatting for both pre-start and mid-run aborts.
     private async finishCancelledRun(runId: string, state: StepExecutionState): Promise<WorkflowExecutionResult> {
         await this.updateRunStatus(runId, 'cancelled', 'Workflow execution cancelled');
         return {
@@ -484,6 +492,7 @@ export class WorkflowExecutionService {
         };
     }
 
+    // Chooses the next edge for normal flow or a named branch handle.
     private getNextNodeId(compiled: CompiledWorkflowGraph, nodeId: string, sourceHandle?: string): string | undefined {
         const outgoingEdges = compiled.outgoingEdges.get(nodeId) ?? [];
         if (sourceHandle !== undefined) {
@@ -492,6 +501,7 @@ export class WorkflowExecutionService {
         return outgoingEdges[0]?.target;
     }
 
+    // Normalizes untrusted graph node data into the runtime step shape.
     private toWorkflowStep(rawNode: Record<string, unknown>): WorkflowExecutableStep {
         const id = this.getString(rawNode.id);
         const data = this.asRecord(rawNode.data);
@@ -514,6 +524,7 @@ export class WorkflowExecutionService {
         };
     }
 
+    // Normalizes untrusted graph edge data and rejects incomplete edge records.
     private toWorkflowEdge(rawEdge: Record<string, unknown>): WorkflowEdge {
         const source = this.getString(rawEdge.source);
         const target = this.getString(rawEdge.target);
@@ -530,11 +541,13 @@ export class WorkflowExecutionService {
         };
     }
 
+    // Performs minimal template substitution for run input passed into prompts.
     private resolvePrompt(prompt: string, input: unknown): string {
         const inputText = input === undefined ? '' : JSON.stringify(input);
         return prompt.replace(/\{\{\s*input\s*\}\}/g, inputText);
     }
 
+    // Parses JSON responses when possible while preserving plain-text bodies.
     private parseResponseBody(responseText: string, contentType: string | null): unknown {
         if (!responseText) {
             return null;
@@ -551,19 +564,21 @@ export class WorkflowExecutionService {
         return responseText;
     }
 
+    // Delivers in-memory progress to registered listeners for a single run.
     private emitProgress(runId: string, event: WorkflowProgressEvent): void {
         for (const listener of this.progressListeners.get(runId) ?? []) {
             listener(event);
         }
     }
 
+    // Preserves legacy executeRun(run) behavior for callers that only have a run record.
     private createEmptyRunGraph(): WorkflowGraph {
         return {
             nodes: [
                 {
-                    id: 'start',
+                    id: 'end',
                     data: {
-                        templateId: 'start',
+                        templateId: 'end',
                     },
                 },
             ],
@@ -571,6 +586,7 @@ export class WorkflowExecutionService {
         };
     }
 
+    // Narrows arbitrary graph config values into object records.
     private asRecord(value: unknown): Record<string, unknown> | undefined {
         if (!value || typeof value !== 'object' || Array.isArray(value)) {
             return undefined;
@@ -578,22 +594,24 @@ export class WorkflowExecutionService {
         return value as Record<string, unknown>;
     }
 
-    private asStringRecord(value: unknown): Record<string, string> | undefined {
+    // Narrows arbitrary graph config values into string-keyed request headers.
+    private asStringRecord(value: unknown): Record<string, string> {
         const record = this.asRecord(value);
         if (!record) {
-            return undefined;
+            return {};
         }
-
         return Object.fromEntries(
             Object.entries(record)
                 .filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
         );
     }
 
+    // Reads string configuration with a caller-provided fallback.
     private getString(value: unknown, fallback = ''): string {
         return typeof value === 'string' ? value : fallback;
     }
 
+    // Reads numeric configuration with a caller-provided fallback.
     private getNumber(value: unknown, fallback: number): number {
         return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
     }
