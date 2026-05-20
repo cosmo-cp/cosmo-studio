@@ -1,13 +1,26 @@
-import { inject, injectable } from 'inversify';
-import { z } from 'zod';
-import { IpcController, IpcHandler } from '../ipc/Decorators';
-import { CORETYPES } from 'core/types/types';
-import { WorkflowService } from 'core/services/WorkflowService';
-import { WorkflowRunService } from 'core/services/WorkflowRunService';
-import type { Workflow, WorkflowCreateInput, WorkflowGraph, WorkflowRun, WorkflowRunInsert, WorkflowRunStatus, WorkflowVersion } from 'core/dto';
-import { Controller } from './Controller';
-import { TYPES } from '../types';
-import { WorkflowExecutionService } from '../services/WorkflowExecutionService';
+import type {IpcMainEvent, WebContents} from 'electron';
+import {inject, injectable} from 'inversify';
+import {z} from 'zod';
+import {CORETYPES} from 'core/types/types';
+import {WorkflowService} from 'core/services/WorkflowService';
+import {WorkflowRunService} from 'core/services/WorkflowRunService';
+import type {
+    Workflow,
+    WorkflowCreateInput,
+    WorkflowGraph,
+    WorkflowRun,
+    WorkflowRunInsert,
+    WorkflowRunStatus,
+    WorkflowRunStreamAbortArgs,
+    WorkflowRunStreamStartArgs,
+    WorkflowVersion,
+} from 'core/dto';
+import {IpcController, IpcHandler, IpcOn, IpcRendererOn} from '../ipc/Decorators';
+import {logger} from '../logger';
+import {WorkflowExecutionService} from '../services/WorkflowExecutionService';
+import {WorkflowRunStreamingService} from '../services/WorkflowRunStreamingService';
+import {TYPES} from '../types';
+import {Controller} from './Controller';
 
 const workflowGraphSchema = z.strictObject({
     nodes: z.array(z.record(z.string(), z.unknown())),
@@ -28,7 +41,7 @@ const workflowUpdateSchema = z.strictObject({
 const workflowRunStartSchema = z.strictObject({
     workflowId: z.string().uuid(),
     workflowVersionId: z.string().uuid().optional(),
-    status: z.enum(['queued', 'running', 'completed', 'failed', 'cancelled']).optional(),
+    status: z.enum(['queued', 'running', 'waiting_approval', 'completed', 'failed', 'cancelled']).optional(),
     startedAt: z.date().nullable().optional(),
     completedAt: z.date().nullable().optional(),
     errorMessage: z.string().nullable().optional(),
@@ -43,14 +56,28 @@ const workflowRunGetSchema = z.strictObject({
     runId: z.string().uuid(),
 });
 
+const workflowRunStreamStartSchema = z.strictObject({
+    runId: z.string().uuid(),
+    streamChannel: z.string().min(1),
+    afterSequence: z.number().int().min(0).optional(),
+});
+
+const workflowRunStreamAbortSchema = z.strictObject({
+    streamChannel: z.string().min(1),
+});
+
 @injectable()
 @IpcController('workflow')
 export class WorkflowController implements Controller {
+    private readonly activeRunStreams = new Map<string, AbortController>();
+
     constructor(
         @inject(CORETYPES.WorkflowService)
         private workflowService: WorkflowService,
         @inject(CORETYPES.WorkflowRunService)
         private workflowRunService: WorkflowRunService,
+        @inject(TYPES.WorkflowRunStreamingService)
+        private workflowRunStreamingService: WorkflowRunStreamingService,
         @inject(TYPES.WorkflowExecutionService)
         private workflowExecutionService: WorkflowExecutionService,
     ) {}
@@ -96,18 +123,19 @@ export class WorkflowController implements Controller {
     public async runStart(input: WorkflowRunInsert): Promise<WorkflowRun> {
         const parsedInput = workflowRunStartSchema.parse(input);
         const versions = await this.workflowService.getWorkflowVersions(parsedInput.workflowId);
-        const selectedVersionId = parsedInput.workflowVersionId ?? versions[0]?.id;
-        if (!selectedVersionId) {
+        const version = parsedInput.workflowVersionId ?
+            versions.find((workflowVersion) => workflowVersion.id === parsedInput.workflowVersionId) :
+            versions[0];
+
+        if (!version) {
             throw new Error('Cannot start workflow run without an available workflow version');
         }
 
-        const run = await this.workflowRunService.startRun({
-            ...parsedInput,
-            workflowVersionId: selectedVersionId,
-        });
+        const runInput = {...parsedInput, workflowVersionId: version.id};
+        const run = await this.workflowRunService.startRun(runInput);
         void this.workflowExecutionService.executeRun({
             runId: run.id,
-            graph: {nodes: [], edges: []},
+            graph: version.graph as WorkflowGraph,
         });
         return run;
     }
@@ -116,7 +144,7 @@ export class WorkflowController implements Controller {
     @IpcHandler('run.cancel', z.tuple([workflowRunCancelSchema]))
     public async runCancel(input: { runId: string; message?: string }): Promise<WorkflowRun | undefined> {
         const parsed = workflowRunCancelSchema.parse(input);
-        return this.workflowRunService.cancelRun(parsed.runId, parsed.message);
+        return this.workflowExecutionService.cancelRun(parsed.runId, parsed.message);
     }
 
     // Fetch the current run status with timeline events for monitoring views.
@@ -124,5 +152,72 @@ export class WorkflowController implements Controller {
     public async runGet(input: { runId: string }): Promise<WorkflowRunStatus | undefined> {
         const parsed = workflowRunGetSchema.parse(input);
         return this.workflowRunService.getRunStatus(parsed.runId);
+    }
+
+    // Starts a run event stream for Electron renderers using the persisted event timeline.
+    @IpcOn('run.stream.start', z.tuple([workflowRunStreamStartSchema]))
+    public async runStreamStart(input: WorkflowRunStreamStartArgs, event: IpcMainEvent): Promise<void> {
+        const args = workflowRunStreamStartSchema.parse(input);
+        const webContents = event.sender as WebContents;
+        const controller = new AbortController();
+        this.activeRunStreams.set(args.streamChannel, controller);
+
+        try {
+            for await (const envelope of this.workflowRunStreamingService.streamRunEvents(
+                args.runId,
+                controller.signal,
+                args.afterSequence ?? 0,
+            )) {
+                if (webContents.isDestroyed()) {
+                    controller.abort();
+                    break;
+                }
+                webContents.send(`${args.streamChannel}-data`, envelope);
+            }
+            this.activeRunStreams.delete(args.streamChannel);
+            if (!webContents.isDestroyed()) {
+                webContents.send(`${args.streamChannel}-end`);
+            }
+        } catch (error) {
+            logger.error('Failed to stream workflow run events:', error);
+            controller.abort();
+            this.activeRunStreams.delete(args.streamChannel);
+            if (!webContents.isDestroyed()) {
+                webContents.send(`${args.streamChannel}-error`, error);
+            }
+        }
+    }
+
+    // Stops an active run event stream when the renderer view is closed or replaced.
+    @IpcOn('run.stream.abort', z.tuple([workflowRunStreamAbortSchema]))
+    public runStreamAbort(input: WorkflowRunStreamAbortArgs): void {
+        const args = workflowRunStreamAbortSchema.parse(input);
+        const controller = this.activeRunStreams.get(args.streamChannel);
+        if (!controller) {
+            return;
+        }
+        controller.abort();
+        this.activeRunStreams.delete(args.streamChannel);
+    }
+
+    // Documents the renderer event channel shape for generated preload API consumers.
+    @IpcRendererOn('run-stream-data')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    public onRunStreamData(channel: string, listener: (data: unknown) => void): () => void {
+        return () => {};
+    }
+
+    // Documents the renderer stream completion channel for generated preload API consumers.
+    @IpcRendererOn('run-stream-end')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    public onRunStreamEnd(channel: string, listener: () => void): () => void {
+        return () => {};
+    }
+
+    // Documents the renderer stream error channel for generated preload API consumers.
+    @IpcRendererOn('run-stream-error')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    public onRunStreamError(channel: string, listener: (error: unknown) => void): () => void {
+        return () => {};
     }
 }
