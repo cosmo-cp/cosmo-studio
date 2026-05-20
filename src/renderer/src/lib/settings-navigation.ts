@@ -1,6 +1,6 @@
-import {Globe, type LucideIcon, PlugZap} from 'lucide-react';
+import {Bot, Globe, type LucideIcon, PlugZap} from 'lucide-react';
 
-export type SettingsSectionSlug = 'provider' | 'web-search';
+export type SettingsSectionSlug = 'provider' | 'web-search' | 'agents';
 
 type SettingsSection = {
     slug: SettingsSectionSlug;
@@ -21,6 +21,12 @@ export const settingsSections: readonly SettingsSection[] = [
         title: 'Web search',
         description: 'Configure where web search settings live in the app.',
         icon: Globe,
+    },
+    {
+        slug: 'agents',
+        title: 'Agents',
+        description: 'Manage local ACP agents and registry installs.',
+        icon: Bot,
     },
 ] as const;
 

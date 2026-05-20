@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/sidebar';
 import {
     Cable,
-    Bot,
     ChevronLeft,
     ChevronRight,
     CircleUserRound,
@@ -65,12 +64,6 @@ const menuItems = [
         href: './mcp-server',
         pathname: '/mcp-server',
         icon: Cable,
-    },
-    {
-        title: 'Agents',
-        href: './agents',
-        pathname: '/agents',
-        icon: Bot,
     },
 ] as const;
 

@@ -50,6 +50,7 @@ describe('AppSidebar', () => {
         );
         expect(screen.getByRole('link', {name: /persona/i})).toBeInTheDocument();
         expect(screen.getByRole('link', {name: /command/i})).toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: /agents/i})).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: /settings/i})).toHaveAttribute(
             'href',
             getDefaultSettingsHref()
@@ -75,6 +76,10 @@ describe('AppSidebar', () => {
             'href',
             getSettingsItemHref('/settings', 'web-search')
         );
+        expect(screen.getByRole('link', {name: /agents/i})).toHaveAttribute(
+            'href',
+            getSettingsItemHref('/settings', 'agents')
+        );
         expect(screen.queryByRole('link', {name: /chat/i})).not.toBeInTheDocument();
     });
 
@@ -95,6 +100,19 @@ describe('AppSidebar', () => {
         expect(screen.getByRole('link', {name: /web search/i})).toHaveAttribute(
             'href',
             getSettingsItemHref('/settings/provider', 'web-search')
+        );
+        expect(screen.getByRole('link', {name: /agents/i})).toHaveAttribute(
+            'href',
+            getSettingsItemHref('/settings/provider', 'agents')
+        );
+    });
+
+    it('marks agents active in the settings submenu', () => {
+        renderSidebar('/settings/agents');
+
+        expect(screen.getByRole('link', {name: /agents/i})).toHaveAttribute(
+            'data-active',
+            'true'
         );
     });
 });
