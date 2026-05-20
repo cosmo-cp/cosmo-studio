@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { WorkflowRun, WorkflowRunEvent, WorkflowRunInsert } from '../dto';
+import { WorkflowRun, WorkflowRunEvent, WorkflowRunEventInsert, WorkflowRunInsert } from '../dto';
 import { WorkflowRunRepository } from '../repositories/WorkflowRunRepository';
 import { CORETYPES } from '../types/types';
 
@@ -33,6 +33,27 @@ export class WorkflowRunService {
         return run;
     }
 
+    // Records detailed execution events without forcing a run-level status change.
+    public async recordRunEvent(input: WorkflowRunEventInsert): Promise<WorkflowRunEvent> {
+        return this.workflowRunRepository.addEvent(input);
+    }
+
+    // Captures per-step progress with a consistent event type for stream consumers and audit views.
+    public async recordProgressEvent(
+        runId: string,
+        message: string,
+        payload?: Record<string, unknown>,
+        status: WorkflowRun['status'] = 'running',
+    ): Promise<WorkflowRunEvent> {
+        return this.recordRunEvent({
+            workflowRunId: runId,
+            eventType: 'progress',
+            status,
+            message,
+            payload,
+        });
+    }
+
     // Cancels an active run and records the cancellation event.
     public async cancelRun(runId: string, message?: string): Promise<WorkflowRun | undefined> {
         return this.updateRunStatus(runId, 'cancelled', message ?? 'Run cancelled');
@@ -50,6 +71,9 @@ export class WorkflowRunService {
         }
         if (status === 'running') {
             return 'started';
+        }
+        if (status === 'waiting_approval') {
+            return 'waiting_approval';
         }
         return status;
     }

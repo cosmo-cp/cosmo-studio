@@ -45,6 +45,7 @@ export class WorkflowRunStreamingService {
             created: 'step.started',
             started: 'step.started',
             progress: 'tool.call',
+            waiting_approval: 'approval.required',
             completed: 'step.completed',
             failed: 'error',
             cancelled: 'finished',

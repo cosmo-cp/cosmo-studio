@@ -55,4 +55,24 @@ describe('WorkflowRunService', () => {
             status: 'queued',
         }));
     });
+
+    it('records waiting approval and progress events', async () => {
+        const run = { id: 'r3', status: 'waiting_approval' } as WorkflowRun;
+        const event = { id: 'e1', workflowRunId: 'r3', eventType: 'progress' } as WorkflowRunEvent;
+        (repository.updateStatus as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(run);
+        (repository.addEvent as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(event);
+
+        await expect(service.updateRunStatus('r3', 'waiting_approval', 'approval needed')).resolves.toEqual(run);
+        await expect(service.recordProgressEvent('r3', 'step started', { nodeId: 'n1' })).resolves.toEqual(event);
+
+        expect(repository.addEvent).toHaveBeenCalledWith(expect.objectContaining({
+            eventType: 'waiting_approval',
+            status: 'waiting_approval',
+        }));
+        expect(repository.addEvent).toHaveBeenCalledWith(expect.objectContaining({
+            eventType: 'progress',
+            status: 'running',
+            payload: { nodeId: 'n1' },
+        }));
+    });
 });
