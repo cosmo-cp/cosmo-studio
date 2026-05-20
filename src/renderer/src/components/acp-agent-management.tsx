@@ -2,6 +2,13 @@
 
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {Input} from '@/components/ui/input';
 import {Switch} from '@/components/ui/switch';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
@@ -19,7 +26,7 @@ import {
 } from '@/lib/store/acp-agents-store';
 import type {AcpAgentCreateInput, AcpAgentView, AcpRegistryAgent} from 'core/dto';
 import {AcpAgentInstallStatusEnum, AcpAgentSourceEnum} from 'core/database/schema/acpAgentSchema';
-import {CheckCircle2, Plus, RefreshCw, TestTube2, Trash2, XCircle} from 'lucide-react';
+import {CheckCircle2, Download, Plus, RefreshCw, TestTube2, Trash2, XCircle} from 'lucide-react';
 import {useEffect, useMemo, useState} from 'react';
 import {toast} from 'sonner';
 
@@ -56,18 +63,14 @@ export function AcpAgentManagement() {
     const registryError = useAppSelector((state) => state.acpAgents.registryErrorMessage);
     const [search, setSearch] = useState('');
     const [form, setForm] = useState(emptyForm);
+    const [registryDialogOpen, setRegistryDialogOpen] = useState(false);
+    const [installingRegistryId, setInstallingRegistryId] = useState<string | null>(null);
 
     useEffect(() => {
         if (status === 'idle') {
             void dispatch(loadAcpAgents());
         }
     }, [dispatch, status]);
-
-    useEffect(() => {
-        if (registryStatus === 'idle') {
-            void dispatch(loadAcpRegistry());
-        }
-    }, [dispatch, registryStatus]);
 
     const installedRegistryIds = useMemo(
         () => new Set(agents.map((agent) => agent.registryId).filter(Boolean)),
@@ -144,27 +147,42 @@ export function AcpAgentManagement() {
         toast.error(result.message);
     };
 
+    const handleRegistryOpenChange = (open: boolean) => {
+        setRegistryDialogOpen(open);
+        if (open && registryStatus === 'idle') {
+            void dispatch(loadAcpRegistry());
+        }
+    };
+
     const handleInstall = async (agent: AcpRegistryAgent) => {
+        setInstallingRegistryId(agent.id);
         try {
             await dispatch(installAcpAgentFromRegistry({registryId: agent.id, enabled: true})).unwrap();
             toast.success(`${agent.name} installed`);
         } catch (error) {
             toast.error(typeof error === 'string' ? error : 'Failed to install ACP agent');
+        } finally {
+            setInstallingRegistryId(null);
         }
     };
 
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-4">
-            <div>
-                <h2 className="text-lg font-medium">Agents</h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                    Manage local ACP agents for chat and workflow execution.
-                </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h2 className="text-lg font-medium">Agents</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        Manage local ACP agents for chat and workflow execution.
+                    </p>
+                </div>
+                <Button onClick={() => handleRegistryOpenChange(true)} className="self-start sm:self-auto">
+                    <Download className="size-4" />
+                    Registry
+                </Button>
             </div>
             <Tabs defaultValue="installed" className="min-h-0 flex-1">
                 <TabsList>
                     <TabsTrigger value="installed">Installed</TabsTrigger>
-                    <TabsTrigger value="registry">Registry</TabsTrigger>
                     <TabsTrigger value="custom">Custom</TabsTrigger>
                 </TabsList>
                 <TabsContent value="installed" className="min-h-0 overflow-auto">
@@ -237,77 +255,6 @@ export function AcpAgentManagement() {
                         </Table>
                     </div>
                 </TabsContent>
-                <TabsContent value="registry" className="min-h-0 space-y-3 overflow-auto">
-                    <div className="flex items-center gap-2">
-                        <Input
-                            className="max-w-sm"
-                            placeholder="Search registry"
-                            value={search}
-                            onChange={(event) => setSearch(event.target.value)}
-                        />
-                        <Button
-                            variant="outline"
-                            onClick={() => void dispatch(loadAcpRegistry({refresh: true}))}
-                            disabled={registryStatus === 'loading'}
-                        >
-                            <RefreshCw className="size-4" />
-                            Refresh
-                        </Button>
-                    </div>
-                    {registryError ? (
-                        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                            {registryError}
-                        </div>
-                    ) : null}
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Distribution</TableHead>
-                                    <TableHead>Version</TableHead>
-                                    <TableHead className="w-[120px] text-right">Install</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {visibleRegistryAgents.map((agent) => {
-                                    const installed = installedRegistryIds.has(agent.id);
-                                    const installable = isInstallable(agent);
-                                    return (
-                                        <TableRow key={agent.id}>
-                                            <TableCell>
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium">{agent.name}</span>
-                                                    <span className="line-clamp-2 text-xs text-muted-foreground">
-                                                        {agent.description}
-                                                    </span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant={installable ? 'secondary' : 'outline'}>
-                                                    {getDistributionLabel(agent)}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>{agent.version}</TableCell>
-                                            <TableCell className="text-right">
-                                                {installed ? (
-                                                    <CheckCircle2 className="ml-auto size-4 text-emerald-600" />
-                                                ) : installable ? (
-                                                    <Button size="sm" onClick={() => void handleInstall(agent)}>
-                                                        <Plus className="size-4" />
-                                                        Add
-                                                    </Button>
-                                                ) : (
-                                                    <XCircle className="ml-auto size-4 text-muted-foreground" />
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </TabsContent>
                 <TabsContent value="custom" className="overflow-auto">
                     <form className="max-w-2xl space-y-4" onSubmit={(event) => void handleCreateCustomAgent(event)}>
                         <div className="grid gap-3 sm:grid-cols-2">
@@ -356,6 +303,117 @@ export function AcpAgentManagement() {
                     </form>
                 </TabsContent>
             </Tabs>
+            <Dialog open={registryDialogOpen} onOpenChange={handleRegistryOpenChange}>
+                <DialogContent className="max-h-[85dvh] overflow-hidden sm:max-w-[900px]">
+                    <DialogHeader>
+                        <DialogTitle>ACP Registry</DialogTitle>
+                        <DialogDescription>
+                            Browse installable ACP agents from the public registry.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex min-h-0 flex-col gap-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <Input
+                                className="sm:max-w-sm"
+                                placeholder="Search agents"
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                            />
+                            <Button
+                                variant="outline"
+                                onClick={() => void dispatch(loadAcpRegistry({refresh: true}))}
+                                disabled={registryStatus === 'loading'}
+                                className="sm:ml-auto"
+                            >
+                                <RefreshCw className={registryStatus === 'loading' ? 'size-4 animate-spin' : 'size-4'} />
+                                Refresh
+                            </Button>
+                        </div>
+                        {registryError ? (
+                            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                                {registryError}
+                            </div>
+                        ) : null}
+                        <div className="min-h-[320px] overflow-auto rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Distribution</TableHead>
+                                        <TableHead>Version</TableHead>
+                                        <TableHead className="w-[140px] text-right">Install</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {registryStatus === 'loading' && visibleRegistryAgents.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-24 text-center text-sm text-muted-foreground">
+                                                Loading registry...
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : null}
+                                    {registryStatus !== 'loading' && visibleRegistryAgents.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-24 text-center text-sm text-muted-foreground">
+                                                No registry agents found.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : null}
+                                    {visibleRegistryAgents.map((agent) => {
+                                        const installed = installedRegistryIds.has(agent.id);
+                                        const installable = isInstallable(agent);
+                                        const installing = installingRegistryId === agent.id;
+                                        return (
+                                            <TableRow key={agent.id}>
+                                                <TableCell>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium">{agent.name}</span>
+                                                        <span className="line-clamp-2 text-xs text-muted-foreground">
+                                                            {agent.description}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant={installable ? 'secondary' : 'outline'}>
+                                                        {getDistributionLabel(agent)}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>{agent.version}</TableCell>
+                                                <TableCell className="text-right">
+                                                    {installed ? (
+                                                        <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+                                                            <CheckCircle2 className="size-4 text-emerald-600" />
+                                                            Installed
+                                                        </div>
+                                                    ) : installable ? (
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => void handleInstall(agent)}
+                                                            disabled={installingRegistryId !== null}
+                                                        >
+                                                            {installing ? (
+                                                                <RefreshCw className="size-4 animate-spin" />
+                                                            ) : (
+                                                                <Plus className="size-4" />
+                                                            )}
+                                                            {installing ? 'Installing' : 'Install'}
+                                                        </Button>
+                                                    ) : (
+                                                        <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+                                                            <XCircle className="size-4" />
+                                                            Manual
+                                                        </div>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
