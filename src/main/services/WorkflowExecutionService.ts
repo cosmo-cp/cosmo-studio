@@ -1,5 +1,4 @@
 import { inject, injectable } from 'inversify';
-import { sleep } from '@workflow/core';
 import { WorkflowRunService } from 'core/services/WorkflowRunService';
 import { CORETYPES } from 'core/types/types';
 import type { WorkflowGraph, WorkflowRun } from 'core/dto';
@@ -25,6 +24,7 @@ export class WorkflowExecutionService {
             await this.workflowRunService.updateRunStatus(runId, 'running', 'Workflow execution started');
 
             // Uses the Vercel Workflow SDK primitive so execution can become resumable/durable as steps are added.
+            const {sleep} = await import('workflow');
             await sleep('workflow-initialization', 1);
 
             await this.workflowRunService.updateRunStatus(runId, 'completed', 'Workflow execution completed');

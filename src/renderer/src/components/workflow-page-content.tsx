@@ -5,21 +5,15 @@ import {Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTit
 import {ConfirmDialog} from '@/components/confirm-dialog';
 import {WorkflowHistory, type WorkflowListItem} from '@/components/workflow-history';
 import {WorkflowWorkspace} from '@/components/workflow-workspace';
+import {resolveAppDataSource} from '@/lib/app-data-source';
+import type {WorkflowGraph} from 'core/dto';
 import {Workflow} from 'lucide-react';
-import {useRef, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 
-// Keep untitled workflow names predictable while there is no persisted workflow backend yet.
-function buildWorkflow(index: number): WorkflowListItem {
-    return {
-        id: `workflow-${index}`,
-        title: index === 1 ? 'Untitled Workflow' : `Untitled Workflow ${index}`,
-        summary: 'Empty workflow',
-        updatedAt: new Date(),
-    };
-}
+const DEFAULT_WORKFLOW_GRAPH: WorkflowGraph = {nodes: [], edges: []};
 
 export function WorkflowPageContent() {
-    const nextWorkflowIndexRef = useRef(1);
+    const appDataSource = useMemo(() => resolveAppDataSource(), []);
     const [searchQuery, setSearchQuery] = useState('');
     const [workflows, setWorkflows] = useState<WorkflowListItem[]>([]);
     const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
@@ -35,19 +29,40 @@ export function WorkflowPageContent() {
         }) :
         workflows;
 
-    // Create placeholder workflows so the page structure can be exercised before the data layer exists.
-    const handleCreateWorkflow = () => {
-        const nextWorkflow = buildWorkflow(nextWorkflowIndexRef.current);
-        nextWorkflowIndexRef.current += 1;
+    useEffect(() => {
+        void appDataSource.workflow.list(null).then((items) => {
+            setWorkflows(items.map((item) => ({
+                id: item.id,
+                title: item.title,
+                summary: item.summary ?? 'Empty workflow',
+                updatedAt: item.updatedAt,
+                latestVersion: item.latestVersion,
+            })));
+        });
+    }, [appDataSource]);
+
+    const handleCreateWorkflow = async () => {
+        const created = await appDataSource.workflow.create({
+            title: 'Untitled Workflow',
+            summary: 'Empty workflow',
+        }, DEFAULT_WORKFLOW_GRAPH);
+        const nextWorkflow: WorkflowListItem = {
+            id: created.id,
+            title: created.title,
+            summary: created.summary ?? 'Empty workflow',
+            updatedAt: created.updatedAt,
+            latestVersion: created.latestVersion,
+        };
         setWorkflows((currentWorkflows) => [nextWorkflow, ...currentWorkflows]);
         setSelectedWorkflowId(nextWorkflow.id);
     };
 
     // Keep destructive actions explicit even for temporary client-side workflow entries.
-    const handleConfirmDeleteWorkflow = () => {
+    const handleConfirmDeleteWorkflow = async () => {
         if (!pendingDeleteWorkflow) {
             return;
         }
+        await appDataSource.workflow.delete(pendingDeleteWorkflow.id);
 
         const nextWorkflows = workflows.filter((workflow) => workflow.id !== pendingDeleteWorkflow.id);
         setWorkflows(nextWorkflows);
@@ -84,7 +99,7 @@ export function WorkflowPageContent() {
                                 </EmptyDescription>
                             </EmptyHeader>
                             <EmptyContent>
-                                <Button variant="outline" size="sm" onClick={handleCreateWorkflow}>
+                                <Button variant="outline" size="sm" onClick={() => void handleCreateWorkflow()}>
                                     New Workflow
                                 </Button>
                             </EmptyContent>
