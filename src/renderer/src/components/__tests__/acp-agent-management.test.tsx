@@ -1,6 +1,6 @@
 import {render, screen, waitFor, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import {describe, expect, it, vi} from "vitest";
+import {beforeEach, describe, expect, it, vi} from "vitest";
 import {AcpAgentManagement} from "@/components/acp-agent-management";
 import {StoreProvider} from "@/lib/store/store-provider";
 import {createMockAppDataSource} from "@/test/mock-app-data-source";
@@ -11,6 +11,17 @@ import {
 } from "core/database/schema/acpAgentSchema";
 
 const now = new Date("2026-05-20T00:00:00.000Z");
+
+class ResizeObserverMock {
+    observe() {
+    }
+
+    unobserve() {
+    }
+
+    disconnect() {
+    }
+}
 
 const registry: AcpRegistryView = {
     version: "test",
@@ -68,6 +79,46 @@ function buildInstalledAgent(registryId: string): AcpAgentView {
 }
 
 describe("AcpAgentManagement", () => {
+    beforeEach(() => {
+        vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+    });
+
+    it("shows a tooltip for testing installed agents", async () => {
+        const user = userEvent.setup();
+
+        render(
+            <StoreProvider appDataSource={createMockAppDataSource({
+                acpAgent: {
+                    getAll: async () => [buildInstalledAgent("codex-cli")],
+                },
+            })}>
+                <AcpAgentManagement />
+            </StoreProvider>
+        );
+
+        const testButton = await screen.findByRole("button", {name: /test codex cli/i});
+        await user.hover(testButton);
+        expect(await screen.findAllByText("Test connection")).not.toHaveLength(0);
+    });
+
+    it("shows a tooltip for deleting installed agents", async () => {
+        const user = userEvent.setup();
+
+        render(
+            <StoreProvider appDataSource={createMockAppDataSource({
+                acpAgent: {
+                    getAll: async () => [buildInstalledAgent("codex-cli")],
+                },
+            })}>
+                <AcpAgentManagement />
+            </StoreProvider>
+        );
+
+        const deleteButton = await screen.findByRole("button", {name: /delete codex cli/i});
+        await user.hover(deleteButton);
+        expect(await screen.findAllByText("Delete agent")).not.toHaveLength(0);
+    });
+
     it("opens the registry in a dialog and installs registry agents", async () => {
         const user = userEvent.setup();
         const getRegistry = vi.fn(async () => registry);

@@ -14,6 +14,7 @@ import {Switch} from '@/components/ui/switch';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Textarea} from '@/components/ui/textarea';
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import {useAppDispatch, useAppSelector} from '@/lib/store/hooks';
 import {
     deleteAcpAgent,
@@ -167,7 +168,8 @@ export function AcpAgentManagement() {
     };
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <TooltipProvider>
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h2 className="text-lg font-medium">Agents</h2>
@@ -232,22 +234,32 @@ export function AcpAgentManagement() {
                                             {agent.defaultCwd || 'Not set'}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button
-                                                aria-label={`Test ${agent.name}`}
-                                                size="icon"
-                                                variant="ghost"
-                                                onClick={() => void handleTest(agent)}
-                                            >
-                                                <TestTube2 className="size-4" />
-                                            </Button>
-                                            <Button
-                                                aria-label={`Delete ${agent.name}`}
-                                                size="icon"
-                                                variant="ghost"
-                                                onClick={() => void dispatch(deleteAcpAgent(agent.id))}
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </Button>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        aria-label={`Test ${agent.name}`}
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        onClick={() => void handleTest(agent)}
+                                                    >
+                                                        <TestTube2 className="size-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Test connection</TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        aria-label={`Delete ${agent.name}`}
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        onClick={() => void dispatch(deleteAcpAgent(agent.id))}
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Delete agent</TooltipContent>
+                                            </Tooltip>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -415,5 +427,6 @@ export function AcpAgentManagement() {
                 </DialogContent>
             </Dialog>
         </div>
+        </TooltipProvider>
     );
 }
