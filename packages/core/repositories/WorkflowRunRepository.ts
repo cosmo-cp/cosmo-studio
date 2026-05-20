@@ -15,9 +15,22 @@ export class WorkflowRunRepository {
 
     // Creates a run record for workflow execution lifecycle tracking.
     public async create(input: WorkflowRunInsert): Promise<WorkflowRun> {
+        let workflowVersionId = input.workflowVersionId;
+        if (!workflowVersionId) {
+            const latestVersion = await this.db.query.workflowVersion.findFirst({
+                where: eq(workflowVersion.workflowId, input.workflowId),
+                orderBy: desc(workflowVersion.version),
+                columns: {id: true},
+            });
+            if (!latestVersion) {
+                throw new Error('Workflow has no version to run');
+            }
+            workflowVersionId = latestVersion.id;
+        }
+
         const matchingVersion = await this.db.query.workflowVersion.findFirst({
             where: and(
-                eq(workflowVersion.id, input.workflowVersionId),
+                eq(workflowVersion.id, workflowVersionId),
                 eq(workflowVersion.workflowId, input.workflowId),
             ),
             columns: { id: true },
@@ -27,7 +40,10 @@ export class WorkflowRunRepository {
             throw new Error('Workflow version does not belong to the provided workflow');
         }
 
-        const [created] = await this.db.insert(workflowRun).values(input).returning();
+        const [created] = await this.db.insert(workflowRun).values({
+            ...input,
+            workflowVersionId,
+        }).returning();
         return created;
     }
 

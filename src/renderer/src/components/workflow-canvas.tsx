@@ -683,9 +683,11 @@ function WorkflowCanvasToolbar({
 function WorkflowCanvasContent({
     workflow,
     editable = true,
+    onGraphChange,
 }: {
     workflow: WorkflowListItem;
     editable?: boolean;
+    onGraphChange?: (graph: {nodes: Record<string, unknown>[]; edges: Record<string, unknown>[]}) => void;
 }) {
     const canvasRef = useRef<HTMLDivElement | null>(null);
     const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
@@ -695,6 +697,17 @@ function WorkflowCanvasContent({
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(buildInitialEdges(workflow));
     const nextNodeIndexRef = useRef(1);
     const isNodePickerOpen = nodePickerState !== null;
+
+    useEffect(() => {
+        if (!onGraphChange) {
+            return;
+        }
+
+        onGraphChange({
+            nodes: nodes as unknown as Record<string, unknown>[],
+            edges: edges as unknown as Record<string, unknown>[],
+        });
+    }, [edges, nodes, onGraphChange]);
 
     useEffect(() => {
         if (!editable || !isNodePickerOpen) {
@@ -896,9 +909,11 @@ function WorkflowCanvasContent({
 export function WorkflowCanvas({
     workflow,
     editable = true,
+    onGraphChange,
 }: {
     workflow: WorkflowListItem;
     editable?: boolean;
+    onGraphChange?: (graph: {nodes: Record<string, unknown>[]; edges: Record<string, unknown>[]}) => void;
 }) {
-    return <WorkflowCanvasContent editable={editable} key={workflow.id} workflow={workflow} />;
+    return <WorkflowCanvasContent editable={editable} key={workflow.id} onGraphChange={onGraphChange} workflow={workflow} />;
 }

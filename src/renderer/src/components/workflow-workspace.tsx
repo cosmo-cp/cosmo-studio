@@ -9,9 +9,10 @@ import {Separator} from '@/components/ui/separator';
 import {Textarea} from '@/components/ui/textarea';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import {cn} from '@/lib/utils';
+import {resolveAppDataSource} from '@/lib/app-data-source';
 import type {UIMessage} from 'ai';
 import {PencilLine, Play, Workflow, X} from 'lucide-react';
-import {startTransition, useEffect, useRef, useState} from 'react';
+import {startTransition, useEffect, useMemo, useRef, useState} from 'react';
 
 type WorkflowWorkspaceMode = 'edit' | 'run';
 type WorkflowRunStatus = UseChatHelpers<UIMessage>['status'];
@@ -31,11 +32,6 @@ function buildTextMessage({
         role,
         parts: [{type: 'text', text}],
     };
-}
-
-// Reflect the initial run action in the drawer until workflow execution is backed by a real runtime.
-function buildWorkflowExecutionResponse(workflowTitle: string, prompt: string) {
-    return `Started running "${workflowTitle}" with: ${prompt}`;
 }
 
 function WorkflowRunDrawer({
@@ -194,6 +190,8 @@ function WorkflowModeToggle({
 
 export function WorkflowWorkspace({workflow}: {workflow: WorkflowListItem}) {
     const executionTimerRef = useRef<number | null>(null);
+    const saveGraphTimerRef = useRef<number | null>(null);
+    const appDataSource = useMemo(() => resolveAppDataSource(), []);
     const nextMessageIdRef = useRef(1);
     const [mode, setMode] = useState<WorkflowWorkspaceMode>('edit');
     const [query, setQuery] = useState('');
@@ -205,8 +203,22 @@ export function WorkflowWorkspace({workflow}: {workflow: WorkflowListItem}) {
             if (executionTimerRef.current !== null) {
                 window.clearTimeout(executionTimerRef.current);
             }
+            if (saveGraphTimerRef.current !== null) {
+                window.clearTimeout(saveGraphTimerRef.current);
+            }
         };
     }, []);
+
+    // Persist graph edits with debounce so adding/removing/moving nodes is saved automatically.
+    const handleGraphChange = (graph: {nodes: Record<string, unknown>[]; edges: Record<string, unknown>[]}) => {
+        if (saveGraphTimerRef.current !== null) {
+            window.clearTimeout(saveGraphTimerRef.current);
+        }
+        saveGraphTimerRef.current = window.setTimeout(() => {
+            void appDataSource.workflow.saveGraph(workflow.id, graph);
+            saveGraphTimerRef.current = null;
+        }, 500);
+    };
 
     // Keep mode changes responsive because they mount a fairly heavy canvas + chat composition.
     const handleModeChange = (nextMode: WorkflowWorkspaceMode) => {
@@ -215,8 +227,7 @@ export function WorkflowWorkspace({workflow}: {workflow: WorkflowListItem}) {
         });
     };
 
-    // Stage a local execution thread until the workflow runtime is connected to a backend executor.
-    const handleSubmitQuery = () => {
+    const handleSubmitQuery = async () => {
         const trimmedQuery = query.trim();
         if (!trimmedQuery || status !== 'ready') {
             return;
@@ -237,12 +248,13 @@ export function WorkflowWorkspace({workflow}: {workflow: WorkflowListItem}) {
         setQuery('');
         setStatus('submitted');
         handleModeChange('run');
-
-        if (executionTimerRef.current !== null) {
-            window.clearTimeout(executionTimerRef.current);
-        }
-
-        executionTimerRef.current = window.setTimeout(() => {
+        const run = await appDataSource.workflow.runStart({
+            workflowId: workflow.id,
+            workflowVersionId: undefined,
+        });
+        setStatus('streaming');
+        const pollStatus = async () => {
+            const runStatus = await appDataSource.workflow.runGet(run.id);
             const nextAssistantMessageId = `${messageIdPrefix}-${nextMessageIdRef.current}`;
             nextMessageIdRef.current += 1;
             setMessages((currentMessages) => [
@@ -250,24 +262,31 @@ export function WorkflowWorkspace({workflow}: {workflow: WorkflowListItem}) {
                 buildTextMessage({
                     id: nextAssistantMessageId,
                     role: 'assistant',
-                    text: buildWorkflowExecutionResponse(workflow.title, trimmedQuery),
+                    text: runStatus?.status === 'failed' ?
+                        `Workflow failed: ${runStatus.errorMessage ?? 'Unknown error'}` :
+                        `Workflow "${workflow.title}" run status: ${runStatus?.status ?? 'queued'}`,
                 }),
             ]);
-            setStatus('ready');
-            executionTimerRef.current = null;
-        }, 450);
+            if (runStatus?.status === 'completed' || runStatus?.status === 'failed' || runStatus?.status === 'cancelled') {
+                setStatus('ready');
+                executionTimerRef.current = null;
+                return;
+            }
+            executionTimerRef.current = window.setTimeout(() => void pollStatus(), 600);
+        };
+        void pollStatus();
     };
 
     return (
         <div className="relative flex h-full flex-1 min-h-0 overflow-hidden bg-background">
-            <WorkflowCanvas editable={mode === 'edit'} workflow={workflow} />
+            <WorkflowCanvas editable={mode === 'edit'} onGraphChange={handleGraphChange} workflow={workflow} />
             <WorkflowModeToggle mode={mode} onModeChange={handleModeChange} />
             <WorkflowRunDrawer
                 isOpen={mode === 'run'}
                 messages={messages}
                 onClose={() => handleModeChange('edit')}
                 onQueryChange={setQuery}
-                onSubmit={handleSubmitQuery}
+                onSubmit={() => void handleSubmitQuery()}
                 query={query}
                 status={status}
                 workflow={workflow}
