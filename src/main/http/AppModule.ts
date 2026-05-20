@@ -4,6 +4,7 @@ import {ServeStaticModule} from "@nestjs/serve-static";
 import {RpcController} from "./RpcController";
 import {ChatHttpController} from "./ChatHttpController";
 import {HealthController} from "./HealthController";
+import {WorkflowRunHttpController} from './WorkflowRunHttpController';
 
 const rendererOutDir = path.resolve(__dirname, "public");
 
@@ -18,6 +19,7 @@ const rendererOutDir = path.resolve(__dirname, "public");
         HealthController,
         RpcController,
         ChatHttpController,
+        WorkflowRunHttpController,
     ],
 })
 export class AppModule {
