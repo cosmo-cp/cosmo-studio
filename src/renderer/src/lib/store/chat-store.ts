@@ -113,6 +113,15 @@ const chatSlice = createSlice({
                     state.selectedChat = {...state.selectedChat, ...updates};
                 }
             })
+            .addCase(updateSelectedAgent.fulfilled, (state, action) => {
+                const {chatId, updates} = action.payload;
+                state.chatHistory = state.chatHistory.map((chat) =>
+                    chat.id === chatId ? {...chat, ...updates} : chat
+                );
+                if (state.selectedChat?.id === chatId) {
+                    state.selectedChat = {...state.selectedChat, ...updates};
+                }
+            })
             .addCase(updateSelectedPersona.fulfilled, (state, action) => {
                 const {chatId, updates} = action.payload;
                 state.chatHistory = state.chatHistory.map((chat) =>
@@ -214,7 +223,7 @@ export const togglePinnedChat = createChatAsyncThunk<
 });
 
 export const updateSelectedModel = createChatAsyncThunk<
-    {chatId: string; updates: Pick<Chat, "selectedProvider" | "selectedModelId">},
+    {chatId: string; updates: Pick<Chat, "selectedProvider" | "selectedModelId" | "selectedRuntime">},
     {chatId: string; selectedProvider: string; selectedModelId: string}
 >("mainChatPage/updateSelectedModel", async (input, {extra, rejectWithValue}) => {
     try {
@@ -228,10 +237,33 @@ export const updateSelectedModel = createChatAsyncThunk<
             updates: {
                 selectedProvider: input.selectedProvider,
                 selectedModelId: input.selectedModelId,
+                selectedRuntime: "model",
             },
         };
     } catch (error) {
         return rejectWithValue(getErrorMessage(error, "Failed to update chat model"));
+    }
+});
+
+export const updateSelectedAgent = createChatAsyncThunk<
+    {chatId: string; updates: Pick<Chat, "selectedAgentId" | "selectedRuntime">},
+    {chatId: string; selectedAgentId: string | null; selectedRuntime: "agent" | "model"}
+>("mainChatPage/updateSelectedAgent", async (input, {extra, rejectWithValue}) => {
+    try {
+        await extra.appDataSource.chat.updateSelectedAgentForChat(input.chatId, {
+            selectedAgentId: input.selectedAgentId,
+            selectedRuntime: input.selectedRuntime,
+        });
+
+        return {
+            chatId: input.chatId,
+            updates: {
+                selectedAgentId: input.selectedAgentId,
+                selectedRuntime: input.selectedRuntime,
+            },
+        };
+    } catch (error) {
+        return rejectWithValue(getErrorMessage(error, "Failed to update chat agent"));
     }
 });
 

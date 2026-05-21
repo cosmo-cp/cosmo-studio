@@ -253,6 +253,13 @@
       "when": 1778430370080,
       "tag": "0035_foamy_wither",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1779241586500,
+      "tag": "0036_nappy_emma_frost",
+      "breakpoints": true
     }
   ]
 }

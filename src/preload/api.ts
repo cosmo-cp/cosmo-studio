@@ -12,6 +12,7 @@ import {
     ProviderWithModels,
     ChatWithMessages,
     ModelIdentifier,
+    AgentIdentifier,
     PersonaIdentifier,
     Persona,
     NewPersona,
@@ -32,6 +33,12 @@ import {
     WorkflowRunInsert,
     WorkflowRunStatus,
     WorkflowVersion,
+    AcpAgentCreateInput,
+    AcpAgentUpdateInput,
+    AcpAgentView,
+    AcpRegistryInstallInput,
+    AcpRegistryView,
+    AcpAgentTestResult,
     WorkflowRunStreamStartArgs,
     WorkflowRunStreamAbortArgs,
 } from '../../packages/core/dto';
@@ -46,6 +53,7 @@ export interface ChatApi {
     updatePinnedStatusForChat(id: string, pinned: boolean): Promise<void>;
     getSelectedModelForChat(id: string): Promise<string | null>;
     updateSelectedModelForChat(id: string, modelIdentifier: ModelIdentifier): Promise<void>;
+    updateSelectedAgentForChat(id: string, agentIdentifier: AgentIdentifier): Promise<void>;
     updateSelectedPersonaForChat(id: string, personaIdentifier: PersonaIdentifier): Promise<void>;
     updateSelectedChat(id: string): Promise<void>;
 }
@@ -118,6 +126,19 @@ export interface WorkflowApi {
     runGet(input: { runId: string }): Promise<WorkflowRunStatus | undefined>;
 }
 
+export interface AcpAgentApi {
+    getAll(): Promise<AcpAgentView[]>;
+    create(input: AcpAgentCreateInput): Promise<AcpAgentView>;
+    update(id: string, input: AcpAgentUpdateInput): Promise<AcpAgentView>;
+    delete(id: string): Promise<void>;
+    enable(id: string): Promise<AcpAgentView>;
+    disable(id: string): Promise<AcpAgentView>;
+    getRegistry(): Promise<AcpRegistryView>;
+    refreshRegistry(): Promise<AcpRegistryView>;
+    installFromRegistry(input: AcpRegistryInstallInput): Promise<AcpAgentView>;
+    test(id: string, cwd: string | null): Promise<AcpAgentTestResult>;
+}
+
 export interface StreamingApi {
     sendMessage(args: ChatSendMessageArgs): void;
     abortMessage(args: ChatAbortArgs): void;
@@ -138,6 +159,7 @@ export interface Api {
   mcpServer: McpServerApi;
   webSearch: WebSearchApi;
   workflow: WorkflowApi;
+  acpAgent: AcpAgentApi;
   streaming: StreamingApi;
 }
 
@@ -151,6 +173,7 @@ export const api: Api = {
     updatePinnedStatusForChat: (id: string, pinned: boolean) => ipcRenderer.invoke('chat:updatePinnedStatusForChat', id, pinned),
     getSelectedModelForChat: (id: string) => ipcRenderer.invoke('chat:getSelectedModelForChat', id),
     updateSelectedModelForChat: (id: string, modelIdentifier: ModelIdentifier) => ipcRenderer.invoke('chat:updateSelectedModelForChat', id, modelIdentifier),
+    updateSelectedAgentForChat: (id: string, agentIdentifier: AgentIdentifier) => ipcRenderer.invoke('chat:updateSelectedAgentForChat', id, agentIdentifier),
     updateSelectedPersonaForChat: (id: string, personaIdentifier: PersonaIdentifier) => ipcRenderer.invoke('chat:updateSelectedPersonaForChat', id, personaIdentifier),
     updateSelectedChat: (id: string) => ipcRenderer.invoke('chat:updateSelectedChat', id)
   },
@@ -214,6 +237,18 @@ export const api: Api = {
     runStart: (input: WorkflowRunInsert) => ipcRenderer.invoke('workflow:run.start', input),
     runCancel: (input: { runId: string; message?: string }) => ipcRenderer.invoke('workflow:run.cancel', input),
     runGet: (input: { runId: string }) => ipcRenderer.invoke('workflow:run.get', input)
+  },
+  acpAgent: {
+    getAll: () => ipcRenderer.invoke('acpAgent:getAll'),
+    create: (input: AcpAgentCreateInput) => ipcRenderer.invoke('acpAgent:create', input),
+    update: (id: string, input: AcpAgentUpdateInput) => ipcRenderer.invoke('acpAgent:update', id, input),
+    delete: (id: string) => ipcRenderer.invoke('acpAgent:delete', id),
+    enable: (id: string) => ipcRenderer.invoke('acpAgent:enable', id),
+    disable: (id: string) => ipcRenderer.invoke('acpAgent:disable', id),
+    getRegistry: () => ipcRenderer.invoke('acpAgent:getRegistry'),
+    refreshRegistry: () => ipcRenderer.invoke('acpAgent:refreshRegistry'),
+    installFromRegistry: (input: AcpRegistryInstallInput) => ipcRenderer.invoke('acpAgent:installFromRegistry', input),
+    test: (id: string, cwd: string | null) => ipcRenderer.invoke('acpAgent:test', id, cwd)
   },
   streaming: {
     sendMessage: (args: ChatSendMessageArgs) => ipcRenderer.send('streamingChat:sendMessage', args),

@@ -9,6 +9,8 @@ export const chat = pgTable('Chat', {
     pinnedAt: timestamp('pinnedAt'),
     selectedProvider: text('selectedProvider'),
     selectedModelId: text('selectedModelId'),
+    selectedRuntime: text('selectedRuntime').$type<'model' | 'agent'>().default('model'),
+    selectedAgentId: uuid('selectedAgentId'),
     selectedPersonaId: uuid('selectedPersonaId'),
     selected: boolean().default(false),
     lastMessage: text('lastMessage'),

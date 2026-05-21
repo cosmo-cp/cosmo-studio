@@ -9,6 +9,7 @@ type AppDataSourceOverrides = {
     modelProvider?: Partial<AppDataSource["modelProvider"]>;
     webSearch?: Partial<AppDataSource["webSearch"]>;
     mcpServer?: Partial<AppDataSource["mcpServer"]>;
+    acpAgent?: Partial<AppDataSource["acpAgent"]>;
     workflow?: Partial<AppDataSource["workflow"]>;
 };
 
@@ -25,6 +26,7 @@ export function createMockAppDataSource(
             deleteChat: async () => undefined,
             updatePinnedStatusForChat: async () => undefined,
             updateSelectedModelForChat: async () => undefined,
+            updateSelectedAgentForChat: async () => undefined,
             updateSelectedPersonaForChat: async () => undefined,
             ...overrides.chat,
         },
@@ -98,6 +100,29 @@ export function createMockAppDataSource(
                 throw new Error("mcpServer.updateToolApproval not mocked");
             },
             ...overrides.mcpServer,
+        },
+        acpAgent: {
+            getAll: async () => [],
+            create: async () => {
+                throw new Error("acpAgent.create not mocked");
+            },
+            update: async () => {
+                throw new Error("acpAgent.update not mocked");
+            },
+            delete: async () => undefined,
+            enable: async () => {
+                throw new Error("acpAgent.enable not mocked");
+            },
+            disable: async () => {
+                throw new Error("acpAgent.disable not mocked");
+            },
+            getRegistry: async () => ({version: "test", fetchedAt: null, agents: []}),
+            refreshRegistry: async () => ({version: "test", fetchedAt: new Date(), agents: []}),
+            installFromRegistry: async () => {
+                throw new Error("acpAgent.installFromRegistry not mocked");
+            },
+            test: async () => ({ok: true, message: "ok"}),
+            ...overrides.acpAgent,
         },
         workflow: {
             list: async () => [],

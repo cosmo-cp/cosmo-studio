@@ -14,6 +14,9 @@ const chatRequestSchema = z.object({
     messages: z.custom<UIMessage[]>(),
     metadata: z.object({
         modelId: z.string().optional(),
+        runtime: z.enum(["model", "agent"]).optional(),
+        agentId: z.string().nullable().optional(),
+        agentCwd: z.string().nullable().optional(),
         personaId: z.string().nullable().optional(),
         personaName: z.string().optional(),
     }).optional(),
@@ -31,9 +34,16 @@ export class ChatHttpController {
         @Res() response: Response
     ): Promise<void> {
         const parsed = chatRequestSchema.parse(body);
-        const modelIdentifier = parsed.metadata?.modelId ?? await this.getModelIdentifierFromChat(parsed.id);
-        if (!modelIdentifier) {
+        const chat = await this.chatService.getChatById(parsed.id);
+        const runtime = parsed.metadata?.runtime ?? chat?.selectedRuntime ?? "model";
+        const modelIdentifier = parsed.metadata?.modelId ?? this.getModelIdentifierFromChatRecord(chat);
+        const agentId = parsed.metadata?.agentId ?? chat?.selectedAgentId ?? null;
+        if (runtime === "model" && !modelIdentifier) {
             response.status(400).json({error: "modelId is required"});
+            return;
+        }
+        if (runtime === "agent" && !agentId) {
+            response.status(400).json({error: "agentId is required"});
             return;
         }
 
@@ -44,9 +54,12 @@ export class ChatHttpController {
             chatId: parsed.id,
             messages: parsed.messages,
             streamChannel: `http-chat-stream-${parsed.id}`,
-            modelIdentifier,
+            modelIdentifier: modelIdentifier ?? undefined,
             personaId: parsed.metadata?.personaId ?? undefined,
             personaName: parsed.metadata?.personaName,
+            runtime,
+            agentId,
+            agentCwd: parsed.metadata?.agentCwd ?? null,
         };
 
         const stream = await this.chatStreamingService.createMessageStream(args, abortController.signal);
@@ -63,8 +76,7 @@ export class ChatHttpController {
         return;
     }
 
-    private async getModelIdentifierFromChat(chatId: string): Promise<string | null> {
-        const chat = await this.chatService.getChatById(chatId);
+    private getModelIdentifierFromChatRecord(chat: Awaited<ReturnType<ChatService["getChatById"]>>): string | null {
         if (!chat?.selectedProvider || !chat.selectedModelId) {
             return null;
         }

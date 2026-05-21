@@ -60,6 +60,14 @@ type WorkflowCanvasNodeData = {
     icon: WorkflowCanvasNodeIcon;
     templateId: WorkflowCanvasNodeTemplateId;
     title: string;
+    agentConfig?: {
+        runtime: 'model' | 'agent';
+        modelIdentifier?: string;
+        agentId?: string | null;
+        cwd?: string | null;
+        prompt?: string;
+        mcpServerIds?: string[];
+    };
 };
 
 type WorkflowNodeTemplate = {
@@ -199,6 +207,14 @@ function buildNodeData(templateId: WorkflowNodeTemplateId): WorkflowCanvasNodeDa
         icon: template.icon,
         templateId: template.id,
         title: template.title,
+        agentConfig: template.id === 'agent' ? {
+            runtime: 'model',
+            modelIdentifier: '',
+            agentId: null,
+            cwd: null,
+            prompt: '',
+            mcpServerIds: [],
+        } : undefined,
     };
 }
 

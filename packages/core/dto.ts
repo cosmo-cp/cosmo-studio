@@ -2,6 +2,8 @@ import { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 import {
     chat,
     command,
+    acpAgent,
+    acpRegistryCache,
     mcpServer,
     message,
     model,
@@ -37,6 +39,8 @@ export type ModelProviderCreateInput = Omit<ModelProviderInsert, 'id' | 'created
 export type ModelProviderLite = Optional<ModelProvider, 'apiKey'>;
 export type ModelIdentifier = Pick<Chat, 'selectedProvider' | 'selectedModelId'>;
 export type PersonaIdentifier = Pick<Chat, 'selectedPersonaId'>;
+export type ChatRuntime = 'model' | 'agent';
+export type AgentIdentifier = Pick<Chat, 'selectedAgentId' | 'selectedRuntime'>;
 
 // Simple Model interface (kept here for full context)
 export type Model = InferSelectModel<typeof model>;
@@ -107,9 +111,12 @@ export interface ChatSendMessageArgs {
     chatId: string;
     messages: UIMessage[];
     streamChannel: string;
-    modelIdentifier: string & {};
+    modelIdentifier?: string;
     personaId?: string;
     personaName?: string;
+    runtime?: ChatRuntime;
+    agentId?: string | null;
+    agentCwd?: string | null;
 }
 
 export interface ChatAbortArgs {
@@ -141,6 +148,54 @@ export type McpServer = InferSelectModel<typeof mcpServer>;
 export type McpServerInsert = InferInsertModel<typeof mcpServer>;
 export type McpServerCreateInput = Omit<McpServerInsert, 'id' | 'createdAt' | 'updatedAt'>;
 export type McpServerUpdateInput = Partial<Omit<McpServerInsert, 'id' | 'createdAt' | 'updatedAt'>>;
+
+export type AcpAgent = InferSelectModel<typeof acpAgent>;
+export type AcpAgentInsert = InferInsertModel<typeof acpAgent>;
+export type AcpRegistryCache = InferSelectModel<typeof acpRegistryCache>;
+export type AcpRegistryCacheInsert = InferInsertModel<typeof acpRegistryCache>;
+export type AcpAgentCreateInput = Omit<AcpAgentInsert, 'id' | 'createdAt' | 'updatedAt'>;
+export type AcpAgentUpdateInput = Partial<AcpAgentCreateInput>;
+
+export interface AcpAgentView extends Omit<AcpAgent, 'env'> {
+    envKeys: string[];
+}
+
+export interface AcpAgentRuntimeConfig extends AcpAgent {
+    env: Record<string, string>;
+}
+
+export interface AcpRegistryAgent {
+    id: string;
+    name: string;
+    version: string;
+    description?: string;
+    repository?: string;
+    website?: string;
+    authors?: string[];
+    license?: string;
+    icon?: string;
+    distribution: Record<string, unknown>;
+}
+
+export interface AcpRegistryView {
+    version: string;
+    fetchedAt: Date | null;
+    agents: AcpRegistryAgent[];
+}
+
+export interface AcpRegistryInstallInput {
+    registryId: string;
+    defaultCwd?: string | null;
+    authMethodId?: string | null;
+    enabled?: boolean;
+    mcpServerIds?: string[];
+}
+
+export interface AcpAgentTestResult {
+    ok: boolean;
+    message: string;
+    authMethods?: string[];
+}
 
 
 export interface WorkflowGraph {

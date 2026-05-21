@@ -56,6 +56,7 @@ flowchart LR
 - IPC registration: controllers are registered via `IpcHandlerRegistry` (`src/main/ipc/index.ts`).
 - HTTP RPC registration: generated controller manifest drives `POST /api/rpc/:controller/:handler`.
 - Chat streaming business flow in `src/main/services/ChatStreamingService.ts`.
+- ACP agent process/runtime orchestration in `src/main/services/AcpAgentRuntimeService.ts`.
 - Electron streaming delivery that needs `webContents.send` (`StreamingChatController`).
 - HTTP streaming delivery through `src/main/http/ChatHttpController.ts`.
 - Main logging (`src/main/logger.ts`) and update checks (`update-electron-app`).
@@ -81,6 +82,7 @@ flowchart LR
 
 - Shared DTOs and types (`packages/core/dto.ts`).
 - Provider catalog metadata shared across processes (`packages/core/providerCatalog.ts`).
+- ACP agent metadata, registry cache, and redacted DTOs for local Agent Client Protocol runtimes.
 - Drizzle schema and DB manager (`packages/core/database/*`).
 - Repositories and services (`packages/core/repositories/*`, `packages/core/services/*`).
 - DI container (`packages/core/inversify.config.ts`) used as the parent container for main.
@@ -94,6 +96,14 @@ flowchart LR
 3. The thunk resolves through the shared app data source adapter to preload or HTTP.
 4. The active backend resolves the command through `CommandController` -> `CommandService`.
 5. The resolved prompt is sent through the normal chat streaming pipeline.
+
+### ACP agent flow (high-level)
+
+1. Renderer loads installed agents and registry metadata through the generated `acpAgent` RPC group.
+2. Agent definitions live in `AcpAgent`; registry responses are cached in `AcpRegistryCache`.
+3. Secrets in agent environment variables stay encrypted through `SecretStore`; renderer responses only include env key names.
+4. Chat sends either model metadata or agent metadata. `ChatStreamingService` branches on `runtime`.
+5. Model chats keep the existing provider registry and MCP/web-search tools. Agent chats build an ACP provider in main/HTTP, pass selected MCP servers through the ACP session config, and stream through the same AI SDK UI message path.
 
 ## Build pipeline (how packaging works)
 

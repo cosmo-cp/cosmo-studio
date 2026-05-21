@@ -554,8 +554,8 @@ function PureMessages({
     }, [currentMatchIndex, matches]);
 
     return (
-        <Conversation>
-            <ConversationContent>
+        <Conversation className="h-full min-h-0">
+            <ConversationContent scrollClassName="overflow-y-auto">
                 {messages.length === 0 ? (
                     <ConversationEmptyState
                         icon={<MessageSquare className="size-12" />}

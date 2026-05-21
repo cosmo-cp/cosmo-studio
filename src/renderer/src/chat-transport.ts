@@ -62,25 +62,37 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
         };
 
         // Get modelId from metadata or fetch from chat
-        const metadata = options?.metadata as { modelId?: string; personaId?: string } | undefined;
+        const metadata = options?.metadata as {
+            modelId?: string;
+            personaId?: string;
+            runtime?: 'model' | 'agent';
+            agentId?: string | null;
+            agentCwd?: string | null;
+        } | undefined;
+        const runtime = metadata?.runtime ?? 'model';
         let modelId = metadata?.modelId;
         let personaId = metadata?.personaId;
+        let agentId = metadata?.agentId ?? null;
 
         // Fallback: fetch from chat if not in metadata (e.g., tool approval continuation - modelId is not passed from sendMessage)
-        if (!modelId) {
+        if ((runtime === 'model' && !modelId) || (runtime === 'agent' && !agentId)) {
             try {
                 const chat = await window.api.chat?.getChatById(chatId);
-                if (chat?.selectedProvider && chat?.selectedModelId) {
+                if (!modelId && chat?.selectedProvider && chat?.selectedModelId) {
                     modelId = `${chat.selectedProvider}:${chat.selectedModelId}`;
                     personaId = personaId || chat.selectedPersonaId || undefined;
                 }
+                agentId = agentId || chat?.selectedAgentId || null;
             } catch (e) {
                 console.error('Failed to fetch chat for model info:', e);
             }
         }
 
-        if (!modelId) {
+        if (runtime === 'model' && !modelId) {
             return Promise.reject(new Error('modelId is required'));
+        }
+        if (runtime === 'agent' && !agentId) {
+            return Promise.reject(new Error('agentId is required'));
         }
 
         const stream = new ReadableStream<UIMessageChunk>({
@@ -126,6 +138,9 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
                         streamChannel,
                         modelIdentifier: modelId,
                         personaId,
+                        runtime,
+                        agentId,
+                        agentCwd: metadata?.agentCwd ?? null,
                     });
                 } catch (error) {
                     cleanup();

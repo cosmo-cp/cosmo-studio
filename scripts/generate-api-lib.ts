@@ -126,6 +126,7 @@ import {
     ProviderWithModels,
     ChatWithMessages,
     ModelIdentifier,
+    AgentIdentifier,
     PersonaIdentifier,
     Persona,
     NewPersona,
@@ -146,6 +147,12 @@ import {
     WorkflowRunInsert,
     WorkflowRunStatus,
     WorkflowVersion,
+    AcpAgentCreateInput,
+    AcpAgentUpdateInput,
+    AcpAgentView,
+    AcpRegistryInstallInput,
+    AcpRegistryView,
+    AcpAgentTestResult,
     WorkflowRunStreamStartArgs,
     WorkflowRunStreamAbortArgs,
 } from '../../packages/core/dto';
@@ -297,6 +304,7 @@ import type {
     ProviderWithModels,
     ChatWithMessages,
     ModelIdentifier,
+    AgentIdentifier,
     PersonaIdentifier,
     Persona,
     NewPersona,
@@ -317,6 +325,12 @@ import type {
     WorkflowRunInsert,
     WorkflowRunStatus,
     WorkflowVersion,
+    AcpAgentCreateInput,
+    AcpAgentUpdateInput,
+    AcpAgentView,
+    AcpRegistryInstallInput,
+    AcpRegistryView,
+    AcpAgentTestResult,
 } from "core/dto";
 import type {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
 import type {UIMessage} from "ai";

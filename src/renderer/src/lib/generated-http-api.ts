@@ -10,6 +10,7 @@ import type {
     ProviderWithModels,
     ChatWithMessages,
     ModelIdentifier,
+    AgentIdentifier,
     PersonaIdentifier,
     Persona,
     NewPersona,
@@ -30,6 +31,12 @@ import type {
     WorkflowRunInsert,
     WorkflowRunStatus,
     WorkflowVersion,
+    AcpAgentCreateInput,
+    AcpAgentUpdateInput,
+    AcpAgentView,
+    AcpRegistryInstallInput,
+    AcpRegistryView,
+    AcpAgentTestResult,
 } from "core/dto";
 import type {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
 import type {UIMessage} from "ai";
@@ -73,6 +80,7 @@ export interface ChatHttpApi {
     updatePinnedStatusForChat(id: string, pinned: boolean): Promise<void>;
     getSelectedModelForChat(id: string): Promise<string | null>;
     updateSelectedModelForChat(id: string, modelIdentifier: ModelIdentifier): Promise<void>;
+    updateSelectedAgentForChat(id: string, agentIdentifier: AgentIdentifier): Promise<void>;
     updateSelectedPersonaForChat(id: string, personaIdentifier: PersonaIdentifier): Promise<void>;
     updateSelectedChat(id: string): Promise<void>;
 }
@@ -145,6 +153,19 @@ export interface WorkflowHttpApi {
     runGet(input: { runId: string }): Promise<WorkflowRunStatus | undefined>;
 }
 
+export interface AcpAgentHttpApi {
+    getAll(): Promise<AcpAgentView[]>;
+    create(input: AcpAgentCreateInput): Promise<AcpAgentView>;
+    update(id: string, input: AcpAgentUpdateInput): Promise<AcpAgentView>;
+    delete(id: string): Promise<void>;
+    enable(id: string): Promise<AcpAgentView>;
+    disable(id: string): Promise<AcpAgentView>;
+    getRegistry(): Promise<AcpRegistryView>;
+    refreshRegistry(): Promise<AcpRegistryView>;
+    installFromRegistry(input: AcpRegistryInstallInput): Promise<AcpAgentView>;
+    test(id: string, cwd: string | null): Promise<AcpAgentTestResult>;
+}
+
 export interface HttpApi {
   chat: ChatHttpApi;
   modelProvider: ModelProviderHttpApi;
@@ -154,6 +175,7 @@ export interface HttpApi {
   mcpServer: McpServerHttpApi;
   webSearch: WebSearchHttpApi;
   workflow: WorkflowHttpApi;
+  acpAgent: AcpAgentHttpApi;
 }
 
 export const httpApi: HttpApi = {
@@ -166,6 +188,7 @@ export const httpApi: HttpApi = {
     updatePinnedStatusForChat: (id: string, pinned: boolean) => callRpc<void>('chat', 'updatePinnedStatusForChat', [id, pinned]),
     getSelectedModelForChat: (id: string) => callRpc<string | null>('chat', 'getSelectedModelForChat', [id]),
     updateSelectedModelForChat: (id: string, modelIdentifier: ModelIdentifier) => callRpc<void>('chat', 'updateSelectedModelForChat', [id, modelIdentifier]),
+    updateSelectedAgentForChat: (id: string, agentIdentifier: AgentIdentifier) => callRpc<void>('chat', 'updateSelectedAgentForChat', [id, agentIdentifier]),
     updateSelectedPersonaForChat: (id: string, personaIdentifier: PersonaIdentifier) => callRpc<void>('chat', 'updateSelectedPersonaForChat', [id, personaIdentifier]),
     updateSelectedChat: (id: string) => callRpc<void>('chat', 'updateSelectedChat', [id])
   },
@@ -229,5 +252,17 @@ export const httpApi: HttpApi = {
     runStart: (input: WorkflowRunInsert) => callRpc<WorkflowRun>('workflow', 'run.start', [input]),
     runCancel: (input: { runId: string; message?: string }) => callRpc<WorkflowRun | undefined>('workflow', 'run.cancel', [input]),
     runGet: (input: { runId: string }) => callRpc<WorkflowRunStatus | undefined>('workflow', 'run.get', [input])
+  },
+  acpAgent: {
+    getAll: () => callRpc<AcpAgentView[]>('acpAgent', 'getAll', []),
+    create: (input: AcpAgentCreateInput) => callRpc<AcpAgentView>('acpAgent', 'create', [input]),
+    update: (id: string, input: AcpAgentUpdateInput) => callRpc<AcpAgentView>('acpAgent', 'update', [id, input]),
+    delete: (id: string) => callRpc<void>('acpAgent', 'delete', [id]),
+    enable: (id: string) => callRpc<AcpAgentView>('acpAgent', 'enable', [id]),
+    disable: (id: string) => callRpc<AcpAgentView>('acpAgent', 'disable', [id]),
+    getRegistry: () => callRpc<AcpRegistryView>('acpAgent', 'getRegistry', []),
+    refreshRegistry: () => callRpc<AcpRegistryView>('acpAgent', 'refreshRegistry', []),
+    installFromRegistry: (input: AcpRegistryInstallInput) => callRpc<AcpAgentView>('acpAgent', 'installFromRegistry', [input]),
+    test: (id: string, cwd: string | null) => callRpc<AcpAgentTestResult>('acpAgent', 'test', [id, cwd])
   },
 };
