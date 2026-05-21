@@ -6,6 +6,7 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
@@ -25,9 +26,9 @@ import {
     testAcpAgent,
     toggleAcpAgentEnabled,
 } from '@/lib/store/acp-agents-store';
-import type {AcpAgentCreateInput, AcpAgentView, AcpRegistryAgent} from 'core/dto';
+import type {AcpAgentCreateInput, AcpAgentUpdateInput, AcpAgentView, AcpRegistryAgent} from 'core/dto';
 import {AcpAgentInstallStatusEnum, AcpAgentSourceEnum} from 'core/database/schema/acpAgentSchema';
-import {CheckCircle2, Download, Plus, RefreshCw, TestTube2, Trash2, XCircle} from 'lucide-react';
+import {CheckCircle2, Download, Pencil, Plus, RefreshCw, TestTube2, Trash2, XCircle} from 'lucide-react';
 import {useEffect, useMemo, useState} from 'react';
 import {toast} from 'sonner';
 
@@ -40,6 +41,44 @@ const emptyForm = {
     defaultCwd: '',
     authMethodId: '',
 };
+
+const emptyEditForm = {
+    name: '',
+    description: '',
+    command: '',
+    argsJson: '[]',
+    envJson: '',
+    defaultCwd: '',
+    authMethodId: '',
+};
+
+function parseStringArrayJson(value: string, field: string): string[] {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(value);
+    } catch {
+        throw new Error(`${field} must be valid JSON.`);
+    }
+    if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== 'string')) {
+        throw new Error(`${field} must be a JSON string array.`);
+    }
+    return parsed;
+}
+
+function parseStringRecordJson(value: string, field: string): Record<string, string> {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(value);
+    } catch {
+        throw new Error(`${field} must be valid JSON.`);
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error(`${field} must be a JSON object.`);
+    }
+    return Object.fromEntries(
+        Object.entries(parsed).map(([key, recordValue]) => [key, String(recordValue ?? '')])
+    );
+}
 
 function getDistributionLabel(agent: AcpRegistryAgent): string {
     const distribution = agent.distribution ?? {};
@@ -64,6 +103,8 @@ export function AcpAgentManagement() {
     const registryError = useAppSelector((state) => state.acpAgents.registryErrorMessage);
     const [search, setSearch] = useState('');
     const [form, setForm] = useState(emptyForm);
+    const [editForm, setEditForm] = useState(emptyEditForm);
+    const [editingAgent, setEditingAgent] = useState<AcpAgentView | null>(null);
     const [registryDialogOpen, setRegistryDialogOpen] = useState(false);
     const [installingRegistryId, setInstallingRegistryId] = useState<string | null>(null);
 
@@ -91,18 +132,10 @@ export function AcpAgentManagement() {
         let args: string[];
         let env: Record<string, string>;
         try {
-            args = JSON.parse(form.argsJson);
-            env = JSON.parse(form.envJson);
-        } catch {
-            toast.error('Args and env must be valid JSON.');
-            return;
-        }
-        if (!Array.isArray(args) || args.some((item) => typeof item !== 'string')) {
-            toast.error('Args must be a JSON string array.');
-            return;
-        }
-        if (!env || typeof env !== 'object' || Array.isArray(env)) {
-            toast.error('Env must be a JSON object.');
+            args = parseStringArrayJson(form.argsJson, 'Args');
+            env = parseStringRecordJson(form.envJson, 'Env');
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Invalid ACP agent form.');
             return;
         }
 
@@ -128,6 +161,66 @@ export function AcpAgentManagement() {
             toast.success('ACP agent added');
         } catch (error) {
             toast.error(typeof error === 'string' ? error : 'Failed to add ACP agent');
+        }
+    };
+
+    const handleEdit = (agent: AcpAgentView) => {
+        setEditingAgent(agent);
+        setEditForm({
+            name: agent.name,
+            description: agent.description ?? '',
+            command: agent.command,
+            argsJson: JSON.stringify(agent.args, null, 2),
+            envJson: '',
+            defaultCwd: agent.defaultCwd ?? '',
+            authMethodId: agent.authMethodId ?? '',
+        });
+    };
+
+    const handleEditDialogOpenChange = (open: boolean) => {
+        if (!open) {
+            setEditingAgent(null);
+            setEditForm(emptyEditForm);
+        }
+    };
+
+    const handleUpdateAgent = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!editingAgent) {
+            return;
+        }
+
+        let args: string[];
+        let env: Record<string, string> | undefined;
+        try {
+            args = parseStringArrayJson(editForm.argsJson, 'Args');
+            env = editForm.envJson.trim().length > 0 ?
+                parseStringRecordJson(editForm.envJson, 'Replacement env') :
+                undefined;
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Invalid ACP agent form.');
+            return;
+        }
+
+        const input: AcpAgentUpdateInput = {
+            name: editForm.name.trim(),
+            description: editForm.description.trim() || null,
+            command: editForm.command.trim(),
+            args,
+            defaultCwd: editForm.defaultCwd.trim() || null,
+            authMethodId: editForm.authMethodId.trim() || null,
+        };
+        if (env !== undefined) {
+            input.env = env;
+        }
+
+        try {
+            await dispatch(saveAcpAgent({agentId: editingAgent.id, input})).unwrap();
+            setEditingAgent(null);
+            setEditForm(emptyEditForm);
+            toast.success('ACP agent updated');
+        } catch (error) {
+            toast.error(typeof error === 'string' ? error : 'Failed to update ACP agent');
         }
     };
 
@@ -201,7 +294,7 @@ export function AcpAgentManagement() {
                                     <TableHead>Name</TableHead>
                                     <TableHead>Command</TableHead>
                                     <TableHead>Workspace</TableHead>
-                                    <TableHead className="w-[160px] text-right">Actions</TableHead>
+                                    <TableHead className="w-[192px] text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -246,6 +339,19 @@ export function AcpAgentManagement() {
                                                     </Button>
                                                 </TooltipTrigger>
                                                 <TooltipContent side="top">Test connection</TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        aria-label={`Edit ${agent.name}`}
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        onClick={() => handleEdit(agent)}
+                                                    >
+                                                        <Pencil className="size-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Edit agent</TooltipContent>
                                             </Tooltip>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
@@ -315,6 +421,108 @@ export function AcpAgentManagement() {
                     </form>
                 </TabsContent>
             </Tabs>
+            <Dialog open={editingAgent !== null} onOpenChange={handleEditDialogOpenChange}>
+                <DialogContent className="flex max-h-[85dvh] flex-col overflow-hidden sm:max-w-[640px]">
+                    <DialogHeader>
+                        <DialogTitle>Edit agent</DialogTitle>
+                        <DialogDescription>
+                            Update the local command, workspace, auth, and environment replacement for this ACP agent.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form className="flex min-h-0 flex-1 flex-col gap-4" onSubmit={(event) => void handleUpdateAgent(event)}>
+                        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium" htmlFor="edit-agent-name">
+                                        Name
+                                    </label>
+                                    <Input
+                                        id="edit-agent-name"
+                                        value={editForm.name}
+                                        onChange={(event) => setEditForm({...editForm, name: event.target.value})}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium" htmlFor="edit-agent-command">
+                                        Command
+                                    </label>
+                                    <Input
+                                        id="edit-agent-command"
+                                        value={editForm.command}
+                                        onChange={(event) => setEditForm({...editForm, command: event.target.value})}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium" htmlFor="edit-agent-workspace">
+                                        Workspace path
+                                    </label>
+                                    <Input
+                                        id="edit-agent-workspace"
+                                        value={editForm.defaultCwd}
+                                        onChange={(event) => setEditForm({...editForm, defaultCwd: event.target.value})}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium" htmlFor="edit-agent-auth">
+                                        Auth method ID
+                                    </label>
+                                    <Input
+                                        id="edit-agent-auth"
+                                        value={editForm.authMethodId}
+                                        onChange={(event) => setEditForm({...editForm, authMethodId: event.target.value})}
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium" htmlFor="edit-agent-description">
+                                    Description
+                                </label>
+                                <Textarea
+                                    id="edit-agent-description"
+                                    value={editForm.description}
+                                    onChange={(event) => setEditForm({...editForm, description: event.target.value})}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium" htmlFor="edit-agent-args">
+                                    Args JSON
+                                </label>
+                                <Textarea
+                                    className="font-mono text-xs"
+                                    id="edit-agent-args"
+                                    value={editForm.argsJson}
+                                    onChange={(event) => setEditForm({...editForm, argsJson: event.target.value})}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium" htmlFor="edit-agent-env">
+                                    Replacement env JSON
+                                </label>
+                                <Textarea
+                                    className="font-mono text-xs"
+                                    id="edit-agent-env"
+                                    placeholder='{"TOKEN":"new-value"}'
+                                    value={editForm.envJson}
+                                    onChange={(event) => setEditForm({...editForm, envJson: event.target.value})}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    {editingAgent?.envKeys.length ?
+                                        `Stored env keys: ${editingAgent.envKeys.join(', ')}. Leave blank to keep them.` :
+                                        'Leave blank to keep the current env unchanged.'}
+                                </p>
+                            </div>
+                        </div>
+                        <DialogFooter className="shrink-0">
+                            <Button type="button" variant="outline" onClick={() => handleEditDialogOpenChange(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit">Save changes</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
             <Dialog open={registryDialogOpen} onOpenChange={handleRegistryOpenChange}>
                 <DialogContent className="flex max-h-[85dvh] w-[calc(100vw-2rem)] max-w-[900px] min-w-0 flex-col overflow-hidden p-0">
                     <DialogHeader className="shrink-0 px-6 pt-6 pr-12">

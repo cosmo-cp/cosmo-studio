@@ -1,10 +1,10 @@
-import {render, screen, waitFor, within} from "@testing-library/react";
+import {fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {AcpAgentManagement} from "@/components/acp-agent-management";
 import {StoreProvider} from "@/lib/store/store-provider";
 import {createMockAppDataSource} from "@/test/mock-app-data-source";
-import type {AcpAgentView, AcpRegistryView} from "core/dto";
+import type {AcpAgentUpdateInput, AcpAgentView, AcpRegistryView} from "core/dto";
 import {
     AcpAgentInstallStatusEnum,
     AcpAgentSourceEnum,
@@ -78,6 +78,13 @@ function buildInstalledAgent(registryId: string): AcpAgentView {
     };
 }
 
+function buildAgentWithEnvKeys(): AcpAgentView {
+    return {
+        ...buildInstalledAgent("codex-cli"),
+        envKeys: ["TOKEN"],
+    };
+}
+
 describe("AcpAgentManagement", () => {
     beforeEach(() => {
         vi.stubGlobal("ResizeObserver", ResizeObserverMock);
@@ -117,6 +124,74 @@ describe("AcpAgentManagement", () => {
         const deleteButton = await screen.findByRole("button", {name: /delete codex cli/i});
         await user.hover(deleteButton);
         expect(await screen.findAllByText("Delete agent")).not.toHaveLength(0);
+    });
+
+    it("shows a tooltip for editing installed agents", async () => {
+        const user = userEvent.setup();
+
+        render(
+            <StoreProvider appDataSource={createMockAppDataSource({
+                acpAgent: {
+                    getAll: async () => [buildInstalledAgent("codex-cli")],
+                },
+            })}>
+                <AcpAgentManagement />
+            </StoreProvider>
+        );
+
+        const editButton = await screen.findByRole("button", {name: /edit codex cli/i});
+        await user.hover(editButton);
+        expect(await screen.findAllByText("Edit agent")).not.toHaveLength(0);
+    });
+
+    it("opens an edit dialog and preserves env secrets unless replacement env is entered", async () => {
+        const user = userEvent.setup();
+        const update = vi.fn(async (id: string, input: AcpAgentUpdateInput): Promise<AcpAgentView> => ({
+            ...buildAgentWithEnvKeys(),
+            ...input,
+            id,
+            updatedAt: new Date("2026-05-20T01:00:00.000Z"),
+        }));
+
+        render(
+            <StoreProvider appDataSource={createMockAppDataSource({
+                acpAgent: {
+                    getAll: async () => [buildAgentWithEnvKeys()],
+                    update,
+                },
+            })}>
+                <AcpAgentManagement />
+            </StoreProvider>
+        );
+
+        await user.click(await screen.findByRole("button", {name: /edit codex cli/i}));
+
+        expect(await screen.findByRole("heading", {name: /edit agent/i})).toBeInTheDocument();
+        expect(screen.getByText(/stored env keys: token/i)).toBeInTheDocument();
+
+        await user.clear(screen.getByLabelText(/^name$/i));
+        await user.type(screen.getByLabelText(/^name$/i), "Codex Edited");
+        await user.clear(screen.getByLabelText(/^command$/i));
+        await user.type(screen.getByLabelText(/^command$/i), "uvx");
+        await user.clear(screen.getByLabelText(/^workspace path$/i));
+        await user.type(screen.getByLabelText(/^workspace path$/i), "/workspace");
+        await user.clear(screen.getByLabelText(/^auth method id$/i));
+        await user.type(screen.getByLabelText(/^auth method id$/i), "oauth-test");
+        fireEvent.change(screen.getByLabelText(/^args json$/i), {
+            target: {value: '["--acp","--verbose"]'},
+        });
+        await user.click(screen.getByRole("button", {name: /save changes/i}));
+
+        await waitFor(() => {
+            expect(update).toHaveBeenCalledWith("agent-1", expect.objectContaining({
+                name: "Codex Edited",
+                command: "uvx",
+                args: ["--acp", "--verbose"],
+                defaultCwd: "/workspace",
+                authMethodId: "oauth-test",
+            }));
+        });
+        expect(update.mock.calls[0][1]).not.toHaveProperty("env");
     });
 
     it("opens the registry in a dialog and installs registry agents", async () => {
