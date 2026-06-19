@@ -48,9 +48,10 @@ describe('AppSidebar', () => {
             'data-active',
             'true'
         );
-        expect(screen.getByRole('link', {name: /persona/i})).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: /command/i})).toBeInTheDocument();
-        expect(screen.queryByRole('link', {name: /agents/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: /persona/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: /command/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: /mcp servers/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: /provider/i})).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: /settings/i})).toHaveAttribute(
             'href',
             getDefaultSettingsHref()
@@ -71,6 +72,18 @@ describe('AppSidebar', () => {
         expect(screen.getByRole('link', {name: /provider/i})).toHaveAttribute(
             'href',
             getSettingsItemHref('/settings', 'provider')
+        );
+        expect(screen.getByRole('link', {name: /persona/i})).toHaveAttribute(
+            'href',
+            getSettingsItemHref('/settings', 'persona')
+        );
+        expect(screen.getByRole('link', {name: /command/i})).toHaveAttribute(
+            'href',
+            getSettingsItemHref('/settings', 'command')
+        );
+        expect(screen.getByRole('link', {name: /mcp servers/i})).toHaveAttribute(
+            'href',
+            getSettingsItemHref('/settings', 'mcp-server')
         );
         expect(screen.getByRole('link', {name: /web search/i})).toHaveAttribute(
             'href',
@@ -105,12 +118,51 @@ describe('AppSidebar', () => {
             'href',
             getSettingsItemHref('/settings/provider', 'agents')
         );
+        expect(screen.getByRole('link', {name: /persona/i})).toHaveAttribute(
+            'href',
+            getSettingsItemHref('/settings/provider', 'persona')
+        );
+        expect(screen.getByRole('link', {name: /command/i})).toHaveAttribute(
+            'href',
+            getSettingsItemHref('/settings/provider', 'command')
+        );
+        expect(screen.getByRole('link', {name: /mcp servers/i})).toHaveAttribute(
+            'href',
+            getSettingsItemHref('/settings/provider', 'mcp-server')
+        );
     });
 
     it('marks agents active in the settings submenu', () => {
         renderSidebar('/settings/agents');
 
         expect(screen.getByRole('link', {name: /agents/i})).toHaveAttribute(
+            'data-active',
+            'true'
+        );
+    });
+
+    it('marks persona active in the settings submenu', () => {
+        renderSidebar('/settings/persona');
+
+        expect(screen.getByRole('link', {name: /persona/i})).toHaveAttribute(
+            'data-active',
+            'true'
+        );
+    });
+
+    it('marks command active in the settings submenu', () => {
+        renderSidebar('/settings/command');
+
+        expect(screen.getByRole('link', {name: /command/i})).toHaveAttribute(
+            'data-active',
+            'true'
+        );
+    });
+
+    it('marks mcp servers active in the settings submenu', () => {
+        renderSidebar('/settings/mcp-server');
+
+        expect(screen.getByRole('link', {name: /mcp servers/i})).toHaveAttribute(
             'data-active',
             'true'
         );
