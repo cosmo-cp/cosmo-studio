@@ -44,10 +44,7 @@ describe('AppSidebar', () => {
         renderSidebar('/workflow');
 
         expect(screen.getByRole('link', {name: /chat/i})).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: /workflow/i})).toHaveAttribute(
-            'data-active',
-            'true'
-        );
+        expect(screen.queryByRole('link', {name: /workflow/i})).not.toBeInTheDocument();
         expect(screen.queryByRole('link', {name: /persona/i})).not.toBeInTheDocument();
         expect(screen.queryByRole('link', {name: /command/i})).not.toBeInTheDocument();
         expect(screen.queryByRole('link', {name: /mcp servers/i})).not.toBeInTheDocument();
@@ -85,10 +82,6 @@ describe('AppSidebar', () => {
             'href',
             getSettingsItemHref('/settings', 'mcp-server')
         );
-        expect(screen.getByRole('link', {name: /web search/i})).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings', 'web-search')
-        );
         expect(screen.getByRole('link', {name: /agents/i})).toHaveAttribute(
             'href',
             getSettingsItemHref('/settings', 'agents')
@@ -109,10 +102,6 @@ describe('AppSidebar', () => {
         expect(screen.getByRole('link', {name: /provider/i})).toHaveAttribute(
             'data-active',
             'true'
-        );
-        expect(screen.getByRole('link', {name: /web search/i})).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings/provider', 'web-search')
         );
         expect(screen.getByRole('link', {name: /agents/i})).toHaveAttribute(
             'href',

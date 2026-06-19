@@ -3,7 +3,6 @@ import {
     Cable,
     CircleUserRound,
     Command,
-    Globe,
     type LucideIcon,
     PlugZap,
 } from 'lucide-react';
@@ -47,12 +46,6 @@ export const settingsSections: readonly SettingsSection[] = [
         title: 'MCP Servers',
         description: 'Manage local and remote MCP server definitions.',
         icon: Cable,
-    },
-    {
-        slug: 'web-search',
-        title: 'Web search',
-        description: 'Configure where web search settings live in the app.',
-        icon: Globe,
     },
     {
         slug: 'agents',
