@@ -15,13 +15,10 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import {
-    Cable,
     ChevronLeft,
     ChevronRight,
-    CircleUserRound,
     MessageCircle,
     SettingsIcon,
-    Slash,
     Workflow,
 } from 'lucide-react';
 import {CosmoIcon} from '@/components/cosmo-icon';
@@ -46,24 +43,6 @@ const menuItems = [
         href: './workflow',
         pathname: '/workflow',
         icon: Workflow,
-    },
-    {
-        title: 'Persona',
-        href: './persona',
-        pathname: '/persona',
-        icon: CircleUserRound,
-    },
-    {
-        title: 'Command',
-        href: './command',
-        pathname: '/command',
-        icon: Slash,
-    },
-    {
-        title: 'MCP Servers',
-        href: './mcp-server',
-        pathname: '/mcp-server',
-        icon: Cable,
     },
 ] as const;
 
