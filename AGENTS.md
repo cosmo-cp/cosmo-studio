@@ -4,6 +4,8 @@ This file is written for AI agents/LLMs and engineers working in this repo. It e
 
 If you change architecture, workflows, scripts, or conventions, **update this file** (and the scoped `AGENTS.override.md` files) in the same PR.
 
+For a quick product-capability index before planning or answering feature questions, read `docs/feature.md`.
+
 ## Project map (read this first)
 
 Cosmo Studio is a dual-runtime app with a static-exported Next.js UI. It builds as an Electron desktop app and as a local NestJS HTTP service.
@@ -37,6 +39,7 @@ Cosmo Studio is a dual-runtime app with a static-exported Next.js UI. It builds 
 
 Internal docs live in `docs/` (keep them updated):
 
+- `docs/feature.md` - quick feature inventory and source map.
 - `docs/ARCHITECTURE.md`
 - `docs/IPC.md`
 - `docs/DATABASE.md`
