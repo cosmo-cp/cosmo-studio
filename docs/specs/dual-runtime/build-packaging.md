@@ -23,7 +23,7 @@ Accepted for v1. Electron packaging remains the existing shareable desktop app p
 
 ```mermaid
 flowchart TD
-  Gen["generate-api"] --> Preload["src/preload/api.ts"]
+  Gen["generate-api"] --> Preload["src/preload/api.ts + src/preload/api/*"]
   Gen --> Manifest["src/main/http/rpc-manifest.ts"]
   Gen --> Client["src/renderer/src/lib/generated-http-api.ts"]
 
@@ -87,4 +87,3 @@ Smoke checks for the built HTTP server:
 - `GET /api/health`
 - one `POST /api/rpc/:controller/:handler`
 - one `POST /api/chat` request when a provider/model is configured
-

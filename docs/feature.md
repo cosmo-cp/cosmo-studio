@@ -128,11 +128,11 @@ Use this file as the quick feature index. For implementation details, follow the
 - Static-exported Next.js renderer selected at build/dev time with `NEXT_PUBLIC_COSMO_BACKEND=electron|http`.
   - Renderer adapter: `src/renderer/src/lib/app-data-source.ts`
   - Generated HTTP client: `src/renderer/src/lib/generated-http-api.ts`
-  - Generated preload API: `src/preload/api.ts`
+  - Generated preload API: `src/preload/api.ts` plus `src/preload/api/*.ts`
 - Declarative IPC/RPC generation from controller decorators.
   - Decorators: `src/main/ipc/Decorators.ts`
   - Generator: `scripts/generate-api.ts`
-  - Generated files: `src/preload/api.ts`, `src/main/http/rpc-manifest.ts`, `src/renderer/src/lib/generated-http-api.ts`
+  - Generated files: `src/preload/api.ts`, `src/preload/api/*.ts`, `src/main/http/rpc-manifest.ts`, `src/renderer/src/lib/generated-http-api.ts`
 - Local PGlite database with Drizzle schema and migrations.
   - Database docs: `docs/DATABASE.md`
   - Schema root: `packages/core/database/schema/`

@@ -12,13 +12,12 @@ import { WebSearchController} from "../src/main/controllers/WebSearchController"
 import { WorkflowController } from '../src/main/controllers/WorkflowController';
 import { AcpAgentController } from '../src/main/controllers/AcpAgentController';
 import {
-    generateApiContent,
+    generatePreloadApiFiles,
     generateHttpClientContent,
     generateHttpRpcManifestContent,
     type ControllerSource
 } from './generate-api-lib';
 
-const apiFilePath = path.resolve(__dirname, '../src/preload/api.ts');
 const httpManifestFilePath = path.resolve(__dirname, '../src/main/http/rpc-manifest.ts');
 const httpClientFilePath = path.resolve(__dirname, '../src/renderer/src/lib/generated-http-api.ts');
 
@@ -61,14 +60,17 @@ const controllerSources: ControllerSource[] = controllers.map((controller) => ({
     source: controllerFileContents[controller.name],
 }));
 
-const apiContent = generateApiContent(controllerSources);
+const preloadFiles = generatePreloadApiFiles(controllerSources);
 const httpManifestContent = generateHttpRpcManifestContent(controllerSources);
 const httpClientContent = generateHttpClientContent(controllerSources);
 
-fs.writeFileSync(apiFilePath, apiContent, { encoding: 'utf-8' });
+for (const [filePath, content] of Object.entries(preloadFiles)) {
+    fs.mkdirSync(path.dirname(path.resolve(__dirname, `../${filePath}`)), { recursive: true });
+    fs.writeFileSync(path.resolve(__dirname, `../${filePath}`), content, { encoding: 'utf-8' });
+}
 fs.mkdirSync(path.dirname(httpManifestFilePath), {recursive: true});
 fs.mkdirSync(path.dirname(httpClientFilePath), {recursive: true});
 fs.writeFileSync(httpManifestFilePath, httpManifestContent, {encoding: 'utf-8'});
 fs.writeFileSync(httpClientFilePath, httpClientContent, {encoding: 'utf-8'});
 
-console.log('Successfully generated api.ts');
+console.log('Successfully generated preload API files');

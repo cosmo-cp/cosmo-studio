@@ -64,7 +64,7 @@ flowchart LR
 ### Preload (`src/preload`)
 
 - Defines the renderer-accessible API surface (`window.api`) via `contextBridge`.
-- `src/preload/api.ts` is generated from controller decorators using `scripts/generate-api.ts`.
+- `src/preload/api.ts` and `src/preload/api/*.ts` are generated from controller decorators using `scripts/generate-api.ts`.
 - Applies only to the Electron target.
 
 ### Renderer (`src/renderer`)
