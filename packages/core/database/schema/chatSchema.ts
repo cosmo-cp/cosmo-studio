@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, text, timestamp, uuid, boolean, pgEnum } from 'drizzle-orm/pg-core';
+import { boolean, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import type { UIMessage } from 'ai';
 
 export const chat = pgTable('Chat', {
     id: uuid('id').primaryKey().notNull().defaultRandom(),
@@ -11,6 +12,7 @@ export const chat = pgTable('Chat', {
     selectedModelId: text('selectedModelId'),
     selectedPersonaId: uuid('selectedPersonaId'),
     selected: boolean().default(false),
+    syncVersion: integer('syncVersion').notNull().default(0),
     lastMessage: text('lastMessage'),
     lastMessageAt: timestamp('lastMessageAt'),
 });
@@ -30,6 +32,8 @@ export const message = pgTable('Message', {
     text: text('text'),
     reasoning: text('reasoning'),
     modelIdentifier: text('modelIdentifier'),
+    uiMessageId: text('uiMessageId'),
+    uiMessage: jsonb('uiMessage').$type<UIMessage>(),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
 });
 

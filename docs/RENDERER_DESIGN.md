@@ -53,8 +53,11 @@ This document captures UI/UX conventions so new features match the existing Cosm
 - Streaming chat:
     - Always handle failure states (toast + recoverable UI).
     - Clean up IPC listeners when streams end/cancel.
+    - Render chat messages/status from Redux, not component-local `useChat` state.
+    - Keep AI SDK `Chat` runtimes outside React component lifecycle so route changes do not drop active streams.
 - Commands:
     - List commands dynamically (built-ins + custom).
     - Allow optional single-argument input and show hints in the UI.
 - Errors:
+    - Use the centralized chat thunk/middleware path for chat IPC logging and toasts.
     - Use `sonner` for user-facing errors; use `logger` for diagnostic logs.

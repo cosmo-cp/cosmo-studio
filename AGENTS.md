@@ -43,6 +43,7 @@ Before coding, decide **where the feature belongs**. Default to keeping the rend
 
 1. **Pure UI/UX change (layout, styling, components, interaction)**  
    → `src/renderer/src/...`
+   → Chat UI state belongs in the Redux store/runtime layer under `src/renderer/src/store/*`, not directly in `page.tsx`.
 
 2. **Needs OS access / Electron APIs / filesystem / app lifecycle**  
    → `src/main/...`  
@@ -55,6 +56,7 @@ Before coding, decide **where the feature belongs**. Default to keeping the rend
 4. **AI/model provider logic** (providers, streaming, prompt assembly, tool calls)  
    → Prefer `packages/core/...` for provider registry + model selection logic.  
    → Keep streaming orchestration that needs `webContents.send` in `src/main/controllers/StreamingChatController.ts`.
+   → Keep AI SDK chat runtimes in the renderer runtime registry, and persist message snapshots through validated IPC sync.
 
 5. **Shared types/DTOs**  
    → `packages/core/dto.ts` (and types under `packages/core/types/`)
@@ -162,7 +164,10 @@ When you change code, always run:
 
 1. Lints: `npm run lint` (root) and `npm run lint` in `src/renderer`
 2. Tests: add/run targeted tests first, then full suite(`npm run test`) and Coverage(`npm run test:coverage`)
-3. Build check (after every major change): Full build(`npm run package`) and start(`npm run dev`)
+3. Build check for every code change:
+    - Renderer build: `cd src/renderer && npm run build`
+    - Full app package build: `npm run package`
+4. Start check when the change affects runtime wiring or UX: `npm run dev`
 
 ## 5) Testing policy (strict, 100%+ mindset)
 

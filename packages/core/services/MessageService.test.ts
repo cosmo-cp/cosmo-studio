@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Message, NewMessage } from '../dto';
+import type { ChatMessageSyncInput, Message, NewMessage } from '../dto';
+import type { UIMessage } from 'ai';
 import type { MessageRepository } from '../repositories/MessageRepository';
 import { MessageService } from './MessageService';
 
@@ -10,6 +11,7 @@ describe('MessageService', () => {
     beforeEach(() => {
         repository = {
             getMessagesByChatId: vi.fn(),
+            syncForChat: vi.fn(),
             create: vi.fn(),
             update: vi.fn(),
             delete: vi.fn(),
@@ -79,6 +81,27 @@ describe('MessageService', () => {
         ]);
     });
 
+    it('returns serialized UI messages when present', async () => {
+        const uiMessage: UIMessage = {
+            id: 'client-id',
+            role: 'assistant',
+            parts: [{ type: 'text', text: 'serialized' }],
+        };
+        (repository.getMessagesByChatId as unknown as ReturnType<typeof vi.fn>).mockResolvedValue([
+            {
+                id: 'db-id',
+                chatId: 'c',
+                role: 'assistant',
+                text: 'legacy text',
+                reasoning: null,
+                uiMessage,
+                createdAt: new Date(),
+            } as unknown as Message,
+        ]);
+
+        await expect(service.getMessagesByChatId('c')).resolves.toEqual([uiMessage]);
+    });
+
     it('delegates create/update/delete to the repository', async () => {
         const created = { id: 'm' } as unknown as Message;
         const updated = { id: 'm' } as unknown as Message;
@@ -100,5 +123,18 @@ describe('MessageService', () => {
 
         await service.deleteMessage('m');
         expect(repository.delete).toHaveBeenCalledWith('m');
+    });
+
+    it('delegates chat message sync to the repository', async () => {
+        const input: ChatMessageSyncInput = {
+            chatId: '00000000-0000-4000-8000-000000000001',
+            sequence: 1,
+            messages: [],
+        };
+        const ack = { chatId: input.chatId, sequence: 1, accepted: true };
+        (repository.syncForChat as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(ack);
+
+        await expect(service.syncForChat(input)).resolves.toEqual(ack);
+        expect(repository.syncForChat).toHaveBeenCalledWith(input);
     });
 });

@@ -77,6 +77,18 @@ export interface ChatAbortArgs {
     streamChannel: string;
 }
 
+export interface ChatMessageSyncInput {
+    chatId: string;
+    sequence: number;
+    messages: UIMessage[];
+}
+
+export interface ChatMessageSyncAck {
+    chatId: string;
+    sequence: number;
+    accepted: boolean;
+}
+
 // MCP Server Transport Configurations
 export interface SseTransportConfig {
     url: string;

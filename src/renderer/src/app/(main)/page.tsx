@@ -1,274 +1,172 @@
 'use client';
-import { JSX, useCallback, useEffect, useMemo, useState } from 'react';
+
+import { JSX, useCallback, useEffect } from 'react';
 import { ChatHistory } from '@/components/chat-history';
-import { Chat } from 'core/dto';
 import { ChatHeader } from '@/components/chat-header';
 import { Messages } from '@/components/messages';
 import { MultimodalInput } from '@/components/multimodal-input';
-import { useChat } from '@ai-sdk/react';
-import { IpcChatTransport } from '@/chat-transport';
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { MessageCirclePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { lastAssistantMessageIsCompleteWithApprovalResponses, UIMessage } from 'ai';
-import { toast } from 'sonner';
-import { logger } from '../../../logger';
+import {
+    approveToolCall,
+    chatActions,
+    createChat,
+    deleteChat,
+    loadChatCatalog,
+    loadChats,
+    regenerateChatResponse,
+    selectChat,
+    selectChats,
+    selectSelectedChat,
+    selectSelectedMessages,
+    selectSelectedStatus,
+    sendChatMessage,
+    stopChatResponse,
+    togglePinnedChat,
+    updateSelectedModel,
+    updateSelectedPersona,
+} from '@/store/chat-slice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 
 export default function Page(): JSX.Element {
-    const [chatHistory, setChatHistory] = useState<Chat[]>([]);
-    const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
-    const [refreshHistory, setRefreshHistory] = useState(false);
-    const [searchHistoryQuery, setSearchHistoryQuery] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
-    const [totalMatches, setTotalMatches] = useState(0);
-    const transport = useMemo(() => new IpcChatTransport(), []);
-
-    const updateChatInHistory = useCallback((chatId: string, updates: Partial<Chat>) => {
-        setChatHistory((prev) => prev.map((c) => (c.id === chatId ? { ...c, ...updates } : c)));
-        setSelectedChat((prev) => (prev && prev.id === chatId ? { ...prev, ...updates } : prev));
-    }, []);
-
-    const { messages, sendMessage, status, regenerate, setMessages, addToolApprovalResponse, stop } =
-        useChat<UIMessage>({
-            id: selectedChat?.id,
-            transport,
-            sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
-            onFinish: ({ message }) => {
-                // locally update the chat history
-                if (!selectedChat) return;
-                const textPart = message.parts?.find((p) => p.type === 'text') as
-                    | { type: 'text'; text: string }
-                    | undefined;
-                const text = textPart?.text;
-                const updates: Partial<Chat> = {
-                    lastMessage: text ? text.slice(0, 200) : selectedChat.lastMessage,
-                    lastMessageAt: new Date(),
-                };
-                // Update title on first exchange (matches backend logic in MessageRepository)
-                const userMessages = messages.filter((m) => m.role === 'user');
-                if (userMessages.length === 1) {
-                    const userTextPart = userMessages[0].parts?.find((p) => p.type === 'text') as
-                        | { type: 'text'; text: string }
-                        | undefined;
-                    if (userTextPart?.text) {
-                        updates.title = userTextPart.text.slice(0, 50);
-                    }
-                }
-                updateChatInHistory(selectedChat.id, updates);
-            },
-            onError: (error) => {
-                toast.error('Failed to Stream Data', {
-                    description: error.message,
-                });
-            },
-        });
+    const dispatch = useAppDispatch();
+    const chatHistory = useAppSelector(selectChats);
+    const selectedChat = useAppSelector(selectSelectedChat);
+    const messages = useAppSelector(selectSelectedMessages);
+    const status = useAppSelector(selectSelectedStatus);
+    const searchQuery = useAppSelector((state) => state.chat.conversationSearchQuery);
+    const currentMatchIndex = useAppSelector((state) => state.chat.currentMatchIndex);
+    const totalMatches = useAppSelector((state) => state.chat.totalMatches);
+    const catalog = useAppSelector((state) => state.chat.catalog);
+    const draft = useAppSelector((state) => (selectedChat ? state.chat.draftsByChatId[selectedChat.id] ?? '' : ''));
 
     useEffect(() => {
-        let active = true;
-        window.api.chat
-            .getAllChats(searchHistoryQuery)
-            .then((chats) => {
-                if (!active) {
-                    return;
-                }
-                setChatHistory(chats);
-                if (chats.length > 0) {
-                    setSelectedChat(chats.find((chat) => chat.selected) ?? chats[0]);
-                } else {
-                    setSelectedChat(null);
-                    setMessages([]);
-                }
-                setRefreshHistory(false);
-            })
-            .catch((error) => {
-                if (!active) {
-                    return;
-                }
-                logger.error(error);
-                toast.error('Failed to load chats');
-                setRefreshHistory(false);
-            });
+        void dispatch(loadChats());
+        void dispatch(loadChatCatalog());
+    }, [dispatch]);
 
-        return () => {
-            active = false;
-        };
-    }, [refreshHistory, searchHistoryQuery, setMessages]);
+    const handleNewChat = useCallback(() => {
+        void dispatch(createChat());
+    }, [dispatch]);
 
-    useEffect(() => {
-        if (!selectedChat?.id) {
-            setMessages([]);
-            return;
-        }
+    const searchFromChatHistory = useCallback(
+        (query: string) => {
+            dispatch(chatActions.historySearchChanged(query));
+            void dispatch(loadChats());
+        },
+        [dispatch],
+    );
 
-        let active = true;
-        const chatId = selectedChat.id;
-        window.api.message
-            .getByChat(chatId)
-            .then((chat) => {
-                if (!active || selectedChat.id !== chatId) {
-                    return;
-                }
-                if (chat) {
-                    setMessages(chat);
-                }
-            })
-            .catch((error) => {
-                if (!active) {
-                    return;
-                }
-                logger.error(error);
-                toast.error('Failed to load chat messages');
-            });
+    const handleSelectChat = useCallback(
+        (chatId: string) => {
+            void dispatch(selectChat(chatId));
+        },
+        [dispatch],
+    );
 
-        return () => {
-            active = false;
-        };
-    }, [selectedChat?.id, setMessages]);
+    const handleDeleteChat = useCallback(
+        (chatId: string) => {
+            void dispatch(deleteChat(chatId));
+        },
+        [dispatch],
+    );
 
-    const handleNewChat = useCallback(async () => {
-        try {
-            await window.api.chat.createChat({ title: 'New Chat' });
-            setRefreshHistory(true);
-        } catch (error) {
-            logger.error(error);
-            toast.error('Failed to create chat');
-        }
-    }, []);
+    const handlePinChat = useCallback(
+        (chatId: string, pinned: boolean) => {
+            void dispatch(togglePinnedChat({ chatId, pinned }));
+        },
+        [dispatch],
+    );
 
-    const searchFromChatHistory = useCallback((searchQuery: string) => {
-        setSearchHistoryQuery(searchQuery);
-        setRefreshHistory(true);
-    }, []);
+    const handleSearch = useCallback(
+        (query: string) => {
+            dispatch(chatActions.conversationSearchChanged(query));
+        },
+        [dispatch],
+    );
 
-    const handleSelectChat = useCallback(async (chat: Chat) => {
-        try {
-            await window.api.chat.updateSelectedChat(chat.id);
-            setSelectedChat(chat);
-        } catch (error) {
-            logger.error(error);
-            toast.error('Failed to select chat');
-        }
-    }, []);
-
-    const handleDeleteChat = useCallback(async (chat: Chat) => {
-        try {
-            await window.api.chat.deleteChat(chat.id);
-            setRefreshHistory(true);
-        } catch (error) {
-            logger.error(error);
-            toast.error('Failed to delete chat');
-        }
-    }, []);
-
-    const handlePinChat = useCallback(async (chat: Chat) => {
-        try {
-            await window.api.chat.updatePinnedStatusForChat(chat.id, !chat.pinned);
-            setRefreshHistory(true);
-        } catch (error) {
-            logger.error(error);
-            toast.error('Failed to update chat pin status');
-        }
-    }, []);
-
-    const handleSearch = useCallback((query: string) => {
-        setSearchQuery(query);
-        if (!query) {
-            setCurrentMatchIndex(0);
-            setTotalMatches(0);
-        }
-    }, []);
-
-    const handleMatchesFound = useCallback((count: number) => {
-        setTotalMatches(count);
-        if (count > 0) {
-            setCurrentMatchIndex((prev) => {
-                if (prev === 0) return 1;
-                if (prev > count) return count;
-                return prev;
-            });
-        } else {
-            setCurrentMatchIndex(0);
-        }
-    }, []);
-
-    const handleNextMatch = useCallback(() => {
-        if (totalMatches > 0) {
-            setCurrentMatchIndex((prev) => (prev < totalMatches ? prev + 1 : 1));
-        }
-    }, [totalMatches]);
-
-    const handlePrevMatch = useCallback(() => {
-        if (totalMatches > 0) {
-            setCurrentMatchIndex((prev) => (prev > 1 ? prev - 1 : totalMatches));
-        }
-    }, [totalMatches]);
-
-    const handleClearSearch = useCallback(() => {
-        setSearchQuery('');
-        setCurrentMatchIndex(0);
-        setTotalMatches(0);
-    }, []);
+    const handleMatchesFound = useCallback(
+        (count: number) => {
+            dispatch(chatActions.matchesFound(count));
+        },
+        [dispatch],
+    );
 
     const handleModelChange = useCallback(
         (providerName: string, modelId: string) => {
             if (!selectedChat) return;
-
-            const updatedChat = {
-                ...selectedChat,
-                selectedProvider: providerName,
-                selectedModelId: modelId,
-            };
-
-            setSelectedChat(updatedChat);
-
-            // update local chat history state
-            setChatHistory((prev) => prev.map((chat) => (chat.id === selectedChat.id ? updatedChat : chat)));
-
-            window.api.chat
-                .updateSelectedModelForChat(selectedChat.id, {
-                    selectedProvider: providerName,
-                    selectedModelId: modelId,
-                })
-                .catch((error) => {
-                    logger.error(error);
-                    setRefreshHistory(true);
-                });
+            void dispatch(updateSelectedModel({ chatId: selectedChat.id, providerName, modelId }));
         },
-        [selectedChat],
+        [dispatch, selectedChat],
     );
 
     const handlePersonaChange = useCallback(
         (personaId: string | null) => {
             if (!selectedChat) return;
-
-            const updatedChat = {
-                ...selectedChat,
-                selectedPersonaId: personaId,
-            };
-
-            setSelectedChat(updatedChat);
-
-            setChatHistory((prev) => prev.map((chat) => (chat.id === selectedChat.id ? updatedChat : chat)));
-
-            window.api.chat
-                .updateSelectedPersonaForChat(selectedChat.id, {
-                    selectedPersonaId: personaId,
-                })
-                .catch((error) => {
-                    logger.error(error);
-                    setRefreshHistory(true);
-                });
+            void dispatch(updateSelectedPersona({ chatId: selectedChat.id, personaId }));
         },
-        [selectedChat],
+        [dispatch, selectedChat],
     );
+
+    const handleDraftChange = useCallback(
+        (draftText: string) => {
+            if (!selectedChat) return;
+            dispatch(chatActions.draftChanged({ chatId: selectedChat.id, draft: draftText }));
+        },
+        [dispatch, selectedChat],
+    );
+
+    const handleSendMessage = useCallback(
+        (message: PromptInputMessage) => {
+            if (!selectedChat) {
+                return Promise.resolve();
+            }
+            return dispatch(
+                sendChatMessage({
+                    chatId: selectedChat.id,
+                    text: message.text,
+                    files: message.files,
+                }),
+            ).unwrap();
+        },
+        [dispatch, selectedChat],
+    );
+
+    const handleRegenerate = useCallback(
+        (options?: { messageId?: string }) => {
+            if (!selectedChat) {
+                return Promise.resolve();
+            }
+            void dispatch(regenerateChatResponse({ chatId: selectedChat.id, messageId: options?.messageId }));
+            return Promise.resolve();
+        },
+        [dispatch, selectedChat],
+    );
+
+    const handleToolApproval = useCallback(
+        (response: { id: string; approved: boolean; reason?: string }) => {
+            if (!selectedChat) {
+                return Promise.resolve();
+            }
+            void dispatch(approveToolCall({ chatId: selectedChat.id, response }));
+            return Promise.resolve();
+        },
+        [dispatch, selectedChat],
+    );
+
+    const handleStop = useCallback(() => {
+        if (!selectedChat) return;
+        void dispatch(stopChatResponse(selectedChat.id));
+    }, [dispatch, selectedChat]);
 
     return (
         <div className="flex-1 min-h-0 flex rounded-b-lg border-t-0 overflow-hidden bg-background">
             <ChatHistory
                 chats={chatHistory}
                 selectedChat={selectedChat}
-                onChangeSelectedChat={handleSelectChat}
+                onChangeSelectedChat={(chat) => handleSelectChat(chat.id)}
                 onNewChat={handleNewChat}
                 onSearch={searchFromChatHistory}
             ></ChatHistory>
@@ -279,14 +177,14 @@ export default function Page(): JSX.Element {
                             <div className="flex-1">
                                 <ChatHeader
                                     chat={selectedChat}
-                                    onDeleteChat={handleDeleteChat}
-                                    onPinChat={handlePinChat}
+                                    onDeleteChat={(chat) => handleDeleteChat(chat.id)}
+                                    onPinChat={(chat) => handlePinChat(chat.id, chat.pinned ?? false)}
                                     onSearch={handleSearch}
                                     currentMatch={currentMatchIndex}
                                     totalMatches={totalMatches}
-                                    onNextMatch={handleNextMatch}
-                                    onPrevMatch={handlePrevMatch}
-                                    onClearSearch={handleClearSearch}
+                                    onNextMatch={() => dispatch(chatActions.nextMatch())}
+                                    onPrevMatch={() => dispatch(chatActions.previousMatch())}
+                                    onClearSearch={() => dispatch(chatActions.clearConversationSearch())}
                                 />
                             </div>
                         </div>
@@ -295,11 +193,12 @@ export default function Page(): JSX.Element {
                                 chatId={selectedChat.id}
                                 status={status}
                                 messages={messages}
-                                regenerate={regenerate}
+                                regenerate={handleRegenerate}
                                 searchQuery={searchQuery}
                                 currentMatchIndex={currentMatchIndex}
                                 onMatchesFound={handleMatchesFound}
-                                addToolApprovalResponse={addToolApprovalResponse}
+                                addToolApprovalResponse={handleToolApproval}
+                                providers={catalog.providers}
                             />
                         </div>
                         <div className="p-4 bg-background shrink-0 max-w-3xl mx-auto w-full border-t">
@@ -307,10 +206,15 @@ export default function Page(): JSX.Element {
                                 chat={selectedChat}
                                 status={status}
                                 messages={messages}
-                                sendMessage={sendMessage}
+                                draft={draft}
+                                onDraftChange={handleDraftChange}
+                                onSendMessage={handleSendMessage}
                                 onModelChange={handleModelChange}
                                 onPersonaChange={handlePersonaChange}
-                                stop={stop}
+                                stop={handleStop}
+                                providers={catalog.providers}
+                                personas={catalog.personas}
+                                commands={catalog.commands}
                             />
                         </div>
                     </>

@@ -44,6 +44,20 @@ Streaming uses fire-and-forget channels plus renderer subscriptions:
     - `src/renderer/src/chat-transport.ts` (AI SDK transport)
     - `src/preload/api.ts` (subscription helpers)
 
+### Chat message sync
+
+The chat renderer persists AI SDK UI state through `message:syncForChat`.
+
+- Request DTO: `ChatMessageSyncInput`
+    - `chatId`
+    - monotonic per-chat `sequence`
+    - serialized `UIMessage[]`
+- Response DTO: `ChatMessageSyncAck`
+    - `accepted: false` means main ignored a stale sequence.
+- The controller validates the payload with `zod`.
+- The repository replaces the stored message snapshot for that chat inside one transaction and updates chat preview fields.
+- Streaming chunks still use `${streamChannel}-data/end/error`; final persistence does not happen in `StreamingChatController`.
+
 ## Adding/changing an IPC API (required steps)
 
 1. Implement the new handler in a controller:
@@ -51,6 +65,7 @@ Streaming uses fire-and-forget channels plus renderer subscriptions:
 2. Validate inputs (prefer `zod`) at the boundary.
 3. Bind the controller (if new) in `src/main/inversify.config.ts`.
 4. Run `npm run generate-api`.
+    - If unrelated project type errors block codegen, fix those first; `src/preload/api.ts` should remain generated output plus only narrowly scoped manual repair when the generator cannot express an existing signature.
 5. Update renderer usage through `window.api`.
 6. Add tests covering success + failure paths.
 

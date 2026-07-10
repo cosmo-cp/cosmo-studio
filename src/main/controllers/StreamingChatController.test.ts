@@ -108,7 +108,7 @@ describe('StreamingChatController', () => {
         expect(logger.info).toHaveBeenCalledWith('Aborted stream for channel: chan');
     });
 
-    it('streams chunks, persists messages, and emits end event on finish', async () => {
+    it('streams chunks without direct message persistence and emits end event on finish', async () => {
         const registry = { languageModel: vi.fn(() => 'lm') };
         const modelProviderService = {
             getModelProviderRegistry: vi.fn().mockResolvedValue(registry),
@@ -169,20 +169,7 @@ describe('StreamingChatController', () => {
         expect(streamOptions.experimental_transform).toBe('transform');
         expect(streamOptions.messages[0]).toEqual({ role: 'system', content: 'persona-details' });
 
-        expect(messageService.createMessage).toHaveBeenCalledWith({
-            chatId: 'chat-id',
-            role: 'user',
-            text: 'Hello',
-            reasoning: 'Think',
-            modelIdentifier: 'provider:model',
-        });
-        expect(messageService.createMessage).toHaveBeenCalledWith({
-            chatId: 'chat-id',
-            role: 'assistant',
-            text: 'assistant',
-            reasoning: 'reasoning',
-            modelIdentifier: 'provider:model',
-        });
+        expect(messageService.createMessage).not.toHaveBeenCalled();
 
         expect(webContents.send).toHaveBeenCalledWith('chan-data', {
             type: 'message-metadata',
@@ -197,14 +184,13 @@ describe('StreamingChatController', () => {
         ).toBe(false);
     });
 
-    it('emits an error when persisting the assistant message fails on finish', async () => {
+    it('does not use message persistence on finish', async () => {
         const registry = { languageModel: vi.fn(() => 'lm') };
         const modelProviderService = {
             getModelProviderRegistry: vi.fn().mockResolvedValue(registry),
         } as unknown as ModelProviderService;
-        const assistantPersistError = new Error('persist failed');
         const messageService = {
-            createMessage: vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(assistantPersistError),
+            createMessage: vi.fn().mockRejectedValue(new Error('persist failed')),
         } as unknown as MessageService;
         const personaService = {
             getById: vi.fn().mockResolvedValue(undefined),
@@ -244,24 +230,23 @@ describe('StreamingChatController', () => {
             event,
         );
 
-        expect(logger.error).toHaveBeenCalledWith(
+        expect(messageService.createMessage).not.toHaveBeenCalled();
+        expect(logger.error).not.toHaveBeenCalledWith(
             'Failed to persist assistant message after streaming:',
-            assistantPersistError,
+            expect.anything(),
         );
-        expect(webContents.send).toHaveBeenCalledWith('chan-error', assistantPersistError);
-        expect(webContents.send).not.toHaveBeenCalledWith('chan-end');
+        expect(webContents.send).toHaveBeenCalledWith('chan-end');
         expect(
             (controller as unknown as { activeStreams: Map<string, AbortController> }).activeStreams.has('chan'),
         ).toBe(false);
     });
 
-    it('emits an error and skips stream startup when persisting the user message fails', async () => {
+    it('starts streaming without persisting the user message first', async () => {
         const modelProviderService = {
             getModelProviderRegistry: vi.fn().mockResolvedValue({ languageModel: vi.fn(() => 'lm') }),
         } as unknown as ModelProviderService;
-        const userPersistError = new Error('save failed');
         const messageService = {
-            createMessage: vi.fn().mockRejectedValue(userPersistError),
+            createMessage: vi.fn().mockRejectedValue(new Error('save failed')),
         } as unknown as MessageService;
         const personaService = {
             getById: vi.fn().mockResolvedValue(undefined),
@@ -295,9 +280,12 @@ describe('StreamingChatController', () => {
             event,
         );
 
-        expect(logger.error).toHaveBeenCalledWith('Failed to persist user message before streaming:', userPersistError);
-        expect(webContents.send).toHaveBeenCalledWith('chan-error', userPersistError);
-        expect(ai.streamText).not.toHaveBeenCalled();
+        expect(messageService.createMessage).not.toHaveBeenCalled();
+        expect(logger.error).not.toHaveBeenCalledWith(
+            'Failed to persist user message before streaming:',
+            expect.anything(),
+        );
+        expect(ai.streamText).toHaveBeenCalled();
         expect(
             (controller as unknown as { activeStreams: Map<string, AbortController> }).activeStreams.has('chan'),
         ).toBe(false);

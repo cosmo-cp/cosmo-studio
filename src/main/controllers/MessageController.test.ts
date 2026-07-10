@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Message, NewMessage } from 'core/dto';
+import type { ChatMessageSyncInput, Message, NewMessage } from 'core/dto';
 import type { UIMessage } from 'ai';
 import type { MessageService } from 'core/services/MessageService';
 import { MessageController } from './MessageController';
@@ -12,6 +12,9 @@ describe('MessageController', () => {
 
         const service = {
             getMessagesByChatId: vi.fn().mockResolvedValue(uiMessages),
+            syncForChat: vi
+                .fn()
+                .mockResolvedValue({ chatId: '00000000-0000-4000-8000-000000000001', sequence: 1, accepted: true }),
             createMessage: vi.fn().mockResolvedValue(created),
             updateMessage: vi.fn().mockResolvedValue(updated),
             deleteMessage: vi.fn().mockResolvedValue(undefined),
@@ -21,6 +24,18 @@ describe('MessageController', () => {
 
         await expect(controller.getByChat('c')).resolves.toEqual(uiMessages);
         expect(service.getMessagesByChatId).toHaveBeenCalledWith('c');
+
+        const syncInput: ChatMessageSyncInput = {
+            chatId: '00000000-0000-4000-8000-000000000001',
+            sequence: 1,
+            messages: [{ id: 'm', role: 'user', parts: [] } as UIMessage],
+        };
+        await expect(controller.syncForChat(syncInput)).resolves.toEqual({
+            chatId: syncInput.chatId,
+            sequence: 1,
+            accepted: true,
+        });
+        expect(service.syncForChat).toHaveBeenCalledWith(syncInput);
 
         const newMessage: NewMessage = {
             chatId: 'c',

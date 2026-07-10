@@ -67,11 +67,16 @@ Apply the highest-impact rules first:
 ## Data flow conventions
 
 - Prefer a single “source of truth” for cached UI state.
+- Chat page state is Redux-owned:
+    - Use `src/renderer/src/store/chat-slice.ts` thunks/selectors for chat history, selected chat, message state, draft state, model/persona/catalog loading, and search state.
+    - Keep AI SDK `Chat` instances in `src/renderer/src/store/chat-runtime-registry.ts` so route changes do not interrupt active streams.
+    - Do not reintroduce `useChat` directly in `src/renderer/src/app/(main)/page.tsx`.
 - Keep renderer logic focused on presentation + orchestration:
     - DB queries, encryption, provider registries belong in `packages/core` and/or main controllers.
 - For streaming chat:
-    - Renderer uses `@ai-sdk/react` + `IpcChatTransport` (`src/renderer/src/chat-transport.ts`).
+    - Renderer uses AI SDK `Chat` + `IpcChatTransport` (`src/renderer/src/chat-transport.ts`) through the runtime registry.
     - Ensure stream channels are stable (`chat-stream-${chatId}`) and all listeners are cleaned up.
+    - Persist every runtime message update through the ordered `message:syncForChat` thunk/IPC path.
 
 ## Testing expectations (renderer)
 

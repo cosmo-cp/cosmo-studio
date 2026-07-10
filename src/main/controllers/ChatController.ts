@@ -65,7 +65,7 @@ export class ChatController implements Controller {
 
     @IpcHandler('updateSelectedPersonaForChat')
     public async updateSelectedPersonaForChat(id: string, personaIdentifier: PersonaIdentifier): Promise<void> {
-        const parsedPersonaIdentifier = personaIdentifierSchema.parse(personaIdentifier);
+        const parsedPersonaIdentifier = personaIdentifierSchema.parse(personaIdentifier) as PersonaIdentifier;
         return this.chatService.updateSelectedPersonaForChat(id, parsedPersonaIdentifier);
     }
 

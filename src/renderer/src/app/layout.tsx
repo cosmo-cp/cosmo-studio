@@ -2,6 +2,7 @@
 import React from 'react';
 import './globals.css';
 import { ThemeProvider } from 'next-themes';
+import { StoreProvider } from '@/store/provider';
 
 export default function RootLayout({
     children,
@@ -11,7 +12,7 @@ export default function RootLayout({
     return (
         <body>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-                {children}
+                <StoreProvider>{children}</StoreProvider>
             </ThemeProvider>
         </body>
     );

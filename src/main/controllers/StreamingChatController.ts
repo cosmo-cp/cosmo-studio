@@ -21,7 +21,7 @@ export class StreamingChatController implements Controller {
         @inject(CORETYPES.ModelProviderService)
         private modelProviderService: ModelProviderService,
         @inject(CORETYPES.MessageService)
-        private messageService: MessageService,
+        _messageService: MessageService,
         @inject(CORETYPES.PersonaService)
         private personaService: PersonaService,
         @inject(CORETYPES.McpClientManager)
@@ -47,9 +47,6 @@ export class StreamingChatController implements Controller {
 
         const controller = new AbortController();
         this.activeStreams.set(args.streamChannel, controller);
-        const lastUserMsg = args.messages[args.messages.length - 1];
-        const txtMsg = lastUserMsg.parts.find((part) => part.type === 'text')?.text;
-        const rsnMsg = lastUserMsg.parts.find((part) => part.type === 'reasoning')?.text;
 
         // Validate modelIdentifier before proceeding
         if (!args.modelIdentifier) {
@@ -57,23 +54,6 @@ export class StreamingChatController implements Controller {
             logger.error(errorMsg, args);
             if (!webContents.isDestroyed()) {
                 webContents.send(`${args.streamChannel}-error`, { message: errorMsg });
-            }
-            return;
-        }
-
-        try {
-            await this.messageService.createMessage({
-                chatId: args.chatId,
-                role: lastUserMsg.role,
-                text: txtMsg ?? null,
-                reasoning: rsnMsg ?? null,
-                modelIdentifier: args.modelIdentifier,
-            });
-        } catch (error) {
-            logger.error('Failed to persist user message before streaming:', error);
-            this.activeStreams.delete(args.streamChannel);
-            if (!webContents.isDestroyed()) {
-                webContents.send(`${args.streamChannel}-error`, error);
             }
             return;
         }
@@ -87,27 +67,11 @@ export class StreamingChatController implements Controller {
                 stopWhen: stepCountIs(10),
                 abortSignal: controller.signal,
                 experimental_transform: smoothStream({ delayInMs: 30 }),
-                onFinish: async (result) => {
-                    try {
-                        await this.messageService.createMessage({
-                            chatId: args.chatId,
-                            role: 'assistant',
-                            text: result.text ?? null,
-                            reasoning: result.reasoningText ?? null,
-                            modelIdentifier: args.modelIdentifier,
-                        });
-
-                        if (!webContents.isDestroyed()) {
-                            webContents.send(`${args.streamChannel}-end`);
-                        }
-                    } catch (error) {
-                        logger.error('Failed to persist assistant message after streaming:', error);
-                        if (!webContents.isDestroyed()) {
-                            webContents.send(`${args.streamChannel}-error`, error);
-                        }
-                    } finally {
-                        this.activeStreams.delete(args.streamChannel);
+                onFinish: () => {
+                    if (!webContents.isDestroyed()) {
+                        webContents.send(`${args.streamChannel}-end`);
                     }
+                    this.activeStreams.delete(args.streamChannel);
                 },
                 onAbort: () => {
                     this.activeStreams.delete(args.streamChannel);

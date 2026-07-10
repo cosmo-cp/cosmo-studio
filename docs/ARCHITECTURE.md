@@ -50,6 +50,10 @@ Cosmo Studio is an Electron desktop application with a static-exported Next.js U
 
 - Next.js App Router UI.
 - Must use `window.api` for all privileged/data operations.
+- Chat UI state is owned by Redux Toolkit under `src/renderer/src/store/*`.
+    - `page.tsx` renders from selectors and dispatches thunks.
+    - AI SDK `Chat` instances live in a module-level runtime registry so streams survive route changes and multiple chats can stream in parallel.
+    - Runtime message snapshots are mirrored to Redux, then persisted through the message sync IPC queue.
 - Production output is static (`next.config.ts` uses `output: "export"`), written to `src/renderer/out/`.
 
 ### Core package (`packages/core`)
@@ -63,10 +67,18 @@ Cosmo Studio is an Electron desktop application with a static-exported Next.js U
 
 ### Command flow (high-level)
 
-1. Renderer gathers commands for UI (settings + dropdown) via `window.api.command.listAll()`.
+1. Renderer gathers commands for UI (settings + dropdown) through Redux thunks calling `window.api.command.listAll()`.
 2. User submits a command (typed or selected).
-3. Main resolves the command through `CommandController` → `CommandService`.
+3. A chat thunk resolves the command through `CommandController` → `CommandService`.
 4. The resolved prompt is sent through the normal chat streaming pipeline.
+
+### Chat persistence flow (high-level)
+
+1. Renderer dispatches chat thunks for history, selection, model/persona updates, sending, stop, regenerate, and tool approvals.
+2. A per-chat AI SDK runtime streams through `src/renderer/src/chat-transport.ts`.
+3. Each runtime message update updates Redux and enqueues `message:syncForChat`.
+4. Main validates the sync payload and `MessageRepository.syncForChat` accepts only newer per-chat sequence numbers.
+5. `StreamingChatController` only streams model output; it no longer writes user/assistant messages directly to the database.
 
 ## Build pipeline (how packaging works)
 

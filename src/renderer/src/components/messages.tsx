@@ -1,6 +1,5 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import equal from 'fast-deep-equal';
-import type { UseChatHelpers } from '@ai-sdk/react';
 import {
     Conversation,
     ConversationContent,
@@ -18,7 +17,7 @@ import { CopyIcon, MessageSquare } from 'lucide-react';
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-elements/reasoning';
 import { Source, Sources, SourcesContent, SourcesTrigger } from '@/components/ai-elements/sources';
 import { Loader } from '@/components/ai-elements/loader';
-import { DynamicToolUIPart, UIMessage } from 'ai';
+import { DynamicToolUIPart, UIMessage, type ChatStatus } from 'ai';
 import { PreviewAttachment } from '@/components/preview-attachment';
 import { Tool, ToolHeader, ToolContent, ToolInput, ToolOutput } from './ai-elements/tool';
 import {
@@ -50,6 +49,12 @@ const MODEL_NAME_COLORS = [
 
 type MessageMetadata = {
     modelId?: string;
+};
+
+type ToolApprovalResponse = {
+    id: string;
+    approved: boolean;
+    reason?: string;
 };
 
 // Normalize a model identifier into provider/model parts for display.
@@ -147,7 +152,7 @@ interface ToolPartRendererProps {
     part: DynamicToolUIPart;
     messageId: string;
     partIndex: number;
-    addToolApprovalResponse?: UseChatHelpers<UIMessage>['addToolApprovalResponse'];
+    addToolApprovalResponse?: (response: ToolApprovalResponse) => Promise<void>;
 }
 
 const ToolPartRenderer = memo(function ToolPartRenderer({
@@ -211,13 +216,13 @@ const ToolPartRenderer = memo(function ToolPartRenderer({
 interface MessageItemProps {
     message: UIMessage;
     isLastMessage: boolean;
-    status: UseChatHelpers<UIMessage>['status'];
+    status: ChatStatus;
     searchQuery?: string;
     matchStartIndexMap: Record<string, number>;
     modelInfo?: { identifier: string; label: string; providerType?: ProviderWithModels['type'] };
     modelColorClass?: string;
     resolvedTheme?: string;
-    addToolApprovalResponse?: UseChatHelpers<UIMessage>['addToolApprovalResponse'];
+    addToolApprovalResponse?: (response: ToolApprovalResponse) => Promise<void>;
 }
 
 const MessageItem = memo(
@@ -400,13 +405,14 @@ const MessageItem = memo(
 
 interface MessagesProps {
     chatId: string;
-    status: UseChatHelpers<UIMessage>['status'];
+    status: ChatStatus;
     messages: UIMessage[];
-    regenerate: UseChatHelpers<UIMessage>['regenerate'];
+    regenerate: (options?: { messageId?: string }) => Promise<void>;
     searchQuery?: string;
     currentMatchIndex?: number;
     onMatchesFound?: (count: number) => void;
-    addToolApprovalResponse?: UseChatHelpers<UIMessage>['addToolApprovalResponse'];
+    addToolApprovalResponse?: (response: ToolApprovalResponse) => Promise<void>;
+    providers: ProviderWithModels[];
 }
 
 function PureMessages({
@@ -416,27 +422,10 @@ function PureMessages({
     currentMatchIndex,
     onMatchesFound,
     addToolApprovalResponse,
+    providers,
 }: MessagesProps) {
     const { resolvedTheme } = useTheme();
-    const [providers, setProviders] = useState<ProviderWithModels[]>([]);
     const prevMatchIndexRef = useRef<number | null>(null);
-
-    useEffect(() => {
-        let mounted = true;
-        window.api.modelProvider
-            .getProvidersWithModels()
-            .then((list) => {
-                if (mounted) {
-                    setProviders(list);
-                }
-            })
-            .catch((error) => {
-                console.error('Failed to load providers', error);
-            });
-        return () => {
-            mounted = false;
-        };
-    }, []);
 
     const providersByName = useMemo(() => {
         return new Map(providers.map((provider) => [provider.name, provider]));

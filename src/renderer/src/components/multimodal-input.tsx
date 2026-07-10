@@ -13,16 +13,13 @@ import {
     ModelSelectorTrigger,
 } from '@/components/ai-elements/model-selector';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import type { UseChatHelpers } from '@ai-sdk/react';
-import type { UIMessage } from 'ai';
+import type { ChatStatus, UIMessage } from 'ai';
 import { ModelModalityEnum } from 'core/database/schema/modelProviderSchema';
 import type { Chat, CommandDefinition, Persona, ProviderWithModels } from 'core/dto';
 import { cn } from '@/lib/utils';
 import { CheckIcon, ChevronUp, XIcon } from 'lucide-react';
 import type { FocusEvent, KeyboardEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
-import { logger } from '../../logger';
 import { Attachment, AttachmentPreview, AttachmentRemove, Attachments } from './ai-elements/attachments';
 import { McpToolsSelector } from './mcp-tools-selector';
 import {
@@ -45,65 +42,36 @@ import {
 } from './ai-elements/prompt-input';
 import { TokenUsageIndicator } from './token-usage-indicator';
 
-const parsePersonaDirective = (text: string) => {
-    const match = text.match(/^\s*@persona(?:\s*[:=])?\s*(?:"([^"]+)"|'([^']+)'|([^\s]+))\s*/i);
-    if (!match) {
-        return { text, personaName: undefined };
-    }
-
-    const personaName = match[1] ?? match[2] ?? match[3];
-    const remainingText = text.slice(match[0].length).trimStart();
-    return {
-        text: remainingText,
-        personaName,
-    };
-};
-
 export function MultimodalInput({
     chat,
     status,
     messages,
-    sendMessage,
+    draft,
+    onDraftChange,
+    onSendMessage,
     onModelChange,
     onPersonaChange,
     stop,
+    providers,
+    personas,
+    commands,
 }: {
     chat: Chat;
-    status: UseChatHelpers<UIMessage>['status'];
+    status: ChatStatus;
     messages: Array<UIMessage>;
-    sendMessage: UseChatHelpers<UIMessage>['sendMessage'];
+    draft: string;
+    onDraftChange: (draft: string) => void;
+    onSendMessage: (message: PromptInputMessage) => Promise<void>;
     className?: string;
     stillAnswering?: boolean;
     onModelChange: (providerName: string, modelId: string) => void;
     onPersonaChange: (personaId: string | null) => void;
-    stop?: UseChatHelpers<UIMessage>['stop'];
+    stop?: () => void;
+    providers: ProviderWithModels[];
+    personas: Persona[];
+    commands: CommandDefinition[];
 }) {
-    const [input, setInput] = useState<string>('');
-    const [providers, setProviders] = useState<ProviderWithModels[]>([]);
     const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
-    const [personas, setPersonas] = useState<Persona[]>([]);
-    const [commands, setCommands] = useState<CommandDefinition[]>([]);
-
-    useEffect(() => {
-        window.api.command
-            .listAll()
-            .then((fetchedCommands) => setCommands(fetchedCommands))
-            .catch((error) => logger.error(error));
-    }, []);
-
-    useEffect(() => {
-        window.api.modelProvider
-            .getProvidersWithModels()
-            .then((fetchedProviders) => setProviders(fetchedProviders))
-            .catch((error) => logger.error(error));
-    }, []);
-
-    useEffect(() => {
-        window.api.persona
-            .getAll()
-            .then((fetchedPersonas) => setPersonas(fetchedPersonas))
-            .catch((error) => logger.error(error));
-    }, []);
 
     const selectedModelInfo = useMemo(() => {
         if (providers.length === 0) return undefined;
@@ -138,40 +106,10 @@ export function MultimodalInput({
             if (!chat.selectedModelId) {
                 return;
             }
-            const modelId = chat.selectedProvider + ':' + chat.selectedModelId;
-            const { text: cleanedText } = parsePersonaDirective(message.text);
-            let resolvedText = cleanedText;
-
-            if (cleanedText.trim().startsWith('/')) {
-                try {
-                    const result = await window.api.command.execute({
-                        input: cleanedText,
-                    });
-                    resolvedText = result.resolvedText;
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : 'Failed to execute command.';
-                    toast.error(message);
-                    return;
-                }
-            }
-
-            sendMessage(
-                {
-                    text: resolvedText,
-                    files: message.files,
-                },
-                {
-                    metadata: { modelId, personaId: chat.selectedPersonaId ?? null },
-                },
-            )
-                .catch((error) => {
-                    toast.error(error.message);
-                })
-                .finally(() => {
-                    setInput('');
-                });
+            await onSendMessage(message);
+            onDraftChange('');
         },
-        [chat.selectedModelId, chat.selectedProvider, chat.selectedPersonaId, sendMessage],
+        [chat.selectedModelId, onDraftChange, onSendMessage],
     );
 
     const handlePersonaSelection = useCallback(
@@ -203,7 +141,7 @@ export function MultimodalInput({
             <PromptInputContent
                 chat={chat}
                 handlePersonaSelection={handlePersonaSelection}
-                input={input}
+                input={draft}
                 modelSelectorOpen={modelSelectorOpen}
                 onModelChange={onModelChange}
                 personaOptions={personaOptions}
@@ -211,7 +149,7 @@ export function MultimodalInput({
                 providers={providers}
                 selectedModelInfo={selectedModelInfo}
                 selectedPersonaId={chat.selectedPersonaId ?? null}
-                setInput={setInput}
+                setInput={onDraftChange}
                 setModelSelectorOpen={setModelSelectorOpen}
                 status={status}
                 submitForm={submitForm}
@@ -253,9 +191,9 @@ function PromptInputContent({
     selectedPersonaId: string | null;
     setInput: (value: string) => void;
     setModelSelectorOpen: (value: boolean) => void;
-    status: UseChatHelpers<UIMessage>['status'];
+    status: ChatStatus;
     submitForm: (message: PromptInputMessage) => Promise<void>;
-    stop?: UseChatHelpers<UIMessage>['stop'];
+    stop?: () => void;
     messages: Array<UIMessage>;
 }) {
     const attachments = usePromptInputAttachments();

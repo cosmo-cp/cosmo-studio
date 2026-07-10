@@ -19,6 +19,16 @@ Cosmo Studio uses Drizzle ORM with PGlite (embedded Postgres) and runs migration
 - `Chat`, `Message`
 - `ModelProvider`, `Model`
 - `Persona`
+- `Command`
+- `McpServer`
+
+## Chat/message persistence
+
+- `Chat.syncVersion` stores the latest accepted renderer sync sequence.
+- `Message.uiMessageId` stores the AI SDK client message id.
+- `Message.uiMessage` stores the serialized AI SDK `UIMessage` snapshot.
+- Legacy `Message.text`, `Message.reasoning`, and `Message.modelIdentifier` remain populated for previews, search/debuggability, and backwards compatibility.
+- `MessageRepository.syncForChat` replaces a chat's stored message snapshot only when the incoming sequence is newer than `Chat.syncVersion`.
 
 ## Local storage location
 

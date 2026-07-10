@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { CORETYPES } from '../types/types';
 import { MessageRepository } from '../repositories/MessageRepository';
-import { Message, NewMessage } from '../dto';
+import { ChatMessageSyncAck, ChatMessageSyncInput, Message, NewMessage } from '../dto';
 import { UIMessage } from 'ai';
 
 @injectable()
@@ -15,6 +15,10 @@ export class MessageService {
 
     private convertToUiMessage(messages: Message[]) {
         return messages.map((message) => {
+            if (message.uiMessage) {
+                return message.uiMessage;
+            }
+
             const parts: { type: 'text' | 'reasoning'; text: string }[] = [];
 
             if (message.text) {
@@ -34,6 +38,10 @@ export class MessageService {
 
             return metadata ? { ...base, metadata } : base;
         });
+    }
+
+    public async syncForChat(input: ChatMessageSyncInput): Promise<ChatMessageSyncAck> {
+        return this.messageRepository.syncForChat(input);
     }
 
     public async createMessage(newMessage: NewMessage): Promise<Message> {
