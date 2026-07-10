@@ -10,12 +10,6 @@ export type ControllerSource = {
   source: string;
 };
 
-type MethodSignature = {
-  params: string;
-  args: string;
-  returnType: string;
-};
-
 type HandlerDescriptor = {
   controllerName: string;
   controllerPrefix: string;
@@ -97,6 +91,46 @@ const PRELOAD_TYPE_IMPORT_NAMES = new Set(PRELOAD_TYPE_IMPORTS.map((entry) => en
 
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function getMethodSignature(controllerFileContent: string, methodName: string): {
+  params: string;
+  args: string;
+  returnType: string;
+} {
+  const methodRegex = new RegExp(
+    `(?:@IpcHandler\\(|@IpcOn\\()[\\s\\S]*?public (?:async )?${methodName}\\s*\\(([^)]*)\\)(?::\\s*([^{]*))?`,
+    'm',
+  );
+  const match = controllerFileContent.match(methodRegex);
+
+  if (match) {
+    const paramsStr = match[1] ? match[1].trim() : '';
+    let returnType = match[2] ? match[2].trim() : 'void';
+
+    if (returnType.startsWith('Promise')) {
+      returnType = returnType.replace(/Promise<(.+)>/, '$1');
+    }
+
+    if (!paramsStr) {
+      return {params: '', args: '', returnType};
+    }
+
+    const paramParts = paramsStr
+      .split(',')
+      .map((param) => param.trim())
+      .filter((param) => param && !param.includes('IpcMainEvent'));
+    const typedParams = paramParts.join(', ');
+    const argNames = paramParts
+      .map((param) => param.split(':')[0].trim())
+      .filter(Boolean)
+      .join(', ');
+
+    return {params: typedParams, args: argNames, returnType};
+  }
+
+  console.warn(`Could not find signature for method ${methodName}. Falling back to void.`);
+  return {params: '', args: '', returnType: 'void'};
 }
 
 function collectImportedTypeNames(...values: string[]): string[] {
