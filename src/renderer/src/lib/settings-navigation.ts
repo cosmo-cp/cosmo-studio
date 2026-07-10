@@ -49,29 +49,17 @@ export const settingsSections: readonly SettingsSection[] = [
         icon: Cable,
     },
     {
-        slug: 'persona',
-        title: 'Persona',
-        description: 'Create and manage reusable personas for chat instructions.',
-        icon: CircleUserRound,
-    },
-    {
-        slug: 'command',
-        title: 'Command',
-        description: 'Create and manage reusable commands for quick actions.',
-        icon: Command,
-    },
-    {
-        slug: 'mcp-server',
-        title: 'MCP Servers',
-        description: 'Manage local and remote MCP server definitions.',
-        icon: Cable,
-    },
-    {
         slug: 'agents',
         title: 'Agents',
         description: 'Manage local ACP agents and registry installs.',
         icon: Bot,
     },
+    {
+        slug: 'web-search',
+        title: 'Web search',
+        description: 'Configure where web search settings live in the app.',
+        icon: Globe,
+    }
 ] as const;
 
 function getDefaultSettingsSection(): SettingsSection {
