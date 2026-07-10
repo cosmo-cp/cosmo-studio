@@ -110,6 +110,10 @@ describe('AppSidebar', () => {
             'data-active',
             'true'
         );
+        expect(screen.getByRole('link', {name: /web search/i})).toHaveAttribute(
+            'href',
+            getSettingsItemHref('/settings/provider', 'web-search')
+        );
         expect(screen.getByRole('link', {name: /agents/i})).toHaveAttribute(
             'href',
             getSettingsItemHref('/settings/provider', 'agents')
