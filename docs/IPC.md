@@ -28,6 +28,7 @@ Cosmo Studio uses a decorator-based IPC pattern so the Electron preload API and 
 - Generator: `scripts/generate-api.ts`
 - Outputs:
   - `src/preload/api.ts`
+  - `src/preload/api/*.ts`
   - `src/main/http/rpc-manifest.ts`
   - `src/renderer/src/lib/generated-http-api.ts`
 
@@ -66,7 +67,7 @@ Streaming uses fire-and-forget channels plus renderer subscriptions:
     - `${streamChannel}-error`
 - Renderer wiring lives in:
     - `src/renderer/src/chat-transport.ts` (AI SDK transport)
-    - `src/preload/api.ts` (subscription helpers)
+    - `src/preload/api/streaming.ts` (subscription helpers)
 - HTTP streaming uses `POST /api/chat` and `ChatHttpController`.
 - `GET /api/chat/:chatId/stream` returns `204` in v1 and is reserved for future resume-stream support.
 

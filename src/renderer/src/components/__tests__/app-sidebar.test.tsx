@@ -44,7 +44,10 @@ describe('AppSidebar', () => {
         renderSidebar('/workflow');
 
         expect(screen.getByRole('link', {name: /chat/i})).toBeInTheDocument();
-        expect(screen.queryByRole('link', {name: /workflow/i})).not.toBeInTheDocument();
+        expect(screen.getByRole('link', {name: /workflow/i})).toHaveAttribute(
+            'data-active',
+            'true'
+        );
         expect(screen.queryByRole('link', {name: /persona/i})).not.toBeInTheDocument();
         expect(screen.queryByRole('link', {name: /command/i})).not.toBeInTheDocument();
         expect(screen.queryByRole('link', {name: /mcp servers/i})).not.toBeInTheDocument();
@@ -69,6 +72,18 @@ describe('AppSidebar', () => {
         expect(screen.getByRole('link', {name: /provider/i})).toHaveAttribute(
             'href',
             getSettingsItemHref('/settings', 'provider')
+        );
+        expect(screen.getByRole('link', {name: /persona/i})).toHaveAttribute(
+            'href',
+            getSettingsItemHref('/settings', 'persona')
+        );
+        expect(screen.getByRole('link', {name: /command/i})).toHaveAttribute(
+            'href',
+            getSettingsItemHref('/settings', 'command')
+        );
+        expect(screen.getByRole('link', {name: /mcp servers/i})).toHaveAttribute(
+            'href',
+            getSettingsItemHref('/settings', 'mcp-server')
         );
         expect(screen.getByRole('link', {name: /persona/i})).toHaveAttribute(
             'href',

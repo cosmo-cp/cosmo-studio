@@ -8,7 +8,7 @@ Scripts are developer tools run from the repo root (usually via `npm run ...`).
 
 Current scripts:
 
-- `scripts/generate-api.ts` — regenerates `src/preload/api.ts` based on IPC controller decorators in `src/main/controllers/*`.
+- `scripts/generate-api.ts` — regenerates the generated preload API files under `src/preload/api.ts` and `src/preload/api/*` based on IPC controller decorators in `src/main/controllers/*`.
 
 ## Rules for scripts
 
@@ -25,5 +25,5 @@ When adding/changing IPC controllers:
 
 - Update controllers and decorators first (`src/main/controllers/*`).
 - Run `npm run generate-api`.
-- If generation fails or produces incorrect imports/types, fix `scripts/generate-api.ts` rather than hand-editing `src/preload/api.ts`.
+- If generation fails or produces incorrect imports/types, fix `scripts/generate-api.ts` rather than hand-editing the generated preload API files.
 - No need to add test for `scripts/generate-api.ts`

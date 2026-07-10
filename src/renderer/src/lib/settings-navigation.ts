@@ -3,6 +3,7 @@ import {
     Cable,
     CircleUserRound,
     Command,
+    Globe,
     type LucideIcon,
     PlugZap,
 } from 'lucide-react';
@@ -28,6 +29,24 @@ export const settingsSections: readonly SettingsSection[] = [
         title: 'Provider',
         description: 'Manage AI providers, credentials, and available models.',
         icon: PlugZap,
+    },
+    {
+        slug: 'persona',
+        title: 'Persona',
+        description: 'Create and manage reusable personas for chat instructions.',
+        icon: CircleUserRound,
+    },
+    {
+        slug: 'command',
+        title: 'Command',
+        description: 'Create and manage reusable commands for quick actions.',
+        icon: Command,
+    },
+    {
+        slug: 'mcp-server',
+        title: 'MCP Servers',
+        description: 'Manage local and remote MCP server definitions.',
+        icon: Cable,
     },
     {
         slug: 'persona',
