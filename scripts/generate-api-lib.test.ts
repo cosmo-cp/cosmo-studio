@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { describe, expect, it } from 'vitest';
 import { IpcController, IpcOn } from '../src/main/ipc/Decorators';
-import { generateApiContent } from './generate-api-lib';
+import { generatePreloadApiFiles } from './generate-api-lib';
 
 @IpcController('streamingChat')
 class TestStreamingController {
@@ -12,9 +12,9 @@ class TestStreamingController {
     }
 }
 
-describe('generateApiContent', () => {
-    it('types streaming data listeners as UIMessageChunk', () => {
-        const apiContent = generateApiContent([
+describe('generatePreloadApiFiles', () => {
+    it('splits the preload API into files and keeps streaming chunk typing', () => {
+        const files = generatePreloadApiFiles([
             {
                 controller: TestStreamingController,
                 source: `
@@ -26,7 +26,10 @@ describe('generateApiContent', () => {
             },
         ]);
 
-        expect(apiContent).toContain('onData: (channel: string, listener: (data: UIMessageChunk) => void) => void;');
-        expect(apiContent).toContain('const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);');
+        expect(Object.keys(files).sort()).toEqual(['src/preload/api.ts', 'src/preload/api/streaming.ts']);
+        expect(files['src/preload/api.ts']).toContain("import { streamingApi } from './api/streaming';");
+        expect(files['src/preload/api.ts']).toContain('export interface Api {');
+        expect(files['src/preload/api/streaming.ts']).toContain('onData: (channel: string, listener: (data: UIMessageChunk) => void) => void;');
+        expect(files['src/preload/api/streaming.ts']).toContain('const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);');
     });
 });

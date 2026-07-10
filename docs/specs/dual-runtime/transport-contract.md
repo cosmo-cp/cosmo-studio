@@ -19,7 +19,7 @@ Accepted for v1. Renderer data access is selected at build/dev time and hidden b
 
 | Output | Purpose |
 |---|---|
-| `src/preload/api.ts` | Electron preload `window.api` surface. |
+| `src/preload/api.ts` + `src/preload/api/*` | Electron preload `window.api` surface. |
 | `src/main/http/rpc-manifest.ts` | Nest runtime controller constructor manifest. |
 | `src/renderer/src/lib/generated-http-api.ts` | Renderer HTTP RPC client. |
 
@@ -103,4 +103,3 @@ Presentation components must not branch on runtime. Runtime selection lives in:
 
 - `src/renderer/src/lib/app-data-source.ts` for request/response data flows.
 - `src/renderer/src/chat-transport.ts` for chat streaming.
-
