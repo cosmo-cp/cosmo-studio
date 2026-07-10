@@ -85,17 +85,9 @@ describe('AppSidebar', () => {
             'href',
             getSettingsItemHref('/settings', 'mcp-server')
         );
-        expect(screen.getByRole('link', {name: /persona/i})).toHaveAttribute(
+        expect(screen.getByRole('link', {name: /web search/i})).toHaveAttribute(
             'href',
-            getSettingsItemHref('/settings', 'persona')
-        );
-        expect(screen.getByRole('link', {name: /command/i})).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings', 'command')
-        );
-        expect(screen.getByRole('link', {name: /mcp servers/i})).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings', 'mcp-server')
+            getSettingsItemHref('/settings', 'web-search')
         );
         expect(screen.getByRole('link', {name: /agents/i})).toHaveAttribute(
             'href',

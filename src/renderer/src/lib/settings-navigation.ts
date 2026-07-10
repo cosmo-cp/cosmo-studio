@@ -59,7 +59,7 @@ export const settingsSections: readonly SettingsSection[] = [
         title: 'Agents',
         description: 'Manage local ACP agents and registry installs.',
         icon: Bot,
-    }
+    },
 ] as const;
 
 function getDefaultSettingsSection(): SettingsSection {
