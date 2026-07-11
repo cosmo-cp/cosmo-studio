@@ -21,6 +21,7 @@ type SettingsSection = {
     title: string;
     description: string;
     icon: LucideIcon;
+    hidden?: boolean;
 };
 
 export const settingsSections: readonly SettingsSection[] = [
@@ -53,6 +54,7 @@ export const settingsSections: readonly SettingsSection[] = [
         title: 'Web search',
         description: 'Configure where web search settings live in the app.',
         icon: Globe,
+        hidden: true,
     },
     {
         slug: 'agents',
@@ -62,11 +64,15 @@ export const settingsSections: readonly SettingsSection[] = [
     },
 ] as const;
 
+export function getVisibleSettingsSections(): readonly SettingsSection[] {
+    return settingsSections.filter((section) => !section.hidden);
+}
+
 function getDefaultSettingsSection(): SettingsSection {
-    const section = settingsSections[0];
+    const section = getVisibleSettingsSections()[0];
 
     if (!section) {
-        throw new Error('At least one settings section must be configured.');
+        throw new Error('At least one visible settings section must be configured.');
     }
 
     return section;

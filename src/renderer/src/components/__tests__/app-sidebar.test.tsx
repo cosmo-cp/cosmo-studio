@@ -85,10 +85,7 @@ describe('AppSidebar', () => {
             'href',
             getSettingsItemHref('/settings', 'mcp-server')
         );
-        expect(screen.getByRole('link', {name: /web search/i})).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings', 'web-search')
-        );
+        expect(screen.queryByRole('link', {name: /web search/i})).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: /agents/i})).toHaveAttribute(
             'href',
             getSettingsItemHref('/settings', 'agents')
@@ -110,10 +107,6 @@ describe('AppSidebar', () => {
             'data-active',
             'true'
         );
-        expect(screen.getByRole('link', {name: /web search/i})).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings/provider', 'web-search')
-        );
         expect(screen.getByRole('link', {name: /agents/i})).toHaveAttribute(
             'href',
             getSettingsItemHref('/settings/provider', 'agents')
@@ -130,6 +123,7 @@ describe('AppSidebar', () => {
             'href',
             getSettingsItemHref('/settings/provider', 'mcp-server')
         );
+        expect(screen.queryByRole('link', {name: /web search/i})).not.toBeInTheDocument();
     });
 
     it('marks agents active in the settings submenu', () => {

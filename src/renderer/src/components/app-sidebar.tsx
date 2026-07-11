@@ -28,7 +28,7 @@ import {
     getSettingsItemHref,
     isSettingsItemActive,
     isSettingsPath,
-    settingsSections,
+    getVisibleSettingsSections,
 } from '@/lib/settings-navigation';
 
 const menuItems = [
@@ -83,7 +83,7 @@ export function AppSidebar() {
                         <SidebarMenu>
                             {inSettingsSection ? (
                                 <>
-                                    {settingsSections.map((item) => (
+                                    {getVisibleSettingsSections().map((item) => (
                                         <SidebarMenuItem key={item.slug}>
                                             <SidebarMenuButton
                                                 asChild
