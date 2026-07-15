@@ -43,7 +43,7 @@ export class ModelProviderRepository {
                 and(
                     eq(modelProvider.type, provider.type),
                     eq(modelProvider.apiKey, provider.apiKey),
-                    eq(modelProvider.apiUrl, provider.apiUrl),
+                    eq(modelProvider.apiUrl, provider.apiUrl ?? ''),
                     eq(modelProvider.name, provider.name),
                 ),
             );

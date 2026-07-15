@@ -152,7 +152,7 @@ export class WorkflowExecutionService {
         const entryNodeId = startNode?.id ?? orderedNodeIds[0];
         const steps = orderedNodeIds
             .map((nodeId) => nodeById.get(nodeId))
-            .filter((node): node is WorkflowExecutableStep => Boolean(node) && node.type !== 'start');
+            .filter((node): node is WorkflowExecutableStep => node !== undefined && node.type !== 'start');
 
         return {
             entryNodeId,
@@ -230,10 +230,14 @@ export class WorkflowExecutionService {
                 const stepResult = await this.executeStep(step, compiled, initialInput, abortController.signal);
 
                 if (stepResult.status === 'waiting_approval') {
+                    const waitingApproval = stepResult.waitingApproval;
+                    if (!waitingApproval) {
+                        throw new Error(`Workflow node "${step.id}" did not provide approval details`);
+                    }
                     await this.workflowRunService.recordProgressEvent(
                         runId,
                         'Waiting for user approval',
-                        {nodeId: step.id, nodeType: step.type, prompt: stepResult.waitingApproval.prompt},
+                        {nodeId: step.id, nodeType: step.type, prompt: waitingApproval.prompt},
                         'waiting_approval',
                     );
                     await this.updateRunStatus(runId, 'waiting_approval', 'Workflow is waiting for user approval');
@@ -241,7 +245,7 @@ export class WorkflowExecutionService {
                         status: 'waiting_approval',
                         visitedNodeIds: state.visitedNodeIds,
                         outputs: state.outputs,
-                        waitingApproval: stepResult.waitingApproval,
+                        waitingApproval,
                     };
                 }
 

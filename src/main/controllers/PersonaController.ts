@@ -4,7 +4,7 @@ import {IpcController, IpcHandler } from '../ipc/Decorators';
 import { CORETYPES } from 'core/types/types';
 import { PersonaService } from 'core/services/PersonaService';
 import { Controller } from './Controller';
-import { NewPersona, Persona } from 'core/dto';
+import type { NewPersona, Persona } from 'core/dto';
 
 const newPersonaSchema = z.custom<NewPersona>();
 const personaUpdateSchema = z.custom<Partial<NewPersona>>();

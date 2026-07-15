@@ -6,7 +6,7 @@ import {
 } from '../src/main/ipc/Decorators';
 
 export type ControllerSource = {
-  controller: (abstract new (...args: unknown[]) => unknown) & {name: string};
+  controller: {name: string};
   source: string;
 };
 
@@ -341,8 +341,53 @@ function buildPreloadApiModel(controllers: ControllerSource[]): {
     }
   }
 
-  return {groups, streamingGroup};
-}
+    let apiContent = `import { ipcRenderer } from 'electron';
+import type {
+    NewChat,
+    ModelProviderLite,
+    ChatAbortArgs,
+    ChatSendMessageArgs,
+    Chat,
+    ModelProviderCreateInput,
+    NewMessage,
+    Message,
+    NewModel,
+    ProviderWithModels,
+    ChatWithMessages,
+    ModelIdentifier,
+    AgentIdentifier,
+    PersonaIdentifier,
+    Persona,
+    NewPersona,
+    McpServer,
+    McpServerCreateInput,
+    McpServerUpdateInput,
+    McpToolDefinition,
+    CommandCreateInput,
+    CommandDefinition,
+    CommandExecution,
+    CommandUpdateInput,
+    WebSearchConfigSaveInput,
+    WebSearchConfigView,
+    Workflow,
+    WorkflowCreateInput,
+    WorkflowGraph,
+    WorkflowRun,
+    WorkflowRunInsert,
+    WorkflowRunStatus,
+    WorkflowVersion,
+    AcpAgentCreateInput,
+    AcpAgentUpdateInput,
+    AcpAgentView,
+    AcpRegistryInstallInput,
+    AcpRegistryView,
+    AcpAgentTestResult,
+    WorkflowRunStreamStartArgs,
+    WorkflowRunStreamAbortArgs,
+} from '../../packages/core/dto';
+import type {WebSearchProviderTypeEnum} from '../../packages/core/database/schema/webSearchConfigSchema';
+import type {UIMessage, UIMessageChunk} from "ai";
+`;
 
 // Builds the preload API file set so generator tests can validate deterministic output.
 export function generatePreloadApiFiles(controllers: ControllerSource[]): Record<string, string> {

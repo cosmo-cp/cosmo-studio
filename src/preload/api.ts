@@ -1,13 +1,13 @@
 import { chatApi } from './api/chat';
-import { modelProviderApi } from './api/modelProvider';
+import type { modelProviderApi } from './api/modelProvider';
 import { messageApi } from './api/message';
 import { personaApi } from './api/persona';
 import { commandApi } from './api/command';
 import { mcpServerApi } from './api/mcpServer';
 import { webSearchApi } from './api/webSearch';
 import { workflowApi } from './api/workflow';
-import { acpAgentApi } from './api/acpAgent';
-import { streamingApi } from './api/streaming';
+import type { acpAgentApi } from './api/acpAgent';
+import type { streamingApi } from './api/streaming';
 import type { ChatApi } from './api/chat';
 import type { ModelProviderApi } from './api/modelProvider';
 import type { MessageApi } from './api/message';

@@ -6,6 +6,7 @@ import type {ModelProviderService} from "core/services/ModelProviderService";
 import type {PersonaService} from "core/services/PersonaService";
 import type {WebSearchConfigService} from "core/services/WebSearchConfigService";
 import {setCoreLogger} from "core/platform/CoreLogger";
+import type {AcpAgentRuntimeService} from "../services/AcpAgentRuntimeService";
 import {ChatStreamingService} from "../services/ChatStreamingService";
 
 const logger = vi.hoisted(() => ({
@@ -25,7 +26,7 @@ const ai = vi.hoisted(() => ({
 }));
 
 const exa = vi.hoisted(() => ({
-    webSearch: vi.fn(() => "exa-tool"),
+    createExaWebSearchTool: vi.fn(() => "exa-tool"),
 }));
 
 vi.mock("../logger", () => ({
@@ -40,8 +41,8 @@ vi.mock("ai", () => ({
     RetryError: ai.RetryError,
 }));
 
-vi.mock("@exalabs/ai-sdk", () => ({
-    webSearch: exa.webSearch,
+vi.mock("../services/ExaWebSearchTool", () => ({
+    createExaWebSearchTool: exa.createExaWebSearchTool,
 }));
 
 import {StreamingChatController} from "./StreamingChatController";
@@ -118,13 +119,17 @@ function createControllerDependencies(overrides: {
     const webSearchConfigService = {
         getEnabledExaConfig: overrides.getEnabledExaConfig ?? vi.fn().mockResolvedValue(null),
     } as unknown as WebSearchConfigService;
+    const acpAgentRuntimeService = {
+        createProvider: vi.fn(),
+    } as unknown as AcpAgentRuntimeService;
 
     const chatStreamingService = new ChatStreamingService(
         modelProviderService,
         messageService,
         personaService,
         mcpClientManager,
-        webSearchConfigService
+        webSearchConfigService,
+        acpAgentRuntimeService
     );
     const controller = new StreamingChatController(chatStreamingService);
 
@@ -214,7 +219,7 @@ describe("StreamingChatController", () => {
         expect(personaService.getById).toHaveBeenCalledWith("persona-id");
         expect(mcpClientManager.getAllTools).toHaveBeenCalledTimes(1);
         expect(ai.stepCountIs).not.toHaveBeenCalled();
-        expect(exa.webSearch).not.toHaveBeenCalled();
+        expect(exa.createExaWebSearchTool).not.toHaveBeenCalled();
 
         const streamOptions = ai.streamText.mock.calls[0][0];
         expect(streamOptions.experimental_transform).toBe("transform");
@@ -349,7 +354,7 @@ describe("StreamingChatController", () => {
         );
 
         const streamOptions = ai.streamText.mock.calls[0][0];
-        expect(exa.webSearch).toHaveBeenCalledWith({apiKey: "exa-secret"});
+        expect(exa.createExaWebSearchTool).toHaveBeenCalledWith({apiKey: "exa-secret"});
         expect(streamOptions.tools).toEqual({webSearch: "exa-tool"});
         expect(ai.stepCountIs).toHaveBeenCalledWith(5);
         expect(streamOptions.stopWhen).toBe("step:5");

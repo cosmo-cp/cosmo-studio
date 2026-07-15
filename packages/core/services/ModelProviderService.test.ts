@@ -30,7 +30,7 @@ vi.mock("@ai-sdk/openai", () => ({
   createOpenAI: vi.fn(() => "openai-provider"),
 }))
 
-vi.mock("ollama-ai-provider-v2", () => ({
+vi.mock("ai-sdk-ollama", () => ({
   createOllama: vi.fn(() => "ollama-provider"),
 }))
 

@@ -9,7 +9,7 @@ import {
     type UIMessageChunk,
 } from "ai";
 import {inject, injectable} from "inversify";
-import {ChatSendMessageArgs} from "core/dto";
+import type {ChatSendMessageArgs} from "core/dto";
 import {CORETYPES} from "core/types/types";
 import {ModelProviderService} from "core/services/ModelProviderService";
 import {MessageService} from "core/services/MessageService";
@@ -19,6 +19,7 @@ import {WebSearchConfigService} from "core/services/WebSearchConfigService";
 import {getCoreLogger} from "core/platform/CoreLogger";
 import {TYPES} from "../types";
 import {AcpAgentRuntimeService} from "./AcpAgentRuntimeService";
+import {createExaWebSearchTool} from "./ExaWebSearchTool";
 
 interface ChatStreamConfig {
     model: unknown;
@@ -166,11 +167,9 @@ export class ChatStreamingService {
             return tools;
         }
 
-        const {webSearch} = await import("@exalabs/ai-sdk");
-
         return {
             ...tools,
-            webSearch: webSearch({
+            webSearch: createExaWebSearchTool({
                 apiKey: exaConfig.apiKey,
             }),
         };

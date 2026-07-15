@@ -2,7 +2,7 @@ import {IpcMainEvent, WebContents} from "electron";
 import {inject, injectable} from "inversify";
 import {z} from "zod";
 import {IpcController, IpcOn, IpcRendererOn} from "../ipc/Decorators";
-import {ChatAbortArgs, ChatSendMessageArgs} from "core/dto";
+import type {ChatAbortArgs, ChatSendMessageArgs} from "core/dto";
 import {Controller} from "./Controller";
 import {logger} from "../logger";
 import {TYPES} from "../types";
