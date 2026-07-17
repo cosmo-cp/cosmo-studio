@@ -87,7 +87,9 @@ const PRELOAD_TYPE_IMPORTS = [
   {name: 'UIMessageChunk', source: 'ai'},
 ] as const;
 
-const PRELOAD_TYPE_IMPORT_NAMES = new Set(PRELOAD_TYPE_IMPORTS.map((entry) => entry.name));
+const PRELOAD_TYPE_IMPORT_NAMES: ReadonlySet<string> = new Set(
+  PRELOAD_TYPE_IMPORTS.map((entry) => entry.name),
+);
 
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -247,22 +249,22 @@ function renderPreloadStreamingFileContent(group: PreloadGroupDescriptor): strin
       ({methodName, params, args, channel}) =>
         `    ${methodName}: (${params}) => ipcRenderer.send('${channel}'${args ? `, ${args}` : ''})`,
     ),
-    '    onData: (channel: string, listener: (data: UIMessageChunk) => void) => {',
-    '      const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);',
-    '      ipcRenderer.on(`${channel}-data`, subscription);',
-    '    },',
-    '    onEnd: (channel: string, listener: () => void) => {',
-    '      ipcRenderer.on(`${channel}-end`, listener);',
-    '    },',
-    '    onError: (channel: string, listener: (error: unknown) => void) => {',
-    '      const subscription = (_event: unknown, error: unknown) => listener(error);',
-    '      ipcRenderer.on(`${channel}-error`, subscription);',
-    '    },',
-    '    removeListeners: (channel: string) => {',
-    '      ipcRenderer.removeAllListeners(`${channel}-error`);',
-    '      ipcRenderer.removeAllListeners(`${channel}-end`);',
-    '      ipcRenderer.removeAllListeners(`${channel}-data`);',
-    '    },',
+    `    onData: (channel: string, listener: (data: UIMessageChunk) => void) => {
+      const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);
+      ipcRenderer.on(\`${'${channel}'}-data\`, subscription);
+    }`,
+    `    onEnd: (channel: string, listener: () => void) => {
+      ipcRenderer.on(\`${'${channel}'}-end\`, listener);
+    }`,
+    `    onError: (channel: string, listener: (error: unknown) => void) => {
+      const subscription = (_event: unknown, error: unknown) => listener(error);
+      ipcRenderer.on(\`${'${channel}'}-error\`, subscription);
+    }`,
+    `    removeListeners: (channel: string) => {
+      ipcRenderer.removeAllListeners(\`${'${channel}'}-error\`);
+      ipcRenderer.removeAllListeners(\`${'${channel}'}-end\`);
+      ipcRenderer.removeAllListeners(\`${'${channel}'}-data\`);
+    }`,
   ];
 
   return `${importLines.join('\n')}
@@ -272,7 +274,7 @@ ${interfaceMembers.join('\n')}
 }
 
 export const streamingApi: StreamingApi = {
-${objectMembers.join('\n')}
+${objectMembers.join(',\n')}
 };
 `;
 }
@@ -341,53 +343,8 @@ function buildPreloadApiModel(controllers: ControllerSource[]): {
     }
   }
 
-    let apiContent = `import { ipcRenderer } from 'electron';
-import type {
-    NewChat,
-    ModelProviderLite,
-    ChatAbortArgs,
-    ChatSendMessageArgs,
-    Chat,
-    ModelProviderCreateInput,
-    NewMessage,
-    Message,
-    NewModel,
-    ProviderWithModels,
-    ChatWithMessages,
-    ModelIdentifier,
-    AgentIdentifier,
-    PersonaIdentifier,
-    Persona,
-    NewPersona,
-    McpServer,
-    McpServerCreateInput,
-    McpServerUpdateInput,
-    McpToolDefinition,
-    CommandCreateInput,
-    CommandDefinition,
-    CommandExecution,
-    CommandUpdateInput,
-    WebSearchConfigSaveInput,
-    WebSearchConfigView,
-    Workflow,
-    WorkflowCreateInput,
-    WorkflowGraph,
-    WorkflowRun,
-    WorkflowRunInsert,
-    WorkflowRunStatus,
-    WorkflowVersion,
-    AcpAgentCreateInput,
-    AcpAgentUpdateInput,
-    AcpAgentView,
-    AcpRegistryInstallInput,
-    AcpRegistryView,
-    AcpAgentTestResult,
-    WorkflowRunStreamStartArgs,
-    WorkflowRunStreamAbortArgs,
-} from '../../packages/core/dto';
-import type {WebSearchProviderTypeEnum} from '../../packages/core/database/schema/webSearchConfigSchema';
-import type {UIMessage, UIMessageChunk} from "ai";
-`;
+  return {groups, streamingGroup};
+}
 
 // Builds the preload API file set so generator tests can validate deterministic output.
 export function generatePreloadApiFiles(controllers: ControllerSource[]): Record<string, string> {
@@ -403,8 +360,9 @@ export function generatePreloadApiFiles(controllers: ControllerSource[]): Record
     const group = groups[groupName];
     const filePath = `src/preload/api/${groupName}.ts`;
     fileContents[filePath] = renderPreloadGroupFileContent(group);
-    rootImports.push(`import { ${group.constName} } from './api/${groupName}';`);
-    rootImports.push(`import type { ${group.interfaceName} } from './api/${groupName}';`);
+    rootImports.push(
+      `import { ${group.constName}, type ${group.interfaceName} } from './api/${groupName}';`,
+    );
     rootTypeExports.push(`export type { ${group.interfaceName} } from './api/${groupName}';`);
     rootInterfaceMembers.push(`  ${groupName}: ${group.interfaceName};`);
     rootObjectMembers.push(`  ${groupName}: ${group.constName},`);
@@ -413,8 +371,7 @@ export function generatePreloadApiFiles(controllers: ControllerSource[]): Record
   if (streamingGroup) {
     const filePath = 'src/preload/api/streaming.ts';
     fileContents[filePath] = renderPreloadStreamingFileContent(streamingGroup);
-    rootImports.push(`import { streamingApi } from './api/streaming';`);
-    rootImports.push(`import type { StreamingApi } from './api/streaming';`);
+    rootImports.push(`import { streamingApi, type StreamingApi } from './api/streaming';`);
     rootTypeExports.push(`export type { StreamingApi } from './api/streaming';`);
     rootInterfaceMembers.push('  streaming: StreamingApi;');
     rootObjectMembers.push('  streaming: streamingApi,');

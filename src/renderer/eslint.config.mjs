@@ -6,6 +6,7 @@ const eslintConfig = [
     ...nextTypeScript,
     {
         ignores: [
+            'coverage/**',
             'src/components/ai-elements/**',
             'src/components/ui/**',
             'src/renderer/components/ai-elements/**',
