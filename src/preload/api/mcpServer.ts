@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import type {McpServer, McpServerCreateInput, McpServerUpdateInput, McpToolDefinition} from '../../packages/core/dto';
+import type {McpServer, McpServerCreateInput, McpServerUpdateInput, McpToolDefinition} from '../../../packages/core/dto';
 
 export interface McpServerApi {
     getAll(): Promise<McpServer[]>;

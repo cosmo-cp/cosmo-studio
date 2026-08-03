@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import type {ChatAbortArgs, ChatSendMessageArgs, WorkflowRunStreamStartArgs, WorkflowRunStreamAbortArgs} from '../../packages/core/dto';
+import type {ChatAbortArgs, ChatSendMessageArgs, WorkflowRunStreamStartArgs, WorkflowRunStreamAbortArgs} from '../../../packages/core/dto';
 import type {UIMessageChunk} from 'ai';
 
 export interface StreamingApi {

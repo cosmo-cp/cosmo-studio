@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import type {Workflow, WorkflowCreateInput, WorkflowGraph, WorkflowRun, WorkflowRunInsert, WorkflowRunStatus, WorkflowVersion} from '../../packages/core/dto';
+import type {Workflow, WorkflowCreateInput, WorkflowGraph, WorkflowRun, WorkflowRunInsert, WorkflowRunStatus, WorkflowVersion} from '../../../packages/core/dto';
 
 export interface WorkflowApi {
     list(searchQuery: string | null): Promise<Workflow[]>;

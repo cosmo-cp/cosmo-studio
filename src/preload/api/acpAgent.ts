@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import type {AcpAgentCreateInput, AcpAgentUpdateInput, AcpAgentView, AcpRegistryInstallInput, AcpRegistryView, AcpAgentTestResult} from '../../packages/core/dto';
+import type {AcpAgentCreateInput, AcpAgentUpdateInput, AcpAgentView, AcpRegistryInstallInput, AcpRegistryView, AcpAgentTestResult} from '../../../packages/core/dto';
 
 export interface AcpAgentApi {
     getAll(): Promise<AcpAgentView[]>;

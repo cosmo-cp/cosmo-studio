@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import type {Persona, NewPersona} from '../../packages/core/dto';
+import type {Persona, NewPersona} from '../../../packages/core/dto';
 
 export interface PersonaApi {
     getAll(): Promise<Persona[]>;

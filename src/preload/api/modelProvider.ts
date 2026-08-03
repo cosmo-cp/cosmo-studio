@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import type {ModelProviderLite, ModelProviderCreateInput, NewModel, ProviderWithModels} from '../../packages/core/dto';
+import type {ModelProviderLite, ModelProviderCreateInput, NewModel, ProviderWithModels} from '../../../packages/core/dto';
 
 export interface ModelProviderApi {
     addProvider(providerData: ModelProviderCreateInput, models: NewModel[]): Promise<ProviderWithModels>;

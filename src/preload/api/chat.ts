@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import type {NewChat, Chat, ChatWithMessages, ModelIdentifier, AgentIdentifier, PersonaIdentifier} from '../../packages/core/dto';
+import type {NewChat, Chat, ChatWithMessages, ModelIdentifier, AgentIdentifier, PersonaIdentifier} from '../../../packages/core/dto';
 
 export interface ChatApi {
     getAllChats(searchQuery: string | null): Promise<Chat[]>;

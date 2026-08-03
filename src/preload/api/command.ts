@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import type {CommandCreateInput, CommandDefinition, CommandExecution, CommandUpdateInput} from '../../packages/core/dto';
+import type {CommandCreateInput, CommandDefinition, CommandExecution, CommandUpdateInput} from '../../../packages/core/dto';
 
 export interface CommandApi {
     listAll(): Promise<CommandDefinition[]>;

@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import type {NewMessage, Message} from '../../packages/core/dto';
+import type {NewMessage, Message} from '../../../packages/core/dto';
 import type {UIMessage} from 'ai';
 
 export interface MessageApi {

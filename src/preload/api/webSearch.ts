@@ -1,6 +1,6 @@
 import { ipcRenderer } from 'electron';
-import type {WebSearchConfigSaveInput, WebSearchConfigView} from '../../packages/core/dto';
-import type {WebSearchProviderTypeEnum} from '../../packages/core/database/schema/webSearchConfigSchema';
+import type {WebSearchConfigSaveInput, WebSearchConfigView} from '../../../packages/core/dto';
+import type {WebSearchProviderTypeEnum} from '../../../packages/core/database/schema/webSearchConfigSchema';
 
 export interface WebSearchApi {
     getConfig(type: WebSearchProviderTypeEnum): Promise<WebSearchConfigView | null>;
