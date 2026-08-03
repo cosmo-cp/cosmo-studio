@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { DynamicToolUIPart, UIMessage } from 'ai';
 import { PieChart, Info } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { McpServer } from 'core/dto';
+import type { McpServer } from 'core/dto';
 
 interface TokenUsageIndicatorProps {
     messages: UIMessage[];

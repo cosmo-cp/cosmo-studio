@@ -1,7 +1,7 @@
 import {inject, injectable} from 'inversify';
 import {CORETYPES} from 'core/types/types';
 import {WorkflowRunService} from 'core/services/WorkflowRunService';
-import {WorkflowRunEvent, WorkflowRunStreamEventEnvelope} from 'core/dto';
+import type {WorkflowRunEvent, WorkflowRunStreamEventEnvelope} from 'core/dto';
 
 @injectable()
 export class WorkflowRunStreamingService {

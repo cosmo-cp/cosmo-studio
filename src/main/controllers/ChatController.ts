@@ -4,7 +4,7 @@ import { CORETYPES } from 'core/types/types';
 import { ChatService } from 'core/services/ChatService';
 import { IpcController, IpcHandler } from '../ipc/Decorators';
 import { Controller } from './Controller';
-import { AgentIdentifier, Chat, ChatWithMessages, ModelIdentifier, NewChat, PersonaIdentifier } from 'core/dto';
+import type { AgentIdentifier, Chat, ChatWithMessages, ModelIdentifier, NewChat, PersonaIdentifier } from 'core/dto';
 
 const personaIdentifierSchema = z
     .object({

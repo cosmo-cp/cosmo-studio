@@ -6,7 +6,7 @@ import {
 } from '../src/main/ipc/Decorators';
 
 export type ControllerSource = {
-  controller: (abstract new (...args: unknown[]) => unknown) & {name: string};
+  controller: {name: string};
   source: string;
 };
 
@@ -37,57 +37,63 @@ type PreloadGroupDescriptor = {
   importNames: Set<string>;
 };
 
+const PRELOAD_CORE_DTO_IMPORT = '../../../packages/core/dto';
+const PRELOAD_WEB_SEARCH_SCHEMA_IMPORT =
+  '../../../packages/core/database/schema/webSearchConfigSchema';
+
 const PRELOAD_TYPE_IMPORTS = [
-  {name: 'NewChat', source: '../../packages/core/dto'},
-  {name: 'ModelProviderLite', source: '../../packages/core/dto'},
-  {name: 'ChatAbortArgs', source: '../../packages/core/dto'},
-  {name: 'ChatSendMessageArgs', source: '../../packages/core/dto'},
-  {name: 'Chat', source: '../../packages/core/dto'},
-  {name: 'ModelProviderCreateInput', source: '../../packages/core/dto'},
-  {name: 'NewMessage', source: '../../packages/core/dto'},
-  {name: 'Message', source: '../../packages/core/dto'},
-  {name: 'NewModel', source: '../../packages/core/dto'},
-  {name: 'ProviderWithModels', source: '../../packages/core/dto'},
-  {name: 'ChatWithMessages', source: '../../packages/core/dto'},
-  {name: 'ModelIdentifier', source: '../../packages/core/dto'},
-  {name: 'AgentIdentifier', source: '../../packages/core/dto'},
-  {name: 'PersonaIdentifier', source: '../../packages/core/dto'},
-  {name: 'Persona', source: '../../packages/core/dto'},
-  {name: 'NewPersona', source: '../../packages/core/dto'},
-  {name: 'McpServer', source: '../../packages/core/dto'},
-  {name: 'McpServerCreateInput', source: '../../packages/core/dto'},
-  {name: 'McpServerUpdateInput', source: '../../packages/core/dto'},
-  {name: 'McpToolDefinition', source: '../../packages/core/dto'},
-  {name: 'CommandCreateInput', source: '../../packages/core/dto'},
-  {name: 'CommandDefinition', source: '../../packages/core/dto'},
-  {name: 'CommandExecution', source: '../../packages/core/dto'},
-  {name: 'CommandUpdateInput', source: '../../packages/core/dto'},
-  {name: 'WebSearchConfigSaveInput', source: '../../packages/core/dto'},
-  {name: 'WebSearchConfigView', source: '../../packages/core/dto'},
-  {name: 'Workflow', source: '../../packages/core/dto'},
-  {name: 'WorkflowCreateInput', source: '../../packages/core/dto'},
-  {name: 'WorkflowGraph', source: '../../packages/core/dto'},
-  {name: 'WorkflowRun', source: '../../packages/core/dto'},
-  {name: 'WorkflowRunInsert', source: '../../packages/core/dto'},
-  {name: 'WorkflowRunStatus', source: '../../packages/core/dto'},
-  {name: 'WorkflowVersion', source: '../../packages/core/dto'},
-  {name: 'AcpAgentCreateInput', source: '../../packages/core/dto'},
-  {name: 'AcpAgentUpdateInput', source: '../../packages/core/dto'},
-  {name: 'AcpAgentView', source: '../../packages/core/dto'},
-  {name: 'AcpRegistryInstallInput', source: '../../packages/core/dto'},
-  {name: 'AcpRegistryView', source: '../../packages/core/dto'},
-  {name: 'AcpAgentTestResult', source: '../../packages/core/dto'},
-  {name: 'WorkflowRunStreamStartArgs', source: '../../packages/core/dto'},
-  {name: 'WorkflowRunStreamAbortArgs', source: '../../packages/core/dto'},
+  {name: 'NewChat', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'ModelProviderLite', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'ChatAbortArgs', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'ChatSendMessageArgs', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'Chat', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'ModelProviderCreateInput', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'NewMessage', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'Message', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'NewModel', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'ProviderWithModels', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'ChatWithMessages', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'ModelIdentifier', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'AgentIdentifier', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'PersonaIdentifier', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'Persona', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'NewPersona', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'McpServer', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'McpServerCreateInput', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'McpServerUpdateInput', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'McpToolDefinition', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'CommandCreateInput', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'CommandDefinition', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'CommandExecution', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'CommandUpdateInput', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'WebSearchConfigSaveInput', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'WebSearchConfigView', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'Workflow', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'WorkflowCreateInput', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'WorkflowGraph', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'WorkflowRun', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'WorkflowRunInsert', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'WorkflowRunStatus', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'WorkflowVersion', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'AcpAgentCreateInput', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'AcpAgentUpdateInput', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'AcpAgentView', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'AcpRegistryInstallInput', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'AcpRegistryView', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'AcpAgentTestResult', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'WorkflowRunStreamStartArgs', source: PRELOAD_CORE_DTO_IMPORT},
+  {name: 'WorkflowRunStreamAbortArgs', source: PRELOAD_CORE_DTO_IMPORT},
   {
     name: 'WebSearchProviderTypeEnum',
-    source: '../../packages/core/database/schema/webSearchConfigSchema',
+    source: PRELOAD_WEB_SEARCH_SCHEMA_IMPORT,
   },
   {name: 'UIMessage', source: 'ai'},
   {name: 'UIMessageChunk', source: 'ai'},
 ] as const;
 
-const PRELOAD_TYPE_IMPORT_NAMES = new Set(PRELOAD_TYPE_IMPORTS.map((entry) => entry.name));
+const PRELOAD_TYPE_IMPORT_NAMES: ReadonlySet<string> = new Set(
+  PRELOAD_TYPE_IMPORTS.map((entry) => entry.name),
+);
 
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -247,22 +253,22 @@ function renderPreloadStreamingFileContent(group: PreloadGroupDescriptor): strin
       ({methodName, params, args, channel}) =>
         `    ${methodName}: (${params}) => ipcRenderer.send('${channel}'${args ? `, ${args}` : ''})`,
     ),
-    '    onData: (channel: string, listener: (data: UIMessageChunk) => void) => {',
-    '      const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);',
-    '      ipcRenderer.on(`${channel}-data`, subscription);',
-    '    },',
-    '    onEnd: (channel: string, listener: () => void) => {',
-    '      ipcRenderer.on(`${channel}-end`, listener);',
-    '    },',
-    '    onError: (channel: string, listener: (error: unknown) => void) => {',
-    '      const subscription = (_event: unknown, error: unknown) => listener(error);',
-    '      ipcRenderer.on(`${channel}-error`, subscription);',
-    '    },',
-    '    removeListeners: (channel: string) => {',
-    '      ipcRenderer.removeAllListeners(`${channel}-error`);',
-    '      ipcRenderer.removeAllListeners(`${channel}-end`);',
-    '      ipcRenderer.removeAllListeners(`${channel}-data`);',
-    '    },',
+    `    onData: (channel: string, listener: (data: UIMessageChunk) => void) => {
+      const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);
+      ipcRenderer.on(\`${'${channel}'}-data\`, subscription);
+    }`,
+    `    onEnd: (channel: string, listener: () => void) => {
+      ipcRenderer.on(\`${'${channel}'}-end\`, listener);
+    }`,
+    `    onError: (channel: string, listener: (error: unknown) => void) => {
+      const subscription = (_event: unknown, error: unknown) => listener(error);
+      ipcRenderer.on(\`${'${channel}'}-error\`, subscription);
+    }`,
+    `    removeListeners: (channel: string) => {
+      ipcRenderer.removeAllListeners(\`${'${channel}'}-error\`);
+      ipcRenderer.removeAllListeners(\`${'${channel}'}-end\`);
+      ipcRenderer.removeAllListeners(\`${'${channel}'}-data\`);
+    }`,
   ];
 
   return `${importLines.join('\n')}
@@ -272,7 +278,7 @@ ${interfaceMembers.join('\n')}
 }
 
 export const streamingApi: StreamingApi = {
-${objectMembers.join('\n')}
+${objectMembers.join(',\n')}
 };
 `;
 }
@@ -358,8 +364,9 @@ export function generatePreloadApiFiles(controllers: ControllerSource[]): Record
     const group = groups[groupName];
     const filePath = `src/preload/api/${groupName}.ts`;
     fileContents[filePath] = renderPreloadGroupFileContent(group);
-    rootImports.push(`import { ${group.constName} } from './api/${groupName}';`);
-    rootImports.push(`import type { ${group.interfaceName} } from './api/${groupName}';`);
+    rootImports.push(
+      `import { ${group.constName}, type ${group.interfaceName} } from './api/${groupName}';`,
+    );
     rootTypeExports.push(`export type { ${group.interfaceName} } from './api/${groupName}';`);
     rootInterfaceMembers.push(`  ${groupName}: ${group.interfaceName};`);
     rootObjectMembers.push(`  ${groupName}: ${group.constName},`);
@@ -368,8 +375,7 @@ export function generatePreloadApiFiles(controllers: ControllerSource[]): Record
   if (streamingGroup) {
     const filePath = 'src/preload/api/streaming.ts';
     fileContents[filePath] = renderPreloadStreamingFileContent(streamingGroup);
-    rootImports.push(`import { streamingApi } from './api/streaming';`);
-    rootImports.push(`import type { StreamingApi } from './api/streaming';`);
+    rootImports.push(`import { streamingApi, type StreamingApi } from './api/streaming';`);
     rootTypeExports.push(`export type { StreamingApi } from './api/streaming';`);
     rootInterfaceMembers.push('  streaming: StreamingApi;');
     rootObjectMembers.push('  streaming: streamingApi,');

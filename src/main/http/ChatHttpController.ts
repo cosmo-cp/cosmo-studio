@@ -2,7 +2,7 @@ import {Controller, Get, HttpCode, Post, Req, Res, Body} from "@nestjs/common";
 import type {Request, Response} from "express";
 import {pipeUIMessageStreamToResponse, type UIMessage} from "ai";
 import {z} from "zod";
-import {ChatSendMessageArgs} from "core/dto";
+import type {ChatSendMessageArgs} from "core/dto";
 import {CORETYPES} from "core/types/types";
 import {ChatService} from "core/services/ChatService";
 import {ChatStreamingService} from "../services/ChatStreamingService";

@@ -31,7 +31,7 @@ This document maps `package.json` dependencies to their official documentation (
 | `@ai-sdk/google`            | Google provider for AI SDK                        | https://sdk.vercel.ai/providers/google                  |
 | `@ai-sdk/provider`          | Provider interfaces/types                         | https://sdk.vercel.ai/docs/ai-sdk-core/providers        |
 | `@mcpc-tech/acp-ai-provider` | ACP agents as AI SDK language models              | https://ai-sdk.dev/providers/community-providers/acp    |
-| `ollama-ai-provider-v2`     | Ollama provider (community)                       | https://www.npmjs.com/package/ollama-ai-provider-v2     |
+| `ai-sdk-ollama`             | Ollama provider (community)                       | https://www.npmjs.com/package/ai-sdk-ollama             |
 | `@stepperize/react`         | Stepper UI helper (if/when used)                  | https://www.npmjs.com/package/@stepperize/react         |
 
 ### Dev dependencies (tooling/build)

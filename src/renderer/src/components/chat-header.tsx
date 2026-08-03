@@ -1,6 +1,6 @@
 'use client';
 
-import { Chat } from 'core/dto';
+import type { Chat } from 'core/dto';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, Pin, PinOff, Search, Trash, X } from 'lucide-react';

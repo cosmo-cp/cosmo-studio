@@ -2,7 +2,7 @@ import {inject, injectable} from "inversify";
 import {z} from "zod";
 import {IpcController, IpcHandler} from "../ipc/Decorators";
 import {CORETYPES} from "core/types/types";
-import {
+import type {
     WebSearchConfigSaveInput,
     WebSearchConfigView,
 } from "core/dto";

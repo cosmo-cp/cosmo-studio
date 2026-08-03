@@ -20,15 +20,20 @@ describe('generatePreloadApiFiles', () => {
                 source: `
           export class TestStreamingController {
             @IpcOn("sendMessage")
-            public sendMessage(args: {chatId: string}): void {}
+            public sendMessage(args: ChatSendMessageArgs): void {}
           }
         `,
             },
         ]);
 
         expect(Object.keys(files).sort()).toEqual(['src/preload/api.ts', 'src/preload/api/streaming.ts']);
-        expect(files['src/preload/api.ts']).toContain("import { streamingApi } from './api/streaming';");
+        expect(files['src/preload/api.ts']).toContain(
+            "import { streamingApi, type StreamingApi } from './api/streaming';",
+        );
         expect(files['src/preload/api.ts']).toContain('export interface Api {');
+        expect(files['src/preload/api/streaming.ts']).toContain(
+            "import type {ChatSendMessageArgs} from '../../../packages/core/dto';",
+        );
         expect(files['src/preload/api/streaming.ts']).toContain('onData: (channel: string, listener: (data: UIMessageChunk) => void) => void;');
         expect(files['src/preload/api/streaming.ts']).toContain('const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);');
     });

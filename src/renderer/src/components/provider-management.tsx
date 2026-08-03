@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ProviderIcon from '@/components/provider-icon';
 import { ProviderInfo } from '@/lib/types';
-import { NewModel, ProviderWithModels } from 'core/dto';
+import type { NewModel, ProviderWithModels } from 'core/dto';
 import { ModelProviderTypeEnum } from 'core/database/schema/modelProviderSchema';
 import { ProviderCatalog } from 'core/providerCatalog';
 import { useTheme } from 'next-themes';
@@ -55,11 +55,11 @@ export function ProviderManagement() {
     const LOCAL_PROVIDERS = [ModelProviderTypeEnum.OLLAMA, ModelProviderTypeEnum.LMSTUDIO];
     const isLocalProvider = selectedProviderType !== null && LOCAL_PROVIDERS.includes(selectedProviderType);
 
-    const { useStepper } = defineStepper(
+    const { useStepper } = defineStepper([
         { id: 'step-1', title: 'Select Provider' },
         { id: 'step-2', title: 'Enter Info' },
         { id: 'step-3', title: 'Select Models' },
-    );
+    ]);
 
     const methods = useStepper();
 
@@ -399,7 +399,7 @@ export function ProviderManagement() {
                         <DialogTitle>{editingProvider ? 'Edit Provider' : 'Add Provider'}</DialogTitle>
                     </DialogHeader>
                     <div className="py-2">
-                        {methods.when('step-1', () => (
+                        {methods.is('step-1') && (
                             <div className="space-y-4">
                                 <div>
                                     <p className="text-sm text-muted-foreground mb-2">Select a provider type:</p>
@@ -450,9 +450,9 @@ export function ProviderManagement() {
                                     </div>
                                 </ScrollArea>
                             </div>
-                        ))}
+                        )}
                         {selectedProviderType &&
-                            methods.when('step-2', () => (
+                            methods.is('step-2') && (
                                 <div className="space-y-4 pr-2 max-h-[60dvh] overflow-y-auto">
                                     <div className="flex items-center gap-2 pb-2 border-b">
                                         <ProviderIcon type={selectedProviderType} theme={resolvedTheme} size={32} />
@@ -514,8 +514,8 @@ export function ProviderManagement() {
                                         </div>
                                     )}
                                 </div>
-                            ))}
-                        {methods.when('step-3', () => (
+                            )}
+                        {methods.is('step-3') && (
                             //iterate over the models
                             <div className="space-y-4">
                                 <ScrollArea type="always" className="h-[50dvh] rounded-md border w-full">
@@ -583,7 +583,7 @@ export function ProviderManagement() {
                                     )}
                                 </ScrollArea>
                             </div>
-                        ))}
+                        )}
                     </div>
                     <div className="mt-2 space-y-4">
                         {(error ?? providersError) && (

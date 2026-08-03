@@ -1,13 +1,13 @@
 import {inject, injectable} from "inversify";
 import {CORETYPES} from "../types/types";
 import {ModelProviderRepository} from "../repositories/ModelProviderRepository";
-import {ModelProvider, ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels} from "../dto";
-import { ModelModalityEnum, ModelProviderTypeEnum } from '../database/schema/modelProviderSchema';
-import {ProviderV3} from "@ai-sdk/provider";
-import {AnthropicProviderSettings, createAnthropic} from "@ai-sdk/anthropic";
-import {createGoogleGenerativeAI, GoogleGenerativeAIProviderSettings} from "@ai-sdk/google";
-import {createOpenAI, OpenAIProviderSettings} from "@ai-sdk/openai";
-import {createOllama, OllamaProviderSettings} from "ollama-ai-provider-v2";
+import {ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels} from "../dto";
+import {ModelModalityEnum, ModelProviderTypeEnum, ModelStatusEnum} from '../database/schema/modelProviderSchema';
+import {ProviderV4} from "@ai-sdk/provider";
+import {createAnthropic} from "@ai-sdk/anthropic";
+import {createGoogleGenerativeAI} from "@ai-sdk/google";
+import {createOpenAI} from "@ai-sdk/openai";
+import {createOllama, OllamaProviderSettings} from "ai-sdk-ollama";
 import {createProviderRegistry, ProviderRegistryProvider} from "ai";
 import type {CoreLogger} from "../platform/CoreLogger";
 import {getCoreLogger} from "../platform/CoreLogger";
@@ -24,10 +24,10 @@ import { createHuggingFace } from '@ai-sdk/huggingface';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createPerplexity } from '@ai-sdk/perplexity';
 
-export type RemoteProviderOptions =
-    | AnthropicProviderSettings
-    | GoogleGenerativeAIProviderSettings
-    | OpenAIProviderSettings;
+export type RemoteProviderOptions = {
+    apiKey?: string;
+    baseURL?: string;
+};
 
 export type LocalProviderOptions = OllamaProviderSettings;
 
@@ -47,11 +47,13 @@ interface LMStudioModelPayload {
 @injectable()
 export class ModelProviderService {
     private readonly repository: ModelProviderRepository;
-    private modelProviderRegistry: ProviderRegistryProvider;
+    private modelProviderRegistry: ProviderRegistryProvider = createProviderRegistry({});
     private static MODELS_DOT_DEV_URL = 'https://models.dev/api.json';
     private static MODELS_OLLAMA_URL = 'http://127.0.0.1:11434/api';
     private static MODELS_LMSTUDIO_URL = 'http://localhost:1234/api';
-    private readonly providerFactoryByType: Record<ModelProviderTypeEnum, (provider: ModelProviderLite) => ProviderV3> =
+    private static DEFAULT_CONTEXT_WINDOW = 128000;
+    private static DEFAULT_MAX_OUTPUT_WINDOW = 4096;
+    private readonly providerFactoryByType: Record<ModelProviderTypeEnum, (provider: ModelProviderLite) => ProviderV4> =
         {
             [ModelProviderTypeEnum.ANTHROPIC]: (provider) => createAnthropic(this.createRemoteOptions(provider)),
             [ModelProviderTypeEnum.GOOGLE]: (provider) => createGoogleGenerativeAI(this.createRemoteOptions(provider)),
@@ -74,8 +76,8 @@ export class ModelProviderService {
             [ModelProviderTypeEnum.CUSTOM]: (provider) =>
                 createOpenAI({
                     name: provider.name,
-                    apiKey: provider.apiKey,
-                    baseURL: provider.apiUrl,
+                    apiKey: provider.apiKey ?? undefined,
+                    baseURL: provider.apiUrl ?? undefined,
                 }),
         };
 
@@ -165,7 +167,7 @@ export class ModelProviderService {
     }
 
     private updateModelProviderRegistry() {
-        const registryObject: Record<string, ProviderV3> = {};
+        const registryObject: Record<string, ProviderV4> = {};
         this.getProviders({ withApiKey: true })
             .then((providers) => {
                 for (const provider of providers) {
@@ -193,22 +195,22 @@ export class ModelProviderService {
         if (provider.apiUrl && provider.apiUrl.trim() !== '') {
             options.baseURL = provider.apiUrl;
         }
-        if (provider.apiKey.trim() !== '') {
+        if (provider.apiKey?.trim()) {
             options.apiKey = provider.apiKey;
         }
         return options;
     }
 
     /** Maps a DB record (encrypted key) to the application model (decrypted key). */
-    private mapToModelProvider = (dbRecord: ModelProvider): ModelProvider => {
+    private mapToModelProvider = (dbRecord: ModelProviderLite): ModelProviderLite => {
         // Note: You must handle the timestamp conversion here if needed,
         // as we dropped Zod's automatic date coercion.
         return {
             ...dbRecord,
             apiKey: this.decryptApiKey(dbRecord.apiKey),
             createdAt: new Date(dbRecord.createdAt),
-            updatedAt: dbRecord.updatedAt ? new Date(dbRecord.updatedAt) : undefined,
-        } as ModelProvider;
+            updatedAt: dbRecord.updatedAt ? new Date(dbRecord.updatedAt) : null,
+        };
     };
 
     private decryptApiKey = (encryptedKey?: string): string => {
@@ -286,7 +288,7 @@ export class ModelProviderService {
             }),
         );
 
-        return result.sort((a, b) => (b.lastUpdatedByProvider >= a.lastUpdatedByProvider ? 1 : -1));
+        return result.sort((a, b) => this.compareProviderUpdateDates(a, b));
     }
 
     private async getModelsFromLMStudio(provider: ModelProviderCreateInput): Promise<NewModel[]> {
@@ -363,14 +365,14 @@ export class ModelProviderService {
                     toolCall: m.tool_call,
                     inputModalities: m.modalities.input,
                     outputModalities: m.modalities.output,
-                    ...(m.limit?.context !== undefined && { contextWindow: m.limit.context }),
-                    ...(m.limit?.output !== undefined && { maxOutputWindow: m.limit.output }),
-                    ...(m.status !== undefined && { status: m.status }),
+                    status: m.status ?? ModelStatusEnum.NOT_DEFINED,
+                    contextWindow: m.limit?.context ?? ModelProviderService.DEFAULT_CONTEXT_WINDOW,
+                    maxOutputWindow: m.limit?.output ?? ModelProviderService.DEFAULT_MAX_OUTPUT_WINDOW,
                 });
             }
 
             result.sort((a, b) => {
-                return b.lastUpdatedByProvider >= a.lastUpdatedByProvider ? 1 : -1;
+                return this.compareProviderUpdateDates(a, b);
             });
         } catch (err) {
             this.logger.error('Models.dev fetch error:', err);
@@ -381,5 +383,13 @@ export class ModelProviderService {
 
     private get logger(): CoreLogger {
         return getCoreLogger();
+    }
+
+    private compareProviderUpdateDates(a: NewModel, b: NewModel): number {
+        return this.getProviderUpdateTime(b) >= this.getProviderUpdateTime(a) ? 1 : -1;
+    }
+
+    private getProviderUpdateTime(model: NewModel): number {
+        return model.lastUpdatedByProvider?.getTime() ?? 0;
     }
 }

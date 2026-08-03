@@ -5,6 +5,7 @@ import { DatabaseManager } from '../database/DatabaseManager';
 import { chat, message } from '../database/schema/schema';
 import { AgentIdentifier, Chat, ChatWithMessages, Message, ModelIdentifier, NewChat, PersonaIdentifier } from '../dto';
 import { UIMessage } from 'ai';
+import {toUiMessages} from '../uiMessageMapper';
 
 @injectable()
 export class ChatRepository {
@@ -41,26 +42,7 @@ export class ChatRepository {
     }
 
     private convertToUiMessage(messages: Message[]): UIMessage[] {
-        return messages.map((message) => {
-            const parts: { type: 'text' | 'reasoning'; text: string }[] = [];
-
-            if (message.text) {
-                parts.push({ type: 'text', text: message.text });
-            }
-            if (message.reasoning) {
-                parts.push({ type: 'reasoning', text: message.reasoning });
-            }
-
-            const metadata = message.modelIdentifier ? { modelId: message.modelIdentifier } : undefined;
-
-            const base = {
-                id: message.id,
-                role: message.role,
-                parts: parts,
-            };
-
-            return metadata ? { ...base, metadata } : base;
-        });
+        return toUiMessages(messages);
     }
 
     public async create(newChat: NewChat): Promise<void> {

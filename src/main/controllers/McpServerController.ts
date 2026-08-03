@@ -5,7 +5,7 @@ import { CORETYPES } from 'core/types/types';
 import { McpServerService } from 'core/services/McpServerService';
 import { McpClientManager } from 'core/services/McpClientManager';
 import { Controller } from './Controller';
-import { McpServer, McpServerCreateInput, McpServerUpdateInput, McpToolDefinition } from 'core/dto';
+import type { McpServer, McpServerCreateInput, McpServerUpdateInput, McpToolDefinition } from 'core/dto';
 
 const mcpServerCreateSchema = z.custom<McpServerCreateInput>();
 const mcpServerUpdateSchema = z.custom<McpServerUpdateInput>();
