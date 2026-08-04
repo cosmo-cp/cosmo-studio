@@ -9,11 +9,12 @@ import {resolveAppDataSource} from '@/lib/app-data-source';
 import type {WorkflowGraph} from 'core/dto';
 import {Workflow} from 'lucide-react';
 import {useEffect, useMemo, useState} from 'react';
+import { useAppSelector } from '@/lib/store/hooks';
 
 const DEFAULT_WORKFLOW_GRAPH: WorkflowGraph = {nodes: [], edges: []};
 
 export function WorkflowPageContent() {
-    const appDataSource = useMemo(() => resolveAppDataSource(), []);
+    const appDataSource = useAppSelector((state) => state.workflow);
     const [searchQuery, setSearchQuery] = useState('');
     const [workflows, setWorkflows] = useState<WorkflowListItem[]>([]);
     const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);

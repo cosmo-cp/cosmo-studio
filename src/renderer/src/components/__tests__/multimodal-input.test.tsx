@@ -7,7 +7,7 @@ import {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSch
 import type {UIMessage} from "ai";
 import {MultimodalInput} from "@/components/multimodal-input";
 import {TooltipProvider} from "@/components/ui/tooltip";
-import {StoreProvider} from "@/lib/store/store-provider";
+import {StoreProvider} from "@/app/store-provider";
 import {createMockAppDataSource} from "@/test/mock-app-data-source";
 import {
     PARALLEL_WEB_SEARCH_PROVIDER_ID,

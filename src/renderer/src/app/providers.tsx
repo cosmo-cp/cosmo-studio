@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { ThemeProvider } from 'next-themes';
-import { StoreProvider } from '@/lib/store/store-provider';
+import { StoreProvider } from '@/app/store-provider';
 
 export function Providers({ children }: { children: ReactNode }) {
     return (

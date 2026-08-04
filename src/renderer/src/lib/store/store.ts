@@ -1,27 +1,29 @@
-import {configureStore, isPlain} from "@reduxjs/toolkit";
-import {resolveAppDataSource, type AppDataSource} from "@/lib/app-data-source";
-import {acpAgentsReducer} from "@/lib/store/acp-agents-store";
-import {commandsReducer} from "@/lib/store/commands-store";
-import {chatReducer} from "@/lib/store/chat-store";
-import {mcpServersReducer} from "@/lib/store/mcp-servers-store";
-import {personasReducer} from "@/lib/store/personas-store";
-import {providersReducer} from "@/lib/store/providers-store";
-import {webSearchReducer} from "@/lib/store/web-search-store";
+import { configureStore, isPlain } from '@reduxjs/toolkit';
+import { acpAgentsReducer } from '@/lib/store/acp-agents-store';
+import { commandsReducer } from '@/lib/store/commands-store';
+import { chatReducer } from '@/lib/store/chat-store';
+import { mcpServersReducer } from '@/lib/store/mcp-servers-store';
+import { personasReducer } from '@/lib/store/personas-store';
+import { providersReducer } from '@/lib/store/providers-store';
+import { webSearchReducer } from '@/lib/store/web-search-store';
+import { CosmoApi, httpApi } from '../../../../preload/api';
 
-export interface AppThunkExtra {
-    appDataSource: AppDataSource;
-}
-
-interface MakeStoreOptions {
-    appDataSource?: AppDataSource;
-}
 
 const isSerializableValue = (value: unknown) =>
     value instanceof Date || isPlain(value);
 
+
+export function resolveAppDataSource(): CosmoApi {
+    const isHTTP = process.env.NEXT_PUBLIC_COSMO_BACKEND === 'http';
+    if (isHTTP) {
+        return httpApi;
+    }
+    return window.api;
+}
+
 // Build a fresh app store once at the renderer root.
-export function makeStore(options: MakeStoreOptions = {}) {
-    const appDataSource = options.appDataSource ?? resolveAppDataSource();
+export function makeStore() {
+    const appDataSource = resolveAppDataSource();
 
     return configureStore({
         reducer: {
@@ -48,5 +50,5 @@ export function makeStore(options: MakeStoreOptions = {}) {
 }
 
 export type AppStore = ReturnType<typeof makeStore>;
-export type RootState = ReturnType<AppStore["getState"]>;
-export type AppDispatch = AppStore["dispatch"];
+export type RootState = ReturnType<AppStore['getState']>;
+export type AppDispatch = AppStore['dispatch'];

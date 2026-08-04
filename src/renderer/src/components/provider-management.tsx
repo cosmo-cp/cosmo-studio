@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ProviderIcon from '@/components/provider-icon';
-import { ProviderInfo } from '@/lib/types';
 import type { NewModel, ProviderWithModels } from 'core/dto';
 import { ModelProviderTypeEnum } from 'core/database/schema/modelProviderSchema';
 import { ProviderCatalog } from 'core/providerCatalog';
@@ -24,6 +23,16 @@ import {
     saveProvider,
 } from "@/lib/store/providers-store";
 import {logger } from '../../logger';
+
+export const ProviderInfo: Record<ModelProviderTypeEnum, { name: string; description: string }> = Object.values(
+    ProviderCatalogByType,
+).reduce(
+    (acc, entry) => {
+        acc[entry.type] = { name: entry.name, description: entry.description };
+        return acc;
+    },
+    {} as Record<ModelProviderTypeEnum, { name: string; description: string }>,
+);
 
 export function ProviderManagement() {
     const dispatch = useAppDispatch();

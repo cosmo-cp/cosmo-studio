@@ -28,11 +28,11 @@ vi.mock('electron-log/renderer', () => ({
 
 describe('preload index', () => {
     it('exposes the API surface to the renderer', async () => {
-        const { api } = await import('./api');
+        const { rpcApi } = await import('./api');
         await import('./index');
 
-        expect(exposeInMainWorld).toHaveBeenCalledWith('api', api);
-        expect(Object.keys(api)).toEqual([
+        expect(exposeInMainWorld).toHaveBeenCalledWith('api', rpcApi);
+        expect(Object.keys(rpcApi)).toEqual([
             'chat',
             'modelProvider',
             'message',
@@ -44,14 +44,14 @@ describe('preload index', () => {
             'acpAgent',
             'streaming',
         ]);
-        expect(api).not.toHaveProperty('ipcRenderer');
+        expect(rpcApi).not.toHaveProperty('ipcRenderer');
     });
 
     it('wires streaming listeners and removes them', async () => {
-        const { api } = await import('./api');
+        const { rpcApi } = await import('./api');
 
         const onDataListener = vi.fn();
-        api.streaming.onData('chan', onDataListener);
+        rpcApi.streaming.onData('chan', onDataListener);
         expect(on).toHaveBeenCalledWith('chan-data', expect.any(Function));
         const onDataSubscription = on.mock.calls.find(([channel]) => channel === 'chan-data')?.[1];
         expect(onDataSubscription).toEqual(expect.any(Function));
@@ -59,11 +59,11 @@ describe('preload index', () => {
         expect(onDataListener).toHaveBeenCalledWith({ chunk: 1 });
 
         const onEndListener = vi.fn();
-        api.streaming.onEnd('chan', onEndListener);
+        rpcApi.streaming.onEnd('chan', onEndListener);
         expect(on).toHaveBeenCalledWith('chan-end', onEndListener);
 
         const onErrorListener = vi.fn();
-        api.streaming.onError('chan', onErrorListener);
+        rpcApi.streaming.onError('chan', onErrorListener);
         expect(on).toHaveBeenCalledWith('chan-error', expect.any(Function));
 
         const subscription = on.mock.calls.find(([channel]) => channel === 'chan-error')?.[1];
@@ -71,7 +71,7 @@ describe('preload index', () => {
         (subscription as unknown as (event: unknown, error: unknown) => void)({}, 'boom');
         expect(onErrorListener).toHaveBeenCalledWith('boom');
 
-        api.streaming.removeListeners('chan');
+        rpcApi.streaming.removeListeners('chan');
         expect(removeAllListeners).toHaveBeenCalledWith('chan-error');
         expect(removeAllListeners).toHaveBeenCalledWith('chan-end');
         expect(removeAllListeners).toHaveBeenCalledWith('chan-data');

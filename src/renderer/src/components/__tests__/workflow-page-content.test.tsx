@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import {beforeAll, describe, expect, it} from 'vitest';
 import {WorkflowPageContent} from '@/components/workflow-page-content';
 import {getDropPickerAnchorPosition, getNodePositionFromDrop} from '@/components/workflow-canvas';
-import {StoreProvider} from '@/lib/store/store-provider';
+import {StoreProvider} from '@/app/store-provider';
 import {createMockAppDataSource} from '@/test/mock-app-data-source';
 import {ThemeProvider} from 'next-themes';
 

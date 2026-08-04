@@ -1,14 +1,19 @@
-import type { Attachment } from '@/lib/types';
 import { Loader } from './ai-elements/loader';
 import { CrossSmallIcon } from './icons';
 import { Button } from './ui/button';
 import Image from 'next/image';
 
+export interface Attachment {
+    name: string;
+    url: string;
+    contentType: string;
+}
+
 export const PreviewAttachment = ({
-    attachment,
-    isUploading = false,
-    onRemove,
-}: {
+                                      attachment,
+                                      isUploading = false,
+                                      onRemove,
+                                  }: {
     attachment: Attachment;
     isUploading?: boolean;
     onRemove?: () => void;
@@ -50,7 +55,8 @@ export const PreviewAttachment = ({
                 </Button>
             )}
 
-            <div className="absolute inset-x-0 bottom-0 truncate bg-linear-to-t from-black/80 to-transparent px-1 py-0.5 text-[10px] text-white">
+            <div
+                className="absolute inset-x-0 bottom-0 truncate bg-linear-to-t from-black/80 to-transparent px-1 py-0.5 text-[10px] text-white">
                 {name}
             </div>
         </div>

@@ -2,7 +2,7 @@ import {fireEvent, render, screen, waitFor, within} from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {AcpAgentManagement} from "@/components/acp-agent-management";
-import {StoreProvider} from "@/lib/store/store-provider";
+import {StoreProvider} from "@/app/store-provider";
 import {createMockAppDataSource} from "@/test/mock-app-data-source";
 import type {AcpAgentUpdateInput, AcpAgentView, AcpRegistryView} from "core/dto";
 import {

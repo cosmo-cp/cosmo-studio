@@ -1,11 +1,11 @@
 import {createAsyncThunk, createSlice} from "@reduxjs/toolkit";
 import type {
     McpServer,
-    McpServerCreateInput,
-} from "core/dto";
-import type {McpTool} from "@/lib/app-data-source";
+    McpServerCreateInput, McpToolDefinition,
+} from 'core/dto';
 import type {AsyncStatus} from "@/lib/store/async-status";
 import type {AppThunkExtra} from "@/lib/store/store";
+
 
 export interface McpServersState {
     items: McpServer[];
@@ -89,7 +89,7 @@ export const toggleMcpServerEnabled = createMcpServersAsyncThunk<
 });
 
 export const loadMcpServerTools = createMcpServersAsyncThunk<
-    {serverId: string; tools: McpTool[]},
+    {serverId: string; tools: McpToolDefinition[]},
     string
 >("mcpServers/loadTools", async (serverId, {extra, rejectWithValue}) => {
     try {

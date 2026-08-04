@@ -1,5 +1,6 @@
 import { ipcRenderer } from 'electron';
 import type {NewChat, Chat, ChatWithMessages, ModelIdentifier, AgentIdentifier, PersonaIdentifier} from '../../../packages/core/dto';
+import { callRpc } from './common';
 
 export interface ChatApi {
     getAllChats(searchQuery: string | null): Promise<Chat[]>;
@@ -15,7 +16,7 @@ export interface ChatApi {
     updateSelectedChat(id: string): Promise<void>;
 }
 
-export const chatApi: ChatApi = {
+export const chatRpcApi: ChatApi = {
     getAllChats: (searchQuery: string | null) => ipcRenderer.invoke('chat:getAllChats', searchQuery),
     getChatById: (id: string) => ipcRenderer.invoke('chat:getChatById', id),
     createChat: (newChat: NewChat) => ipcRenderer.invoke('chat:createChat', newChat),
@@ -28,3 +29,17 @@ export const chatApi: ChatApi = {
     updateSelectedPersonaForChat: (id: string, personaIdentifier: PersonaIdentifier) => ipcRenderer.invoke('chat:updateSelectedPersonaForChat', id, personaIdentifier),
     updateSelectedChat: (id: string) => ipcRenderer.invoke('chat:updateSelectedChat', id)
 };
+
+export const chatHttpApi: ChatApi = {
+    getAllChats: (searchQuery: string | null) => callRpc<Chat[]>('chat', 'getAllChats', [searchQuery]),
+    getChatById: (id: string) => callRpc<ChatWithMessages | undefined>('chat', 'getChatById', [id]),
+    createChat: (newChat: NewChat) => callRpc<void>('chat', 'createChat', [newChat]),
+    updateChat: (id: string, updates: Partial<NewChat>) => callRpc<Chat>('chat', 'updateChat', [id, updates]),
+    deleteChat: (id: string) => callRpc<void>('chat', 'deleteChat', [id]),
+    updatePinnedStatusForChat: (id: string, pinned: boolean) => callRpc<void>('chat', 'updatePinnedStatusForChat', [id, pinned]),
+    getSelectedModelForChat: (id: string) => callRpc<string | null>('chat', 'getSelectedModelForChat', [id]),
+    updateSelectedModelForChat: (id: string, modelIdentifier: ModelIdentifier) => callRpc<void>('chat', 'updateSelectedModelForChat', [id, modelIdentifier]),
+    updateSelectedAgentForChat: (id: string, agentIdentifier: AgentIdentifier) => callRpc<void>('chat', 'updateSelectedAgentForChat', [id, agentIdentifier]),
+    updateSelectedPersonaForChat: (id: string, personaIdentifier: PersonaIdentifier) => callRpc<void>('chat', 'updateSelectedPersonaForChat', [id, personaIdentifier]),
+    updateSelectedChat: (id: string) => callRpc<void>('chat', 'updateSelectedChat', [id]),
+}

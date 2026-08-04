@@ -9,7 +9,8 @@ import { config } from 'dotenv';
 import { updateElectronApp, UpdateSourceType } from 'update-electron-app';
 import { logger } from './logger';
 import { McpClientManager } from 'core/services/McpClientManager';
-import { CORETYPES } from 'core/types/types';import {setCoreLogger} from "core/platform/CoreLogger";
+import { CORETYPES } from 'core/types/types';
+import { setCoreLogger } from 'core/platform/CoreLogger';
 
 setCoreLogger(logger);
 
@@ -22,7 +23,7 @@ export class Main {
         config();
         app.whenReady().then(async () => {
             if (!safeStorage.isEncryptionAvailable()) {
-                logger.warn("safeStorage encryption unavailable. API keys won't be encrypted.");
+                logger.warn('safeStorage encryption unavailable. API keys won\'t be encrypted.');
             }
             await this.initializeDatabase();
             await this.initializeMcpClients();

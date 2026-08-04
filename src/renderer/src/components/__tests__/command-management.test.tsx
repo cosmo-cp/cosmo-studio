@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { StoreProvider} from "@/lib/store/store-provider";
+import { StoreProvider} from "@/app/store-provider";
 import {createMockAppDataSource} from "@/test/mock-app-data-source";
 import {CommandManagement } from '../command-management';
 

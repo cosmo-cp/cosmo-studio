@@ -1,4 +1,4 @@
-import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type {
     AcpAgentCreateInput,
     AcpAgentTestResult,
@@ -7,8 +7,8 @@ import type {
     AcpRegistryInstallInput,
     AcpRegistryView,
 } from 'core/dto';
-import type {AsyncStatus} from '@/lib/store/async-status';
-import type {AppThunkExtra} from '@/lib/store/store';
+import type { AsyncStatus } from '@/lib/store/async-status';
+import type { AppThunkExtra } from '@/lib/store/store';
 
 export interface AcpAgentsState {
     items: AcpAgentView[];
@@ -48,19 +48,19 @@ function upsertAgent(agents: AcpAgentView[], updated: AcpAgentView) {
 
 export const loadAcpAgents = createAcpAgentsAsyncThunk<AcpAgentView[], void>(
     'acpAgents/load',
-    async (_, {extra, rejectWithValue}) => {
+    async (_, { extra, rejectWithValue }) => {
         try {
             return await extra.appDataSource.acpAgent.getAll();
         } catch (error) {
             return rejectWithValue(getErrorMessage(error, 'Failed to load ACP agents'));
         }
-    }
+    },
 );
 
 export const saveAcpAgent = createAcpAgentsAsyncThunk<
     AcpAgentView,
-    {agentId?: string; input: AcpAgentCreateInput | AcpAgentUpdateInput}
->('acpAgents/save', async ({agentId, input}, {extra, rejectWithValue}) => {
+    { agentId?: string; input: AcpAgentCreateInput | AcpAgentUpdateInput }
+>('acpAgents/save', async ({ agentId, input }, { extra, rejectWithValue }) => {
     try {
         if (agentId) {
             return await extra.appDataSource.acpAgent.update(agentId, input);
@@ -73,20 +73,20 @@ export const saveAcpAgent = createAcpAgentsAsyncThunk<
 
 export const deleteAcpAgent = createAcpAgentsAsyncThunk<string, string>(
     'acpAgents/delete',
-    async (agentId, {extra, rejectWithValue}) => {
+    async (agentId, { extra, rejectWithValue }) => {
         try {
             await extra.appDataSource.acpAgent.delete(agentId);
             return agentId;
         } catch (error) {
             return rejectWithValue(getErrorMessage(error, 'Failed to delete ACP agent'));
         }
-    }
+    },
 );
 
 export const toggleAcpAgentEnabled = createAcpAgentsAsyncThunk<
     AcpAgentView,
-    {agentId: string; enabled: boolean}
->('acpAgents/toggleEnabled', async ({agentId, enabled}, {extra, rejectWithValue}) => {
+    { agentId: string; enabled: boolean }
+>('acpAgents/toggleEnabled', async ({ agentId, enabled }, { extra, rejectWithValue }) => {
     try {
         return enabled ?
             await extra.appDataSource.acpAgent.enable(agentId) :
@@ -96,9 +96,9 @@ export const toggleAcpAgentEnabled = createAcpAgentsAsyncThunk<
     }
 });
 
-export const loadAcpRegistry = createAcpAgentsAsyncThunk<AcpRegistryView, {refresh?: boolean} | void>(
+export const loadAcpRegistry = createAcpAgentsAsyncThunk<AcpRegistryView, { refresh?: boolean } | void>(
     'acpAgents/loadRegistry',
-    async (input, {extra, rejectWithValue}) => {
+    async (input, { extra, rejectWithValue }) => {
         try {
             return input?.refresh ?
                 await extra.appDataSource.acpAgent.refreshRegistry() :
@@ -106,24 +106,24 @@ export const loadAcpRegistry = createAcpAgentsAsyncThunk<AcpRegistryView, {refre
         } catch (error) {
             return rejectWithValue(getErrorMessage(error, 'Failed to load ACP registry'));
         }
-    }
+    },
 );
 
 export const installAcpAgentFromRegistry = createAcpAgentsAsyncThunk<AcpAgentView, AcpRegistryInstallInput>(
     'acpAgents/installFromRegistry',
-    async (input, {extra, rejectWithValue}) => {
+    async (input, { extra, rejectWithValue }) => {
         try {
             return await extra.appDataSource.acpAgent.installFromRegistry(input);
         } catch (error) {
             return rejectWithValue(getErrorMessage(error, 'Failed to install ACP agent'));
         }
-    }
+    },
 );
 
 export const testAcpAgent = createAcpAgentsAsyncThunk<
     AcpAgentTestResult,
-    {agentId: string; cwd?: string | null}
->('acpAgents/test', async ({agentId, cwd}, {extra, rejectWithValue}) => {
+    { agentId: string; cwd?: string | null }
+>('acpAgents/test', async ({ agentId, cwd }, { extra, rejectWithValue }) => {
     try {
         return await extra.appDataSource.acpAgent.test(agentId, cwd);
     } catch (error) {
