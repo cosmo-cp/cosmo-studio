@@ -1,14 +1,14 @@
 import { StoreProvider } from '@/app/store-provider';
 import { MultimodalInput } from '@/components/multimodal-input';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { PARALLEL_WEB_SEARCH_PROVIDER_ID, WEB_SEARCH_NONE_OPTION_ID } from '@/lib/web-search-options';
+import { WEB_SEARCH_NONE_OPTION_ID } from '@/lib/web-search-options';
 import { createMockAppDataSource } from '@/test/mock-app-data-source';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { UIMessage } from 'ai';
 import { ModelProviderTypeEnum, ModelStatusEnum } from 'core/database/schema/modelProviderSchema';
 import { WebSearchProviderTypeEnum } from 'core/database/schema/webSearchConfigSchema';
-import type { Chat, Persona, ProviderWithModels } from 'core/dto';
+import type { Chat, Persona, ProviderWithModels, WebSearchConfigView } from 'core/dto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 class ResizeObserverMock {
@@ -91,20 +91,14 @@ describe('MultimodalInput', () => {
         const user = userEvent.setup();
         const onWebSearchChange = vi.fn();
         const sendMessage = vi.fn(async () => undefined);
-        const options = [
-            {
-                id: WEB_SEARCH_NONE_OPTION_ID,
-                label: 'No web search',
-            },
-            {
-                id: WebSearchProviderTypeEnum.EXA,
-                label: 'Exa web search',
-            },
-            {
-                id: PARALLEL_WEB_SEARCH_PROVIDER_ID,
-                label: 'Parallel web search',
-            },
-        ];
+        const exaConfig: WebSearchConfigView = {
+            id: 'exa-config-1',
+            createdAt: new Date('2026-03-18T00:00:00.000Z'),
+            updatedAt: new Date('2026-03-18T01:00:00.000Z'),
+            type: WebSearchProviderTypeEnum.EXA,
+            enabled: true,
+            hasApiKey: true,
+        };
 
         render(
             <TooltipProvider>
@@ -117,7 +111,7 @@ describe('MultimodalInput', () => {
                             getAll: async () => [buildPersona()],
                         },
                         webSearch: {
-                            listOptions: async () => options,
+                            getConfig: async () => exaConfig,
                         },
                     })}
                 >
@@ -140,9 +134,9 @@ describe('MultimodalInput', () => {
         });
 
         await user.click(screen.getByRole('combobox', { name: /web search/i }));
-        expect(await screen.findByRole('option', { name: /no web search/i })).toBeInTheDocument();
+        expect(await screen.findByRole('option', { name: /disabled/i })).toBeInTheDocument();
 
-        await user.click(screen.getByRole('option', { name: /parallel web search/i }));
-        expect(onWebSearchChange).toHaveBeenCalledWith(PARALLEL_WEB_SEARCH_PROVIDER_ID);
+        await user.click(screen.getByRole('option', { name: /exa web search/i }));
+        expect(onWebSearchChange).toHaveBeenCalledWith(WebSearchProviderTypeEnum.EXA);
     });
 });

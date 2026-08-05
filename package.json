@@ -9,7 +9,7 @@
         "src/renderer"
     ],
     "scripts": {
-        "generate-api": "ts-node -r tsconfig-paths/register scripts/generate-api.ts",
+        "generate-api": "ts-node -r tsconfig-paths/register scripts/generate-api.ts && npm run prettier",
         "download-provider-logos": "ts-node scripts/download-provider-logos.ts",
         "next:dev": "cd src/renderer && npm run dev",
         "dev": "npm run dev:electron",

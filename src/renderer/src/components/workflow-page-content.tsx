@@ -5,15 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { WorkflowHistory, type WorkflowListItem } from '@/components/workflow-history';
 import { WorkflowWorkspace } from '@/components/workflow-workspace';
-import { resolveAppDataSource } from '@/lib/store/store';
+import { useAppDataSource } from '@/app/store-provider';
 import type { WorkflowGraph } from 'core/dto';
 import { Workflow } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const DEFAULT_WORKFLOW_GRAPH: WorkflowGraph = { nodes: [], edges: [] };
 
 export function WorkflowPageContent() {
-    const appDataSource = useMemo(() => resolveAppDataSource(), []);
+    const appDataSource = useAppDataSource();
     const [searchQuery, setSearchQuery] = useState('');
     const [workflows, setWorkflows] = useState<WorkflowListItem[]>([]);
     const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);

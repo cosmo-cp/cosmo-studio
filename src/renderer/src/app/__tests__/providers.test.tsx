@@ -16,7 +16,7 @@ vi.mock('next-themes', () => ({
     ThemeProvider: themeProviderMock,
 }));
 
-vi.mock('@/lib/store/store-provider', () => ({
+vi.mock('@/app/store-provider', () => ({
     StoreProvider: storeProviderMock,
 }));
 
