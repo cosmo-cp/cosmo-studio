@@ -79,7 +79,7 @@ export class McpClientManager {
             case 'stdio': {
                 const config = server.config as StdioTransportConfig;
                 // eslint-disable-next-line @typescript-eslint/no-require-imports
-                const {Experimental_StdioMCPTransport} = require('@ai-sdk/mcp/mcp-stdio') as {
+                const { Experimental_StdioMCPTransport } = require('@ai-sdk/mcp/mcp-stdio') as {
                     Experimental_StdioMCPTransport: new (options: {
                         command: string;
                         args?: string[];
@@ -103,7 +103,7 @@ export class McpClientManager {
         }
 
         this.clients.set(serverId, {
-            client,
+            client: client,
             serverId: server.id,
             serverName: server.name,
             toolApprovals: (server.toolApprovals as Record<string, boolean>) ?? {},
@@ -121,7 +121,9 @@ export class McpClientManager {
      * Get all active clients
      */
     public getAllClients(): MCPClient[] {
-        return Array.from(this.clients.values()).map((instance) => instance.client);
+        return Array.from(this.clients.values()).map((instance) => {
+            return instance.client;
+        });
     }
 
     /**
@@ -135,7 +137,7 @@ export class McpClientManager {
                 const tools = await instance.client.tools();
                 for (const [name, tool] of Object.entries(tools)) {
                     const needsApproval = instance.toolApprovals[name] ?? true;
-                    allTools[name] = { ...tool, needsApproval };
+                    allTools[name] = { ...tool, needsApproval: needsApproval };
                 }
             } catch (error) {
                 console.error(`Failed to get tools from MCP server ${instance.serverName}:`, error);
@@ -170,9 +172,7 @@ export class McpClientManager {
     /**
      * Get tools for a specific server (serializable format for IPC)
      */
-    public async getToolsForServer(
-        serverId: string,
-    ): Promise<McpToolDefinition[]> {
+    public async getToolsForServer(serverId: string): Promise<McpToolDefinition[]> {
         const instance = this.clients.get(serverId);
         if (!instance) {
             return [];
@@ -180,11 +180,13 @@ export class McpClientManager {
 
         try {
             const tools = await instance.client.tools();
-            return Object.entries(tools).map(([name, tool]) => ({
-                name,
-                title: (tool as { title?: string }).title,
-                description: (tool as { description?: string }).description,
-            }));
+            return Object.entries(tools).map(([name, tool]) => {
+                return {
+                    name: name,
+                    title: (tool as { title?: string }).title,
+                    description: (tool as { description?: string }).description,
+                };
+            });
         } catch (error) {
             console.error(`Failed to get tools from MCP server ${instance.serverName}:`, error);
             return [];

@@ -8,12 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { deleteCommand, loadCommands, saveCommand } from '@/lib/store/commands-store';
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import type { CommandCreateInput, CommandDefinition, CommandUpdateInput } from 'core/dto';
 import { Edit, Trash2 } from 'lucide-react';
-import { useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
-import {deleteCommand, loadCommands, saveCommand} from "@/lib/store/commands-store";
 import { logger } from '../../logger';
 
 type ArgumentMode = 'none' | 'optional';
@@ -42,7 +42,7 @@ export function CommandManagement() {
     const [formState, setFormState] = useState(buildDefaultFormState());
 
     useEffect(() => {
-        if (commandsStatus === "idle") {
+        if (commandsStatus === 'idle') {
             void dispatch(loadCommands());
         }
     }, [commandsStatus, dispatch]);
@@ -97,14 +97,16 @@ export function CommandManagement() {
                 const updatePayload: CommandUpdateInput = {
                     ...payloadBase,
                 };
-                await dispatch(saveCommand({
-                    commandId: editingCommand.id as string,
-                    input: updatePayload as CommandCreateInput,
-                })).unwrap();
+                await dispatch(
+                    saveCommand({
+                        commandId: editingCommand.id as string,
+                        input: updatePayload as CommandCreateInput,
+                    }),
+                ).unwrap();
                 toast.success('Command updated');
             } else {
                 const createPayload: CommandCreateInput = payloadBase;
-                await dispatch(saveCommand({input: createPayload})).unwrap();
+                await dispatch(saveCommand({ input: createPayload })).unwrap();
                 toast.success('Command created');
             }
             handleCloseDialog();
@@ -141,7 +143,7 @@ export function CommandManagement() {
 
     const hasCommands = commands.length > 0;
 
-    if (commandsStatus === "loading" && !hasCommands) {
+    if (commandsStatus === 'loading' && !hasCommands) {
         return <div className="text-sm text-muted-foreground">Loading commands...</div>;
     }
 

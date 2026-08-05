@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, text, timestamp, uuid, boolean, pgEnum } from 'drizzle-orm/pg-core';
+import { boolean, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const chat = pgTable('Chat', {
     id: uuid('id').primaryKey().notNull().defaultRandom(),
@@ -17,9 +17,11 @@ export const chat = pgTable('Chat', {
     lastMessageAt: timestamp('lastMessageAt'),
 });
 
-export const chatRelations = relations(chat, ({ many }) => ({
-    messages: many(message),
-}));
+export const chatRelations = relations(chat, ({ many }) => {
+    return {
+        messages: many(message),
+    };
+});
 
 export const messageRole = pgEnum('message_role', ['user', 'assistant', 'system']);
 
@@ -27,7 +29,12 @@ export const message = pgTable('Message', {
     id: uuid('id').primaryKey().notNull().defaultRandom(),
     chatId: uuid('chatId')
         .notNull()
-        .references(() => chat.id, { onDelete: 'cascade' }),
+        .references(
+            () => {
+                return chat.id;
+            },
+            { onDelete: 'cascade' },
+        ),
     role: messageRole('role'),
     text: text('text'),
     reasoning: text('reasoning'),
@@ -35,9 +42,11 @@ export const message = pgTable('Message', {
     createdAt: timestamp('createdAt').notNull().defaultNow(),
 });
 
-export const messageRelations = relations(message, ({ one }) => ({
-    chat: one(chat, {
-        fields: [message.chatId],
-        references: [chat.id],
-    }),
-}));
+export const messageRelations = relations(message, ({ one }) => {
+    return {
+        chat: one(chat, {
+            fields: [message.chatId],
+            references: [chat.id],
+        }),
+    };
+});

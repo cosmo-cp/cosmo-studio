@@ -3,7 +3,7 @@ import { CORETYPES } from '../types/types';
 import { MessageRepository } from '../repositories/MessageRepository';
 import { Message, NewMessage } from '../dto';
 import { UIMessage } from 'ai';
-import {toUiMessages} from '../uiMessageMapper';
+import { toUiMessages } from '../uiMessageMapper';
 
 @injectable()
 export class MessageService {

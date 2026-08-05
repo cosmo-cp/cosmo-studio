@@ -40,10 +40,14 @@ export function extractUniqueProviderNames(payload: unknown): string[] {
     return [
         ...new Set(
             Object.keys(payload)
-                .map((provider) => provider.trim())
+                .map((provider) => {
+                    return provider.trim();
+                })
                 .filter(Boolean),
         ),
-    ].sort((a, b) => a.localeCompare(b));
+    ].sort((a, b) => {
+        return a.localeCompare(b);
+    });
 }
 
 // Encodes provider names for safe use in the logo endpoint URL.
@@ -110,11 +114,11 @@ export async function downloadProviderLogos(options: DownloadProviderLogosOption
     for (const provider of providers) {
         try {
             const filePath = await downloadProviderLogo(fetchFn, provider, outputDirectory);
-            downloaded.push({ provider, filePath });
+            downloaded.push({ provider: provider, filePath: filePath });
             logger.log(`Downloaded ${provider} -> ${filePath}`);
         } catch (error) {
             const reason = error instanceof Error ? error.message : String(error);
-            failed.push({ provider, reason });
+            failed.push({ provider: provider, reason: reason });
             logger.warn(`Failed to download ${provider}: ${reason}`);
         }
     }
@@ -123,7 +127,7 @@ export async function downloadProviderLogos(options: DownloadProviderLogosOption
         `Finished logo download. Success: ${downloaded.length}. Failed: ${failed.length}. Output: ${outputDirectory}`,
     );
 
-    return { providers, downloaded, failed };
+    return { providers: providers, downloaded: downloaded, failed: failed };
 }
 
 // Provides a CLI entrypoint to run the logo downloader from npm scripts.
@@ -132,7 +136,7 @@ async function main(): Promise<void> {
     const outputDirectory = outputDirectoryArg
         ? path.resolve(process.cwd(), outputDirectoryArg)
         : path.resolve(process.cwd(), 'src/renderer/public/providers');
-    const summary = await downloadProviderLogos({ outputDirectory });
+    const summary = await downloadProviderLogos({ outputDirectory: outputDirectory });
 
     if (summary.failed.length > 0) {
         process.exitCode = 1;

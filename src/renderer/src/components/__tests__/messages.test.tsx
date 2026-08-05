@@ -1,36 +1,33 @@
-import {render, screen} from "@testing-library/react";
-import {describe, expect, it, vi} from "vitest";
-import type {UIMessage} from "ai";
-import {Messages} from "@/components/messages";
-import {StoreProvider} from "@/lib/store/store-provider";
-import {createMockAppDataSource} from "@/test/mock-app-data-source";
+import { StoreProvider } from '@/app/store-provider';
+import { Messages } from '@/components/messages';
+import { createMockAppDataSource } from '@/test/mock-app-data-source';
+import { render, screen } from '@testing-library/react';
+import type { UIMessage } from 'ai';
+import { describe, expect, it, vi } from 'vitest';
 
 class ResizeObserverMock {
-    observe() {
-    }
+    observe() {}
 
-    unobserve() {
-    }
+    unobserve() {}
 
-    disconnect() {
-    }
+    disconnect() {}
 }
 
-describe("Messages", () => {
-    it("bounds the conversation and exposes a scrollable viewport", async () => {
-        vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+describe('Messages', () => {
+    it('bounds the conversation and exposes a scrollable viewport', async () => {
+        vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 
         render(
             <StoreProvider appDataSource={createMockAppDataSource()}>
                 <div className="h-96">
                     <Messages chatId="chat-1" messages={[] as UIMessage[]} status="ready" />
                 </div>
-            </StoreProvider>
+            </StoreProvider>,
         );
 
-        const conversation = screen.getByRole("log");
-        expect(conversation).toHaveClass("h-full", "min-h-0");
-        expect(conversation.querySelector(".overflow-y-auto")).not.toBeNull();
-        expect(await screen.findByText("Start a conversation")).toBeInTheDocument();
+        const conversation = screen.getByRole('log');
+        expect(conversation).toHaveClass('h-full', 'min-h-0');
+        expect(conversation.querySelector('.overflow-y-auto')).not.toBeNull();
+        expect(await screen.findByText('Start a conversation')).toBeInTheDocument();
     });
 });

@@ -1,23 +1,23 @@
-import {inject, injectable} from "inversify";
-import {CORETYPES} from "../types/types";
-import {ModelProviderRepository} from "../repositories/ModelProviderRepository";
-import {ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels} from "../dto";
-import {ModelModalityEnum, ModelProviderTypeEnum, ModelStatusEnum} from '../database/schema/modelProviderSchema';
-import {ProviderV4} from "@ai-sdk/provider";
-import {createAnthropic} from "@ai-sdk/anthropic";
-import {createGoogleGenerativeAI} from "@ai-sdk/google";
-import {createOpenAI} from "@ai-sdk/openai";
-import {createOllama, OllamaProviderSettings} from "ai-sdk-ollama";
-import {createProviderRegistry, ProviderRegistryProvider} from "ai";
-import type {CoreLogger} from "../platform/CoreLogger";
-import {getCoreLogger} from "../platform/CoreLogger";
-import {Base64SecretStore, type SecretStore} from "../platform/SecretStore";
-import {createXai} from "@ai-sdk/xai";
-import {createMoonshotAI} from "@ai-sdk/moonshotai";
-import {createGroq} from '@ai-sdk/groq';
-import {createMistral} from '@ai-sdk/mistral';
-import {ProviderCatalogByType} from "../providerCatalog";
-import {createDeepSeek} from "@ai-sdk/deepseek";
+import { inject, injectable } from 'inversify';
+import { CORETYPES } from '../types/types';
+import { ModelProviderRepository } from '../repositories/ModelProviderRepository';
+import { ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels } from '../dto';
+import { ModelModalityEnum, ModelProviderTypeEnum, ModelStatusEnum } from '../database/schema/modelProviderSchema';
+import { ProviderV4 } from '@ai-sdk/provider';
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
+import { createOllama, OllamaProviderSettings } from 'ai-sdk-ollama';
+import { createProviderRegistry, ProviderRegistryProvider } from 'ai';
+import type { CoreLogger } from '../platform/CoreLogger';
+import { getCoreLogger } from '../platform/CoreLogger';
+import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
+import { createXai } from '@ai-sdk/xai';
+import { createMoonshotAI } from '@ai-sdk/moonshotai';
+import { createGroq } from '@ai-sdk/groq';
+import { createMistral } from '@ai-sdk/mistral';
+import { ProviderCatalogByType } from '../providerCatalog';
+import { createDeepSeek } from '@ai-sdk/deepseek';
 // import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { createCohere } from '@ai-sdk/cohere';
 import { createHuggingFace } from '@ai-sdk/huggingface';
@@ -55,35 +55,61 @@ export class ModelProviderService {
     private static DEFAULT_MAX_OUTPUT_WINDOW = 4096;
     private readonly providerFactoryByType: Record<ModelProviderTypeEnum, (provider: ModelProviderLite) => ProviderV4> =
         {
-            [ModelProviderTypeEnum.ANTHROPIC]: (provider) => createAnthropic(this.createRemoteOptions(provider)),
-            [ModelProviderTypeEnum.GOOGLE]: (provider) => createGoogleGenerativeAI(this.createRemoteOptions(provider)),
-            [ModelProviderTypeEnum.OPENAI]: (provider) => createOpenAI(this.createRemoteOptions(provider)),
-            [ModelProviderTypeEnum.XAI]: (provider) => createXai(this.createRemoteOptions(provider)),
-            [ModelProviderTypeEnum.MOONSHOT]: (provider) => createMoonshotAI(this.createRemoteOptions(provider)),
-            [ModelProviderTypeEnum.GROQ]: (provider) => createGroq(this.createRemoteOptions(provider)),
-            [ModelProviderTypeEnum.MISTRAL]: (provider) => createMistral(this.createRemoteOptions(provider)),
-            [ModelProviderTypeEnum.DEEPSEEK]: (provider) => createDeepSeek(this.createRemoteOptions(provider)),
-            [ModelProviderTypeEnum.OLLAMA]: (provider) => createOllama(this.createLocalOptions(provider)),
-            [ModelProviderTypeEnum.PERPLEXITY]: (provider) => createPerplexity(this.createRemoteOptions(provider)),
+            [ModelProviderTypeEnum.ANTHROPIC]: (provider) => {
+                return createAnthropic(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.GOOGLE]: (provider) => {
+                return createGoogleGenerativeAI(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.OPENAI]: (provider) => {
+                return createOpenAI(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.XAI]: (provider) => {
+                return createXai(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.MOONSHOT]: (provider) => {
+                return createMoonshotAI(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.GROQ]: (provider) => {
+                return createGroq(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.MISTRAL]: (provider) => {
+                return createMistral(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.DEEPSEEK]: (provider) => {
+                return createDeepSeek(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.OLLAMA]: (provider) => {
+                return createOllama(this.createLocalOptions(provider));
+            },
+            [ModelProviderTypeEnum.PERPLEXITY]: (provider) => {
+                return createPerplexity(this.createRemoteOptions(provider));
+            },
             // [ModelProviderTypeEnum.BEDROCK]: (provider) => createAmazonBedrock(this.createRemoteOptions(provider)),
-            [ModelProviderTypeEnum.COHERE]: (provider) => createCohere(this.createRemoteOptions(provider)),
-            [ModelProviderTypeEnum.LMSTUDIO]: (provider) =>
-                createOpenAICompatible({
+            [ModelProviderTypeEnum.COHERE]: (provider) => {
+                return createCohere(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.LMSTUDIO]: (provider) => {
+                return createOpenAICompatible({
                     name: provider.name,
                     baseURL: (provider.apiUrl && provider.apiUrl.trim()) || 'http://localhost:1234/v1',
-                }),
-            [ModelProviderTypeEnum.HUGGINGFACE]: (provider) => createHuggingFace(this.createRemoteOptions(provider)),
-            [ModelProviderTypeEnum.CUSTOM]: (provider) =>
-                createOpenAI({
+                });
+            },
+            [ModelProviderTypeEnum.HUGGINGFACE]: (provider) => {
+                return createHuggingFace(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.CUSTOM]: (provider) => {
+                return createOpenAI({
                     name: provider.name,
                     apiKey: provider.apiKey ?? undefined,
                     baseURL: provider.apiUrl ?? undefined,
-                }),
+                });
+            },
         };
 
     constructor(
         @inject(CORETYPES.ModelProviderRepository) repository: ModelProviderRepository,
-        @inject(CORETYPES.SecretStore) private readonly secretStore: SecretStore = new Base64SecretStore()
+        @inject(CORETYPES.SecretStore) private readonly secretStore: SecretStore = new Base64SecretStore(),
     ) {
         this.repository = repository;
         this.updateModelProviderRegistry();
@@ -144,7 +170,7 @@ export class ModelProviderService {
             await this.repository.deleteProviderById(providerId);
             this.updateModelProviderRegistry();
         } catch (error) {
-            this.logger.error("Failed to delete provider", error);
+            this.logger.error('Failed to delete provider', error);
             throw error;
         }
     }
@@ -179,7 +205,9 @@ export class ModelProviderService {
                 }
                 this.modelProviderRegistry = createProviderRegistry(registryObject);
             })
-            .catch((error) => this.logger.error("Failed to update model provider registry", error));
+            .catch((error) => {
+                return this.logger.error('Failed to update model provider registry', error);
+            });
     }
 
     private createLocalOptions(provider: ModelProviderLite): LocalProviderOptions {
@@ -202,16 +230,17 @@ export class ModelProviderService {
     }
 
     /** Maps a DB record (encrypted key) to the application model (decrypted key). */
-    private mapToModelProvider = (dbRecord: ModelProviderLite): ModelProviderLite => {
+    private mapToModelProvider = (dbRecord: ModelProviderLite): ModelProviderLite =>
         // Note: You must handle the timestamp conversion here if needed,
         // as we dropped Zod's automatic date coercion.
-        return {
-            ...dbRecord,
-            apiKey: this.decryptApiKey(dbRecord.apiKey),
-            createdAt: new Date(dbRecord.createdAt),
-            updatedAt: dbRecord.updatedAt ? new Date(dbRecord.updatedAt) : null,
+        {
+            return {
+                ...dbRecord,
+                apiKey: this.decryptApiKey(dbRecord.apiKey),
+                createdAt: new Date(dbRecord.createdAt),
+                updatedAt: dbRecord.updatedAt ? new Date(dbRecord.updatedAt) : null,
+            };
         };
-    };
 
     private decryptApiKey = (encryptedKey?: string): string => {
         if (!encryptedKey) {
@@ -236,15 +265,14 @@ export class ModelProviderService {
                 return [];
             }
             const data = await response.json();
-            return (data[dataKey] as T[]).map(
-                (item) =>
-                    ({
-                        reasoning: false,
-                        inputModalities: [],
-                        outputModalities: [],
-                        ...mapper(item),
-                    }) as NewModel,
-            );
+            return (data[dataKey] as T[]).map((item) => {
+                return {
+                    reasoning: false,
+                    inputModalities: [],
+                    outputModalities: [],
+                    ...mapper(item),
+                } as NewModel;
+            });
         } catch (err) {
             this.logger.error(`${providerName} Models fetch error:`, err);
             return [];
@@ -257,12 +285,14 @@ export class ModelProviderService {
             baseUrl + '/tags',
             'Ollama',
             'models',
-            (m) => ({
-                name: m.name,
-                modelId: m.model,
-                releaseDate: new Date(m.modified_at),
-                lastUpdatedByProvider: new Date(m.modified_at),
-            }),
+            (m) => {
+                return {
+                    name: m.name,
+                    modelId: m.model,
+                    releaseDate: new Date(m.modified_at),
+                    lastUpdatedByProvider: new Date(m.modified_at),
+                };
+            },
         );
 
         await Promise.all(
@@ -276,7 +306,9 @@ export class ModelProviderService {
                     if (res.ok) {
                         const data = await res.json();
                         if (data && data.model_info) {
-                            const ctxKey = Object.keys(data.model_info).find((k) => k.endsWith('.context_length'));
+                            const ctxKey = Object.keys(data.model_info).find((k) => {
+                                return k.endsWith('.context_length');
+                            });
                             if (ctxKey && typeof data.model_info[ctxKey] === 'number') {
                                 m.contextWindow = data.model_info[ctxKey];
                             }
@@ -288,7 +320,9 @@ export class ModelProviderService {
             }),
         );
 
-        return result.sort((a, b) => this.compareProviderUpdateDates(a, b));
+        return result.sort((a, b) => {
+            return this.compareProviderUpdateDates(a, b);
+        });
     }
 
     private async getModelsFromLMStudio(provider: ModelProviderCreateInput): Promise<NewModel[]> {
@@ -298,20 +332,22 @@ export class ModelProviderService {
             baseUrl.replace(/\/?$/, '') + '/v1/models',
             'LM Studio',
             'models',
-            (m) => ({
-                name: m.display_name || m.id || m.key || '',
-                modelId: m.key || m.id,
-                releaseDate: new Date(),
-                lastUpdatedByProvider: new Date(),
-                description: m.description || m.display_name || m.id || m.key,
-                contextWindow: m.max_context_length,
-                reasoning: !!m.capabilities?.reasoning,
-                inputModalities: m.capabilities?.vision
-                    ? [ModelModalityEnum.TEXT, ModelModalityEnum.IMAGE]
-                    : [ModelModalityEnum.TEXT],
-                outputModalities: [ModelModalityEnum.TEXT],
-                toolCall: !!m.capabilities?.trained_for_tool_use,
-            }),
+            (m) => {
+                return {
+                    name: m.display_name || m.id || m.key || '',
+                    modelId: m.key || m.id,
+                    releaseDate: new Date(),
+                    lastUpdatedByProvider: new Date(),
+                    description: m.description || m.display_name || m.id || m.key,
+                    contextWindow: m.max_context_length,
+                    reasoning: !!m.capabilities?.reasoning,
+                    inputModalities: m.capabilities?.vision
+                        ? [ModelModalityEnum.TEXT, ModelModalityEnum.IMAGE]
+                        : [ModelModalityEnum.TEXT],
+                    outputModalities: [ModelModalityEnum.TEXT],
+                    toolCall: !!m.capabilities?.trained_for_tool_use,
+                };
+            },
         );
     }
 

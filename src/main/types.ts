@@ -1,7 +1,7 @@
 const TYPES = {
     IpcHandlerRegistry: Symbol.for('IpcHandlerRegistry'),
-    ChatStreamingService: Symbol.for("ChatStreamingService"),
-    AcpAgentRuntimeService: Symbol.for("AcpAgentRuntimeService"),
+    ChatStreamingService: Symbol.for('ChatStreamingService'),
+    AcpAgentRuntimeService: Symbol.for('AcpAgentRuntimeService'),
     WorkflowRunStreamingService: Symbol.for('WorkflowRunStreamingService'),
     ModelProviderService: Symbol.for('ModelProviderService'),
     StreamingChatController: Symbol.for('StreamingChatController'),

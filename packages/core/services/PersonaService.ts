@@ -32,8 +32,8 @@ export class PersonaService {
         const details = normalizeRequired(data.details, 'Details');
         return this.personaRepository.create({
             ...data,
-            name,
-            details,
+            name: name,
+            details: details,
         });
     }
 

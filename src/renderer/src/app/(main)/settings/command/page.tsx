@@ -1,4 +1,4 @@
-import {CommandManagement} from '@/components/command-management';
+import { CommandManagement } from '@/components/command-management';
 
 export default function CommandSettingsPage() {
     return (

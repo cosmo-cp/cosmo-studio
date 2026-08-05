@@ -1,29 +1,38 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { Loader } from '@/components/ai-elements/loader';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import ProviderIcon from '@/components/provider-icon';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import ProviderIcon from '@/components/provider-icon';
-import { ProviderInfo } from '@/lib/types';
-import type { NewModel, ProviderWithModels } from 'core/dto';
-import { ModelProviderTypeEnum } from 'core/database/schema/modelProviderSchema';
-import { ProviderCatalog } from 'core/providerCatalog';
-import { useTheme } from 'next-themes';
-import { ArrowDownToLine, ArrowUpFromLine, Brain, Edit, Trash2, Wrench } from 'lucide-react';
-import { defineStepper } from '@stepperize/react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader } from '@/components/ai-elements/loader';
-import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAppDispatch, useAppSelector} from "@/lib/store/hooks";
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import {
     deleteProvider,
     loadAvailableModelsForProvider,
     loadProviders,
     saveProvider,
-} from "@/lib/store/providers-store";
-import {logger } from '../../logger';
+} from '@/lib/store/providers-store';
+import { defineStepper } from '@stepperize/react';
+import { ModelProviderTypeEnum } from 'core/database/schema/modelProviderSchema';
+import type { NewModel, ProviderWithModels } from 'core/dto';
+import { ProviderCatalog, ProviderCatalogByType } from 'core/providerCatalog';
+import { ArrowDownToLine, ArrowUpFromLine, Brain, Edit, Trash2, Wrench } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import React, { useEffect, useState } from 'react';
+import { logger } from '../../logger';
+
+export const ProviderInfo: Record<ModelProviderTypeEnum, { name: string; description: string }> = Object.values(
+    ProviderCatalogByType,
+).reduce(
+    (acc, entry) => {
+        acc[entry.type] = { name: entry.name, description: entry.description };
+        return acc;
+    },
+    {} as Record<ModelProviderTypeEnum, { name: string; description: string }>,
+);
 
 export function ProviderManagement() {
     const dispatch = useAppDispatch();
@@ -64,7 +73,7 @@ export function ProviderManagement() {
     const methods = useStepper();
 
     useEffect(() => {
-        if (providersStatus === "idle") {
+        if (providersStatus === 'idle') {
             void dispatch(loadProviders());
         }
     }, [dispatch, providersStatus]);
@@ -160,12 +169,14 @@ export function ProviderManagement() {
         setModels([]);
 
         try {
-            const values = await dispatch(loadAvailableModelsForProvider({
-                type: selectedProviderType,
-                apiKey,
-                apiUrl,
-                name,
-            })).unwrap();
+            const values = await dispatch(
+                loadAvailableModelsForProvider({
+                    type: selectedProviderType,
+                    apiKey,
+                    apiUrl,
+                    name,
+                }),
+            ).unwrap();
 
             // Prevent updating state if the user has navigated away or changed providers
             if (currentType === selectedProviderType) {
@@ -209,17 +220,21 @@ export function ProviderManagement() {
             } as const;
 
             if (editingProvider) {
-                await dispatch(saveProvider({
-                    providerId: editingProvider.id,
-                    providerData,
-                    models: selectedModels,
-                })).unwrap();
+                await dispatch(
+                    saveProvider({
+                        providerId: editingProvider.id,
+                        providerData,
+                        models: selectedModels,
+                    }),
+                ).unwrap();
                 handleCloseDialog();
             } else {
-                await dispatch(saveProvider({
-                    providerData,
-                    models: selectedModels,
-                })).unwrap();
+                await dispatch(
+                    saveProvider({
+                        providerData,
+                        models: selectedModels,
+                    }),
+                ).unwrap();
                 handleCloseDialog();
             }
         } catch (err) {
@@ -317,7 +332,7 @@ export function ProviderManagement() {
         </Tooltip>
     );
 
-    if (providersStatus === "loading" && providers.length === 0) {
+    if (providersStatus === 'loading' && providers.length === 0) {
         return <div className="text-sm text-muted-foreground">Loading providers...</div>;
     }
 
@@ -451,70 +466,67 @@ export function ProviderManagement() {
                                 </ScrollArea>
                             </div>
                         )}
-                        {selectedProviderType &&
-                            methods.is('step-2') && (
-                                <div className="space-y-4 pr-2 max-h-[60dvh] overflow-y-auto">
-                                    <div className="flex items-center gap-2 pb-2 border-b">
-                                        <ProviderIcon type={selectedProviderType} theme={resolvedTheme} size={32} />
-                                        <div>
-                                            <p className="text-sm font-medium">
-                                                {ProviderInfo[selectedProviderType].name}
-                                            </p>
-                                        </div>
+                        {selectedProviderType && methods.is('step-2') && (
+                            <div className="space-y-4 pr-2 max-h-[60dvh] overflow-y-auto">
+                                <div className="flex items-center gap-2 pb-2 border-b">
+                                    <ProviderIcon type={selectedProviderType} theme={resolvedTheme} size={32} />
+                                    <div>
+                                        <p className="text-sm font-medium">{ProviderInfo[selectedProviderType].name}</p>
                                     </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Name(Unique)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Display name (e.g., My OpenAI Account)"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                                    />
+                                </div>
+
+                                {!isLocalProvider && (
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium">Name(Unique)</label>
+                                        <label className="text-sm font-medium">API Key *</label>
                                         <input
-                                            type="text"
-                                            placeholder="Display name (e.g., My OpenAI Account)"
-                                            value={name}
-                                            onChange={(e) => setName(e.target.value)}
+                                            type="password"
+                                            placeholder="Enter your API key"
+                                            value={apiKey}
+                                            onChange={(e) => setApiKey(e.target.value)}
+                                            required
                                             className="w-full px-3 py-2 border rounded-md bg-background text-sm"
                                         />
                                     </div>
+                                )}
 
-                                    {!isLocalProvider && (
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">API Key *</label>
-                                            <input
-                                                type="password"
-                                                placeholder="Enter your API key"
-                                                value={apiKey}
-                                                onChange={(e) => setApiKey(e.target.value)}
-                                                required
-                                                className="w-full px-3 py-2 border rounded-md bg-background text-sm"
-                                            />
-                                        </div>
-                                    )}
+                                {selectedProviderType === ModelProviderTypeEnum.CUSTOM && (
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">API URL *</label>
+                                        <input
+                                            type="url"
+                                            placeholder="https://api.example.com/v1"
+                                            value={apiUrl}
+                                            onChange={(e) => setApiUrl(e.target.value)}
+                                            required={selectedProviderType === ModelProviderTypeEnum.CUSTOM}
+                                            className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                                        />
+                                    </div>
+                                )}
 
-                                    {selectedProviderType === ModelProviderTypeEnum.CUSTOM && (
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">API URL *</label>
-                                            <input
-                                                type="url"
-                                                placeholder="https://api.example.com/v1"
-                                                value={apiUrl}
-                                                onChange={(e) => setApiUrl(e.target.value)}
-                                                required={selectedProviderType === ModelProviderTypeEnum.CUSTOM}
-                                                className="w-full px-3 py-2 border rounded-md bg-background text-sm"
-                                            />
-                                        </div>
-                                    )}
-
-                                    {selectedProviderType !== ModelProviderTypeEnum.CUSTOM && (
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">API URL (optional)</label>
-                                            <input
-                                                type="url"
-                                                placeholder="Leave blank for default"
-                                                value={apiUrl}
-                                                onChange={(e) => setApiUrl(e.target.value)}
-                                                className="w-full px-3 py-2 border rounded-md bg-background text-sm"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                {selectedProviderType !== ModelProviderTypeEnum.CUSTOM && (
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">API URL (optional)</label>
+                                        <input
+                                            type="url"
+                                            placeholder="Leave blank for default"
+                                            value={apiUrl}
+                                            onChange={(e) => setApiUrl(e.target.value)}
+                                            className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         {methods.is('step-3') && (
                             //iterate over the models
                             <div className="space-y-4">

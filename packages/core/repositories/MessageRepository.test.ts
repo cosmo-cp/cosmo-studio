@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { chat, message } from '../database/schema/schema';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DatabaseManager } from '../database/DatabaseManager';
+import { chat, message } from '../database/schema/schema';
 import type { NewMessage } from '../dto';
 import { createTestDb, type TestDb } from '../test-utils/testDb';
 import { MessageRepository } from './MessageRepository';
@@ -15,7 +15,9 @@ describe('MessageRepository', () => {
     beforeAll(async () => {
         testDb = await createTestDb();
         const databaseManager = {
-            getInstance: () => testDb.db,
+            getInstance: () => {
+                return testDb.db;
+            },
         } as unknown as DatabaseManager;
         repository = new MessageRepository(databaseManager);
     }, 20000);
@@ -41,7 +43,7 @@ describe('MessageRepository', () => {
 
         const longText = 'x'.repeat(250);
         const created1 = await repository.create({
-            chatId,
+            chatId: chatId,
             role: 'user',
             text: longText,
             reasoning: null,
@@ -56,7 +58,7 @@ describe('MessageRepository', () => {
 
         vi.setSystemTime(new Date('2024-01-01T00:00:10Z'));
         const created2 = await repository.create({
-            chatId,
+            chatId: chatId,
             role: 'user',
             text: 'second',
             reasoning: null,
@@ -70,14 +72,22 @@ describe('MessageRepository', () => {
         );
 
         const messages = await repository.getMessagesByChatId(chatId);
-        expect(messages.map((m) => m.id)).toEqual([created1.id, created2.id]);
+        expect(
+            messages.map((m) => {
+                return m.id;
+            }),
+        ).toEqual([created1.id, created2.id]);
 
         const updated = await repository.update(created2.id, { text: 'updated' });
         expect(updated.text).toBe('updated');
 
         await repository.delete(created1.id);
         const remaining = await repository.getMessagesByChatId(chatId);
-        expect(remaining.map((m) => m.id)).toEqual([created2.id]);
+        expect(
+            remaining.map((m) => {
+                return m.id;
+            }),
+        ).toEqual([created2.id]);
     });
 
     it('persists reasoning-only assistant messages without clearing chat previews', async () => {
@@ -85,7 +95,7 @@ describe('MessageRepository', () => {
         vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
 
         await repository.create({
-            chatId,
+            chatId: chatId,
             role: 'user',
             text: 'hello',
             reasoning: null,
@@ -93,7 +103,7 @@ describe('MessageRepository', () => {
 
         vi.setSystemTime(new Date('2024-01-01T00:00:10Z'));
         const created = await repository.create({
-            chatId,
+            chatId: chatId,
             role: 'assistant',
             text: null,
             reasoning: 'tool planning only',
@@ -107,8 +117,6 @@ describe('MessageRepository', () => {
         const [updatedChat] = await testDb.db.select().from(chat).where(eq(chat.id, chatId)).limit(1);
         expect(updatedChat.title).toBe('hello');
         expect(updatedChat.lastMessage).toBe('hello');
-        expect(new Date(updatedChat.lastMessageAt as unknown as Date).toISOString()).toBe(
-            '2024-01-01T00:00:10.000Z',
-        );
+        expect(new Date(updatedChat.lastMessageAt as unknown as Date).toISOString()).toBe('2024-01-01T00:00:10.000Z');
     });
 });

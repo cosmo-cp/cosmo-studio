@@ -1,16 +1,16 @@
-import {tool} from "ai";
-import {z} from "zod";
+import { tool } from 'ai';
+import { z } from 'zod';
 
-type ExaSearchType = "auto" | "keyword" | "neural" | "fast" | "deep";
+type ExaSearchType = 'auto' | 'keyword' | 'neural' | 'fast' | 'deep';
 type ExaSearchCategory =
-    | "company"
-    | "research paper"
-    | "news"
-    | "pdf"
-    | "github"
-    | "personal site"
-    | "linkedin profile"
-    | "financial report";
+    | 'company'
+    | 'research paper'
+    | 'news'
+    | 'pdf'
+    | 'github'
+    | 'personal site'
+    | 'linkedin profile'
+    | 'financial report';
 
 interface ExaTextOptions {
     maxCharacters?: number;
@@ -31,7 +31,7 @@ interface ExaContentsOptions {
     text?: boolean | ExaTextOptions;
     highlights?: boolean | ExaHighlightsOptions;
     summary?: boolean | ExaSummaryOptions;
-    livecrawl?: "never" | "fallback" | "always" | "preferred";
+    livecrawl?: 'never' | 'fallback' | 'always' | 'preferred';
     livecrawlTimeout?: number;
     subpages?: number;
     subpageTarget?: string | string[];
@@ -66,7 +66,7 @@ type ExaRequestBody = {
         text?: boolean | ExaTextOptions;
         highlights?: boolean | ExaHighlightsOptions;
         summary?: boolean | ExaSummaryOptions;
-        livecrawl: "never" | "fallback" | "always" | "preferred";
+        livecrawl: 'never' | 'fallback' | 'always' | 'preferred';
         livecrawlTimeout?: number;
         subpages?: number;
         subpageTarget?: string | string[];
@@ -92,28 +92,25 @@ const DEFAULT_TEXT_CHARACTER_LIMIT = 3000;
 
 // Keep the Exa tool local so the app can track AI SDK major versions without an incompatible adapter peer.
 export function createExaWebSearchTool(config: ExaWebSearchToolConfig = {}) {
-    const {
-        apiKey = process.env.EXA_API_KEY,
-        ...searchOptions
-    } = config;
+    const { apiKey = process.env.EXA_API_KEY, ...searchOptions } = config;
 
     return tool({
-        description: "Search the web for current information, documentation, news, articles, and scraped page content.",
+        description: 'Search the web for current information, documentation, news, articles, and scraped page content.',
         inputSchema: z.object({
-            query: z.string().min(1).max(500).describe("The web search query."),
+            query: z.string().min(1).max(500).describe('The web search query.'),
         }),
-        execute: async ({query}: {query: string}) => {
+        execute: async ({ query }: { query: string }) => {
             if (!apiKey) {
-                throw new Error("EXA_API_KEY is required. Set it in environment variables or pass it in config.");
+                throw new Error('EXA_API_KEY is required. Set it in environment variables or pass it in config.');
             }
 
-            const response = await fetch("https://api.exa.ai/search", {
-                method: "POST",
+            const response = await fetch('https://api.exa.ai/search', {
+                method: 'POST',
                 headers: {
-                    "Content-Type": "application/json",
-                    "x-api-key": apiKey,
-                    "x-exa-integration": "cosmo-studio-ai-sdk",
-                    "User-Agent": "cosmo-studio-ai-sdk",
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'x-exa-integration': 'cosmo-studio-ai-sdk',
+                    'User-Agent': 'cosmo-studio-ai-sdk',
                 },
                 body: JSON.stringify(buildExaRequestBody(query, searchOptions)),
             });
@@ -129,18 +126,15 @@ export function createExaWebSearchTool(config: ExaWebSearchToolConfig = {}) {
 }
 
 // Normalize optional Exa fields so every tool call sends predictable defaults to the API.
-function buildExaRequestBody(
-    query: string,
-    searchOptions: Omit<ExaWebSearchToolConfig, "apiKey">
-): ExaRequestBody {
+function buildExaRequestBody(query: string, searchOptions: Omit<ExaWebSearchToolConfig, 'apiKey'>): ExaRequestBody {
     const contents = searchOptions.contents ?? {};
     const requestBody: ExaRequestBody = {
-        query,
-        type: searchOptions.type ?? "auto",
+        query: query,
+        type: searchOptions.type ?? 'auto',
         numResults: searchOptions.numResults ?? DEFAULT_RESULT_COUNT,
         contents: {
-            text: contents.text ?? {maxCharacters: DEFAULT_TEXT_CHARACTER_LIMIT},
-            livecrawl: contents.livecrawl ?? "fallback",
+            text: contents.text ?? { maxCharacters: DEFAULT_TEXT_CHARACTER_LIMIT },
+            livecrawl: contents.livecrawl ?? 'fallback',
         },
     };
 
@@ -169,10 +163,7 @@ function buildExaRequestBody(
 }
 
 // Avoid sending empty filters because Exa treats several filter arrays as meaningful constraints.
-function copyDefinedSearchOptions(
-    requestBody: ExaRequestBody,
-    searchOptions: Omit<ExaWebSearchToolConfig, "apiKey">
-) {
+function copyDefinedSearchOptions(requestBody: ExaRequestBody, searchOptions: Omit<ExaWebSearchToolConfig, 'apiKey'>) {
     if (searchOptions.category !== undefined) {
         requestBody.category = searchOptions.category;
     }

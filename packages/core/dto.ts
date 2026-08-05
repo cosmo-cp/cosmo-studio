@@ -1,9 +1,10 @@
+import { UIMessage } from 'ai';
 import { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 import {
-    chat,
-    command,
     acpAgent,
     acpRegistryCache,
+    chat,
+    command,
     mcpServer,
     message,
     model,
@@ -15,7 +16,6 @@ import {
     workflowRunEvent,
     workflowVersion,
 } from './database/schema/schema';
-import { UIMessage } from 'ai';
 
 type Optional<T, K extends keyof T> = Omit<T, K> & Pick<Partial<T>, K>;
 
@@ -85,20 +85,17 @@ export type ProviderWithModels = ModelProviderLite & {
 
 export type WebSearchConfig = InferSelectModel<typeof webSearchConfig>;
 export type WebSearchConfigInsert = InferInsertModel<typeof webSearchConfig>;
-export type WebSearchConfigCreateInput = Omit<
-    WebSearchConfigInsert,
-    'id' | 'createdAt' | 'updatedAt'
->;
+export type WebSearchConfigCreateInput = Omit<WebSearchConfigInsert, 'id' | 'createdAt' | 'updatedAt'>;
 export interface WebSearchConfigView {
     id: string;
     createdAt: Date;
     updatedAt: Date | null;
-    type: WebSearchConfig["type"];
+    type: WebSearchConfig['type'];
     enabled: boolean;
     hasApiKey: boolean;
 }
 export interface WebSearchConfigSaveInput {
-    type: WebSearchConfig["type"];
+    type: WebSearchConfig['type'];
     enabled: boolean;
     apiKey?: string | null;
 }
@@ -196,7 +193,6 @@ export interface AcpAgentTestResult {
     message: string;
     authMethods?: string[];
 }
-
 
 export interface WorkflowGraph {
     nodes: Record<string, unknown>[];

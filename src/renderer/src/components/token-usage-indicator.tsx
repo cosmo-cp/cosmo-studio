@@ -1,12 +1,12 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
 import { DynamicToolUIPart, UIMessage } from 'ai';
-import { PieChart, Info } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
 import type { McpServer } from 'core/dto';
+import { Info, PieChart } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface TokenUsageIndicatorProps {
     messages: UIMessage[];

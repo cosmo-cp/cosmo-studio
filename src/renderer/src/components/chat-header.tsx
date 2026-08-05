@@ -1,12 +1,12 @@
 'use client';
 
-import type { Chat } from 'core/dto';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import type { Chat } from 'core/dto';
 import { ChevronDown, ChevronUp, Pin, PinOff, Search, Trash, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { ConfirmDialog } from '@/components/confirm-dialog';
-import { Input } from '@/components/ui/input';
 
 export function ChatHeader({
     chat,

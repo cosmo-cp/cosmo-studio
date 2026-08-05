@@ -1,10 +1,10 @@
-import {inject, injectable} from 'inversify';
-import {z} from 'zod';
-import {IpcController, IpcHandler} from '../ipc/Decorators';
-import {Controller} from './Controller';
-import {CORETYPES} from 'core/types/types';
-import {AcpAgentService} from 'core/services/AcpAgentService';
-import {AcpRegistryService} from 'core/services/AcpRegistryService';
+import { inject, injectable } from 'inversify';
+import { z } from 'zod';
+import { IpcController, IpcHandler } from '../ipc/Decorators';
+import { Controller } from './Controller';
+import { CORETYPES } from 'core/types/types';
+import { AcpAgentService } from 'core/services/AcpAgentService';
+import { AcpRegistryService } from 'core/services/AcpRegistryService';
 import type {
     AcpAgentCreateInput,
     AcpAgentTestResult,
@@ -13,39 +13,40 @@ import type {
     AcpRegistryInstallInput,
     AcpRegistryView,
 } from 'core/dto';
-import {TYPES} from '../types';
-import {AcpAgentRuntimeService} from '../services/AcpAgentRuntimeService';
-import {
-    AcpAgentInstallStatusEnum,
-    AcpAgentSourceEnum,
-} from 'core/database/schema/acpAgentSchema';
+import { TYPES } from '../types';
+import { AcpAgentRuntimeService } from '../services/AcpAgentRuntimeService';
+import { AcpAgentInstallStatusEnum, AcpAgentSourceEnum } from 'core/database/schema/acpAgentSchema';
 
-const acpAgentCreateSchema = z.object({
-    name: z.string().min(1),
-    description: z.string().optional().nullable(),
-    source: z.nativeEnum(AcpAgentSourceEnum).default(AcpAgentSourceEnum.CUSTOM),
-    registryId: z.string().optional().nullable(),
-    version: z.string().optional().nullable(),
-    command: z.string().min(1),
-    args: z.array(z.string()).default([]),
-    env: z.record(z.string(), z.string()).default({}),
-    defaultCwd: z.string().optional().nullable(),
-    authMethodId: z.string().optional().nullable(),
-    enabled: z.boolean().default(true),
-    installStatus: z.nativeEnum(AcpAgentInstallStatusEnum).default(AcpAgentInstallStatusEnum.INSTALLED),
-    mcpServerIds: z.array(z.string()).default([]),
-    metadata: z.record(z.string(), z.unknown()).default({}),
-}).strict();
+const acpAgentCreateSchema = z
+    .object({
+        name: z.string().min(1),
+        description: z.string().optional().nullable(),
+        source: z.nativeEnum(AcpAgentSourceEnum).default(AcpAgentSourceEnum.CUSTOM),
+        registryId: z.string().optional().nullable(),
+        version: z.string().optional().nullable(),
+        command: z.string().min(1),
+        args: z.array(z.string()).default([]),
+        env: z.record(z.string(), z.string()).default({}),
+        defaultCwd: z.string().optional().nullable(),
+        authMethodId: z.string().optional().nullable(),
+        enabled: z.boolean().default(true),
+        installStatus: z.nativeEnum(AcpAgentInstallStatusEnum).default(AcpAgentInstallStatusEnum.INSTALLED),
+        mcpServerIds: z.array(z.string()).default([]),
+        metadata: z.record(z.string(), z.unknown()).default({}),
+    })
+    .strict();
 
 const acpAgentUpdateSchema = acpAgentCreateSchema.partial();
 
-const registryInstallSchema = z.object({
-    registryId: z.string().min(1),
-    defaultCwd: z.string().optional().nullable(),
-    authMethodId: z.string().optional().nullable(),
-    enabled: z.boolean().optional(),
-    mcpServerIds: z.array(z.string()).optional(),
-}).strict();
+const registryInstallSchema = z
+    .object({
+        registryId: z.string().min(1),
+        defaultCwd: z.string().optional().nullable(),
+        authMethodId: z.string().optional().nullable(),
+        enabled: z.boolean().optional(),
+        mcpServerIds: z.array(z.string()).optional(),
+    })
+    .strict();
 
 @injectable()
 @IpcController('acpAgent')
@@ -56,7 +57,7 @@ export class AcpAgentController implements Controller {
         @inject(CORETYPES.AcpRegistryService)
         private readonly acpRegistryService: AcpRegistryService,
         @inject(TYPES.AcpAgentRuntimeService)
-        private readonly acpAgentRuntimeService: AcpAgentRuntimeService
+        private readonly acpAgentRuntimeService: AcpAgentRuntimeService,
     ) {}
 
     @IpcHandler('getAll', z.tuple([]))

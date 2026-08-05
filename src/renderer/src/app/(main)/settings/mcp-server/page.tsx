@@ -1,4 +1,4 @@
-import {McpServerManagement} from '@/components/mcp-server-management';
+import { McpServerManagement } from '@/components/mcp-server-management';
 
 export default function McpServerSettingsPage() {
     return (

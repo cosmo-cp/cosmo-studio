@@ -1,15 +1,16 @@
-import { app, BrowserWindow, safeStorage } from 'electron';
 import path from 'path';
-import { IpcHandlerRegistry } from './ipc';
 import { DatabaseManager } from 'core/database/DatabaseManager';
+import { app, BrowserWindow, safeStorage } from 'electron';
+import { IpcHandlerRegistry } from './ipc';
 import 'reflect-metadata';
-import container from './inversify.config';
-import { TYPES } from './types';
+import { setCoreLogger } from 'core/platform/CoreLogger';
+import { McpClientManager } from 'core/services/McpClientManager';
+import { CORETYPES } from 'core/types/types';
 import { config } from 'dotenv';
 import { updateElectronApp, UpdateSourceType } from 'update-electron-app';
+import container from './inversify.config';
 import { logger } from './logger';
-import { McpClientManager } from 'core/services/McpClientManager';
-import { CORETYPES } from 'core/types/types';import {setCoreLogger} from "core/platform/CoreLogger";
+import { TYPES } from './types';
 
 setCoreLogger(logger);
 

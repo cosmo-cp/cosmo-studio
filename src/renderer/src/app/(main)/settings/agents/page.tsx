@@ -1,6 +1,6 @@
 'use client';
 
-import {AcpAgentManagement} from '@/components/acp-agent-management';
+import { AcpAgentManagement } from '@/components/acp-agent-management';
 
 export default function AgentsPage() {
     return (

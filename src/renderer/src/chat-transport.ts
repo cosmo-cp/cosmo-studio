@@ -1,4 +1,4 @@
-import {ChatRequestOptions, ChatTransport, DefaultChatTransport, UIMessage, UIMessageChunk} from 'ai';
+import { ChatRequestOptions, ChatTransport, DefaultChatTransport, UIMessage, UIMessageChunk } from 'ai';
 
 // Note: The global AbortSignal type is used directly, no import needed for modern browsers/environments.
 // Note: The browser's native ReadableStream is used, no import needed.
@@ -62,13 +62,15 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
         };
 
         // Get modelId from metadata or fetch from chat
-        const metadata = options?.metadata as {
-            modelId?: string;
-            personaId?: string;
-            runtime?: 'model' | 'agent';
-            agentId?: string | null;
-            agentCwd?: string | null;
-        } | undefined;
+        const metadata = options?.metadata as
+            | {
+                  modelId?: string;
+                  personaId?: string;
+                  runtime?: 'model' | 'agent';
+                  agentId?: string | null;
+                  agentCwd?: string | null;
+              }
+            | undefined;
         const runtime = metadata?.runtime ?? 'model';
         let modelId = metadata?.modelId;
         let personaId = metadata?.personaId;
@@ -163,13 +165,11 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
 }
 
 export function createChatTransport(): ChatTransport<UIMessage> {
-    const backend = process.env.NEXT_PUBLIC_COSMO_BACKEND ??
-        process.env.NEXT_PUBLIC_CHAT_DATA_SOURCE ??
-        "electron";
+    const backend = process.env.NEXT_PUBLIC_COSMO_BACKEND ?? 'electron';
 
-    if (backend === "http") {
-        const apiBase = process.env.NEXT_PUBLIC_COSMO_API_BASE ?? "/api";
-        const normalizedBase = apiBase.endsWith("/") ? apiBase.slice(0, -1) : apiBase;
+    if (backend === 'http') {
+        const apiBase = process.env.NEXT_PUBLIC_COSMO_API_BASE ?? '/api';
+        const normalizedBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
         return new DefaultChatTransport({
             api: `${normalizedBase}/chat`,
             prepareSendMessagesRequest: (options) => ({

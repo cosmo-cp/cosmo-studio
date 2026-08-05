@@ -13,29 +13,29 @@ Cosmo Studio is a dual-runtime app with a static-exported Next.js UI. It builds 
 - **Electron main process**: `src/main/` (entry: `src/main/index.ts`)
     - Owns windows, app lifecycle, database initialization, IPC registration.
 - **HTTP main process**: `src/main/http/` (entry: `src/main/http/index.ts`)
-  - Owns Nest bootstrap, static renderer serving, generated RPC dispatch, HTTP chat streaming.
+    - Owns Nest bootstrap, static renderer serving, generated RPC dispatch, HTTP chat streaming.
 - **Preload (security boundary)**: `src/preload/` (entry: `src/preload/index.ts`)
     - Exposes a minimal, typed `window.api` via `contextBridge`.
-    - `src/preload/api.ts` and the generated `src/preload/api/*` modules are generated (see “IPC & API generation”).
+    - `src/preload/api.ts`, `src/preload/rpc-api.ts`, and the generated `src/preload/contracts/*`, `src/preload/api/*`, `src/preload/http-api/*` modules are generated (see “IPC & API generation”).
 - **Renderer (Next.js UI)**: `src/renderer/` (Next app: `src/renderer/src/`)
-    - Runs in the BrowserWindow or browser, talks to the active backend through adapter modules.
+    - Runs in the BrowserWindow or browser, talks to the active backend through the root Redux store and chat transport adapters.
     - Next config is `output: "export"` (static build to `src/renderer/out/`).
-  - Uses a single root Redux store; renderer components should dispatch thunks/selectors instead of calling preload APIs directly.
-  - `NEXT_PUBLIC_COSMO_BACKEND=electron|http` selects preload or generated HTTP RPC.
+    - Uses a single root Redux store created in `src/renderer/src/lib/store/store.ts` and mounted in `src/renderer/src/app/store-provider.tsx`; renderer components should dispatch thunks/selectors instead of calling preload APIs directly.
+    - `NEXT_PUBLIC_COSMO_BACKEND=electron|http` selects `window.api` versus the browser-safe `httpApi` exported from `src/preload/api.ts`.
 - **Core package (domain + DB + AI)**: `packages/core/` (workspace package name: `core`)
     - Drizzle schema, repositories/services, DTOs shared across processes.
     - Imported as `core/...` from main/renderer/preload.
-  - Platform concerns use injected interfaces such as `SecretStore` and `CoreLogger`.
+    - Platform concerns use injected interfaces such as `SecretStore` and `CoreLogger`.
 - **ACP agents**: `packages/core/services/AcpAgentService.ts`, `packages/core/services/AcpRegistryService.ts`, `src/main/services/AcpAgentRuntimeService.ts`
-  - Agent definitions and registry cache are shared domain data; process spawning and ACP provider sessions stay in main/HTTP runtime.
-  - Renderer receives redacted agent views only; env values are never returned.
+    - Agent definitions and registry cache are shared domain data; process spawning and ACP provider sessions stay in main/HTTP runtime.
+    - Renderer receives redacted agent views only; env values are never returned.
 - **Tooling/scripts**: `scripts/` (currently: `scripts/generate-api.ts`)
-    - Generates the preload API, HTTP RPC manifest, and renderer HTTP client from main IPC controllers.
+    - Generates the preload RPC modules, browser-safe HTTP API modules, and HTTP RPC manifest from main IPC controllers.
 - **Database**: Drizzle ORM + PGlite
     - Schema: `packages/core/database/schema/`
     - Migrations output: `migrations/`
     - Drizzle config: `drizzle.config.ts`
-  - Electron and HTTP use separate default data directories.
+    - Electron and HTTP use separate default data directories.
 
 Internal docs live in `docs/` (keep them updated):
 
@@ -82,7 +82,7 @@ Before coding, decide **where the feature belongs**. Default to keeping the rend
 
 7. **Anything crossing the process boundary** (renderer ⇄ main/backend)
    → Add `@IpcHandler` in `src/main/controllers/*` with a zod tuple schema, then regenerate APIs.
-   → Renderer components should use Redux thunks, `AppDataSource`, or `createChatTransport()`.
+   → Renderer components should use Redux thunks/selectors backed by `makeStore()` or `createChatTransport()`.
 
 ### Non‑negotiables
 
@@ -109,15 +109,14 @@ We use a declarative IPC pattern:
     - Add `@IpcHandler("...")` (for invoke) or `@IpcOn("...")` (for send).
 2. Add a `z.tuple([...])` schema to the decorator and keep any deeper domain validation in the controller/service.
 3. Bind every new controller in `src/main/inversify.config.ts` with the same ServiceIdentifier type `TYPES.Controller`.
-5. Run `npm run generate-api` (root) to regenerate `src/preload/api.ts`, `src/preload/api/*`, `src/main/http/rpc-manifest.ts`, and `src/renderer/src/lib/generated-http-api.ts`.
-6. Ensure renderer components use the shared Redux store/thunks for request-response flows, and keep any direct `window.api` calls isolated to renderer adapter/transport modules.
-7. Add tests (unit + integration) for the new behavior.
+4. Run `npm run generate-api` (root) to regenerate `src/preload/api.ts`, `src/preload/rpc-api.ts`, `src/preload/contracts/*`, `src/preload/api/*`, `src/preload/http-api/*`, and `src/main/http/rpc-manifest.ts`.
+5. Ensure renderer components use the shared Redux store/thunks for request-response flows, and keep any direct transport calls isolated to store setup and `src/renderer/src/chat-transport.ts`.
+6. Add tests (unit + integration) for the new behavior.
 
 ### Generated files policy
 
-- `src/preload/api.ts` and the generated `src/preload/api/*.ts` modules are generated by `scripts/generate-api.ts`. Prefer **not** editing them manually.
+- `src/preload/api.ts`, `src/preload/rpc-api.ts`, and the generated `src/preload/contracts/*.ts`, `src/preload/api/*.ts`, `src/preload/http-api/*.ts` modules are generated by `scripts/generate-api.ts`. Prefer **not** editing them manually.
 - `src/main/http/rpc-manifest.ts` is generated by `scripts/generate-api.ts`. Prefer **not** editing it manually.
-- `src/renderer/src/lib/generated-http-api.ts` is generated by `scripts/generate-api.ts`. Prefer **not** editing it manually.
 - If the generator can’t express a new shape, update the generator and regenerate.
 
 ## 3) Frontend design guidelines (intuitive, accessible, mobile‑first)
@@ -190,8 +189,9 @@ For renderer-specific implementation conventions, see `src/renderer/AGENTS.overr
 When you change code, always run:
 
 1. Lints: `npm run lint` (root) and `npm run lint` in `src/renderer`
-2. Tests: add/run targeted tests first, then full suite(`npm run test`) and Coverage(`npm run test:coverage`)
-3. Build check: HTTP build (`npm run build:http`) and Electron package (`npm run package`)
+2. Formatting: run `npm run prettier -- --write <changed files>` after every code change
+3. Tests: add/run targeted tests first, then full suite(`npm run test`) and Coverage(`npm run test:coverage`)
+4. Build check: HTTP build (`npm run build:http`) and Electron package (`npm run package`)
 
 ## 5) Testing policy (strict, 100%+ mindset)
 
@@ -239,6 +239,7 @@ Follow these rules:
 - Use meaningful names, consistent formatting, and keep functions small.
 - Minimize nesting; use early returns.
 - Prefer SRP (single responsibility), loose coupling, high cohesion.
+- Reuse existing code, generated contracts, and shared helpers whenever possible; do not duplicate logic or type definitions unless a process/runtime boundary truly requires a separate implementation.
 - Avoid globals; remove dead code.
 
 Logging:

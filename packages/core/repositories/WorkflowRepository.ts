@@ -34,15 +34,18 @@ export class WorkflowRepository {
     // Creates a workflow and stores its first graph version in one transaction.
     public async create(input: WorkflowCreateInput, graph: WorkflowGraph): Promise<Workflow> {
         return this.db.transaction(async (tx) => {
-            const [createdWorkflow] = await tx.insert(workflow).values({
-                title: input.title,
-                summary: input.summary,
-            }).returning();
+            const [createdWorkflow] = await tx
+                .insert(workflow)
+                .values({
+                    title: input.title,
+                    summary: input.summary,
+                })
+                .returning();
 
             await tx.insert(workflowVersion).values({
                 workflowId: createdWorkflow.id,
                 version: 1,
-                graph,
+                graph: graph,
             });
 
             return createdWorkflow;
@@ -51,7 +54,11 @@ export class WorkflowRepository {
 
     // Updates mutable workflow metadata.
     public async update(id: string, updates: Partial<WorkflowCreateInput>): Promise<Workflow | undefined> {
-        const [updated] = await this.db.update(workflow).set({ ...updates, updatedAt: new Date() }).where(eq(workflow.id, id)).returning();
+        const [updated] = await this.db
+            .update(workflow)
+            .set({ ...updates, updatedAt: new Date() })
+            .where(eq(workflow.id, id))
+            .returning();
         return updated;
     }
 
@@ -84,9 +91,9 @@ export class WorkflowRepository {
             const [createdVersion] = await tx
                 .insert(workflowVersion)
                 .values({
-                    workflowId,
+                    workflowId: workflowId,
                     version: workflowRow.latestVersion,
-                    graph,
+                    graph: graph,
                 })
                 .returning();
             return createdVersion;

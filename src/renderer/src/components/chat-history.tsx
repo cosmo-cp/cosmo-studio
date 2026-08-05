@@ -1,12 +1,13 @@
 'use client';
+
 import { Button } from '@/components/ui/button';
-import type { Chat } from 'core/dto';
-import { MessageCirclePlus, Pin, Search } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import type { Chat } from 'core/dto';
 import { format, isThisWeek, isThisYear, isToday, isYesterday } from 'date-fns';
+import { MessageCirclePlus, Pin, Search } from 'lucide-react';
 
 export function ChatHistory({
     chats,

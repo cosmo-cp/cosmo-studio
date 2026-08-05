@@ -1,14 +1,12 @@
 'use client';
 
-import type { Tool } from 'ai';
-import type { ComponentProps } from 'react';
-
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import type { Tool } from 'ai';
 import { BotIcon } from 'lucide-react';
+import type { ComponentProps } from 'react';
 import { memo } from 'react';
-
 import { CodeBlock } from './code-block';
 
 export type AgentProps = ComponentProps<'div'>;
@@ -74,9 +72,7 @@ export const AgentTool = memo(({ className, tool, value, ...props }: AgentToolPr
 
     return (
         <AccordionItem className={cn('border-b last:border-b-0', className)} value={value} {...props}>
-            <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
-                {description}
-            </AccordionTrigger>
+            <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">{description}</AccordionTrigger>
             <AccordionContent className="px-3 pb-3">
                 <div className="rounded-md bg-muted/50">
                     <CodeBlock code={JSON.stringify(schema, null, 2)} language="json" />

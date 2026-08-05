@@ -1,8 +1,13 @@
-import type { Attachment } from '@/lib/types';
+import Image from 'next/image';
 import { Loader } from './ai-elements/loader';
 import { CrossSmallIcon } from './icons';
 import { Button } from './ui/button';
-import Image from 'next/image';
+
+export interface Attachment {
+    name: string;
+    url: string;
+    contentType: string;
+}
 
 export const PreviewAttachment = ({
     attachment,

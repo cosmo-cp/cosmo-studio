@@ -1,43 +1,54 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WorkflowGraph, WorkflowRun } from 'core/dto';
 import type { McpClientManager } from 'core/services/McpClientManager';
 import type { ModelProviderService } from 'core/services/ModelProviderService';
 import type { WorkflowRunService } from 'core/services/WorkflowRunService';
-
-const ai = vi.hoisted(() => ({
-    generateText: vi.fn(),
-    stepCountIs: vi.fn((count: number) => `steps:${count}`),
-}));
-
-vi.mock('ai', () => ({
-    generateText: ai.generateText,
-    stepCountIs: ai.stepCountIs,
-}));
-
-vi.mock('../logger', () => ({
-    logger: {
-        warn: vi.fn(),
-    },
-}));
-
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkflowExecutionService } from './WorkflowExecutionService';
 
+const ai = vi.hoisted(() => {
+    return {
+        generateText: vi.fn(),
+        stepCountIs: vi.fn((count: number) => {
+            return `steps:${count}`;
+        }),
+    };
+});
+
+vi.mock('ai', () => {
+    return {
+        generateText: ai.generateText,
+        stepCountIs: ai.stepCountIs,
+    };
+});
+
+vi.mock('../logger', () => {
+    return {
+        logger: {
+            warn: vi.fn(),
+        },
+    };
+});
+
 function createGraph(nodes: WorkflowGraph['nodes'], edges: WorkflowGraph['edges']): WorkflowGraph {
-    return { nodes, edges };
+    return { nodes: nodes, edges: edges };
 }
 
 function createNode(id: string, templateId: string, config: Record<string, unknown> = {}) {
     return {
-        id,
+        id: id,
         data: {
-            templateId,
+            templateId: templateId,
             ...config,
         },
     };
 }
 
 function createService() {
-    const registry = { languageModel: vi.fn(() => 'language-model') };
+    const registry = {
+        languageModel: vi.fn(() => {
+            return 'language-model';
+        }),
+    };
     const workflowRunService = {
         updateRunStatus: vi.fn().mockResolvedValue({ id: 'run-1' } as WorkflowRun),
         cancelRun: vi.fn().mockResolvedValue({ id: 'run-1', status: 'cancelled' } as WorkflowRun),
@@ -49,18 +60,14 @@ function createService() {
     const mcpClientManager = {
         getAllTools: vi.fn().mockResolvedValue({}),
     } as unknown as McpClientManager;
-    const service = new WorkflowExecutionService(
-        workflowRunService,
-        modelProviderService,
-        mcpClientManager,
-    );
+    const service = new WorkflowExecutionService(workflowRunService, modelProviderService, mcpClientManager);
 
     return {
-        service,
-        registry,
-        workflowRunService,
-        modelProviderService,
-        mcpClientManager,
+        service: service,
+        registry: registry,
+        workflowRunService: workflowRunService,
+        modelProviderService: modelProviderService,
+        mcpClientManager: mcpClientManager,
     };
 }
 
@@ -93,7 +100,11 @@ describe('WorkflowExecutionService', () => {
 
         expect(compiled.entryNodeId).toBe('start');
         expect(compiled.orderedNodeIds).toEqual(['start', 'agent', 'approval', 'end']);
-        expect(compiled.steps.map((step) => [step.id, step.type])).toEqual([
+        expect(
+            compiled.steps.map((step) => {
+                return [step.id, step.type];
+            }),
+        ).toEqual([
             ['agent', 'agent'],
             ['approval', 'user-approval'],
             ['end', 'end'],
@@ -103,19 +114,23 @@ describe('WorkflowExecutionService', () => {
     it('rejects unsupported node types and cycles', () => {
         const { service } = createService();
 
-        expect(() => service.compileGraph(createGraph([createNode('a', 'classify')], []))).toThrow(
-            'Unsupported workflow node type "classify"',
-        );
-        expect(() => service.compileGraph(createGraph(
-            [
-                createNode('a', 'agent', { prompt: 'A', modelIdentifier: 'openai/gpt' }),
-                createNode('b', 'http', { url: 'https://example.com' }),
-            ],
-            [
-                { id: 'e1', source: 'a', target: 'b' },
-                { id: 'e2', source: 'b', target: 'a' },
-            ],
-        ))).toThrow('Workflow graph must be a DAG');
+        expect(() => {
+            return service.compileGraph(createGraph([createNode('a', 'classify')], []));
+        }).toThrow('Unsupported workflow node type "classify"');
+        expect(() => {
+            return service.compileGraph(
+                createGraph(
+                    [
+                        createNode('a', 'agent', { prompt: 'A', modelIdentifier: 'openai/gpt' }),
+                        createNode('b', 'http', { url: 'https://example.com' }),
+                    ],
+                    [
+                        { id: 'e1', source: 'a', target: 'b' },
+                        { id: 'e2', source: 'b', target: 'a' },
+                    ],
+                ),
+            );
+        }).toThrow('Workflow graph must be a DAG');
     });
 
     it('executes agent and end nodes, records progress, and emits stream events', async () => {
@@ -149,17 +164,19 @@ describe('WorkflowExecutionService', () => {
         expect(result.outputs.agent).toEqual({ text: 'agent result', finishReason: 'stop' });
         expect(registry.languageModel).toHaveBeenCalledWith('provider/model');
         expect(mcpClientManager.getAllTools).toHaveBeenCalledTimes(1);
-        expect(ai.generateText).toHaveBeenCalledWith(expect.objectContaining({
-            model: 'language-model',
-            messages: [
-                {
-                    role: 'user',
-                    content: 'Write about {"topic":"workflow"}',
-                },
-            ],
-            tools: {},
-            stopWhen: undefined,
-        }));
+        expect(ai.generateText).toHaveBeenCalledWith(
+            expect.objectContaining({
+                model: 'language-model',
+                messages: [
+                    {
+                        role: 'user',
+                        content: 'Write about {"topic":"workflow"}',
+                    },
+                ],
+                tools: {},
+                stopWhen: undefined,
+            }),
+        );
         expect(workflowRunService.updateRunStatus).toHaveBeenCalledWith(
             'run-1',
             'running',
@@ -204,7 +221,7 @@ describe('WorkflowExecutionService', () => {
             ],
         );
 
-        const result = await service.executeRun({ runId: 'run-1', graph });
+        const result = await service.executeRun({ runId: 'run-1', graph: graph });
 
         expect(result.status).toBe('waiting_approval');
         expect(result.visitedNodeIds).toEqual(['branch', 'approval']);
@@ -256,15 +273,20 @@ describe('WorkflowExecutionService', () => {
 
         expect(result.status).toBe('completed');
         expect(result.outputs.loop).toEqual({ iterations: 2, items: [] });
-        expect(result.outputs.http).toEqual(expect.objectContaining({
-            ok: true,
-            status: 200,
-            body: { ok: true },
-        }));
+        expect(result.outputs.http).toEqual(
+            expect.objectContaining({
+                ok: true,
+                status: 200,
+                body: { ok: true },
+            }),
+        );
         expect(result.outputs.mcp).toEqual({ value: 42 });
-        expect(fetchMock).toHaveBeenCalledWith('https://example.com/api', expect.objectContaining({
-            method: 'GET',
-        }));
+        expect(fetchMock).toHaveBeenCalledWith(
+            'https://example.com/api',
+            expect.objectContaining({
+                method: 'GET',
+            }),
+        );
 
         fetchMock.mockRestore();
     });

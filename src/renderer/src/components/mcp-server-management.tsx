@@ -16,18 +16,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import type { McpServer, McpServerCreateInput, McpServerUpdateInput } from 'core/dto';
-import { ChevronDown, ChevronRight, Edit, Plus, RefreshCw, Trash2, Wrench } from 'lucide-react';
-import { Fragment, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import {
     deleteMcpServer,
     loadMcpServers,
     loadMcpServerTools,
     saveMcpServer,
-    toggleMcpServerEnabled, updateMcpToolApproval,
+    toggleMcpServerEnabled,
+    updateMcpToolApproval,
 } from '@/lib/store/mcp-servers-store';
+import type { McpServer, McpServerCreateInput, McpServerUpdateInput } from 'core/dto';
+import { ChevronDown, ChevronRight, Edit, Plus, RefreshCw, Trash2, Wrench } from 'lucide-react';
+import { Fragment, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 type TransportType = 'stdio' | 'sse' | 'http';
 
@@ -76,7 +77,7 @@ export function McpServerManagement() {
     const [loadingToolsFor, setLoadingToolsFor] = useState<string | null>(null);
 
     useEffect(() => {
-        if (serversStatus === "idle") {
+        if (serversStatus === 'idle') {
             void dispatch(loadMcpServers());
         }
     }, [dispatch, serversStatus]);
@@ -138,10 +139,12 @@ export function McpServerManagement() {
                     config: parsedConfig,
                     enabled: formState.enabled,
                 };
-                await dispatch(saveMcpServer({
-                    serverId: editingServer.id,
-                    input: updates as McpServerCreateInput,
-                })).unwrap();
+                await dispatch(
+                    saveMcpServer({
+                        serverId: editingServer.id,
+                        input: updates as McpServerCreateInput,
+                    }),
+                ).unwrap();
                 toast.success('MCP server updated');
             } else {
                 const createPayload: McpServerCreateInput = {
@@ -151,7 +154,7 @@ export function McpServerManagement() {
                     config: parsedConfig,
                     enabled: formState.enabled,
                 };
-                await dispatch(saveMcpServer({input: createPayload})).unwrap();
+                await dispatch(saveMcpServer({ input: createPayload })).unwrap();
                 toast.success('MCP server added');
             }
             handleCloseDialog();
@@ -193,10 +196,12 @@ export function McpServerManagement() {
 
     const handleToggleEnabled = async (server: McpServer) => {
         try {
-            const updated = await dispatch(toggleMcpServerEnabled({
-                serverId: server.id,
-                enabled: !server.enabled,
-            })).unwrap();
+            const updated = await dispatch(
+                toggleMcpServerEnabled({
+                    serverId: server.id,
+                    enabled: !server.enabled,
+                }),
+            ).unwrap();
             toast.success(`${server.name} ${updated.enabled ? 'enabled' : 'disabled'}`);
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to toggle server.';
@@ -216,7 +221,7 @@ export function McpServerManagement() {
         if (!serverTools[serverId]) {
             setLoadingToolsFor(serverId);
             try {
-                const {tools} = await dispatch(loadMcpServerTools(serverId)).unwrap();
+                const { tools } = await dispatch(loadMcpServerTools(serverId)).unwrap();
                 setServerTools((prev) => ({ ...prev, [serverId]: tools }));
             } catch (error) {
                 console.error('Failed to load tools for server', error);
@@ -230,7 +235,7 @@ export function McpServerManagement() {
     const handleRefreshTools = async (serverId: string) => {
         setLoadingToolsFor(serverId);
         try {
-            const {tools} = await dispatch(loadMcpServerTools(serverId)).unwrap();
+            const { tools } = await dispatch(loadMcpServerTools(serverId)).unwrap();
             setServerTools((prev) => ({ ...prev, [serverId]: tools }));
         } catch (error) {
             console.error('Failed to refresh tools for server', error);
@@ -241,7 +246,7 @@ export function McpServerManagement() {
 
     const hasServers = servers.length > 0;
 
-    if (serversStatus === "loading" && servers.length === 0) {
+    if (serversStatus === 'loading' && servers.length === 0) {
         return <div className="text-sm text-muted-foreground">Loading MCP servers...</div>;
     }
 
@@ -392,67 +397,77 @@ export function McpServerManagement() {
                                                                     const isApprovalRequired =
                                                                         approvals[tool.name] ?? true;
 
-                                                                        return (
-                                                                            <div
-                                                                                key={tool.name}
-                                                                                className="flex items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 overflow-hidden"
-                                                                            >
-                                                                                <div className="flex flex-col gap-0.5 min-w-0">
-                                                                                    <span className="text-xs font-medium font-mono break-all">
-                                                                                        {tool.name}
+                                                                    return (
+                                                                        <div
+                                                                            key={tool.name}
+                                                                            className="flex items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 overflow-hidden"
+                                                                        >
+                                                                            <div className="flex flex-col gap-0.5 min-w-0">
+                                                                                <span className="text-xs font-medium font-mono break-all">
+                                                                                    {tool.name}
+                                                                                </span>
+                                                                                {(tool.title || tool.description) && (
+                                                                                    <span className="text-[11px] text-muted-foreground leading-tight break-words whitespace-normal">
+                                                                                        {tool.description || tool.title}
                                                                                     </span>
-                                                                                    {(tool.title || tool.description) && (
-                                                                                        <span className="text-[11px] text-muted-foreground leading-tight break-words whitespace-normal">
-                                                                                            {tool.description || tool.title}
-                                                                                        </span>
-                                                                                    )}
-                                                                                </div>
-                                                                                <div className="flex items-center gap-1.5 shrink-0">
-                                                                                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                                                                                        Approval
-                                                                                    </span>
-                                                                                    <Switch
-                                                                                        size="sm"
-                                                                                        checked={isApprovalRequired}
-                                                                                        onCheckedChange={async (checked) => {
-                                                                                            try {
-                                                                                                await dispatch(updateMcpToolApproval({
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                                                                                    Approval
+                                                                                </span>
+                                                                                <Switch
+                                                                                    size="sm"
+                                                                                    checked={isApprovalRequired}
+                                                                                    onCheckedChange={async (
+                                                                                        checked,
+                                                                                    ) => {
+                                                                                        try {
+                                                                                            await dispatch(
+                                                                                                updateMcpToolApproval({
                                                                                                     serverId: server.id,
                                                                                                     toolName: tool.name,
-                                                                                                    needsApproval: checked,
-                                                                                                })).unwrap();
-                                                                                            } catch (error) {
-                                                                                                console.error("Failed to update tool approval", error);
-                                                                                                toast.error("Failed to update tool approval");
-                                                                                            }
-                                                                                        }}
-                                                                                        aria-label={`Require approval for ${tool.name}`}
-                                                                                    />
-                                                                                </div>
+                                                                                                    needsApproval:
+                                                                                                        checked,
+                                                                                                }),
+                                                                                            ).unwrap();
+                                                                                        } catch (error) {
+                                                                                            console.error(
+                                                                                                'Failed to update tool approval',
+                                                                                                error,
+                                                                                            );
+                                                                                            toast.error(
+                                                                                                'Failed to update tool approval',
+                                                                                            );
+                                                                                        }
+                                                                                    }}
+                                                                                    aria-label={`Require approval for ${tool.name}`}
+                                                                                />
                                                                             </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            ) : (
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    No tools available. The server may not be connected.
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </Fragment>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
-                    </div>
-                ) : (
-                    <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
-                        No MCP servers configured yet. Add one to extend AI capabilities with external tools.
-                    </div>
-                )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        ) : (
+                                                            <p className="text-xs text-muted-foreground">
+                                                                No tools available. The server may not be connected.
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </Fragment>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+            ) : (
+                <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+                    No MCP servers configured yet. Add one to extend AI capabilities with external tools.
+                </div>
+            )}
 
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

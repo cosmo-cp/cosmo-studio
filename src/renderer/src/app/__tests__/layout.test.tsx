@@ -3,9 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import RootLayout from '../layout';
 
 const { providersMock } = vi.hoisted(() => ({
-    providersMock: vi.fn(({ children }: { children: ReactNode }) => (
-        <div data-testid="providers">{children}</div>
-    )),
+    providersMock: vi.fn(({ children }: { children: ReactNode }) => <div data-testid="providers">{children}</div>),
 }));
 
 vi.mock('../providers', () => ({

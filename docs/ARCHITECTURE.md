@@ -64,8 +64,8 @@ flowchart LR
 ### Preload (`src/preload`)
 
 - Defines the renderer-accessible API surface (`window.api`) via `contextBridge`.
-- `src/preload/api.ts` and `src/preload/api/*.ts` are generated from controller decorators using `scripts/generate-api.ts`.
-- Applies only to the Electron target.
+- `src/preload/api.ts`, `src/preload/rpc-api.ts`, `src/preload/contracts/*.ts`, `src/preload/api/*.ts`, and `src/preload/http-api/*.ts` are generated from controller decorators using `scripts/generate-api.ts`.
+- `src/preload/rpc-api.ts` applies only to the Electron target; `src/preload/api.ts` stays browser-safe for HTTP/static renderer builds.
 
 ### Renderer (`src/renderer`)
 
@@ -73,10 +73,10 @@ flowchart LR
 - Owns a single root Redux store for renderer state.
 - Renderer components should dispatch thunks/selectors instead of calling preload APIs directly.
 - Production output is static (`next.config.ts` uses `output: "export"`), written to `src/renderer/out/`.
-- Request/response data flows resolve a renderer-side app data source adapter first, so the same thunk layer can talk to Electron preload or the generated HTTP client.
-- Direct `window.api` usage should stay isolated to renderer adapter/transport modules such as `src/renderer/src/lib/app-data-source.ts` and `src/renderer/src/chat-transport.ts`.
+- Request/response data flows resolve in `src/renderer/src/lib/store/store.ts`, so the same thunk layer can talk to Electron preload or the browser-safe HTTP API.
+- Direct `window.api` usage should stay isolated to transport modules such as `src/renderer/src/chat-transport.ts` and root store wiring.
 - `NEXT_PUBLIC_COSMO_BACKEND=electron|http` selects the runtime adapter at build/dev time.
-- HTTP RPC calls use `src/renderer/src/lib/generated-http-api.ts`.
+- HTTP RPC calls use `src/preload/api.ts`.
 
 ### Core package (`packages/core`)
 

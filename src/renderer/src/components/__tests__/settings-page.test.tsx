@@ -1,8 +1,8 @@
-import {render, waitFor} from '@testing-library/react';
-import {describe, expect, it, vi} from 'vitest';
 import SettingsPage from '@/app/(main)/settings/page';
-import {useRouter} from 'next/navigation';
-import {getDefaultSettingsChildHref} from '@/lib/settings-navigation';
+import { getDefaultSettingsChildHref } from '@/lib/settings-navigation';
+import { render, waitFor } from '@testing-library/react';
+import { useRouter } from 'next/navigation';
+import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('next/navigation', () => ({
     useRouter: vi.fn(),

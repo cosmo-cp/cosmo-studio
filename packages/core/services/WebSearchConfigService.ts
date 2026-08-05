@@ -1,13 +1,9 @@
-import {inject, injectable} from "inversify";
-import {CORETYPES} from "../types/types";
-import {
-    WebSearchConfig,
-    WebSearchConfigSaveInput,
-    WebSearchConfigView,
-} from "../dto";
-import {WebSearchConfigRepository} from "../repositories/WebSearchConfigRepository";
-import {WebSearchProviderTypeEnum} from "../database/schema/webSearchConfigSchema";
-import {Base64SecretStore, type SecretStore} from "../platform/SecretStore";
+import { inject, injectable } from 'inversify';
+import { CORETYPES } from '../types/types';
+import { WebSearchConfig, WebSearchConfigSaveInput, WebSearchConfigView } from '../dto';
+import { WebSearchConfigRepository } from '../repositories/WebSearchConfigRepository';
+import { WebSearchProviderTypeEnum } from '../database/schema/webSearchConfigSchema';
+import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
 
 @injectable()
 export class WebSearchConfigService {
@@ -15,13 +11,12 @@ export class WebSearchConfigService {
         @inject(CORETYPES.WebSearchConfigRepository)
         private repository: WebSearchConfigRepository,
         @inject(CORETYPES.SecretStore)
-        private readonly secretStore: SecretStore = new Base64SecretStore()
-    ) {
-    }
+        private readonly secretStore: SecretStore = new Base64SecretStore(),
+    ) {}
 
     // Return a renderer-safe view of one web-search provider configuration.
     public async getConfig(type: WebSearchProviderTypeEnum): Promise<WebSearchConfigView | null> {
-        const config = await this.repository.getByType(type, {withApiKey: false});
+        const config = await this.repository.getByType(type, { withApiKey: false });
         if (!config) {
             return null;
         }
@@ -41,7 +36,7 @@ export class WebSearchConfigService {
         const apiKey = trimmedApiKey || existingConfig?.apiKey;
 
         if (!apiKey) {
-            throw new Error("API key is required.");
+            throw new Error('API key is required.');
         }
 
         if (existingConfig) {
@@ -60,7 +55,7 @@ export class WebSearchConfigService {
         const created = await this.repository.create({
             type: input.type,
             enabled: input.enabled,
-            apiKey,
+            apiKey: apiKey,
         });
         return {
             ...created,
@@ -77,8 +72,8 @@ export class WebSearchConfigService {
 
     // Provide the decrypted config for runtime tool construction in the main process.
     public async getRuntimeConfig(type: WebSearchProviderTypeEnum): Promise<WebSearchConfig | null> {
-        const config = await this.repository.getByType(type, {withApiKey: true});
-        if (!config || !("apiKey" in config)) {
+        const config = await this.repository.getByType(type, { withApiKey: true });
+        if (!config || !('apiKey' in config)) {
             return null;
         }
 

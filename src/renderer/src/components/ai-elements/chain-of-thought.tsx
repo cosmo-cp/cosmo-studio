@@ -1,13 +1,12 @@
 'use client';
 
-import type { LucideIcon } from 'lucide-react';
-import type { ComponentProps, ReactNode } from 'react';
-
-import { useControllableState } from '@radix-ui/react-use-controllable-state';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { useControllableState } from '@radix-ui/react-use-controllable-state';
+import type { LucideIcon } from 'lucide-react';
 import { BrainIcon, ChevronDownIcon, DotIcon } from 'lucide-react';
+import type { ComponentProps, ReactNode } from 'react';
 import { createContext, memo, useContext, useMemo } from 'react';
 
 interface ChainOfThoughtContextValue {

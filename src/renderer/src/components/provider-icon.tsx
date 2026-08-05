@@ -1,7 +1,6 @@
-import Image from "next/image";
-import {ModelProviderTypeEnum} from "core/database/schema/modelProviderSchema";
-import {cn} from "@/lib/utils";
-
+import { cn } from '@/lib/utils';
+import { ModelProviderTypeEnum } from 'core/database/schema/modelProviderSchema';
+import Image from 'next/image';
 
 type ProviderIconProps = {
     type: ModelProviderTypeEnum;
@@ -21,8 +20,8 @@ const ProviderIcon = ({ type, size = 20, theme, className }: ProviderIconProps) 
             width={size}
             height={size}
             unoptimized
-            style={{ backgroundColor: theme === "dark" ? "white" : "transparent" }}
-            className={cn("mr-2 rounded-sm", className)}
+            style={{ backgroundColor: theme === 'dark' ? 'white' : 'transparent' }}
+            className={cn('mr-2 rounded-sm', className)}
         />
     );
 };

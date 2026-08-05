@@ -1,12 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
-import equal from 'fast-deep-equal';
-import type { UseChatHelpers } from '@ai-sdk/react';
-import {
-    Conversation,
-    ConversationContent,
-    ConversationEmptyState,
-    ConversationScrollButton,
-} from './ai-elements/conversation';
+import { Loader } from '@/components/ai-elements/loader';
 import {
     Message,
     MessageAction,
@@ -14,28 +6,36 @@ import {
     MessageContent,
     MessageResponse,
 } from '@/components/ai-elements/message';
-import { CopyIcon, MessageSquare } from 'lucide-react';
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-elements/reasoning';
 import { Source, Sources, SourcesContent, SourcesTrigger } from '@/components/ai-elements/sources';
-import { Loader } from '@/components/ai-elements/loader';
-import { DynamicToolUIPart, UIMessage } from 'ai';
 import { PreviewAttachment } from '@/components/preview-attachment';
-import { Tool, ToolHeader, ToolContent, ToolInput, ToolOutput } from './ai-elements/tool';
+import ProviderIcon from '@/components/provider-icon';
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { loadProviders } from '@/lib/store/providers-store';
+import { cn } from '@/lib/utils';
+import type { UseChatHelpers } from '@ai-sdk/react';
+import { DynamicToolUIPart, UIMessage } from 'ai';
+import type { ProviderWithModels } from 'core/dto';
+import equal from 'fast-deep-equal';
+import { CopyIcon, MessageSquare } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
     Confirmation,
-    ConfirmationTitle,
-    ConfirmationRequest,
     ConfirmationAccepted,
-    ConfirmationRejected,
-    ConfirmationActions,
     ConfirmationAction,
+    ConfirmationActions,
+    ConfirmationRejected,
+    ConfirmationRequest,
+    ConfirmationTitle,
 } from './ai-elements/confirmation';
-import type { ProviderWithModels } from 'core/dto';
-import ProviderIcon from '@/components/provider-icon';
-import { useTheme } from 'next-themes';
-import { cn } from '@/lib/utils';
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
-import {loadProviders} from "@/lib/store/providers-store";
+import {
+    Conversation,
+    ConversationContent,
+    ConversationEmptyState,
+    ConversationScrollButton,
+} from './ai-elements/conversation';
+import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from './ai-elements/tool';
 
 const MODEL_NAME_COLORS = [
     'text-emerald-600 dark:text-emerald-400',
@@ -425,7 +425,7 @@ function PureMessages({
     const prevMatchIndexRef = useRef<number | null>(null);
 
     useEffect(() => {
-        if (providersStatus === "idle") {
+        if (providersStatus === 'idle') {
             void dispatch(loadProviders());
         }
     }, [dispatch, providersStatus]);

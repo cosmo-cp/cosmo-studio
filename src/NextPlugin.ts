@@ -1,7 +1,7 @@
+import fs from 'fs';
+import path from 'path';
 import { namedHookWithTaskFn, PluginBase } from '@electron-forge/plugin-base';
 import type { ForgeMultiHookMap } from '@electron-forge/shared-types';
-import path from 'path';
-import fs from 'fs';
 
 /**
  * This plugin copies the Next.js build output from a specified source directory

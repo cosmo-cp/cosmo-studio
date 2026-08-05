@@ -11,8 +11,8 @@ This file applies to changes under `src/main/`.
 - Generated HTTP RPC dispatch (`src/main/http/RpcController.ts` and `src/main/http/rpc-manifest.ts`).
 - Shared chat streaming orchestration (`src/main/services/ChatStreamingService.ts`).
 - Integration glue that requires runtime primitives:
-  - Electron `webContents.send` streaming in `StreamingChatController`.
-  - HTTP response streaming in `ChatHttpController`.
+    - Electron `webContents.send` streaming in `StreamingChatController`.
+    - HTTP response streaming in `ChatHttpController`.
 - Logging setup for Electron main (`src/main/logger.ts`).
 
 If logic can be **pure domain logic** (no Electron objects), it should live in `packages/core/` instead.
@@ -32,8 +32,8 @@ If logic can be **pure domain logic** (no Electron objects), it should live in `
 
 - `src/main/http/index.ts` owns Nest startup, host/port envs, DB initialization, and MCP client initialization.
 - `src/main/http/RpcController.ts` must keep the RPC envelope stable:
-  - `{ok: true, result}`
-  - `{ok: false, error: {code, message}}`
+    - `{ok: true, result}`
+    - `{ok: false, error: {code, message}}`
 - `src/main/http/ChatHttpController.ts` is the HTTP delivery adapter for `ChatStreamingService`.
 - Keep HTTP v1 local single-user by default: bind `127.0.0.1` unless explicitly configured otherwise.
 - Generated file `src/main/http/rpc-manifest.ts` should not be edited manually.

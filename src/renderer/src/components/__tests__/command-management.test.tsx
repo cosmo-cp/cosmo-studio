@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { StoreProvider } from '@/app/store-provider';
+import { createMockAppDataSource } from '@/test/mock-app-data-source';
 import { render, screen, waitFor } from '@testing-library/react';
-import { StoreProvider} from "@/lib/store/store-provider";
-import {createMockAppDataSource} from "@/test/mock-app-data-source";
-import {CommandManagement } from '../command-management';
+import { describe, expect, it, vi } from 'vitest';
+import { CommandManagement } from '../command-management';
 
 vi.mock('electron-log/renderer', () => ({
     default: {
@@ -34,8 +34,8 @@ describe('CommandManagement', () => {
                     },
                 })}
             >
-                <CommandManagement/>
-            </StoreProvider>
+                <CommandManagement />
+            </StoreProvider>,
         );
 
         await waitFor(() => {

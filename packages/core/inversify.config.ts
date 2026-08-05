@@ -1,30 +1,30 @@
 import 'reflect-metadata';
 import { Container } from 'inversify';
-import { CORETYPES } from './types/types';
 import { DatabaseManager } from './database/DatabaseManager';
-import { ChatRepository } from './repositories/ChatRepository';
-import { MessageRepository } from './repositories/MessageRepository';
-import { ChatService } from './services/ChatService';
-import { MessageService } from './services/MessageService';
-import { ModelProviderRepository } from './repositories/ModelProviderRepository';
-import { ModelProviderService } from './services/ModelProviderService';
-import { PersonaRepository } from './repositories/PersonaRepository';
-import { PersonaService } from './services/PersonaService';
-import { CommandRepository } from './repositories/CommandRepository';
-import { CommandService } from './services/CommandService';
-import { McpServerRepository } from './repositories/McpServerRepository';
-import { McpServerService } from './services/McpServerService';
-import { McpClientManager } from './services/McpClientManager';
+import { Base64SecretStore, type SecretStore } from './platform/SecretStore';
 import { AcpAgentRepository } from './repositories/AcpAgentRepository';
-import { AcpAgentService } from './services/AcpAgentService';
-import { AcpRegistryService } from './services/AcpRegistryService';
-import {WebSearchConfigRepository} from "./repositories/WebSearchConfigRepository";
-import {WebSearchConfigService} from "./services/WebSearchConfigService";
-import {Base64SecretStore, type SecretStore} from "./platform/SecretStore";
+import { ChatRepository } from './repositories/ChatRepository';
+import { CommandRepository } from './repositories/CommandRepository';
+import { McpServerRepository } from './repositories/McpServerRepository';
+import { MessageRepository } from './repositories/MessageRepository';
+import { ModelProviderRepository } from './repositories/ModelProviderRepository';
+import { PersonaRepository } from './repositories/PersonaRepository';
+import { WebSearchConfigRepository } from './repositories/WebSearchConfigRepository';
 import { WorkflowRepository } from './repositories/WorkflowRepository';
 import { WorkflowRunRepository } from './repositories/WorkflowRunRepository';
-import { WorkflowService } from './services/WorkflowService';
+import { AcpAgentService } from './services/AcpAgentService';
+import { AcpRegistryService } from './services/AcpRegistryService';
+import { ChatService } from './services/ChatService';
+import { CommandService } from './services/CommandService';
+import { McpClientManager } from './services/McpClientManager';
+import { McpServerService } from './services/McpServerService';
+import { MessageService } from './services/MessageService';
+import { ModelProviderService } from './services/ModelProviderService';
+import { PersonaService } from './services/PersonaService';
+import { WebSearchConfigService } from './services/WebSearchConfigService';
 import { WorkflowRunService } from './services/WorkflowRunService';
+import { WorkflowService } from './services/WorkflowService';
+import { CORETYPES } from './types/types';
 
 const coreContainer = new Container();
 
@@ -43,7 +43,8 @@ coreContainer.bind<PersonaRepository>(CORETYPES.PersonaRepository).to(PersonaRep
 coreContainer.bind<CommandRepository>(CORETYPES.CommandRepository).to(CommandRepository).inSingletonScope();
 coreContainer.bind<McpServerRepository>(CORETYPES.McpServerRepository).to(McpServerRepository).inSingletonScope();
 coreContainer.bind<AcpAgentRepository>(CORETYPES.AcpAgentRepository).to(AcpAgentRepository).inSingletonScope();
-coreContainer.bind<WebSearchConfigRepository>(CORETYPES.WebSearchConfigRepository)
+coreContainer
+    .bind<WebSearchConfigRepository>(CORETYPES.WebSearchConfigRepository)
     .to(WebSearchConfigRepository)
     .inSingletonScope();
 coreContainer.bind<WorkflowRepository>(CORETYPES.WorkflowRepository).to(WorkflowRepository).inSingletonScope();
@@ -59,7 +60,8 @@ coreContainer.bind<McpServerService>(CORETYPES.McpServerService).to(McpServerSer
 coreContainer.bind<McpClientManager>(CORETYPES.McpClientManager).to(McpClientManager).inSingletonScope();
 coreContainer.bind<AcpAgentService>(CORETYPES.AcpAgentService).to(AcpAgentService).inSingletonScope();
 coreContainer.bind<AcpRegistryService>(CORETYPES.AcpRegistryService).to(AcpRegistryService).inSingletonScope();
-coreContainer.bind<WebSearchConfigService>(CORETYPES.WebSearchConfigService)
+coreContainer
+    .bind<WebSearchConfigService>(CORETYPES.WebSearchConfigService)
     .to(WebSearchConfigService)
     .inSingletonScope();
 coreContainer.bind<WorkflowService>(CORETYPES.WorkflowService).to(WorkflowService).inSingletonScope();

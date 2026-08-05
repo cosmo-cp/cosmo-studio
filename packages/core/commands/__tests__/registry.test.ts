@@ -15,7 +15,9 @@ describe('mergeCommands', () => {
             },
         ]);
 
-        const summarizeEntries = merged.filter((command) => command.name === '/summarize');
+        const summarizeEntries = merged.filter((command) => {
+            return command.name === '/summarize';
+        });
         expect(summarizeEntries).toHaveLength(1);
         expect(summarizeEntries[0]?.builtIn).toBe(true);
     });

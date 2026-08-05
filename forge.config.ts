@@ -1,14 +1,14 @@
-import type { ForgeConfig } from '@electron-forge/shared-types';
-import { MakerSquirrel } from '@electron-forge/maker-squirrel';
-import { MakerZIP } from '@electron-forge/maker-zip';
+import fs from 'fs';
+import path from 'path';
 import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
-import { VitePlugin } from '@electron-forge/plugin-vite';
+import { MakerSquirrel } from '@electron-forge/maker-squirrel';
+import { MakerZIP } from '@electron-forge/maker-zip';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
+import { VitePlugin } from '@electron-forge/plugin-vite';
+import type { ForgeConfig } from '@electron-forge/shared-types';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import NextPlugin from './src/NextPlugin';
-import path from 'path';
-import fs from 'fs';
 
 const isMacSigning = process.env.ENABLE_MAC_SIGNING === 'true';
 
@@ -21,22 +21,23 @@ const config: ForgeConfig = {
         appBundleId: 'com.cosmocp.cosmostudio',
         ...(isMacSigning
             ? {
-            osxSign: {
-                keychain: process.env.KEYCHAIN_PATH || 'signing.keychain-db',
-                identity: process.env.SIGN_IDENTITY,
-                optionsForFile: () => {
-                    return {
-                        entitlements: './entitlements.plist',
-                        hardenedRuntime: true,
-                    };
-                },
-            },
-            osxNotarize: {
-                appleId: process.env.APPLE_ID,
-                appleIdPassword: process.env.APPLE_ID_PASSWORD,
-                teamId: process.env.APPLE_TEAM_ID,
-            },
-        } : {})
+                  osxSign: {
+                      keychain: process.env.KEYCHAIN_PATH || 'signing.keychain-db',
+                      identity: process.env.SIGN_IDENTITY,
+                      optionsForFile: () => {
+                          return {
+                              entitlements: './entitlements.plist',
+                              hardenedRuntime: true,
+                          };
+                      },
+                  },
+                  osxNotarize: {
+                      appleId: process.env.APPLE_ID,
+                      appleIdPassword: process.env.APPLE_ID_PASSWORD,
+                      teamId: process.env.APPLE_TEAM_ID,
+                  },
+              }
+            : {}),
     },
     rebuildConfig: {},
     makers: [
@@ -106,7 +107,7 @@ const config: ForgeConfig = {
     // we asked vite not to bundle PGLite because it was not bundled properly
     // now we copy PGlite packages directly into electron asar bundle
     hooks: {
-        async packageAfterCopy(_forgeConfig, buildPath) {
+        packageAfterCopy: async function (_forgeConfig, buildPath) {
             const requiredNativePackages = ['@electric-sql'];
 
             // __dirname isn't accessible from here

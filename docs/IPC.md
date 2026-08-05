@@ -12,8 +12,8 @@ Cosmo Studio uses a decorator-based IPC pattern so the Electron preload API and 
     - Discovers controller metadata and registers channels.
     - Channel naming: `${prefix}:${name}`
 - HTTP RPC: `src/main/http/RpcController.ts`
-  - Dispatches generated route metadata through `POST /api/rpc/:controller/:handler`.
-  - Uses the same zod tuple schemas as IPC.
+    - Dispatches generated route metadata through `POST /api/rpc/:controller/:handler`.
+    - Uses the same zod tuple schemas as IPC.
 
 ## Controller pattern
 
@@ -27,22 +27,24 @@ Cosmo Studio uses a decorator-based IPC pattern so the Electron preload API and 
 
 - Generator: `scripts/generate-api.ts`
 - Outputs:
-  - `src/preload/api.ts`
-  - `src/preload/api/*.ts`
-  - `src/main/http/rpc-manifest.ts`
-  - `src/renderer/src/lib/generated-http-api.ts`
+    - `src/preload/api.ts`
+    - `src/preload/rpc-api.ts`
+    - `src/preload/contracts/*.ts`
+    - `src/preload/api/*.ts`
+    - `src/preload/http-api/*.ts`
+    - `src/main/http/rpc-manifest.ts`
 
 The generator:
 
 - Reads controller decorator metadata via `reflect-metadata`.
 - Uses a regex on controller source files to infer method signatures.
 - Fails when any `@IpcHandler` is missing a zod tuple schema.
-- Emits a typed `api` object that calls:
+- Emits typed Electron RPC modules that call:
     - `ipcRenderer.invoke(...)` for `@IpcHandler`
     - `ipcRenderer.send(...)` for `@IpcOn`
-- Emits a typed HTTP client that calls:
-  - `fetch("/api/rpc/:controller/:handler")` for `@IpcHandler`
-  - no client methods for `@IpcOn`
+- Emits a browser-safe `httpApi` in `src/preload/api.ts` that calls:
+    - `fetch("/api/rpc/:controller/:handler")` for `@IpcHandler`
+    - no client methods for `@IpcOn`
 
 ## HTTP RPC conventions
 
@@ -50,12 +52,12 @@ The generator:
 - Body: `{ "args": [...] }`
 - Codec: SuperJSON for request and response payloads so `Date` values round-trip.
 - Envelope:
-  - success: `{ "ok": true, "result": value }`
-  - failure: `{ "ok": false, "error": { "code": "...", "message": "..." } }`
+    - success: `{ "ok": true, "result": value }`
+    - failure: `{ "ok": false, "error": { "code": "...", "message": "..." } }`
 - Stable error codes:
-  - `NOT_FOUND`
-  - `BAD_REQUEST`
-  - `INTERNAL_ERROR`
+    - `NOT_FOUND`
+    - `BAD_REQUEST`
+    - `INTERNAL_ERROR`
 
 ### Streaming conventions
 

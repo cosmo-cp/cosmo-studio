@@ -1,9 +1,9 @@
-import {inject, injectable} from 'inversify';
-import type {LanguageModelV3} from '@ai-sdk/provider';
-import type {ToolSet} from 'ai';
-import {CORETYPES} from 'core/types/types';
-import {AcpAgentService} from 'core/services/AcpAgentService';
-import {McpServerService} from 'core/services/McpServerService';
+import { inject, injectable } from 'inversify';
+import type { LanguageModelV3 } from '@ai-sdk/provider';
+import type { ToolSet } from 'ai';
+import { CORETYPES } from 'core/types/types';
+import { AcpAgentService } from 'core/services/AcpAgentService';
+import { McpServerService } from 'core/services/McpServerService';
 import type {
     AcpAgentRuntimeConfig,
     AcpAgentTestResult,
@@ -34,7 +34,7 @@ interface ACPProviderSettings {
 
 // The package ships types under conditional exports that this CommonJS ts-node setup does not resolve.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const {createACPProvider} = require('@mcpc-tech/acp-ai-provider') as {
+const { createACPProvider } = require('@mcpc-tech/acp-ai-provider') as {
     createACPProvider: (config: ACPProviderSettings) => ACPProvider;
 };
 
@@ -44,7 +44,7 @@ export class AcpAgentRuntimeService {
         @inject(CORETYPES.AcpAgentService)
         private readonly acpAgentService: AcpAgentService,
         @inject(CORETYPES.McpServerService)
-        private readonly mcpServerService: McpServerService
+        private readonly mcpServerService: McpServerService,
     ) {}
 
     // Builds a one-shot ACP provider for a chat turn; callers must cleanup after streaming.
@@ -64,7 +64,7 @@ export class AcpAgentRuntimeService {
             env: agent.env,
             authMethodId: agent.authMethodId ?? undefined,
             session: {
-                cwd,
+                cwd: cwd,
                 mcpServers: await this.buildMcpServers(agent),
             },
         });
@@ -76,15 +76,19 @@ export class AcpAgentRuntimeService {
         try {
             provider = await this.createProvider(agentId, cwdOverride);
             const session = await provider.initSession();
-            const authMethods = Array.isArray((session as {authMethods?: unknown}).authMethods) ?
-                ((session as {authMethods: {id?: string}[]}).authMethods)
-                    .map((method) => method.id)
-                    .filter((id): id is string => Boolean(id)) :
-                undefined;
+            const authMethods = Array.isArray((session as { authMethods?: unknown }).authMethods)
+                ? (session as { authMethods: { id?: string }[] }).authMethods
+                      .map((method) => {
+                          return method.id;
+                      })
+                      .filter((id): id is string => {
+                          return Boolean(id);
+                      })
+                : undefined;
             return {
                 ok: true,
                 message: 'ACP agent session initialized.',
-                authMethods,
+                authMethods: authMethods,
             };
         } catch (error) {
             return {
@@ -102,10 +106,18 @@ export class AcpAgentRuntimeService {
             return [];
         }
 
-        const servers = await Promise.all([...serverIds].map((id) => this.mcpServerService.getById(id)));
+        const servers = await Promise.all(
+            [...serverIds].map((id) => {
+                return this.mcpServerService.getById(id);
+            }),
+        );
         return servers
-            .filter((server): server is McpServer => Boolean(server?.enabled))
-            .map((server) => this.mapMcpServer(server));
+            .filter((server): server is McpServer => {
+                return Boolean(server?.enabled);
+            })
+            .map((server) => {
+                return this.mapMcpServer(server);
+            });
     }
 
     private mapMcpServer(server: McpServer): Record<string, unknown> {

@@ -1,35 +1,29 @@
 'use client';
 
-import Link from 'next/link';
-import {usePathname} from 'next/navigation';
+import { CosmoIcon } from '@/components/cosmo-icon';
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarGroup,
-    SidebarGroupLabel,
     SidebarGroupContent,
+    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import {
-    ChevronLeft,
-    ChevronRight,
-    MessageCircle,
-    SettingsIcon,
-    Workflow,
-} from 'lucide-react';
-import {CosmoIcon} from '@/components/cosmo-icon';
-import {
     getDefaultSettingsHref,
     getHomeHref,
     getSettingsItemHref,
+    getVisibleSettingsSections,
     isSettingsItemActive,
     isSettingsPath,
-    getVisibleSettingsSections,
 } from '@/lib/settings-navigation';
+import { ChevronLeft, ChevronRight, MessageCircle, SettingsIcon, Workflow } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const menuItems = [
     {
@@ -47,10 +41,7 @@ const menuItems = [
 ] as const;
 
 function isMenuItemActive(currentPathname: string, targetPathname: string): boolean {
-        return (
-        currentPathname === targetPathname ||
-        currentPathname.startsWith(`${targetPathname}/`)
-    );
+    return currentPathname === targetPathname || currentPathname.startsWith(`${targetPathname}/`);
 }
 
 export function AppSidebar() {
@@ -89,10 +80,7 @@ export function AppSidebar() {
                                                 asChild
                                                 isActive={isSettingsItemActive(pathname, item.slug)}
                                             >
-                                                <Link
-                                                    href={getSettingsItemHref(pathname, item.slug)}
-                                                    prefetch={false}
-                                                >
+                                                <Link href={getSettingsItemHref(pathname, item.slug)} prefetch={false}>
                                                     <item.icon />
                                                     <span>{item.title}</span>
                                                 </Link>
@@ -103,10 +91,7 @@ export function AppSidebar() {
                             ) : (
                                 menuItems.map((item) => (
                                     <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton
-                                            asChild
-                                            isActive={isMenuItemActive(pathname, item.pathname)}
-                                        >
+                                        <SidebarMenuButton asChild isActive={isMenuItemActive(pathname, item.pathname)}>
                                             <Link href={item.href} prefetch={false}>
                                                 <item.icon />
                                                 <span>{item.title}</span>

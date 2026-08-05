@@ -1,13 +1,13 @@
 'use client';
 
-import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
-import {ScrollArea} from '@/components/ui/scroll-area';
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
-import {cn} from '@/lib/utils';
-import {format, isThisWeek, isThisYear, isToday, isYesterday} from 'date-fns';
-import {Plus, Search, Trash2} from 'lucide-react';
-import type {KeyboardEvent} from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import { format, isThisWeek, isThisYear, isToday, isYesterday } from 'date-fns';
+import { Plus, Search, Trash2 } from 'lucide-react';
+import type { KeyboardEvent } from 'react';
 
 export interface WorkflowListItem {
     id: string;
@@ -101,7 +101,7 @@ export function WorkflowHistory({
                                 <div
                                     className={cn(
                                         'group flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors hover:bg-accent/50',
-                                        selectedWorkflowId === workflow.id ? 'bg-accent text-accent-foreground' : ''
+                                        selectedWorkflowId === workflow.id ? 'bg-accent text-accent-foreground' : '',
                                     )}
                                     data-active={selectedWorkflowId === workflow.id}
                                     key={workflow.id}
@@ -144,9 +144,7 @@ export function WorkflowHistory({
                             ))}
                         </TooltipProvider>
                     ) : (
-                        <div className="p-4 text-sm text-muted-foreground">
-                            No workflows yet.
-                        </div>
+                        <div className="p-4 text-sm text-muted-foreground">No workflows yet.</div>
                     )}
                 </div>
             </ScrollArea>

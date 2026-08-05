@@ -22,12 +22,12 @@ This file applies to changes under `src/renderer/`.
 - Renderer must not import Node/Electron APIs.
 - All privileged operations go through preload-backed capabilities.
 - Renderer components should not call `window.api` directly:
-  - Use the root Redux store, selectors, and thunks for cached request/response flows.
-  - Keep direct preload usage isolated to renderer adapters such as `src/renderer/src/lib/app-data-source.ts` and streaming transport code such as `src/renderer/src/chat-transport.ts`.
+    - Use the root Redux store, selectors, and thunks for cached request/response flows.
+    - Keep backend resolution isolated to `src/renderer/src/lib/store/store.ts` and streaming transport code such as `src/renderer/src/chat-transport.ts`.
 - Renderer components should not branch on Electron versus HTTP:
-  - Request/response backend selection belongs in `src/renderer/src/lib/app-data-source.ts`.
-  - Streaming backend selection belongs in `src/renderer/src/chat-transport.ts`.
-  - Generated HTTP RPC calls live in `src/renderer/src/lib/generated-http-api.ts` and should not be hand-edited.
+    - Request/response backend selection belongs in `src/renderer/src/lib/store/store.ts` via the thunk `extraArgument`.
+    - Streaming backend selection belongs in `src/renderer/src/chat-transport.ts`.
+    - Browser-safe HTTP RPC calls live in `src/preload/api.ts`; Electron-only preload calls live behind `window.api` via `src/preload/rpc-api.ts`.
 - Prefer `import type` when consuming `core/dto` types to avoid bundling heavy runtime code:
     - Example: `import type {Chat} from "core/dto";`
 
@@ -80,11 +80,11 @@ Apply the highest-impact rules first:
 - Keep side effects in Redux thunks or adapter modules, not in reducers or presentation components.
 - Keep renderer logic focused on presentation + orchestration:
     - DB queries, encryption, provider registries belong in `packages/core` and/or main controllers.
-- Resolve backend-specific data access behind `src/renderer/src/lib/app-data-source.ts` so the same thunk layer can talk to Electron preload or HTTP RPC.
+- Resolve backend-specific request/response access in `src/renderer/src/lib/store/store.ts` so the same thunk layer can talk to Electron preload or HTTP RPC.
 - For streaming chat:
     - Renderer uses `@ai-sdk/react` and `createChatTransport()` (`src/renderer/src/chat-transport.ts`).
     - Electron builds use `IpcChatTransport`; ensure stream channels are stable (`chat-stream-${chatId}`) and all listeners are cleaned up.
-  - HTTP builds use AI SDK `DefaultChatTransport` against `POST /api/chat`.
+    - HTTP builds use AI SDK `DefaultChatTransport` against `POST /api/chat`.
 
 ## Testing expectations (renderer)
 

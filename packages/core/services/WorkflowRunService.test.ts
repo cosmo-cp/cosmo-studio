@@ -49,11 +49,13 @@ describe('WorkflowRunService', () => {
 
         await expect(service.updateRunStatus('r2', 'queued', 're-queued')).resolves.toEqual(run);
 
-        expect(repository.addEvent).toHaveBeenCalledWith(expect.objectContaining({
-            workflowRunId: 'r2',
-            eventType: 'created',
-            status: 'queued',
-        }));
+        expect(repository.addEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                workflowRunId: 'r2',
+                eventType: 'created',
+                status: 'queued',
+            }),
+        );
     });
 
     it('records waiting approval and progress events', async () => {
@@ -65,14 +67,18 @@ describe('WorkflowRunService', () => {
         await expect(service.updateRunStatus('r3', 'waiting_approval', 'approval needed')).resolves.toEqual(run);
         await expect(service.recordProgressEvent('r3', 'step started', { nodeId: 'n1' })).resolves.toEqual(event);
 
-        expect(repository.addEvent).toHaveBeenCalledWith(expect.objectContaining({
-            eventType: 'waiting_approval',
-            status: 'waiting_approval',
-        }));
-        expect(repository.addEvent).toHaveBeenCalledWith(expect.objectContaining({
-            eventType: 'progress',
-            status: 'running',
-            payload: { nodeId: 'n1' },
-        }));
+        expect(repository.addEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                eventType: 'waiting_approval',
+                status: 'waiting_approval',
+            }),
+        );
+        expect(repository.addEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                eventType: 'progress',
+                status: 'running',
+                payload: { nodeId: 'n1' },
+            }),
+        );
     });
 });

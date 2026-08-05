@@ -7,19 +7,19 @@ import {
     streamText,
     type ToolSet,
     type UIMessageChunk,
-} from "ai";
-import {inject, injectable} from "inversify";
-import type {ChatSendMessageArgs} from "core/dto";
-import {CORETYPES} from "core/types/types";
-import {ModelProviderService} from "core/services/ModelProviderService";
-import {MessageService} from "core/services/MessageService";
-import {PersonaService} from "core/services/PersonaService";
-import {McpClientManager} from "core/services/McpClientManager";
-import {WebSearchConfigService} from "core/services/WebSearchConfigService";
-import {getCoreLogger} from "core/platform/CoreLogger";
-import {TYPES} from "../types";
-import {AcpAgentRuntimeService} from "./AcpAgentRuntimeService";
-import {createExaWebSearchTool} from "./ExaWebSearchTool";
+} from 'ai';
+import { inject, injectable } from 'inversify';
+import type { ChatSendMessageArgs } from 'core/dto';
+import { CORETYPES } from 'core/types/types';
+import { ModelProviderService } from 'core/services/ModelProviderService';
+import { MessageService } from 'core/services/MessageService';
+import { PersonaService } from 'core/services/PersonaService';
+import { McpClientManager } from 'core/services/McpClientManager';
+import { WebSearchConfigService } from 'core/services/WebSearchConfigService';
+import { getCoreLogger } from 'core/platform/CoreLogger';
+import { TYPES } from '../types';
+import { AcpAgentRuntimeService } from './AcpAgentRuntimeService';
+import { createExaWebSearchTool } from './ExaWebSearchTool';
 
 interface ChatStreamConfig {
     model: unknown;
@@ -42,43 +42,44 @@ export class ChatStreamingService {
         @inject(CORETYPES.WebSearchConfigService)
         private readonly webSearchConfigService: WebSearchConfigService,
         @inject(TYPES.AcpAgentRuntimeService)
-        private readonly acpAgentRuntimeService: AcpAgentRuntimeService
-    ) {
-    }
+        private readonly acpAgentRuntimeService: AcpAgentRuntimeService,
+    ) {}
 
     // Build the model response stream once so Electron IPC and HTTP can deliver it differently.
     public async createMessageStream(
         args: ChatSendMessageArgs,
-        abortSignal: AbortSignal
+        abortSignal: AbortSignal,
     ): Promise<ReadableStream<UIMessageChunk>> {
-        const runtime = args.runtime ?? "model";
-        if (runtime === "model" && !args.modelIdentifier) {
-            throw new Error("modelIdentifier is required but was not provided");
+        const runtime = args.runtime ?? 'model';
+        if (runtime === 'model' && !args.modelIdentifier) {
+            throw new Error('modelIdentifier is required but was not provided');
         }
-        if (runtime === "agent" && !args.agentId) {
-            throw new Error("agentId is required but was not provided");
+        if (runtime === 'agent' && !args.agentId) {
+            throw new Error('agentId is required but was not provided');
         }
 
         const modelMessages: ModelMessage[] = await convertToModelMessages(args.messages);
         const persona = args.personaId
             ? await this.personaService.getById(args.personaId)
             : args.personaName
-                ? await this.personaService.getByName(args.personaName)
-                : undefined;
+              ? await this.personaService.getByName(args.personaName)
+              : undefined;
 
         if (persona?.details) {
             modelMessages.unshift({
-                role: "system",
+                role: 'system',
                 content: persona.details,
             });
         }
 
         const lastUserMsg = args.messages[args.messages.length - 1];
-        const txtMsg = lastUserMsg.parts.find(part => part.type === "text")?.text;
-        const rsnMsg = lastUserMsg.parts.find(part => part.type === "reasoning")?.text;
-        const persistedModelIdentifier = runtime === "agent" ?
-            `agent:${args.agentId}` :
-            args.modelIdentifier;
+        const txtMsg = lastUserMsg.parts.find((part) => {
+            return part.type === 'text';
+        })?.text;
+        const rsnMsg = lastUserMsg.parts.find((part) => {
+            return part.type === 'reasoning';
+        })?.text;
+        const persistedModelIdentifier = runtime === 'agent' ? `agent:${args.agentId}` : args.modelIdentifier;
 
         await this.messageService.createMessage({
             chatId: args.chatId,
@@ -88,9 +89,10 @@ export class ChatStreamingService {
             modelIdentifier: persistedModelIdentifier ?? null,
         });
 
-        const streamConfig = runtime === "agent" ?
-            await this.buildAcpAgentStreamConfig(args.agentId!, args.agentCwd) :
-            await this.buildModelStreamConfig(args.modelIdentifier!);
+        const streamConfig =
+            runtime === 'agent'
+                ? await this.buildAcpAgentStreamConfig(args.agentId!, args.agentCwd)
+                : await this.buildModelStreamConfig(args.modelIdentifier!);
 
         const result = streamText({
             // @ts-expect-error/type-does-not-exist
@@ -98,13 +100,13 @@ export class ChatStreamingService {
             messages: modelMessages,
             tools: streamConfig.tools,
             stopWhen: streamConfig.hasTools ? stepCountIs(5) : undefined,
-            abortSignal,
-            experimental_transform: smoothStream({delayInMs: 30}),
+            abortSignal: abortSignal,
+            experimental_transform: smoothStream({ delayInMs: 30 }),
             onFinish: (result) => {
                 streamConfig.cleanup?.();
                 void this.messageService.createMessage({
                     chatId: args.chatId,
-                    role: "assistant",
+                    role: 'assistant',
                     text: result.text ?? null,
                     reasoning: result.reasoningText ?? null,
                     modelIdentifier: persistedModelIdentifier ?? null,
@@ -112,7 +114,7 @@ export class ChatStreamingService {
             },
             onError: (error) => {
                 streamConfig.cleanup?.();
-                getCoreLogger().error("Stream error:", error);
+                getCoreLogger().error('Stream error:', error);
                 if (RetryError.isInstance(error)) {
                     throw error.lastError;
                 }
@@ -123,16 +125,18 @@ export class ChatStreamingService {
         return result.toUIMessageStream({
             sendReasoning: true,
             sendSources: true,
-            messageMetadata: () => ({
-                modelId: persistedModelIdentifier,
-            }),
+            messageMetadata: () => {
+                return {
+                    modelId: persistedModelIdentifier,
+                };
+            },
             onError: (error) => {
                 streamConfig.cleanup?.();
-                getCoreLogger().error("Failed during chat UI message stream:", error);
+                getCoreLogger().error('Failed during chat UI message stream:', error);
                 if (error instanceof Error) {
                     return error.message;
                 }
-                return "Stream Error";
+                return 'Stream Error';
             },
         });
     }
@@ -142,7 +146,7 @@ export class ChatStreamingService {
         const tools = await this.buildTools();
         return {
             model: modelProviderRegistry.languageModel(modelIdentifier as `${string}:${string}`),
-            tools,
+            tools: tools,
             hasTools: Object.keys(tools).length > 0,
         };
     }
@@ -153,9 +157,11 @@ export class ChatStreamingService {
         const tools = (provider.tools ?? {}) as ToolSet;
         return {
             model: provider.languageModel(),
-            tools,
+            tools: tools,
             hasTools: Object.keys(tools).length > 0,
-            cleanup: () => provider.cleanup(),
+            cleanup: () => {
+                return provider.cleanup();
+            },
         };
     }
 

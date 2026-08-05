@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
+import { ModelProviderTypeEnum } from 'core/database/schema/modelProviderSchema';
 import { describe, expect, it } from 'vitest';
-import {ModelProviderTypeEnum} from 'core/database/schema/modelProviderSchema';
 import ProviderIcon from '../provider-icon';
 
 describe('ProviderIcon', () => {

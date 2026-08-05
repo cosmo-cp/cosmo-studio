@@ -1,11 +1,11 @@
-import {generateText, stepCountIs, type ToolSet} from 'ai';
-import {inject, injectable} from 'inversify';
-import type {WorkflowGraph, WorkflowRun} from 'core/dto';
-import {McpClientManager} from 'core/services/McpClientManager';
-import {ModelProviderService} from 'core/services/ModelProviderService';
-import {WorkflowRunService} from 'core/services/WorkflowRunService';
-import {CORETYPES} from 'core/types/types';
-import {logger} from '../logger';
+import { generateText, stepCountIs, type ToolSet } from 'ai';
+import { inject, injectable } from 'inversify';
+import type { WorkflowGraph, WorkflowRun } from 'core/dto';
+import { McpClientManager } from 'core/services/McpClientManager';
+import { ModelProviderService } from 'core/services/ModelProviderService';
+import { WorkflowRunService } from 'core/services/WorkflowRunService';
+import { CORETYPES } from 'core/types/types';
+import { logger } from '../logger';
 
 const SUPPORTED_NODE_TYPES = new Set<WorkflowNodeType>([
     'start',
@@ -18,15 +18,7 @@ const SUPPORTED_NODE_TYPES = new Set<WorkflowNodeType>([
     'end',
 ]);
 
-export type WorkflowNodeType =
-    | 'start'
-    | 'agent'
-    | 'if-else'
-    | 'loop'
-    | 'http'
-    | 'mcp'
-    | 'user-approval'
-    | 'end';
+export type WorkflowNodeType = 'start' | 'agent' | 'if-else' | 'loop' | 'http' | 'mcp' | 'user-approval' | 'end';
 
 export interface WorkflowExecutionOptions {
     runId: string;
@@ -102,7 +94,9 @@ export class WorkflowExecutionService {
 
     // Converts persisted canvas data into deterministic executable state before a run mutates status.
     public compileGraph(graph: WorkflowGraph): CompiledWorkflowGraph {
-        const nodes = graph.nodes.map((node) => this.toWorkflowStep(node));
+        const nodes = graph.nodes.map((node) => {
+            return this.toWorkflowStep(node);
+        });
         const nodeById = new Map<string, WorkflowExecutableStep>();
         const outgoingEdges = new Map<string, WorkflowEdge[]>();
         const incomingCounts = new Map<string, number>();
@@ -120,7 +114,9 @@ export class WorkflowExecutionService {
             throw new Error('Workflow graph requires at least one node');
         }
 
-        for (const edge of graph.edges.map((rawEdge) => this.toWorkflowEdge(rawEdge))) {
+        for (const edge of graph.edges.map((rawEdge) => {
+            return this.toWorkflowEdge(rawEdge);
+        })) {
             if (!nodeById.has(edge.source) || !nodeById.has(edge.target)) {
                 throw new Error('Workflow graph contains an edge with an unknown endpoint');
             }
@@ -128,7 +124,13 @@ export class WorkflowExecutionService {
             incomingCounts.set(edge.target, (incomingCounts.get(edge.target) ?? 0) + 1);
         }
 
-        const queue = nodes.filter((node) => incomingCounts.get(node.id) === 0).map((node) => node.id);
+        const queue = nodes
+            .filter((node) => {
+                return incomingCounts.get(node.id) === 0;
+            })
+            .map((node) => {
+                return node.id;
+            });
         const orderedNodeIds: string[] = [];
 
         for (let index = 0; index < queue.length; index += 1) {
@@ -148,18 +150,24 @@ export class WorkflowExecutionService {
             throw new Error('Workflow graph must be a DAG');
         }
 
-        const startNode = nodes.find((node) => node.type === 'start');
+        const startNode = nodes.find((node) => {
+            return node.type === 'start';
+        });
         const entryNodeId = startNode?.id ?? orderedNodeIds[0];
         const steps = orderedNodeIds
-            .map((nodeId) => nodeById.get(nodeId))
-            .filter((node): node is WorkflowExecutableStep => node !== undefined && node.type !== 'start');
+            .map((nodeId) => {
+                return nodeById.get(nodeId);
+            })
+            .filter((node): node is WorkflowExecutableStep => {
+                return node !== undefined && node.type !== 'start';
+            });
 
         return {
-            entryNodeId,
-            orderedNodeIds,
-            steps,
-            nodeById,
-            outgoingEdges,
+            entryNodeId: entryNodeId,
+            orderedNodeIds: orderedNodeIds,
+            steps: steps,
+            nodeById: nodeById,
+            outgoingEdges: outgoingEdges,
         };
     }
 
@@ -188,10 +196,12 @@ export class WorkflowExecutionService {
             visitedNodeIds: [],
             outputs: {},
         };
-        const abortListener = () => abortController.abort();
+        const abortListener = () => {
+            return abortController.abort();
+        };
 
         if (externalSignal) {
-            externalSignal.addEventListener('abort', abortListener, {once: true});
+            externalSignal.addEventListener('abort', abortListener, { once: true });
             if (externalSignal.aborted) {
                 abortController.abort();
             }
@@ -237,7 +247,7 @@ export class WorkflowExecutionService {
                     await this.workflowRunService.recordProgressEvent(
                         runId,
                         'Waiting for user approval',
-                        {nodeId: step.id, nodeType: step.type, prompt: waitingApproval.prompt},
+                        { nodeId: step.id, nodeType: step.type, prompt: waitingApproval.prompt },
                         'waiting_approval',
                     );
                     await this.updateRunStatus(runId, 'waiting_approval', 'Workflow is waiting for user approval');
@@ -245,7 +255,7 @@ export class WorkflowExecutionService {
                         status: 'waiting_approval',
                         visitedNodeIds: state.visitedNodeIds,
                         outputs: state.outputs,
-                        waitingApproval,
+                        waitingApproval: waitingApproval,
                     };
                 }
 
@@ -265,7 +275,7 @@ export class WorkflowExecutionService {
                 return this.finishCancelledRun(runId, state);
             }
 
-            logger.error('Workflow execution failed', {runId, error});
+            logger.error('Workflow execution failed', { runId: runId, error: error });
             await this.updateRunStatus(runId, 'failed', 'Workflow execution failed');
             return {
                 status: 'failed',
@@ -302,7 +312,7 @@ export class WorkflowExecutionService {
         output?: unknown;
         nextNodeId?: string;
         status?: WorkflowRun['status'];
-        waitingApproval?: {nodeId: string; prompt: string};
+        waitingApproval?: { nodeId: string; prompt: string };
     }> {
         switch (step.type) {
             case 'agent':
@@ -313,8 +323,9 @@ export class WorkflowExecutionService {
             case 'if-else': {
                 const condition = step.data.condition === true;
                 return {
-                    output: {condition},
-                    nextNodeId: this.getNextNodeId(compiled, step.id, String(condition)) ??
+                    output: { condition: condition },
+                    nextNodeId:
+                        this.getNextNodeId(compiled, step.id, String(condition)) ??
                         this.getNextNodeId(compiled, step.id),
                 };
             }
@@ -342,7 +353,7 @@ export class WorkflowExecutionService {
                     status: 'waiting_approval',
                     waitingApproval: {
                         nodeId: step.id,
-                        prompt,
+                        prompt: prompt,
                     },
                 };
             }
@@ -382,7 +393,7 @@ export class WorkflowExecutionService {
                     content: prompt,
                 },
             ],
-            tools,
+            tools: tools,
             stopWhen: hasTools ? stepCountIs(5) : undefined,
             abortSignal: signal,
         });
@@ -403,9 +414,9 @@ export class WorkflowExecutionService {
         const method = this.getString(step.data.method, 'GET').toUpperCase();
         const headers = this.asStringRecord(step.data.headers);
         const requestInit: RequestInit = {
-            method,
-            headers,
-            signal,
+            method: method,
+            headers: headers,
+            signal: signal,
         };
 
         if (step.data.body !== undefined && method !== 'GET') {
@@ -431,7 +442,7 @@ export class WorkflowExecutionService {
         }
 
         const tools: ToolSet = await this.mcpClientManager.getAllTools();
-        const tool = tools[toolName] as {execute?: (input: unknown) => Promise<unknown> | unknown} | undefined;
+        const tool = tools[toolName] as { execute?: (input: unknown) => Promise<unknown> | unknown } | undefined;
         if (!tool?.execute) {
             throw new Error(`MCP tool "${toolName}" is not available`);
         }
@@ -445,7 +456,7 @@ export class WorkflowExecutionService {
         await this.workflowRunService.recordProgressEvent(
             runId,
             `Started ${step.type} step`,
-            {nodeId: step.id, nodeType: step.type},
+            { nodeId: step.id, nodeType: step.type },
             'running',
         );
         this.emitProgress(runId, {
@@ -460,14 +471,14 @@ export class WorkflowExecutionService {
         await this.workflowRunService.recordProgressEvent(
             runId,
             `Completed ${step.type} step`,
-            {nodeId: step.id, nodeType: step.type, output},
+            { nodeId: step.id, nodeType: step.type, output: output },
             'running',
         );
         this.emitProgress(runId, {
             type: 'step_completed',
             nodeId: step.id,
             nodeType: step.type,
-            output,
+            output: output,
         });
     }
 
@@ -480,8 +491,8 @@ export class WorkflowExecutionService {
         const run = await this.workflowRunService.updateRunStatus(runId, status, message);
         this.emitProgress(runId, {
             type: 'run_status',
-            status,
-            message,
+            status: status,
+            message: message,
         });
         return run;
     }
@@ -500,7 +511,9 @@ export class WorkflowExecutionService {
     private getNextNodeId(compiled: CompiledWorkflowGraph, nodeId: string, sourceHandle?: string): string | undefined {
         const outgoingEdges = compiled.outgoingEdges.get(nodeId) ?? [];
         if (sourceHandle !== undefined) {
-            return outgoingEdges.find((edge) => edge.sourceHandle === sourceHandle)?.target;
+            return outgoingEdges.find((edge) => {
+                return edge.sourceHandle === sourceHandle;
+            })?.target;
         }
         return outgoingEdges[0]?.target;
     }
@@ -522,7 +535,7 @@ export class WorkflowExecutionService {
         }
 
         return {
-            id,
+            id: id,
             type: templateId as WorkflowNodeType,
             data: data ?? {},
         };
@@ -539,8 +552,8 @@ export class WorkflowExecutionService {
 
         return {
             id: this.getString(rawEdge.id) || undefined,
-            source,
-            target,
+            source: source,
+            target: target,
             sourceHandle: this.getString(rawEdge.sourceHandle) || undefined,
         };
     }
@@ -605,8 +618,9 @@ export class WorkflowExecutionService {
             return {};
         }
         return Object.fromEntries(
-            Object.entries(record)
-                .filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+            Object.entries(record).filter((entry): entry is [string, string] => {
+                return typeof entry[1] === 'string';
+            }),
         );
     }
 

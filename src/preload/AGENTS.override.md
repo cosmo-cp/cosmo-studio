@@ -8,7 +8,10 @@ Preload is the **only** place where we bridge data/capabilities from Electron to
 
 - Entry: `src/preload/index.ts`
 - Exposed API: `window.api`
-- Generated API client: `src/preload/api.ts` plus the generated `src/preload/api/*.ts` modules (see below)
+- Browser-safe shared API: `src/preload/api.ts`
+- Electron preload barrel: `src/preload/rpc-api.ts`
+- Generated contracts: `src/preload/contracts/*.ts`
+- Generated implementation modules: `src/preload/api/*.ts` and `src/preload/http-api/*.ts`
 
 ## Security rules (non-negotiable)
 
@@ -20,15 +23,15 @@ Preload is the **only** place where we bridge data/capabilities from Electron to
     - keep data serializable (structured clone friendly)
 - Don’t create new global objects in `window` other than what’s explicitly required.
 
-## Generated file policy (`api.ts` and `api/`)
+## Generated file policy (`api.ts`, `rpc-api.ts`, `contracts/`, `api/`, and `http-api/`)
 
-- `src/preload/api.ts` and the generated `src/preload/api/*.ts` modules are produced by `scripts/generate-api.ts`.
+- `src/preload/api.ts`, `src/preload/rpc-api.ts`, and the generated `src/preload/contracts/*.ts`, `src/preload/api/*.ts`, `src/preload/http-api/*.ts` modules are produced by `scripts/generate-api.ts`.
 - Do not hand-edit the generated preload API files unless you are also updating the generator to make the change reproducible.
 - After updating IPC controllers/decorators, run `npm run generate-api` and commit the regenerated files.
 
 ## Renderer typing contract
 
-- The renderer uses the preload `Api` type via `src/renderer/src/globals.d.ts`.
+- The renderer uses the preload `CosmoApi` type via `src/renderer/src/globals.d.ts`.
 - If you change the exported API shape, ensure the type updates flow through generation and the renderer compiles.
 
 ## Logging

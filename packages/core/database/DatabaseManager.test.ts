@@ -1,42 +1,57 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { setCoreLogger } from '../platform/CoreLogger';
+import { DatabaseManager } from './DatabaseManager';
 
-const pgliteCreate = vi.hoisted(() => vi.fn());
-const drizzleMock = vi.hoisted(() => vi.fn());
-const runMigrationsMock = vi.hoisted(() => vi.fn());
-const logger = vi.hoisted(() => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-  error: vi.fn(),
-}));
+const pgliteCreate = vi.hoisted(() => {
+    return vi.fn();
+});
+const drizzleMock = vi.hoisted(() => {
+    return vi.fn();
+});
+const runMigrationsMock = vi.hoisted(() => {
+    return vi.fn();
+});
+const logger = vi.hoisted(() => {
+    return {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+    };
+});
 
-vi.mock('@electric-sql/pglite', () => ({
-    PGlite: {
-        create: pgliteCreate,
-    },
-}));
+vi.mock('@electric-sql/pglite', () => {
+    return {
+        PGlite: {
+            create: pgliteCreate,
+        },
+    };
+});
 
-vi.mock('drizzle-orm/pglite', () => ({
-    drizzle: drizzleMock,
-}));
+vi.mock('drizzle-orm/pglite', () => {
+    return {
+        drizzle: drizzleMock,
+    };
+});
 
-vi.mock('./migrator', () => ({
-    runMigrations: runMigrationsMock,
-}));
+vi.mock('./migrator', () => {
+    return {
+        runMigrations: runMigrationsMock,
+    };
+});
 
-vi.mock('../../../src/main/logger', () => ({
-    logger,
-}));
+vi.mock('../../../src/main/logger', () => {
+    return {
+        logger: logger,
+    };
+});
 
-import {DatabaseManager} from "./DatabaseManager"
-import {setCoreLogger} from "../platform/CoreLogger"
-
-describe("DatabaseManager", () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    setCoreLogger(logger)
-    ;(DatabaseManager as unknown as {instance: unknown; initPromise: unknown}).instance = null
-    ;(DatabaseManager as unknown as {instance: unknown; initPromise: unknown}).initPromise = null
-  })
+describe('DatabaseManager', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        setCoreLogger(logger);
+        (DatabaseManager as unknown as { instance: unknown; initPromise: unknown }).instance = null;
+        (DatabaseManager as unknown as { instance: unknown; initPromise: unknown }).initPromise = null;
+    });
 
     it('initializes drizzle once and exposes the instance', async () => {
         const connection = { connected: true };
@@ -85,8 +100,8 @@ describe("DatabaseManager", () => {
 
     it('throws when accessed before initialization', () => {
         const manager = new DatabaseManager();
-        expect(() => manager.getInstance()).toThrow(
-            'Database not initialized. Call and await DatabaseManager.initialize() at application startup.',
-        );
+        expect(() => {
+            return manager.getInstance();
+        }).toThrow('Database not initialized. Call and await DatabaseManager.initialize() at application startup.');
     });
 });

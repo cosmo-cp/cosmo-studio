@@ -1,17 +1,20 @@
 import 'reflect-metadata';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { IPC_CONTROLLER_METADATA_KEY, IPC_HANDLE_METADATA_KEY, IPC_ON_METADATA_KEY } from './Decorators';
-
-const ipcMain = vi.hoisted(() => ({
-    handle: vi.fn(),
-    on: vi.fn(),
-}));
-
-vi.mock('electron', () => ({
-    ipcMain,
-}));
-
 import { IpcHandlerRegistry } from './index';
+
+const ipcMain = vi.hoisted(() => {
+    return {
+        handle: vi.fn(),
+        on: vi.fn(),
+    };
+});
+
+vi.mock('electron', () => {
+    return {
+        ipcMain: ipcMain,
+    };
+});
 
 describe('IpcHandlerRegistry', () => {
     beforeEach(() => {

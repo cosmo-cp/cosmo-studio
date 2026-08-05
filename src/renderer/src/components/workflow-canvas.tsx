@@ -1,59 +1,49 @@
 'use client';
 
-import {Canvas} from '@/components/ai-elements/canvas';
-import {Controls} from '@/components/ai-elements/controls';
+import { Canvas } from '@/components/ai-elements/canvas';
+import { Controls } from '@/components/ai-elements/controls';
+import { Node as CanvasNodeCard } from '@/components/ai-elements/node';
+import { Panel } from '@/components/ai-elements/panel';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import type { WorkflowListItem } from '@/components/workflow-history';
+import { cn } from '@/lib/utils';
+import type { Connection, Edge, Node, NodeProps, OnNodesChange, ReactFlowInstance, XYPosition } from '@xyflow/react';
+import { addEdge, Handle, MarkerType, Position, useEdgesState, useNodesState } from '@xyflow/react';
 import {
-    Node as CanvasNodeCard,
-} from '@/components/ai-elements/node';
-import {Panel} from '@/components/ai-elements/panel';
-import {Button} from '@/components/ui/button';
-import {Card} from '@/components/ui/card';
-import {cn} from '@/lib/utils';
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
-import type {WorkflowListItem} from '@/components/workflow-history';
-import {
-    CircleStop,
     Bot,
-    Globe,
+    CircleStop,
     GitBranch,
+    Globe,
     GripHorizontal,
     Hand,
     MousePointer2,
     Play,
-    Plus,
     PlugZap,
+    Plus,
     Repeat,
     ShieldCheck,
     Sparkles,
     Tags,
 } from 'lucide-react';
-import {useCallback, useEffect, useRef, useState} from 'react';
-import type {Connection, Edge, Node, NodeProps, OnNodesChange, ReactFlowInstance, XYPosition} from '@xyflow/react';
-import {addEdge, Handle, MarkerType, Position, useEdgesState, useNodesState} from '@xyflow/react';
-import type {PointerEvent as ReactPointerEvent} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 
 type InteractionMode = 'hand' | 'pointer';
-type WorkflowNodeTemplateId =
-    'agent' |
-    'classify' |
-    'end' |
-    'http' |
-    'if-else' |
-    'loop' |
-    'mcp' |
-    'user-approval';
+type WorkflowNodeTemplateId = 'agent' | 'classify' | 'end' | 'http' | 'if-else' | 'loop' | 'mcp' | 'user-approval';
 type WorkflowCanvasNodeTemplateId = WorkflowNodeTemplateId | 'start';
 type WorkflowNodeGroupName = 'Core' | 'Logic' | 'Tools';
 type WorkflowCanvasNodeIcon =
-    'agent' |
-    'classify' |
-    'end' |
-    'http' |
-    'if-else' |
-    'loop' |
-    'mcp' |
-    'user-approval' |
-    'workflow';
+    | 'agent'
+    | 'classify'
+    | 'end'
+    | 'http'
+    | 'if-else'
+    | 'loop'
+    | 'mcp'
+    | 'user-approval'
+    | 'workflow';
 
 type WorkflowCanvasNodeData = {
     description: string;
@@ -78,16 +68,16 @@ type WorkflowNodeTemplate = {
     title: string;
 };
 type NodePickerState =
-    | {kind: 'toolbar'}
+    | { kind: 'toolbar' }
     | {
-        anchor: XYPosition;
-        kind: 'connection-drop';
-        pendingConnection: {
-            flowPosition: XYPosition;
-            sourceHandle: string | null;
-            sourceNodeId: string;
-        };
-    };
+          anchor: XYPosition;
+          kind: 'connection-drop';
+          pendingConnection: {
+              flowPosition: XYPosition;
+              sourceHandle: string | null;
+              sourceNodeId: string;
+          };
+      };
 
 const WORKFLOW_CANVAS_NODE_TYPE = 'workflow-card';
 const DEFAULT_TOOLBAR_OFFSET = {
@@ -104,7 +94,7 @@ const NODE_PICKER_SIZE = {
     height: 296,
     width: 236,
 };
-const WORKFLOW_NODE_GROUPS: {name: WorkflowNodeGroupName; nodes: WorkflowNodeTemplate[]}[] = [
+const WORKFLOW_NODE_GROUPS: { name: WorkflowNodeGroupName; nodes: WorkflowNodeTemplate[] }[] = [
     {
         name: 'Core',
         nodes: [
@@ -179,7 +169,7 @@ const WORKFLOW_NODE_GROUPS: {name: WorkflowNodeGroupName; nodes: WorkflowNodeTem
 ];
 const INITIAL_WORKFLOW_NODE_TEMPLATE_IDS: WorkflowNodeTemplateId[] = ['agent', 'end'];
 const WORKFLOW_NODE_TEMPLATES_BY_ID = new Map<WorkflowNodeTemplate['id'], WorkflowNodeTemplate>(
-    WORKFLOW_NODE_GROUPS.flatMap((group) => group.nodes).map((template) => [template.id, template])
+    WORKFLOW_NODE_GROUPS.flatMap((group) => group.nodes).map((template) => [template.id, template]),
 );
 
 const CANVAS_NODE_TYPES = {
@@ -207,14 +197,17 @@ function buildNodeData(templateId: WorkflowNodeTemplateId): WorkflowCanvasNodeDa
         icon: template.icon,
         templateId: template.id,
         title: template.title,
-        agentConfig: template.id === 'agent' ? {
-            runtime: 'model',
-            modelIdentifier: '',
-            agentId: null,
-            cwd: null,
-            prompt: '',
-            mcpServerIds: [],
-        } : undefined,
+        agentConfig:
+            template.id === 'agent'
+                ? {
+                      runtime: 'model',
+                      modelIdentifier: '',
+                      agentId: null,
+                      cwd: null,
+                      prompt: '',
+                      mcpServerIds: [],
+                  }
+                : undefined,
     };
 }
 
@@ -223,14 +216,14 @@ function buildInitialNodes(workflow: WorkflowListItem): Node<WorkflowCanvasNodeD
         {
             id: `${workflow.id}-start`,
             type: WORKFLOW_CANVAS_NODE_TYPE,
-            position: {x: 64, y: 176},
+            position: { x: 64, y: 176 },
             deletable: false,
             data: buildWorkflowRootNodeData(workflow),
         },
         ...INITIAL_WORKFLOW_NODE_TEMPLATE_IDS.map((templateId, index) => ({
             id: `${workflow.id}-${templateId}`,
             type: WORKFLOW_CANVAS_NODE_TYPE,
-            position: {x: 236 + (index * 172), y: 176},
+            position: { x: 236 + index * 172, y: 176 },
             data: buildNodeData(templateId),
         })),
     ];
@@ -242,14 +235,14 @@ function buildInitialEdges(workflow: WorkflowListItem): Edge[] {
             id: `${workflow.id}-edge-1`,
             source: `${workflow.id}-start`,
             target: `${workflow.id}-agent`,
-            markerEnd: {type: MarkerType.ArrowClosed},
+            markerEnd: { type: MarkerType.ArrowClosed },
             style: WORKFLOW_EDGE_STYLE,
         },
         {
             id: `${workflow.id}-edge-2`,
             source: `${workflow.id}-agent`,
             target: `${workflow.id}-end`,
-            markerEnd: {type: MarkerType.ArrowClosed},
+            markerEnd: { type: MarkerType.ArrowClosed },
             style: WORKFLOW_EDGE_STYLE,
         },
     ];
@@ -266,20 +259,20 @@ export function getDropPickerAnchorPosition({
 }): XYPosition {
     return {
         x: Math.min(
-            Math.max((clientX - containerRect.left) + NODE_PICKER_MARGIN, NODE_PICKER_MARGIN),
-            Math.max(containerRect.width - NODE_PICKER_SIZE.width - NODE_PICKER_MARGIN, NODE_PICKER_MARGIN)
+            Math.max(clientX - containerRect.left + NODE_PICKER_MARGIN, NODE_PICKER_MARGIN),
+            Math.max(containerRect.width - NODE_PICKER_SIZE.width - NODE_PICKER_MARGIN, NODE_PICKER_MARGIN),
         ),
         y: Math.min(
             Math.max(clientY - containerRect.top, NODE_PICKER_MARGIN),
-            Math.max(containerRect.height - NODE_PICKER_SIZE.height - NODE_PICKER_MARGIN, NODE_PICKER_MARGIN)
+            Math.max(containerRect.height - NODE_PICKER_SIZE.height - NODE_PICKER_MARGIN, NODE_PICKER_MARGIN),
         ),
     };
 }
 
 export function getNodePositionFromDrop(flowPosition: XYPosition): XYPosition {
     return {
-        x: Math.max(flowPosition.x - (NODE_CARD_WIDTH / 2), 24),
-        y: Math.max(flowPosition.y - (NODE_CARD_HEIGHT / 2), 24),
+        x: Math.max(flowPosition.x - NODE_CARD_WIDTH / 2, 24),
+        y: Math.max(flowPosition.y - NODE_CARD_HEIGHT / 2, 24),
     };
 }
 
@@ -417,7 +410,7 @@ function getNodePalette({
     };
 }
 
-function WorkflowCanvasNode({data}: NodeProps<Node<WorkflowCanvasNodeData>>) {
+function WorkflowCanvasNode({ data }: NodeProps<Node<WorkflowCanvasNodeData>>) {
     const hasTargetHandle = data.templateId !== 'start';
     const palette = getNodePalette(data);
 
@@ -425,15 +418,15 @@ function WorkflowCanvasNode({data}: NodeProps<Node<WorkflowCanvasNodeData>>) {
         <CanvasNodeCard
             className={cn(
                 'relative h-[42px] w-[108px] rounded-[1rem] border p-0 shadow-[0_8px_18px_rgba(173,181,205,0.22)]',
-                palette.surfaceClassName
+                palette.surfaceClassName,
             )}
-            handles={{target: false, source: false}}
+            handles={{ target: false, source: false }}
         >
             {hasTargetHandle ? (
                 <Handle
                     aria-label={`${data.title} end connection`}
                     className={cn(
-                        '!left-0 !size-3 !-translate-x-1/2 !rounded-full !border-2 !border-primary !bg-background shadow-sm'
+                        '!left-0 !size-3 !-translate-x-1/2 !rounded-full !border-2 !border-primary !bg-background shadow-sm',
                     )}
                     position={Position.Left}
                     type="target"
@@ -443,16 +436,18 @@ function WorkflowCanvasNode({data}: NodeProps<Node<WorkflowCanvasNodeData>>) {
                 aria-label={`${data.title} start connection`}
                 className={cn(
                     '!right-0 !size-3 !translate-x-1/2 !rounded-full !border-2 !border-background !bg-primary !text-primary-foreground shadow-sm',
-                    "after:absolute after:inset-0 after:flex after:items-center after:justify-center after:text-[8px] after:font-semibold after:text-primary-foreground after:content-['+']"
+                    "after:absolute after:inset-0 after:flex after:items-center after:justify-center after:text-[8px] after:font-semibold after:text-primary-foreground after:content-['+']",
                 )}
                 position={Position.Right}
                 type="source"
             />
             <div className="flex h-full items-center gap-2 px-2 py-1.5">
-                <div className={cn(
-                    'flex size-[30px] shrink-0 items-center justify-center rounded-[0.75rem] border shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]',
-                    palette.iconTileClassName
-                )}>
+                <div
+                    className={cn(
+                        'flex size-[30px] shrink-0 items-center justify-center rounded-[0.75rem] border shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]',
+                        palette.iconTileClassName,
+                    )}
+                >
                     {getNodeIcon({
                         ...data,
                         className: cn(data.templateId === 'start' ? 'size-[13px]' : 'size-3.5', palette.iconClassName),
@@ -480,14 +475,18 @@ function WorkflowNodePicker({
             className="m-0 border-0 bg-transparent p-0 shadow-none"
             data-testid="workflow-node-picker-panel"
             position="top-left"
-            style={anchor ? {
-                left: `${anchor.x}px`,
-                top: `${anchor.y}px`,
-            } : {
-                left: '72px',
-                top: '50%',
-                transform: 'translate(0px, -50%)',
-            }}
+            style={
+                anchor
+                    ? {
+                          left: `${anchor.x}px`,
+                          top: `${anchor.y}px`,
+                      }
+                    : {
+                          left: '72px',
+                          top: '50%',
+                          transform: 'translate(0px, -50%)',
+                      }
+            }
         >
             <TooltipProvider>
                 <Card
@@ -497,7 +496,7 @@ function WorkflowNodePicker({
                     data-testid="workflow-node-picker"
                     id="workflow-node-picker"
                     role="dialog"
-                    style={{width: 'min(236px, calc(100vw - 120px))'}}
+                    style={{ width: 'min(236px, calc(100vw - 120px))' }}
                 >
                     {WORKFLOW_NODE_GROUPS.map((group, groupIndex) => (
                         <div className={cn(groupIndex > 0 ? 'pt-3' : '')} key={group.name}>
@@ -513,19 +512,29 @@ function WorkflowNodePicker({
                                             <Button
                                                 className={cn(
                                                     'h-[42px] w-full justify-start rounded-[1rem] border px-2 py-1.5 shadow-none hover:opacity-100 hover:bg-transparent',
-                                                    getNodePalette({icon: template.icon, templateId: template.id}).surfaceClassName
+                                                    getNodePalette({ icon: template.icon, templateId: template.id })
+                                                        .surfaceClassName,
                                                 )}
                                                 onClick={() => onSelect(template.id)}
                                                 variant="ghost"
                                             >
-                                                <span className={cn(
-                                                    'flex size-[30px] shrink-0 items-center justify-center rounded-[0.75rem] border shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]',
-                                                    getNodePalette({icon: template.icon, templateId: template.id}).iconTileClassName
-                                                )}>
+                                                <span
+                                                    className={cn(
+                                                        'flex size-[30px] shrink-0 items-center justify-center rounded-[0.75rem] border shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]',
+                                                        getNodePalette({ icon: template.icon, templateId: template.id })
+                                                            .iconTileClassName,
+                                                    )}
+                                                >
                                                     {getNodeIcon({
                                                         icon: template.icon,
                                                         templateId: template.id,
-                                                        className: cn('size-[13px]', getNodePalette({icon: template.icon, templateId: template.id}).iconClassName),
+                                                        className: cn(
+                                                            'size-[13px]',
+                                                            getNodePalette({
+                                                                icon: template.icon,
+                                                                templateId: template.id,
+                                                            }).iconClassName,
+                                                        ),
                                                     })}
                                                 </span>
                                                 <span className="truncate text-[0.74rem] font-medium tracking-[-0.04em] text-foreground">
@@ -533,7 +542,7 @@ function WorkflowNodePicker({
                                                 </span>
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side='right'>
+                                        <TooltipContent side="right">
                                             <p>{template.description}</p>
                                         </TooltipContent>
                                     </Tooltip>
@@ -632,7 +641,7 @@ function WorkflowCanvasToolbar({
                         className="flex items-center justify-center px-1 py-1 text-muted-foreground/45"
                         data-testid="workflow-toolbar-handle"
                         data-toolbar-drag="true"
-                        style={{cursor: isDragging ? 'grabbing' : 'grab'}}
+                        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
                     >
                         <GripHorizontal className="pointer-events-none size-4" />
                     </div>
@@ -652,7 +661,7 @@ function WorkflowCanvasToolbar({
                                 <Plus className="size-4" />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent side='right'>
+                        <TooltipContent side="right">
                             <p>Add node</p>
                         </TooltipContent>
                     </Tooltip>
@@ -669,7 +678,7 @@ function WorkflowCanvasToolbar({
                                 <MousePointer2 className="size-4" />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent side='right'>
+                        <TooltipContent side="right">
                             <p>Pointer mode</p>
                         </TooltipContent>
                     </Tooltip>
@@ -686,7 +695,7 @@ function WorkflowCanvasToolbar({
                                 <Hand className="size-4" />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent side='right'>
+                        <TooltipContent side="right">
                             <p>Hand mode</p>
                         </TooltipContent>
                     </Tooltip>
@@ -703,7 +712,7 @@ function WorkflowCanvasContent({
 }: {
     workflow: WorkflowListItem;
     editable?: boolean;
-    onGraphChange?: (graph: {nodes: Record<string, unknown>[]; edges: Record<string, unknown>[]}) => void;
+    onGraphChange?: (graph: { nodes: Record<string, unknown>[]; edges: Record<string, unknown>[] }) => void;
 }) {
     const canvasRef = useRef<HTMLDivElement | null>(null);
     const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
@@ -771,111 +780,137 @@ function WorkflowCanvasContent({
             return;
         }
 
-        setNodePickerState((currentValue) => currentValue ? null : {kind: 'toolbar'});
+        setNodePickerState((currentValue) => (currentValue ? null : { kind: 'toolbar' }));
     }, [editable]);
 
-    const handleNodeTemplateSelect = useCallback((templateId: WorkflowNodeTemplate['id']) => {
-        const newNodeIndex = nextNodeIndexRef.current;
-        nextNodeIndexRef.current += 1;
-        const pickerState = nodePickerState;
-        const newNodeId = `${workflow.id}-custom-${newNodeIndex}`;
+    const handleNodeTemplateSelect = useCallback(
+        (templateId: WorkflowNodeTemplate['id']) => {
+            const newNodeIndex = nextNodeIndexRef.current;
+            nextNodeIndexRef.current += 1;
+            const pickerState = nodePickerState;
+            const newNodeId = `${workflow.id}-custom-${newNodeIndex}`;
 
-        setNodes((currentNodes) => {
-            const newNodePosition = pickerState?.kind === 'connection-drop' ?
-                getNodePositionFromDrop(pickerState.pendingConnection.flowPosition) :
-                (() => {
-                    const additionalNodeCount = currentNodes.filter((node) => node.id.includes('-custom-')).length;
-                    const column = additionalNodeCount % 3;
-                    const row = Math.floor(additionalNodeCount / 3);
+            setNodes((currentNodes) => {
+                const newNodePosition =
+                    pickerState?.kind === 'connection-drop'
+                        ? getNodePositionFromDrop(pickerState.pendingConnection.flowPosition)
+                        : (() => {
+                              const additionalNodeCount = currentNodes.filter((node) =>
+                                  node.id.includes('-custom-'),
+                              ).length;
+                              const column = additionalNodeCount % 3;
+                              const row = Math.floor(additionalNodeCount / 3);
 
-                    return {
-                        x: 140 + (column * 172),
-                        y: 292 + (row * 108),
-                    };
-                })();
+                              return {
+                                  x: 140 + column * 172,
+                                  y: 292 + row * 108,
+                              };
+                          })();
 
-            return [
-                ...currentNodes,
-                {
-                    id: newNodeId,
-                    type: WORKFLOW_CANVAS_NODE_TYPE,
-                    position: newNodePosition,
-                    data: buildNodeData(templateId),
-                },
-            ];
-        });
+                return [
+                    ...currentNodes,
+                    {
+                        id: newNodeId,
+                        type: WORKFLOW_CANVAS_NODE_TYPE,
+                        position: newNodePosition,
+                        data: buildNodeData(templateId),
+                    },
+                ];
+            });
 
-        if (pickerState?.kind === 'connection-drop') {
-            setEdges((currentEdges) => addEdge({
-                source: pickerState.pendingConnection.sourceNodeId,
-                sourceHandle: pickerState.pendingConnection.sourceHandle,
-                target: newNodeId,
-                targetHandle: null,
-                markerEnd: {type: MarkerType.ArrowClosed},
-                style: WORKFLOW_EDGE_STYLE,
-            }, currentEdges));
-        }
+            if (pickerState?.kind === 'connection-drop') {
+                setEdges((currentEdges) =>
+                    addEdge(
+                        {
+                            source: pickerState.pendingConnection.sourceNodeId,
+                            sourceHandle: pickerState.pendingConnection.sourceHandle,
+                            target: newNodeId,
+                            targetHandle: null,
+                            markerEnd: { type: MarkerType.ArrowClosed },
+                            style: WORKFLOW_EDGE_STYLE,
+                        },
+                        currentEdges,
+                    ),
+                );
+            }
 
-        setNodePickerState(null);
-    }, [nodePickerState, setEdges, setNodes, workflow.id]);
+            setNodePickerState(null);
+        },
+        [nodePickerState, setEdges, setNodes, workflow.id],
+    );
 
-    const handleConnect = useCallback((connection: Connection) => {
-        setEdges((currentEdges) => addEdge({
-            ...connection,
-            markerEnd: {type: MarkerType.ArrowClosed},
-            style: WORKFLOW_EDGE_STYLE,
-        }, currentEdges));
-    }, [setEdges]);
+    const handleConnect = useCallback(
+        (connection: Connection) => {
+            setEdges((currentEdges) =>
+                addEdge(
+                    {
+                        ...connection,
+                        markerEnd: { type: MarkerType.ArrowClosed },
+                        style: WORKFLOW_EDGE_STYLE,
+                    },
+                    currentEdges,
+                ),
+            );
+        },
+        [setEdges],
+    );
 
     const handleConnectStart = useCallback(() => {
         setNodePickerState(null);
     }, []);
 
-    const handleConnectEnd = useCallback((event: MouseEvent | TouchEvent, connectionState: {
-        fromHandle: {id?: string | null} | null;
-        fromNode: {id: string} | null;
-        isValid: boolean | null;
-        pointer: XYPosition | null;
-        toHandle: unknown;
-        toNode: unknown;
-    }) => {
-        if (
-            connectionState.isValid ||
-            !connectionState.fromNode ||
-            connectionState.toNode ||
-            connectionState.toHandle
-        ) {
-            return;
-        }
-
-        const flowInstance = reactFlowInstanceRef.current;
-        const canvasElement = canvasRef.current;
-        const clientPosition = 'changedTouches' in event ?
-            event.changedTouches[0] ?
-                {x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY} :
-                null :
-            {x: event.clientX, y: event.clientY};
-
-        if (!flowInstance || !canvasElement || !clientPosition) {
-            return;
-        }
-
-        const anchor = getDropPickerAnchorPosition({
-            clientX: clientPosition.x,
-            clientY: clientPosition.y,
-            containerRect: canvasElement.getBoundingClientRect(),
-        });
-
-        setNodePickerState({
-            kind: 'connection-drop',
-            anchor,
-            pendingConnection: {
-                sourceNodeId: connectionState.fromNode.id,
-                sourceHandle: connectionState.fromHandle?.id ?? null,
-                flowPosition: flowInstance.screenToFlowPosition(clientPosition),
+    const handleConnectEnd = useCallback(
+        (
+            event: MouseEvent | TouchEvent,
+            connectionState: {
+                fromHandle: { id?: string | null } | null;
+                fromNode: { id: string } | null;
+                isValid: boolean | null;
+                pointer: XYPosition | null;
+                toHandle: unknown;
+                toNode: unknown;
             },
-        });
-    }, []);
+        ) => {
+            if (
+                connectionState.isValid ||
+                !connectionState.fromNode ||
+                connectionState.toNode ||
+                connectionState.toHandle
+            ) {
+                return;
+            }
+
+            const flowInstance = reactFlowInstanceRef.current;
+            const canvasElement = canvasRef.current;
+            const clientPosition =
+                'changedTouches' in event
+                    ? event.changedTouches[0]
+                        ? { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY }
+                        : null
+                    : { x: event.clientX, y: event.clientY };
+
+            if (!flowInstance || !canvasElement || !clientPosition) {
+                return;
+            }
+
+            const anchor = getDropPickerAnchorPosition({
+                clientX: clientPosition.x,
+                clientY: clientPosition.y,
+                containerRect: canvasElement.getBoundingClientRect(),
+            });
+
+            setNodePickerState({
+                kind: 'connection-drop',
+                anchor,
+                pendingConnection: {
+                    sourceNodeId: connectionState.fromNode.id,
+                    sourceHandle: connectionState.fromHandle?.id ?? null,
+                    flowPosition: flowInstance.screenToFlowPosition(clientPosition),
+                },
+            });
+        },
+        [],
+    );
 
     return (
         <div className="flex h-full flex-1 min-h-0 overflow-hidden bg-background" ref={canvasRef}>
@@ -885,7 +920,7 @@ function WorkflowCanvasContent({
                 deleteKeyCode={editable ? ['Backspace', 'Delete'] : null}
                 edges={edges}
                 elementsSelectable={editable}
-                fitViewOptions={{padding: 0.2}}
+                fitViewOptions={{ padding: 0.2 }}
                 nodeTypes={CANVAS_NODE_TYPES}
                 nodesConnectable={editable}
                 nodesDraggable={editable && interactionMode === 'pointer'}
@@ -899,7 +934,7 @@ function WorkflowCanvasContent({
                 }}
                 onNodesChange={onNodesChange as OnNodesChange<Node>}
                 panOnDrag={editable ? interactionMode === 'hand' : true}
-                proOptions={{hideAttribution: true}}
+                proOptions={{ hideAttribution: true }}
                 selectionOnDrag={editable && interactionMode === 'pointer'}
             >
                 {editable ? (
@@ -929,7 +964,14 @@ export function WorkflowCanvas({
 }: {
     workflow: WorkflowListItem;
     editable?: boolean;
-    onGraphChange?: (graph: {nodes: Record<string, unknown>[]; edges: Record<string, unknown>[]}) => void;
+    onGraphChange?: (graph: { nodes: Record<string, unknown>[]; edges: Record<string, unknown>[] }) => void;
 }) {
-    return <WorkflowCanvasContent editable={editable} key={workflow.id} onGraphChange={onGraphChange} workflow={workflow} />;
+    return (
+        <WorkflowCanvasContent
+            editable={editable}
+            key={workflow.id}
+            onGraphChange={onGraphChange}
+            workflow={workflow}
+        />
+    );
 }

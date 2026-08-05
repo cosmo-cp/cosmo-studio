@@ -1,6 +1,6 @@
-import log from 'electron-log/main';
 import path from 'path';
 import { app } from 'electron';
+import log from 'electron-log/main';
 
 log.initialize();
 
@@ -21,6 +21,8 @@ const logDir = resolveLogDir();
 
 log.transports.file.level = 'info';
 log.transports.file.maxSize = 5 * 1024 * 1024; // 5MB
-log.transports.file.resolvePathFn = () => path.join(logDir, 'cosmo.log');
+log.transports.file.resolvePathFn = () => {
+    return path.join(logDir, 'cosmo.log');
+};
 
 export const logger = log.scope('main');

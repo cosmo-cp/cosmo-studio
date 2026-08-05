@@ -53,7 +53,7 @@ jobs:
 
             - name: Build application
               env:
-                ENABLE_MAC_SIGNING: 'false'
+                  ENABLE_MAC_SIGNING: 'false'
               run: npm run make
 
             - name: Upload build artifact

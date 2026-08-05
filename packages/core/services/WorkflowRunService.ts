@@ -20,14 +20,18 @@ export class WorkflowRunService {
     }
 
     // Updates run status and mirrors it in the event timeline.
-    public async updateRunStatus(runId: string, status: WorkflowRun['status'], message?: string): Promise<WorkflowRun | undefined> {
+    public async updateRunStatus(
+        runId: string,
+        status: WorkflowRun['status'],
+        message?: string,
+    ): Promise<WorkflowRun | undefined> {
         const run = await this.workflowRunRepository.updateStatus(runId, status, status === 'failed' ? message : null);
         if (!run) return undefined;
 
         await this.workflowRunRepository.addEvent({
             workflowRunId: runId,
             eventType: this.mapStatusToEventType(status),
-            status,
+            status: status,
             message: message ?? `Run status updated to ${status}`,
         });
         return run;
@@ -48,9 +52,9 @@ export class WorkflowRunService {
         return this.recordRunEvent({
             workflowRunId: runId,
             eventType: 'progress',
-            status,
-            message,
-            payload,
+            status: status,
+            message: message,
+            payload: payload,
         });
     }
 

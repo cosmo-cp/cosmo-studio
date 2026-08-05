@@ -1,20 +1,24 @@
 import { ipcRenderer } from 'electron';
-import type {Persona, NewPersona} from '../../../packages/core/dto';
-
-export interface PersonaApi {
-    getAll(): Promise<Persona[]>;
-    getById(id: string): Promise<Persona | undefined>;
-    getByName(name: string): Promise<Persona | undefined>;
-    create(newPersona: NewPersona): Promise<Persona>;
-    update(id: string, updates: Partial<NewPersona>): Promise<Persona>;
-    delete(id: string): Promise<void>;
-}
+import type { NewPersona } from '../../../packages/core/dto';
+import type { PersonaApi } from '../contracts/persona';
 
 export const personaApi: PersonaApi = {
-    getAll: () => ipcRenderer.invoke('persona:getAll'),
-    getById: (id: string) => ipcRenderer.invoke('persona:getById', id),
-    getByName: (name: string) => ipcRenderer.invoke('persona:getByName', name),
-    create: (newPersona: NewPersona) => ipcRenderer.invoke('persona:create', newPersona),
-    update: (id: string, updates: Partial<NewPersona>) => ipcRenderer.invoke('persona:update', id, updates),
-    delete: (id: string) => ipcRenderer.invoke('persona:delete', id)
+    getAll: () => {
+        return ipcRenderer.invoke('persona:getAll');
+    },
+    getById: (id: string) => {
+        return ipcRenderer.invoke('persona:getById', id);
+    },
+    getByName: (name: string) => {
+        return ipcRenderer.invoke('persona:getByName', name);
+    },
+    create: (newPersona: NewPersona) => {
+        return ipcRenderer.invoke('persona:create', newPersona);
+    },
+    update: (id: string, updates: Partial<NewPersona>) => {
+        return ipcRenderer.invoke('persona:update', id, updates);
+    },
+    delete: (id: string) => {
+        return ipcRenderer.invoke('persona:delete', id);
+    },
 };
