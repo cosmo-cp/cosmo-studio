@@ -1,9 +1,9 @@
-import type {IpcMainEvent, WebContents} from 'electron';
-import {inject, injectable} from 'inversify';
-import {z} from 'zod';
-import {CORETYPES} from 'core/types/types';
-import {WorkflowService} from 'core/services/WorkflowService';
-import {WorkflowRunService} from 'core/services/WorkflowRunService';
+import type { IpcMainEvent, WebContents } from 'electron';
+import { inject, injectable } from 'inversify';
+import { z } from 'zod';
+import { CORETYPES } from 'core/types/types';
+import { WorkflowService } from 'core/services/WorkflowService';
+import { WorkflowRunService } from 'core/services/WorkflowRunService';
 import type {
     Workflow,
     WorkflowCreateInput,
@@ -15,12 +15,12 @@ import type {
     WorkflowRunStreamStartArgs,
     WorkflowVersion,
 } from 'core/dto';
-import {IpcController, IpcHandler, IpcOn, IpcRendererOn} from '../ipc/Decorators';
-import {logger} from '../logger';
-import {WorkflowExecutionService} from '../services/WorkflowExecutionService';
-import {WorkflowRunStreamingService} from '../services/WorkflowRunStreamingService';
-import {TYPES} from '../types';
-import {Controller} from './Controller';
+import { IpcController, IpcHandler, IpcOn, IpcRendererOn } from '../ipc/Decorators';
+import { logger } from '../logger';
+import { WorkflowExecutionService } from '../services/WorkflowExecutionService';
+import { WorkflowRunStreamingService } from '../services/WorkflowRunStreamingService';
+import { TYPES } from '../types';
+import { Controller } from './Controller';
 
 const workflowGraphSchema = z.strictObject({
     nodes: z.array(z.record(z.string(), z.unknown())),
@@ -123,15 +123,17 @@ export class WorkflowController implements Controller {
     public async runStart(input: WorkflowRunInsert): Promise<WorkflowRun> {
         const parsedInput = workflowRunStartSchema.parse(input);
         const versions = await this.workflowService.getWorkflowVersions(parsedInput.workflowId);
-        const version = parsedInput.workflowVersionId ?
-            versions.find((workflowVersion) => workflowVersion.id === parsedInput.workflowVersionId) :
-            versions[0];
+        const version = parsedInput.workflowVersionId
+            ? versions.find((workflowVersion) => {
+                  return workflowVersion.id === parsedInput.workflowVersionId;
+              })
+            : versions[0];
 
         if (!version) {
             throw new Error('Cannot start workflow run without an available workflow version');
         }
 
-        const runInput = {...parsedInput, workflowVersionId: version.id};
+        const runInput = { ...parsedInput, workflowVersionId: version.id };
         const run = await this.workflowRunService.startRun(runInput);
         void this.workflowExecutionService.executeRun({
             runId: run.id,

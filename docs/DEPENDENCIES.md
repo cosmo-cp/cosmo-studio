@@ -6,33 +6,33 @@ This document maps `package.json` dependencies to their official documentation (
 
 ### Runtime dependencies
 
-| Package                     | Used for                                          | Docs                                                    |
-| --------------------------- | ------------------------------------------------- | ------------------------------------------------------- |
-| `electron-log`              | Main/renderer logging                             | https://github.com/megahertz/electron-log#readme        |
-| `update-electron-app`       | Auto-updates (Electron Public Update Service)     | https://github.com/electron/update-electron-app#readme  |
-| `electron-squirrel-startup` | Windows Squirrel startup handling                 | https://www.npmjs.com/package/electron-squirrel-startup |
-| `dotenv`                    | Loading environment variables in main             | https://github.com/motdotla/dotenv#readme               |
-| `reflect-metadata`          | Decorators + metadata (DI + IPC decorators)       | https://rbuckton.github.io/reflect-metadata/            |
-| `inversify`                 | Dependency injection container                    | https://inversify.io/                                   |
-| `zod`                       | Runtime validation (especially at IPC boundaries) | https://zod.dev/                                        |
-| `@nestjs/common` | NestJS decorators/controllers for the HTTP runtime | https://docs.nestjs.com/ |
-| `@nestjs/core` | NestJS application bootstrap for the HTTP runtime | https://docs.nestjs.com/ |
-| `@nestjs/platform-express` | Express platform adapter for NestJS | https://docs.nestjs.com/ |
-| `@nestjs/serve-static` | Serving the static renderer from the HTTP runtime | https://www.nestjs.com/packages/nestjs-serve-static |
-| `rxjs` | NestJS runtime peer dependency | https://rxjs.dev/ |
-| `superjson` | HTTP RPC payload codec for `Date` and structured values | https://github.com/flightcontrolhq/superjson#readme |
-| `@types/express` | Express response/request types for Nest controllers | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/express |
-| `drizzle-orm`               | ORM for the embedded database                     | https://orm.drizzle.team/docs/overview                  |
-| `drizzle-zod`               | Zod schemas from Drizzle schema                   | https://orm.drizzle.team/docs/zod                       |
-| `@electric-sql/pglite`      | Embedded Postgres (PGlite) runtime                | https://pglite.dev/                                     |
-| `ai`                        | Vercel AI SDK (streaming, message types)          | https://sdk.vercel.ai/docs                              |
-| `@ai-sdk/anthropic`         | Anthropic provider for AI SDK                     | https://sdk.vercel.ai/providers/anthropic               |
-| `@ai-sdk/openai`            | OpenAI provider for AI SDK                        | https://sdk.vercel.ai/providers/openai                  |
-| `@ai-sdk/google`            | Google provider for AI SDK                        | https://sdk.vercel.ai/providers/google                  |
-| `@ai-sdk/provider`          | Provider interfaces/types                         | https://sdk.vercel.ai/docs/ai-sdk-core/providers        |
-| `@mcpc-tech/acp-ai-provider` | ACP agents as AI SDK language models              | https://ai-sdk.dev/providers/community-providers/acp    |
-| `ai-sdk-ollama`             | Ollama provider (community)                       | https://www.npmjs.com/package/ai-sdk-ollama             |
-| `@stepperize/react`         | Stepper UI helper (if/when used)                  | https://www.npmjs.com/package/@stepperize/react         |
+| Package                      | Used for                                                | Docs                                                                         |
+| ---------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `electron-log`               | Main/renderer logging                                   | https://github.com/megahertz/electron-log#readme                             |
+| `update-electron-app`        | Auto-updates (Electron Public Update Service)           | https://github.com/electron/update-electron-app#readme                       |
+| `electron-squirrel-startup`  | Windows Squirrel startup handling                       | https://www.npmjs.com/package/electron-squirrel-startup                      |
+| `dotenv`                     | Loading environment variables in main                   | https://github.com/motdotla/dotenv#readme                                    |
+| `reflect-metadata`           | Decorators + metadata (DI + IPC decorators)             | https://rbuckton.github.io/reflect-metadata/                                 |
+| `inversify`                  | Dependency injection container                          | https://inversify.io/                                                        |
+| `zod`                        | Runtime validation (especially at IPC boundaries)       | https://zod.dev/                                                             |
+| `@nestjs/common`             | NestJS decorators/controllers for the HTTP runtime      | https://docs.nestjs.com/                                                     |
+| `@nestjs/core`               | NestJS application bootstrap for the HTTP runtime       | https://docs.nestjs.com/                                                     |
+| `@nestjs/platform-express`   | Express platform adapter for NestJS                     | https://docs.nestjs.com/                                                     |
+| `@nestjs/serve-static`       | Serving the static renderer from the HTTP runtime       | https://www.nestjs.com/packages/nestjs-serve-static                          |
+| `rxjs`                       | NestJS runtime peer dependency                          | https://rxjs.dev/                                                            |
+| `superjson`                  | HTTP RPC payload codec for `Date` and structured values | https://github.com/flightcontrolhq/superjson#readme                          |
+| `@types/express`             | Express response/request types for Nest controllers     | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/express |
+| `drizzle-orm`                | ORM for the embedded database                           | https://orm.drizzle.team/docs/overview                                       |
+| `drizzle-zod`                | Zod schemas from Drizzle schema                         | https://orm.drizzle.team/docs/zod                                            |
+| `@electric-sql/pglite`       | Embedded Postgres (PGlite) runtime                      | https://pglite.dev/                                                          |
+| `ai`                         | Vercel AI SDK (streaming, message types)                | https://sdk.vercel.ai/docs                                                   |
+| `@ai-sdk/anthropic`          | Anthropic provider for AI SDK                           | https://sdk.vercel.ai/providers/anthropic                                    |
+| `@ai-sdk/openai`             | OpenAI provider for AI SDK                              | https://sdk.vercel.ai/providers/openai                                       |
+| `@ai-sdk/google`             | Google provider for AI SDK                              | https://sdk.vercel.ai/providers/google                                       |
+| `@ai-sdk/provider`           | Provider interfaces/types                               | https://sdk.vercel.ai/docs/ai-sdk-core/providers                             |
+| `@mcpc-tech/acp-ai-provider` | ACP agents as AI SDK language models                    | https://ai-sdk.dev/providers/community-providers/acp                         |
+| `ai-sdk-ollama`              | Ollama provider (community)                             | https://www.npmjs.com/package/ai-sdk-ollama                                  |
+| `@stepperize/react`          | Stepper UI helper (if/when used)                        | https://www.npmjs.com/package/@stepperize/react                              |
 
 ### Dev dependencies (tooling/build)
 
@@ -67,42 +67,42 @@ This document maps `package.json` dependencies to their official documentation (
 
 ### Runtime dependencies
 
-| Package                    | Used for                                     | Docs                                                                        |
-| -------------------------- | -------------------------------------------- | --------------------------------------------------------------------------- |
-| `next`                     | Next.js App Router                           | https://nextjs.org/docs                                                     |
-| `react` / `react-dom`      | UI runtime                                   | https://react.dev/                                                          |
-| `@reduxjs/toolkit` | Renderer-wide state management and async thunks | https://redux-toolkit.js.org/ |
-| `react-redux` | React bindings for Redux state | https://react-redux.js.org/ |
-| `next-themes`              | Theme switching                              | https://github.com/pacocoursey/next-themes#readme                           |
-| `tailwindcss`              | Styling                                      | https://tailwindcss.com/docs                                                |
-| `@tailwindcss/postcss`     | Tailwind PostCSS integration                 | https://tailwindcss.com/docs/installation/using-postcss                     |
-| `postcss`                  | CSS pipeline                                 | https://postcss.org/                                                        |
-| `clsx`                     | ClassName composition                        | https://github.com/lukeed/clsx#readme                                       |
-| `classnames`               | ClassName composition                        | https://github.com/JedWatson/classnames#readme                              |
-| `tailwind-merge`           | Merge Tailwind class strings                 | https://github.com/dcastil/tailwind-merge#readme                            |
-| `class-variance-authority` | Variant class patterns (shadcn)              | https://cva.style/docs                                                      |
-| `lucide-react`             | Icons                                        | https://lucide.dev/guide/packages/lucide-react                              |
-| `sonner`                   | Toast notifications                          | https://sonner.emilkowal.ski/                                               |
-| `swr`                      | Client data fetching + caching               | https://swr.vercel.app/docs/getting-started                                 |
-| `ai`                       | Vercel AI SDK shared types                   | https://sdk.vercel.ai/docs                                                  |
-| `@ai-sdk/react`            | AI SDK React hooks                           | https://sdk.vercel.ai/docs/ai-sdk-ui/react                                  |
-| `react-markdown`           | Markdown rendering                           | https://github.com/remarkjs/react-markdown#readme                           |
-| `remark-gfm`               | GitHub-flavored Markdown                     | https://github.com/remarkjs/remark-gfm#readme                               |
-| `shiki`                    | Code highlighting                            | https://shiki.style/guide/                                                  |
-| `react-syntax-highlighter` | Code highlighting (fallback)                 | https://github.com/react-syntax-highlighter/react-syntax-highlighter#readme |
-| `date-fns`                 | Date utilities                               | https://date-fns.org/docs/Getting-Started                                   |
-| `nanoid`                   | ID generation                                | https://github.com/ai/nanoid#readme                                         |
-| `cmdk`                     | Command palette UI                           | https://cmdk.paco.me/                                                       |
-| `framer-motion` / `motion` | Animations                                   | https://www.framer.com/motion/                                              |
-| `embla-carousel-react`     | Carousel UI                                  | https://www.embla-carousel.com/get-started/react/                           |
-| `@xyflow/react`            | Flow/graph UI                                | https://reactflow.dev/                                                      |
-| `react-mentions`           | @mention UI                                  | https://github.com/signavio/react-mentions#readme                           |
-| `usehooks-ts`              | React hooks utilities                        | https://usehooks-ts.com/                                                    |
-| `use-stick-to-bottom`      | “Stick to bottom” scrolling helper           | https://www.npmjs.com/package/use-stick-to-bottom                           |
-| `streamdown`               | Streaming markdown utilities (if used)       | https://www.npmjs.com/package/streamdown                                    |
-| `tokenlens`                | Token counting/analysis (if used)            | https://www.npmjs.com/package/tokenlens                                     |
-| `geist`                    | Geist font/package                           | https://geist.vercel.app/                                                   |
-| `core`                     | Local workspace package (DTOs, shared types) | `packages/core/`                                                            |
+| Package                    | Used for                                        | Docs                                                                        |
+| -------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------- |
+| `next`                     | Next.js App Router                              | https://nextjs.org/docs                                                     |
+| `react` / `react-dom`      | UI runtime                                      | https://react.dev/                                                          |
+| `@reduxjs/toolkit`         | Renderer-wide state management and async thunks | https://redux-toolkit.js.org/                                               |
+| `react-redux`              | React bindings for Redux state                  | https://react-redux.js.org/                                                 |
+| `next-themes`              | Theme switching                                 | https://github.com/pacocoursey/next-themes#readme                           |
+| `tailwindcss`              | Styling                                         | https://tailwindcss.com/docs                                                |
+| `@tailwindcss/postcss`     | Tailwind PostCSS integration                    | https://tailwindcss.com/docs/installation/using-postcss                     |
+| `postcss`                  | CSS pipeline                                    | https://postcss.org/                                                        |
+| `clsx`                     | ClassName composition                           | https://github.com/lukeed/clsx#readme                                       |
+| `classnames`               | ClassName composition                           | https://github.com/JedWatson/classnames#readme                              |
+| `tailwind-merge`           | Merge Tailwind class strings                    | https://github.com/dcastil/tailwind-merge#readme                            |
+| `class-variance-authority` | Variant class patterns (shadcn)                 | https://cva.style/docs                                                      |
+| `lucide-react`             | Icons                                           | https://lucide.dev/guide/packages/lucide-react                              |
+| `sonner`                   | Toast notifications                             | https://sonner.emilkowal.ski/                                               |
+| `swr`                      | Client data fetching + caching                  | https://swr.vercel.app/docs/getting-started                                 |
+| `ai`                       | Vercel AI SDK shared types                      | https://sdk.vercel.ai/docs                                                  |
+| `@ai-sdk/react`            | AI SDK React hooks                              | https://sdk.vercel.ai/docs/ai-sdk-ui/react                                  |
+| `react-markdown`           | Markdown rendering                              | https://github.com/remarkjs/react-markdown#readme                           |
+| `remark-gfm`               | GitHub-flavored Markdown                        | https://github.com/remarkjs/remark-gfm#readme                               |
+| `shiki`                    | Code highlighting                               | https://shiki.style/guide/                                                  |
+| `react-syntax-highlighter` | Code highlighting (fallback)                    | https://github.com/react-syntax-highlighter/react-syntax-highlighter#readme |
+| `date-fns`                 | Date utilities                                  | https://date-fns.org/docs/Getting-Started                                   |
+| `nanoid`                   | ID generation                                   | https://github.com/ai/nanoid#readme                                         |
+| `cmdk`                     | Command palette UI                              | https://cmdk.paco.me/                                                       |
+| `framer-motion` / `motion` | Animations                                      | https://www.framer.com/motion/                                              |
+| `embla-carousel-react`     | Carousel UI                                     | https://www.embla-carousel.com/get-started/react/                           |
+| `@xyflow/react`            | Flow/graph UI                                   | https://reactflow.dev/                                                      |
+| `react-mentions`           | @mention UI                                     | https://github.com/signavio/react-mentions#readme                           |
+| `usehooks-ts`              | React hooks utilities                           | https://usehooks-ts.com/                                                    |
+| `use-stick-to-bottom`      | “Stick to bottom” scrolling helper              | https://www.npmjs.com/package/use-stick-to-bottom                           |
+| `streamdown`               | Streaming markdown utilities (if used)          | https://www.npmjs.com/package/streamdown                                    |
+| `tokenlens`                | Token counting/analysis (if used)               | https://www.npmjs.com/package/tokenlens                                     |
+| `geist`                    | Geist font/package                              | https://geist.vercel.app/                                                   |
+| `core`                     | Local workspace package (DTOs, shared types)    | `packages/core/`                                                            |
 
 #### Radix UI primitives (used via shadcn/ui)
 

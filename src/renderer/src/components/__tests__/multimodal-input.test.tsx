@@ -1,39 +1,33 @@
-import {render, screen, waitFor} from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import {beforeEach, describe, expect, it, vi} from "vitest";
-import type {Chat, Persona, ProviderWithModels} from "core/dto";
-import {ModelProviderTypeEnum, ModelStatusEnum} from "core/database/schema/modelProviderSchema";
-import {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
-import type {UIMessage} from "ai";
-import {MultimodalInput} from "@/components/multimodal-input";
-import {TooltipProvider} from "@/components/ui/tooltip";
-import {StoreProvider} from "@/app/store-provider";
-import {createMockAppDataSource} from "@/test/mock-app-data-source";
-import {
-    PARALLEL_WEB_SEARCH_PROVIDER_ID,
-    WEB_SEARCH_NONE_OPTION_ID,
-} from "@/lib/web-search-options";
+import { StoreProvider } from '@/app/store-provider';
+import { MultimodalInput } from '@/components/multimodal-input';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { PARALLEL_WEB_SEARCH_PROVIDER_ID, WEB_SEARCH_NONE_OPTION_ID } from '@/lib/web-search-options';
+import { createMockAppDataSource } from '@/test/mock-app-data-source';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { UIMessage } from 'ai';
+import { ModelProviderTypeEnum, ModelStatusEnum } from 'core/database/schema/modelProviderSchema';
+import { WebSearchProviderTypeEnum } from 'core/database/schema/webSearchConfigSchema';
+import type { Chat, Persona, ProviderWithModels } from 'core/dto';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 class ResizeObserverMock {
-    observe() {
-    }
+    observe() {}
 
-    unobserve() {
-    }
+    unobserve() {}
 
-    disconnect() {
-    }
+    disconnect() {}
 }
 
 function buildChat(overrides: Partial<Chat> = {}): Chat {
     return {
-        id: "chat-1",
-        createdAt: new Date("2026-03-18T00:00:00.000Z"),
-        title: "Chat 1",
+        id: 'chat-1',
+        createdAt: new Date('2026-03-18T00:00:00.000Z'),
+        title: 'Chat 1',
         pinned: false,
         pinnedAt: null,
-        selectedProvider: "Primary Provider",
-        selectedModelId: "model-a",
+        selectedProvider: 'Primary Provider',
+        selectedModelId: 'model-a',
         selectedPersonaId: null,
         selected: true,
         lastMessage: null,
@@ -44,20 +38,20 @@ function buildChat(overrides: Partial<Chat> = {}): Chat {
 
 function buildProvider(): ProviderWithModels {
     return {
-        id: "provider-1",
-        createdAt: new Date("2026-03-18T00:00:00.000Z"),
+        id: 'provider-1',
+        createdAt: new Date('2026-03-18T00:00:00.000Z'),
         updatedAt: null,
         type: ModelProviderTypeEnum.OPENAI,
-        name: "Primary Provider",
-        apiKey: "secret",
+        name: 'Primary Provider',
+        apiKey: 'secret',
         apiUrl: null,
         models: [
             {
-                id: "model-1",
-                createdAt: new Date("2026-03-18T00:00:00.000Z"),
+                id: 'model-1',
+                createdAt: new Date('2026-03-18T00:00:00.000Z'),
                 updatedAt: null,
-                name: "Model A",
-                modelId: "model-a",
+                name: 'Model A',
+                modelId: 'model-a',
                 description: null,
                 reasoning: false,
                 attachment: false,
@@ -76,55 +70,56 @@ function buildProvider(): ProviderWithModels {
 
 function buildPersona(): Persona {
     return {
-        id: "persona-1",
-        name: "Research Assistant",
-        details: "Focus on structured analysis.",
-        createdAt: new Date("2026-03-18T00:00:00.000Z"),
-        updatedAt: new Date("2026-03-18T00:00:00.000Z"),
+        id: 'persona-1',
+        name: 'Research Assistant',
+        details: 'Focus on structured analysis.',
+        createdAt: new Date('2026-03-18T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-18T00:00:00.000Z'),
     };
 }
 
-describe("MultimodalInput", () => {
+describe('MultimodalInput', () => {
     beforeEach(() => {
-        vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+        vi.stubGlobal('ResizeObserver', ResizeObserverMock);
         HTMLElement.prototype.hasPointerCapture = vi.fn(() => false);
         HTMLElement.prototype.setPointerCapture = vi.fn();
         HTMLElement.prototype.releasePointerCapture = vi.fn();
         HTMLElement.prototype.scrollIntoView = vi.fn();
     });
 
-    it("shows web search choices from the Redux-backed data source and reports selection changes", async () => {
+    it('shows web search choices from the Redux-backed data source and reports selection changes', async () => {
         const user = userEvent.setup();
         const onWebSearchChange = vi.fn();
         const sendMessage = vi.fn(async () => undefined);
         const options = [
             {
                 id: WEB_SEARCH_NONE_OPTION_ID,
-                label: "No web search"
+                label: 'No web search',
             },
             {
                 id: WebSearchProviderTypeEnum.EXA,
-                label: "Exa web search"
+                label: 'Exa web search',
             },
             {
                 id: PARALLEL_WEB_SEARCH_PROVIDER_ID,
-                label: "Parallel web search"
+                label: 'Parallel web search',
             },
         ];
 
         render(
             <TooltipProvider>
-                <StoreProvider appDataSource={createMockAppDataSource({
-                    modelProvider: {
-                        getProvidersWithModels: async () => [buildProvider()],
-                    },
-                    persona: {
-                        getAll: async () => [buildPersona()],
-                    },
-                    webSearch: {
-                        listOptions: async () => options,
-                    },
-                })}
+                <StoreProvider
+                    appDataSource={createMockAppDataSource({
+                        modelProvider: {
+                            getProvidersWithModels: async () => [buildProvider()],
+                        },
+                        persona: {
+                            getAll: async () => [buildPersona()],
+                        },
+                        webSearch: {
+                            listOptions: async () => options,
+                        },
+                    })}
                 >
                     <MultimodalInput
                         chat={buildChat()}
@@ -137,17 +132,17 @@ describe("MultimodalInput", () => {
                         selectedWebSearchOptionId={WEB_SEARCH_NONE_OPTION_ID}
                     />
                 </StoreProvider>
-            </TooltipProvider>
+            </TooltipProvider>,
         );
 
         await waitFor(() => {
-            expect(screen.getByRole("combobox", {name: /web search/i})).toBeInTheDocument();
+            expect(screen.getByRole('combobox', { name: /web search/i })).toBeInTheDocument();
         });
 
-        await user.click(screen.getByRole("combobox", {name: /web search/i}));
-        expect(await screen.findByRole("option", {name: /no web search/i})).toBeInTheDocument();
+        await user.click(screen.getByRole('combobox', { name: /web search/i }));
+        expect(await screen.findByRole('option', { name: /no web search/i })).toBeInTheDocument();
 
-        await user.click(screen.getByRole("option", {name: /parallel web search/i}));
+        await user.click(screen.getByRole('option', { name: /parallel web search/i }));
         expect(onWebSearchChange).toHaveBeenCalledWith(PARALLEL_WEB_SEARCH_PROVIDER_ID);
     });
 });

@@ -31,27 +31,51 @@ export const workflow = pgTable('Workflow', {
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 });
 
-export const workflowVersion = pgTable('WorkflowVersion', {
-    id: uuid('id').primaryKey().notNull().defaultRandom(),
-    workflowId: uuid('workflowId')
-        .notNull()
-        .references(() => workflow.id, { onDelete: 'cascade' }),
-    version: integer('version').notNull(),
-    graph: jsonb('graph').notNull(),
-    createdAt: timestamp('createdAt').notNull().defaultNow(),
-    updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-}, (table) => ({
-    workflowVersionPerWorkflow: uniqueIndex('workflow_version_workflow_id_version_idx').on(table.workflowId, table.version),
-}));
+export const workflowVersion = pgTable(
+    'WorkflowVersion',
+    {
+        id: uuid('id').primaryKey().notNull().defaultRandom(),
+        workflowId: uuid('workflowId')
+            .notNull()
+            .references(
+                () => {
+                    return workflow.id;
+                },
+                { onDelete: 'cascade' },
+            ),
+        version: integer('version').notNull(),
+        graph: jsonb('graph').notNull(),
+        createdAt: timestamp('createdAt').notNull().defaultNow(),
+        updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+    },
+    (table) => {
+        return {
+            workflowVersionPerWorkflow: uniqueIndex('workflow_version_workflow_id_version_idx').on(
+                table.workflowId,
+                table.version,
+            ),
+        };
+    },
+);
 
 export const workflowRun = pgTable('WorkflowRun', {
     id: uuid('id').primaryKey().notNull().defaultRandom(),
     workflowId: uuid('workflowId')
         .notNull()
-        .references(() => workflow.id, { onDelete: 'cascade' }),
+        .references(
+            () => {
+                return workflow.id;
+            },
+            { onDelete: 'cascade' },
+        ),
     workflowVersionId: uuid('workflowVersionId')
         .notNull()
-        .references(() => workflowVersion.id, { onDelete: 'restrict' }),
+        .references(
+            () => {
+                return workflowVersion.id;
+            },
+            { onDelete: 'restrict' },
+        ),
     status: workflowRunStatus('status').notNull().default('queued'),
     startedAt: timestamp('startedAt'),
     completedAt: timestamp('completedAt'),
@@ -64,7 +88,12 @@ export const workflowRunEvent = pgTable('WorkflowRunEvent', {
     id: uuid('id').primaryKey().notNull().defaultRandom(),
     workflowRunId: uuid('workflowRunId')
         .notNull()
-        .references(() => workflowRun.id, { onDelete: 'cascade' }),
+        .references(
+            () => {
+                return workflowRun.id;
+            },
+            { onDelete: 'cascade' },
+        ),
     eventType: workflowRunEventType('eventType').notNull(),
     status: workflowRunStatus('status'),
     message: text('message'),
@@ -72,34 +101,42 @@ export const workflowRunEvent = pgTable('WorkflowRunEvent', {
     createdAt: timestamp('createdAt').notNull().defaultNow(),
 });
 
-export const workflowRelations = relations(workflow, ({ many }) => ({
-    versions: many(workflowVersion),
-    runs: many(workflowRun),
-}));
+export const workflowRelations = relations(workflow, ({ many }) => {
+    return {
+        versions: many(workflowVersion),
+        runs: many(workflowRun),
+    };
+});
 
-export const workflowVersionRelations = relations(workflowVersion, ({ one, many }) => ({
-    workflow: one(workflow, {
-        fields: [workflowVersion.workflowId],
-        references: [workflow.id],
-    }),
-    runs: many(workflowRun),
-}));
+export const workflowVersionRelations = relations(workflowVersion, ({ one, many }) => {
+    return {
+        workflow: one(workflow, {
+            fields: [workflowVersion.workflowId],
+            references: [workflow.id],
+        }),
+        runs: many(workflowRun),
+    };
+});
 
-export const workflowRunRelations = relations(workflowRun, ({ one, many }) => ({
-    workflow: one(workflow, {
-        fields: [workflowRun.workflowId],
-        references: [workflow.id],
-    }),
-    version: one(workflowVersion, {
-        fields: [workflowRun.workflowVersionId],
-        references: [workflowVersion.id],
-    }),
-    events: many(workflowRunEvent),
-}));
+export const workflowRunRelations = relations(workflowRun, ({ one, many }) => {
+    return {
+        workflow: one(workflow, {
+            fields: [workflowRun.workflowId],
+            references: [workflow.id],
+        }),
+        version: one(workflowVersion, {
+            fields: [workflowRun.workflowVersionId],
+            references: [workflowVersion.id],
+        }),
+        events: many(workflowRunEvent),
+    };
+});
 
-export const workflowRunEventRelations = relations(workflowRunEvent, ({ one }) => ({
-    workflowRun: one(workflowRun, {
-        fields: [workflowRunEvent.workflowRunId],
-        references: [workflowRun.id],
-    }),
-}));
+export const workflowRunEventRelations = relations(workflowRunEvent, ({ one }) => {
+    return {
+        workflowRun: one(workflowRun, {
+            fields: [workflowRunEvent.workflowRunId],
+            references: [workflowRun.id],
+        }),
+    };
+});

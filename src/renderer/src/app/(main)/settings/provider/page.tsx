@@ -1,6 +1,6 @@
 'use client';
 
-import {ProviderManagement} from '@/components/provider-management';
+import { ProviderManagement } from '@/components/provider-management';
 
 export default function ProviderSettingsPage() {
     return (

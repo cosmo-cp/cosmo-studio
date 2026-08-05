@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import type {z} from "zod";
+import type { z } from 'zod';
 
 export const IPC_CONTROLLER_METADATA_KEY = 'ipc-controller';
 export const IPC_HANDLE_METADATA_KEY = 'ipc-handle';

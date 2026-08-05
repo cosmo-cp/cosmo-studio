@@ -10,28 +10,26 @@ import {
     ModelSelectorList,
     ModelSelectorLogo,
     ModelSelectorName,
-    ModelSelectorTrigger
-} from "@/components/ai-elements/model-selector";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+    ModelSelectorTrigger,
+} from '@/components/ai-elements/model-selector';
+import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { loadAcpAgents } from '@/lib/store/acp-agents-store';
+import { executeCommand } from '@/lib/store/commands-store';
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { loadPersonas } from '@/lib/store/personas-store';
+import { loadProviders } from '@/lib/store/providers-store';
+import { loadWebSearchOptions } from '@/lib/store/web-search-store';
+import { WEB_SEARCH_NONE_OPTION_ID, type WebSearchOption } from '@/lib/web-search-options';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';
-import { ModelModalityEnum } from "core/database/schema/modelProviderSchema";
-import type { AcpAgentView, Chat, ProviderWithModels } from "core/dto";
-import { CheckIcon } from "lucide-react";
+import { ModelModalityEnum } from 'core/database/schema/modelProviderSchema';
+import type { AcpAgentView, Chat, ProviderWithModels } from 'core/dto';
+import { CheckIcon } from 'lucide-react';
 import type { FocusEvent, KeyboardEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
-import {loadAcpAgents} from "@/lib/store/acp-agents-store";
-import {executeCommand} from "@/lib/store/commands-store";
-import {loadPersonas} from "@/lib/store/personas-store";
-import {loadProviders} from "@/lib/store/providers-store";
-import {loadWebSearchOptions} from "@/lib/store/web-search-store";
-import {
-    WEB_SEARCH_NONE_OPTION_ID,
-    type WebSearchOption,
-} from "@/lib/web-search-options";
-import { Attachment, AttachmentPreview, AttachmentRemove, Attachments, } from './ai-elements/attachments';
+import { Attachment, AttachmentPreview, AttachmentRemove, Attachments } from './ai-elements/attachments';
 import {
     PromptInput,
     PromptInputActionAddAttachments,
@@ -42,7 +40,6 @@ import {
     PromptInputButton,
     PromptInputFooter,
     PromptInputHeader,
-    type PromptInputMessage,
     PromptInputProvider,
     PromptInputSelect,
     PromptInputSelectContent,
@@ -53,16 +50,16 @@ import {
     PromptInputTextarea,
     PromptInputTools,
     usePromptInputAttachments,
+    type PromptInputMessage,
 } from './ai-elements/prompt-input';
-import {Input} from "@/components/ui/input";
 
-const PERSONA_NONE_VALUE = "__persona_none__";
-const AGENT_NONE_VALUE = "__agent_none__";
+const PERSONA_NONE_VALUE = '__persona_none__';
+const AGENT_NONE_VALUE = '__agent_none__';
 
 const parsePersonaDirective = (text: string) => {
     const match = text.match(/^\s*@persona(?:\s*[:=])?\s*(?:"([^"]+)"|'([^']+)'|([^\s]+))\s*/i);
     if (!match) {
-        return {text, personaName: undefined};
+        return { text, personaName: undefined };
     }
 
     const personaName = match[1] ?? match[2] ?? match[3];
@@ -76,7 +73,7 @@ const parsePersonaDirective = (text: string) => {
 const parseAgentDirective = (text: string) => {
     const match = text.match(/^\s*\/agent\s+(?:"([^"]+)"|'([^']+)'|([^\s]+))\s*/i);
     if (!match) {
-        return {text, agentName: undefined};
+        return { text, agentName: undefined };
     }
     const agentName = match[1] ?? match[2] ?? match[3];
     return {
@@ -86,22 +83,22 @@ const parseAgentDirective = (text: string) => {
 };
 
 export function MultimodalInput({
-                                    chat,
-                                    status,
-                                    sendMessage,
-                                    onModelChange,
-                                    onAgentChange,
-                                    onPersonaChange,
-                                    onWebSearchChange,
-                                    selectedWebSearchOptionId,
-                                    stop,
+    chat,
+    status,
+    sendMessage,
+    onModelChange,
+    onAgentChange,
+    onPersonaChange,
+    onWebSearchChange,
+    selectedWebSearchOptionId,
+    stop,
 }: {
     chat: Chat;
     status: UseChatHelpers<UIMessage>['status'];
     messages: Array<UIMessage>;
     sendMessage: UseChatHelpers<UIMessage>['sendMessage'];
     className?: string;
-    stillAnswering?: boolean,
+    stillAnswering?: boolean;
     onModelChange: (providerName: string, modelId: string) => void;
     onAgentChange: (agentId: string | null, runtime: 'model' | 'agent') => void;
     onPersonaChange: (personaId: string | null) => void;
@@ -121,33 +118,36 @@ export function MultimodalInput({
     const [input, setInput] = useState<string>('');
     const [agentCwd, setAgentCwd] = useState<string>('');
     const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
-    const resolvedWebSearchOptions = webSearchOptions.length > 0 ? webSearchOptions : [
-        {
-            id: WEB_SEARCH_NONE_OPTION_ID,
-            label: "Disabled"
-        },
-    ];
+    const resolvedWebSearchOptions =
+        webSearchOptions.length > 0
+            ? webSearchOptions
+            : [
+                  {
+                      id: WEB_SEARCH_NONE_OPTION_ID,
+                      label: 'Disabled',
+                  },
+              ];
 
     useEffect(() => {
-        if (providersStatus === "idle") {
+        if (providersStatus === 'idle') {
             void dispatch(loadProviders());
         }
     }, [dispatch, providersStatus]);
 
     useEffect(() => {
-        if (personasStatus === "idle") {
+        if (personasStatus === 'idle') {
             void dispatch(loadPersonas());
         }
     }, [dispatch, personasStatus]);
 
     useEffect(() => {
-        if (webSearchOptionsStatus === "idle") {
+        if (webSearchOptionsStatus === 'idle') {
             void dispatch(loadWebSearchOptions());
         }
     }, [dispatch, webSearchOptionsStatus]);
 
     useEffect(() => {
-        if (agentsStatus === "idle") {
+        if (agentsStatus === 'idle') {
             void dispatch(loadAcpAgents());
         }
     }, [agentsStatus, dispatch]);
@@ -155,9 +155,9 @@ export function MultimodalInput({
     const selectedModelInfo = useMemo(() => {
         if (providers.length === 0) return undefined;
         if (chat.selectedProvider && chat.selectedModelId) {
-            const provider = providers.find(p => p.name === chat.selectedProvider);
+            const provider = providers.find((p) => p.name === chat.selectedProvider);
             if (provider) {
-                return provider.models.find(m => m.modelId === chat.selectedModelId);
+                return provider.models.find((m) => m.modelId === chat.selectedModelId);
             }
         }
         return undefined;
@@ -171,7 +171,7 @@ export function MultimodalInput({
             return;
         }
 
-        const firstProvider = providers.find(p => p.models.length > 0);
+        const firstProvider = providers.find((p) => p.models.length > 0);
         if (firstProvider) {
             const firstModel = firstProvider.models[0];
             if (firstModel) {
@@ -180,101 +180,112 @@ export function MultimodalInput({
         }
     }, [providers, chat.selectedProvider, chat.selectedModelId, onModelChange]);
 
-    const submitForm = useCallback(async (message: PromptInputMessage) => {
-        const selectedRuntime = chat.selectedRuntime ?? 'model';
-        let runtime = selectedRuntime;
-        let selectedAgentId = chat.selectedAgentId ?? null;
-        let modelId = chat.selectedProvider && chat.selectedModelId ?
-            chat.selectedProvider + ":" + chat.selectedModelId :
-            undefined;
-        const {text: cleanedText} = parsePersonaDirective(message.text);
-        const agentDirective = parseAgentDirective(cleanedText);
-        let resolvedText = agentDirective.text;
+    const submitForm = useCallback(
+        async (message: PromptInputMessage) => {
+            const selectedRuntime = chat.selectedRuntime ?? 'model';
+            let runtime = selectedRuntime;
+            let selectedAgentId = chat.selectedAgentId ?? null;
+            let modelId =
+                chat.selectedProvider && chat.selectedModelId
+                    ? chat.selectedProvider + ':' + chat.selectedModelId
+                    : undefined;
+            const { text: cleanedText } = parsePersonaDirective(message.text);
+            const agentDirective = parseAgentDirective(cleanedText);
+            let resolvedText = agentDirective.text;
 
-        if (agentDirective.agentName) {
-            const directiveAgent = agents.find((agent) =>
-                agent.name.toLowerCase() === agentDirective.agentName!.toLowerCase()
-            );
-            if (!directiveAgent) {
-                toast.error(`ACP agent "${agentDirective.agentName}" was not found.`);
+            if (agentDirective.agentName) {
+                const directiveAgent = agents.find(
+                    (agent) => agent.name.toLowerCase() === agentDirective.agentName!.toLowerCase(),
+                );
+                if (!directiveAgent) {
+                    toast.error(`ACP agent "${agentDirective.agentName}" was not found.`);
+                    return;
+                }
+                runtime = 'agent';
+                selectedAgentId = directiveAgent.id;
+            }
+
+            if (resolvedText.trim().startsWith('/') && !resolvedText.trim().startsWith('/agent')) {
+                try {
+                    const result = await dispatch(executeCommand({ input: resolvedText })).unwrap();
+                    resolvedText = result.resolvedText;
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : 'Failed to execute command.';
+                    toast.error(message);
+                    return;
+                }
+            }
+
+            const activeAgent = agents.find((agent) => agent.id === selectedAgentId);
+            if (runtime === 'model' && !modelId) {
                 return;
             }
-            runtime = 'agent';
-            selectedAgentId = directiveAgent.id;
-        }
+            if (runtime === 'agent') {
+                if (!activeAgent) {
+                    toast.error('Select an ACP agent before sending.');
+                    return;
+                }
+                if (!activeAgent.enabled) {
+                    toast.error(`${activeAgent.name} is disabled.`);
+                    return;
+                }
+                if (!agentCwd.trim() && !activeAgent.defaultCwd) {
+                    toast.error(`${activeAgent.name} requires a workspace path.`);
+                    return;
+                }
+                modelId = undefined;
+            }
 
-        if (resolvedText.trim().startsWith("/") && !resolvedText.trim().startsWith("/agent")) {
-            try {
-                const result = await dispatch(executeCommand({input: resolvedText})).unwrap();
-                resolvedText = result.resolvedText;
-            } catch (error) {
-                const message = error instanceof Error ? error.message : "Failed to execute command.";
-                toast.error(message);
-                return;
-            }
-        }
+            sendMessage(
+                {
+                    text: resolvedText,
+                    files: message.files,
+                },
+                {
+                    metadata: {
+                        modelId,
+                        runtime,
+                        agentId: runtime === 'agent' ? selectedAgentId : null,
+                        agentCwd: runtime === 'agent' ? agentCwd.trim() || activeAgent?.defaultCwd || null : null,
+                        personaId: chat.selectedPersonaId ?? null,
+                        webSearchOptionId:
+                            selectedWebSearchOptionId === WEB_SEARCH_NONE_OPTION_ID ? null : selectedWebSearchOptionId,
+                    },
+                },
+            )
+                .catch((error) => {
+                    toast.error(error.message);
+                })
+                .finally(() => {
+                    setInput('');
+                });
+        },
+        [
+            chat.selectedModelId,
+            chat.selectedPersonaId,
+            chat.selectedProvider,
+            chat.selectedRuntime,
+            chat.selectedAgentId,
+            dispatch,
+            agents,
+            agentCwd,
+            selectedWebSearchOptionId,
+            sendMessage,
+        ],
+    );
 
-        const activeAgent = agents.find((agent) => agent.id === selectedAgentId);
-        if (runtime === 'model' && !modelId) {
-            return;
-        }
-        if (runtime === 'agent') {
-            if (!activeAgent) {
-                toast.error('Select an ACP agent before sending.');
-                return;
-            }
-            if (!activeAgent.enabled) {
-                toast.error(`${activeAgent.name} is disabled.`);
-                return;
-            }
-            if (!agentCwd.trim() && !activeAgent.defaultCwd) {
-                toast.error(`${activeAgent.name} requires a workspace path.`);
-                return;
-            }
-            modelId = undefined;
-        }
-
-        sendMessage({
-            text: resolvedText,
-            files: message.files
-        }, {
-            metadata: {
-                modelId,
-                runtime,
-                agentId: runtime === 'agent' ? selectedAgentId : null,
-                agentCwd: runtime === 'agent' ? agentCwd.trim() || activeAgent?.defaultCwd || null : null,
-                personaId: chat.selectedPersonaId ?? null,
-                webSearchOptionId: selectedWebSearchOptionId === WEB_SEARCH_NONE_OPTION_ID ?
-                    null :
-                    selectedWebSearchOptionId,
-            }
-        }).catch((error) => {
-            toast.error(error.message);
-        }).finally(() => {
-            setInput('');
-        })
-    }, [
-        chat.selectedModelId,
-        chat.selectedPersonaId,
-        chat.selectedProvider,
-        chat.selectedRuntime,
-        chat.selectedAgentId,
-        dispatch,
-        agents,
-        agentCwd,
-        selectedWebSearchOptionId,
-        sendMessage,
-    ]);
-
-    const handlePersonaSelection = useCallback((personaId: string | null) => {
-        onPersonaChange(personaId);
-    }, [onPersonaChange]);
+    const handlePersonaSelection = useCallback(
+        (personaId: string | null) => {
+            onPersonaChange(personaId);
+        },
+        [onPersonaChange],
+    );
 
     const personaOptions = useMemo(() => {
         return personas
             .map((persona) => ({
                 id: persona.id ?? persona.name ?? '',
-                name: persona.name ?? ''
+                name: persona.name ?? '',
             }))
             .filter((persona) => persona.id && persona.name);
     }, [personas]);
@@ -312,29 +323,29 @@ export function MultimodalInput({
 
 // Inner component that uses the attachments hook (must be inside PromptInputProvider)
 function PromptInputContent({
-                                chat,
-                                handlePersonaSelection,
-                                agents,
-                                agentCwd,
-                                input,
-                                modelSelectorOpen,
-                                onAgentChange,
-                                onAgentCwdChange,
-                                onModelChange,
-                                onWebSearchChange,
-                                personaOptions,
-                                providers,
-                                selectedModelInfo,
-                                selectedRuntime,
-                                selectedAgentId,
-                                selectedPersonaId,
-                                selectedWebSearchOptionId,
-                                setInput,
-                                setModelSelectorOpen,
-                                status,
-                                submitForm,
-                                webSearchOptions,
-                                stop
+    chat,
+    handlePersonaSelection,
+    agents,
+    agentCwd,
+    input,
+    modelSelectorOpen,
+    onAgentChange,
+    onAgentCwdChange,
+    onModelChange,
+    onWebSearchChange,
+    personaOptions,
+    providers,
+    selectedModelInfo,
+    selectedRuntime,
+    selectedAgentId,
+    selectedPersonaId,
+    selectedWebSearchOptionId,
+    setInput,
+    setModelSelectorOpen,
+    status,
+    submitForm,
+    webSearchOptions,
+    stop,
 }: {
     chat: Chat;
     handlePersonaSelection: (personaId: string | null) => void;
@@ -371,15 +382,15 @@ function PromptInputContent({
         if (!selectedPersonaId) {
             return PERSONA_NONE_VALUE;
         }
-        return personaOptions.some((persona) => persona.id === selectedPersonaId) ?
-            selectedPersonaId :
-            PERSONA_NONE_VALUE;
+        return personaOptions.some((persona) => persona.id === selectedPersonaId)
+            ? selectedPersonaId
+            : PERSONA_NONE_VALUE;
     }, [personaOptions, selectedPersonaId]);
 
     const selectedWebSearchValue = useMemo(() => {
-        return webSearchOptions.some((option) => option.id === selectedWebSearchOptionId && !option.disabled) ?
-            selectedWebSearchOptionId :
-            WEB_SEARCH_NONE_OPTION_ID;
+        return webSearchOptions.some((option) => option.id === selectedWebSearchOptionId && !option.disabled)
+            ? selectedWebSearchOptionId
+            : WEB_SEARCH_NONE_OPTION_ID;
     }, [selectedWebSearchOptionId, webSearchOptions]);
 
     const selectedAgentValue = useMemo(() => {
@@ -399,31 +410,43 @@ function PromptInputContent({
         });
     }, []);
 
-    const handlePersonaValueChange = useCallback((value: string) => {
-        handlePersonaSelection(value === PERSONA_NONE_VALUE ? null : value);
-        personaSelectorTriggeredByShortcutRef.current = false;
-        focusTextarea();
-    }, [focusTextarea, handlePersonaSelection]);
-
-    const handlePersonaSelectorOpenChange = useCallback((open: boolean) => {
-        setPersonaSelectorOpen(open);
-        if (!open && personaSelectorTriggeredByShortcutRef.current) {
+    const handlePersonaValueChange = useCallback(
+        (value: string) => {
+            handlePersonaSelection(value === PERSONA_NONE_VALUE ? null : value);
             personaSelectorTriggeredByShortcutRef.current = false;
             focusTextarea();
-        }
-    }, [focusTextarea]);
+        },
+        [focusTextarea, handlePersonaSelection],
+    );
 
-    const handleWebSearchValueChange = useCallback((value: string) => {
-        onWebSearchChange(value);
-        focusTextarea();
-    }, [focusTextarea, onWebSearchChange]);
+    const handlePersonaSelectorOpenChange = useCallback(
+        (open: boolean) => {
+            setPersonaSelectorOpen(open);
+            if (!open && personaSelectorTriggeredByShortcutRef.current) {
+                personaSelectorTriggeredByShortcutRef.current = false;
+                focusTextarea();
+            }
+        },
+        [focusTextarea],
+    );
 
-    const handleAgentValueChange = useCallback((value: string) => {
-        onAgentChange(value === AGENT_NONE_VALUE ? null : value, 'agent');
-        const nextAgent = agents.find((agent) => agent.id === value);
-        onAgentCwdChange(nextAgent?.defaultCwd ?? '');
-        focusTextarea();
-    }, [agents, focusTextarea, onAgentChange, onAgentCwdChange]);
+    const handleWebSearchValueChange = useCallback(
+        (value: string) => {
+            onWebSearchChange(value);
+            focusTextarea();
+        },
+        [focusTextarea, onWebSearchChange],
+    );
+
+    const handleAgentValueChange = useCallback(
+        (value: string) => {
+            onAgentChange(value === AGENT_NONE_VALUE ? null : value, 'agent');
+            const nextAgent = agents.find((agent) => agent.id === value);
+            onAgentCwdChange(nextAgent?.defaultCwd ?? '');
+            focusTextarea();
+        },
+        [agents, focusTextarea, onAgentChange, onAgentCwdChange],
+    );
 
     const handleTextareaFocus = useCallback((event: FocusEvent<HTMLTextAreaElement>) => {
         textareaRef.current = event.currentTarget;
@@ -431,7 +454,7 @@ function PromptInputContent({
 
     const handleTextareaKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
         textareaRef.current = event.currentTarget;
-        const isPersonaShortcut = event.key === "@" && !event.altKey && !event.ctrlKey && !event.metaKey;
+        const isPersonaShortcut = event.key === '@' && !event.altKey && !event.ctrlKey && !event.metaKey;
         if (!isPersonaShortcut) {
             return;
         }
@@ -454,8 +477,8 @@ function PromptInputContent({
                 <Attachments>
                     {attachments.files.map((file) => (
                         <Attachment key={file.id} data={file} onRemove={() => attachments.remove(file.id)}>
-                            <AttachmentPreview/>
-                            <AttachmentRemove/>
+                            <AttachmentPreview />
+                            <AttachmentRemove />
                         </Attachment>
                     ))}
                 </Attachments>
@@ -474,9 +497,9 @@ function PromptInputContent({
                         <button
                             aria-pressed={selectedRuntime === 'model'}
                             className={
-                                selectedRuntime === 'model' ?
-                                    'h-6 rounded-sm bg-secondary px-2 text-xs font-medium text-secondary-foreground' :
-                                    'h-6 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground'
+                                selectedRuntime === 'model'
+                                    ? 'h-6 rounded-sm bg-secondary px-2 text-xs font-medium text-secondary-foreground'
+                                    : 'h-6 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground'
                             }
                             onClick={() => onAgentChange(null, 'model')}
                             type="button"
@@ -486,9 +509,9 @@ function PromptInputContent({
                         <button
                             aria-pressed={selectedRuntime === 'agent'}
                             className={
-                                selectedRuntime === 'agent' ?
-                                    'h-6 rounded-sm bg-secondary px-2 text-xs font-medium text-secondary-foreground' :
-                                    'h-6 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground'
+                                selectedRuntime === 'agent'
+                                    ? 'h-6 rounded-sm bg-secondary px-2 text-xs font-medium text-secondary-foreground'
+                                    : 'h-6 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground'
                             }
                             onClick={() => onAgentChange(selectedAgentId, 'agent')}
                             type="button"
@@ -501,8 +524,8 @@ function PromptInputContent({
                             <TooltipTrigger asChild>
                                 <span>
                                     <PromptInputActionMenuTrigger
-                                        disabled={!selectedModelInfo?.inputModalities.includes(ModelModalityEnum.IMAGE)}>
-                                    </PromptInputActionMenuTrigger>
+                                        disabled={!selectedModelInfo?.inputModalities.includes(ModelModalityEnum.IMAGE)}
+                                    ></PromptInputActionMenuTrigger>
                                 </span>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -514,53 +537,48 @@ function PromptInputContent({
                             </TooltipContent>
                         </Tooltip>
                         <PromptInputActionMenuContent>
-                            <PromptInputActionAddAttachments/>
+                            <PromptInputActionAddAttachments />
                         </PromptInputActionMenuContent>
                     </PromptInputActionMenu>
                     {selectedRuntime === 'model' ? (
-                        <ModelSelector
-                            onOpenChange={setModelSelectorOpen}
-                            open={modelSelectorOpen}
-                        >
+                        <ModelSelector onOpenChange={setModelSelectorOpen} open={modelSelectorOpen}>
                             <ModelSelectorTrigger asChild>
                                 <PromptInputButton className="w-max">
                                     {chat.selectedModelId ? (
-                                        <ModelSelectorName>
-                                            {chat.selectedModelId}
-                                        </ModelSelectorName>
-                                    ) : ('Select Model')}
+                                        <ModelSelectorName>{chat.selectedModelId}</ModelSelectorName>
+                                    ) : (
+                                        'Select Model'
+                                    )}
                                 </PromptInputButton>
                             </ModelSelectorTrigger>
                             <ModelSelectorContent>
-                                <ModelSelectorInput placeholder="Search models"/>
+                                <ModelSelectorInput placeholder="Search models" />
                                 <ModelSelectorList>
                                     <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
                                     {providers.map((provider) => (
-                                        <ModelSelectorGroup heading={provider.name}
-                                                            key={provider.name}>
-                                            {provider.models
-                                                .map((m) => (
-                                                    <ModelSelectorItem
-                                                        key={m.modelId}
-                                                        onSelect={() => {
-                                                            setModelSelectorOpen(false);
-                                                            onModelChange(provider.name, m.modelId);
-                                                        }}
-                                                        value={m.modelId}
-                                                    >
-                                                        <ModelSelectorName>{m.name}</ModelSelectorName>
-                                                        <ModelSelectorLogo
-                                                            key={provider.type.toString()}
-                                                            provider={provider.type.toString()}
-                                                        />
-                                                        {chat.selectedProvider === provider.name &&
-                                                        chat.selectedModelId === m.modelId ? (
-                                                            <CheckIcon className="ml-auto size-4"/>
-                                                        ) : (
-                                                            <div className="ml-auto size-4"/>
-                                                        )}
-                                                    </ModelSelectorItem>
-                                                ))}
+                                        <ModelSelectorGroup heading={provider.name} key={provider.name}>
+                                            {provider.models.map((m) => (
+                                                <ModelSelectorItem
+                                                    key={m.modelId}
+                                                    onSelect={() => {
+                                                        setModelSelectorOpen(false);
+                                                        onModelChange(provider.name, m.modelId);
+                                                    }}
+                                                    value={m.modelId}
+                                                >
+                                                    <ModelSelectorName>{m.name}</ModelSelectorName>
+                                                    <ModelSelectorLogo
+                                                        key={provider.type.toString()}
+                                                        provider={provider.type.toString()}
+                                                    />
+                                                    {chat.selectedProvider === provider.name &&
+                                                    chat.selectedModelId === m.modelId ? (
+                                                        <CheckIcon className="ml-auto size-4" />
+                                                    ) : (
+                                                        <div className="ml-auto size-4" />
+                                                    )}
+                                                </ModelSelectorItem>
+                                            ))}
                                         </ModelSelectorGroup>
                                     ))}
                                 </ModelSelectorList>
@@ -575,12 +593,10 @@ function PromptInputContent({
                                 value={selectedAgentValue}
                             >
                                 <PromptInputSelectTrigger className="w-max">
-                                    <PromptInputSelectValue placeholder="Agent"/>
+                                    <PromptInputSelectValue placeholder="Agent" />
                                 </PromptInputSelectTrigger>
                                 <PromptInputSelectContent>
-                                    <PromptInputSelectItem value={AGENT_NONE_VALUE}>
-                                        None
-                                    </PromptInputSelectItem>
+                                    <PromptInputSelectItem value={AGENT_NONE_VALUE}>None</PromptInputSelectItem>
                                     {agents.map((agent) => (
                                         <PromptInputSelectItem
                                             disabled={!agent.enabled}
@@ -596,7 +612,7 @@ function PromptInputContent({
                                 aria-label="Agent workspace"
                                 className="h-8 w-48"
                                 onChange={(event) => onAgentCwdChange(event.target.value)}
-                                placeholder={selectedAgent?.defaultCwd || "Workspace path"}
+                                placeholder={selectedAgent?.defaultCwd || 'Workspace path'}
                                 value={agentCwd}
                             />
                         </>
@@ -607,24 +623,15 @@ function PromptInputContent({
                         open={webSearchSelectorOpen}
                         value={selectedWebSearchValue}
                     >
-                        <PromptInputSelectTrigger
-                            aria-label="Web search"
-                            className="w-max"
-                        >
-                            <PromptInputSelectValue placeholder="Web Search"/>
+                        <PromptInputSelectTrigger aria-label="Web search" className="w-max">
+                            <PromptInputSelectValue placeholder="Web Search" />
                         </PromptInputSelectTrigger>
                         <PromptInputSelectContent>
                             {webSearchOptions.map((option) => (
-                                <PromptInputSelectItem
-                                    disabled={option.disabled}
-                                    key={option.id}
-                                    value={option.id}
-                                >
+                                <PromptInputSelectItem disabled={option.disabled} key={option.id} value={option.id}>
                                     <div className="flex flex-col">
                                         <span>{option.label}</span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {option.label}
-                                        </span>
+                                        <span className="text-xs text-muted-foreground">{option.label}</span>
                                     </div>
                                 </PromptInputSelectItem>
                             ))}
@@ -637,17 +644,12 @@ function PromptInputContent({
                         value={selectedPersonaValue}
                     >
                         <PromptInputSelectTrigger className="w-max">
-                            <PromptInputSelectValue placeholder="Persona"/>
+                            <PromptInputSelectValue placeholder="Persona" />
                         </PromptInputSelectTrigger>
                         <PromptInputSelectContent>
-                            <PromptInputSelectItem value={PERSONA_NONE_VALUE}>
-                                None
-                            </PromptInputSelectItem>
+                            <PromptInputSelectItem value={PERSONA_NONE_VALUE}>None</PromptInputSelectItem>
                             {personaOptions.map((persona) => (
-                                <PromptInputSelectItem
-                                    key={persona.id}
-                                    value={persona.id}
-                                >
+                                <PromptInputSelectItem key={persona.id} value={persona.id}>
                                     {persona.name}
                                 </PromptInputSelectItem>
                             ))}
@@ -658,7 +660,9 @@ function PromptInputContent({
                     disabled={
                         (selectedRuntime === 'model' && !chat.selectedModelId) ||
                         (selectedRuntime === 'agent' &&
-                            (!selectedAgentId || !selectedAgent?.enabled || (!agentCwd.trim() && !selectedAgent.defaultCwd))) ||
+                            (!selectedAgentId ||
+                                !selectedAgent?.enabled ||
+                                (!agentCwd.trim() && !selectedAgent.defaultCwd))) ||
                         (!input && status !== 'submitted' && status !== 'streaming')
                     }
                     status={status}

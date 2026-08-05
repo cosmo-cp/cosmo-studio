@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
 import type { Chat, ChatWithMessages, ModelIdentifier, NewChat, PersonaIdentifier } from 'core/dto';
 import type { ChatService } from 'core/services/ChatService';
+import { describe, expect, it, vi } from 'vitest';
 import { ChatController } from './ChatController';
 
 describe('ChatController', () => {

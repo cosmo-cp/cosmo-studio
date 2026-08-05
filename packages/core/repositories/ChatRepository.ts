@@ -5,7 +5,7 @@ import { DatabaseManager } from '../database/DatabaseManager';
 import { chat, message } from '../database/schema/schema';
 import { AgentIdentifier, Chat, ChatWithMessages, Message, ModelIdentifier, NewChat, PersonaIdentifier } from '../dto';
 import { UIMessage } from 'ai';
-import {toUiMessages} from '../uiMessageMapper';
+import { toUiMessages } from '../uiMessageMapper';
 
 @injectable()
 export class ChatRepository {

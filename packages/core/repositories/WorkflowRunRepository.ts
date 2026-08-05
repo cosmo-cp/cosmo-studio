@@ -20,7 +20,7 @@ export class WorkflowRunRepository {
             const latestVersion = await this.db.query.workflowVersion.findFirst({
                 where: eq(workflowVersion.workflowId, input.workflowId),
                 orderBy: desc(workflowVersion.version),
-                columns: {id: true},
+                columns: { id: true },
             });
             if (!latestVersion) {
                 throw new Error('Workflow has no version to run');
@@ -29,10 +29,7 @@ export class WorkflowRunRepository {
         }
 
         const matchingVersion = await this.db.query.workflowVersion.findFirst({
-            where: and(
-                eq(workflowVersion.id, workflowVersionId),
-                eq(workflowVersion.workflowId, input.workflowId),
-            ),
+            where: and(eq(workflowVersion.id, workflowVersionId), eq(workflowVersion.workflowId, input.workflowId)),
             columns: { id: true },
         });
 
@@ -40,10 +37,13 @@ export class WorkflowRunRepository {
             throw new Error('Workflow version does not belong to the provided workflow');
         }
 
-        const [created] = await this.db.insert(workflowRun).values({
-            ...input,
-            workflowVersionId,
-        }).returning();
+        const [created] = await this.db
+            .insert(workflowRun)
+            .values({
+                ...input,
+                workflowVersionId: workflowVersionId,
+            })
+            .returning();
         return created;
     }
 
@@ -57,21 +57,33 @@ export class WorkflowRunRepository {
 
     // Lists runs for a workflow ordered by recency.
     public async getByWorkflowId(workflowId: string): Promise<WorkflowRun[]> {
-        return this.db.select().from(workflowRun).where(and(eq(workflowRun.workflowId, workflowId))).orderBy(desc(workflowRun.createdAt));
+        return this.db
+            .select()
+            .from(workflowRun)
+            .where(and(eq(workflowRun.workflowId, workflowId)))
+            .orderBy(desc(workflowRun.createdAt));
     }
 
     // Persists run status changes and timestamps.
-    public async updateStatus(id: string, status: WorkflowRun['status'], errorMessage?: string | null): Promise<WorkflowRun | undefined> {
+    public async updateStatus(
+        id: string,
+        status: WorkflowRun['status'],
+        errorMessage?: string | null,
+    ): Promise<WorkflowRun | undefined> {
         const now = new Date();
         const startedAt = status === 'running' ? now : undefined;
         const completedAt = ['completed', 'failed', 'cancelled'].includes(status) ? now : undefined;
-        const [updated] = await this.db.update(workflowRun).set({
-            status,
-            errorMessage: errorMessage ?? null,
-            startedAt,
-            completedAt,
-            updatedAt: now,
-        }).where(eq(workflowRun.id, id)).returning();
+        const [updated] = await this.db
+            .update(workflowRun)
+            .set({
+                status: status,
+                errorMessage: errorMessage ?? null,
+                startedAt: startedAt,
+                completedAt: completedAt,
+                updatedAt: now,
+            })
+            .where(eq(workflowRun.id, id))
+            .returning();
         return updated;
     }
 

@@ -1,35 +1,27 @@
 'use client';
 
-import type {UseChatHelpers} from '@ai-sdk/react';
-import {Messages} from '@/components/messages';
-import {WorkflowCanvas} from '@/components/workflow-canvas';
-import type {WorkflowListItem} from '@/components/workflow-history';
-import {Button} from '@/components/ui/button';
-import {Separator} from '@/components/ui/separator';
-import {Textarea} from '@/components/ui/textarea';
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
-import {cn} from '@/lib/utils';
-import type {UIMessage} from 'ai';
-import {PencilLine, Play, Workflow, X} from 'lucide-react';
-import {startTransition, useEffect, useRef, useState} from 'react';
+import { Messages } from '@/components/messages';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { WorkflowCanvas } from '@/components/workflow-canvas';
+import type { WorkflowListItem } from '@/components/workflow-history';
+import { cn } from '@/lib/utils';
+import type { UseChatHelpers } from '@ai-sdk/react';
+import type { UIMessage } from 'ai';
+import { PencilLine, Play, Workflow, X } from 'lucide-react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 
 type WorkflowWorkspaceMode = 'edit' | 'run';
 type WorkflowRunStatus = UseChatHelpers<UIMessage>['status'];
 
 // Keep local workflow-runner messages in the same shape as the chat page so the shared Messages UI can render them.
-function buildTextMessage({
-    id,
-    role,
-    text,
-}: {
-    id: string;
-    role: UIMessage['role'];
-    text: string;
-}): UIMessage {
+function buildTextMessage({ id, role, text }: { id: string; role: UIMessage['role']; text: string }): UIMessage {
     return {
         id,
         role,
-        parts: [{type: 'text', text}],
+        parts: [{ type: 'text', text }],
     };
 }
 
@@ -64,7 +56,7 @@ function WorkflowRunDrawer({
             aria-hidden={!isOpen}
             className={cn(
                 'absolute inset-y-0 right-0 z-20 flex w-full max-w-[420px] flex-col border-l bg-background shadow-xl transition-transform duration-300 ease-out',
-                isOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none'
+                isOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none',
             )}
             data-state={isOpen ? 'open' : 'closed'}
             data-testid="workflow-run-drawer"
@@ -99,11 +91,7 @@ function WorkflowRunDrawer({
                 </TooltipProvider>
             </div>
             <div className="min-h-0 flex-1">
-                <Messages
-                    chatId={`workflow-run-${workflow.id}`}
-                    messages={messages}
-                    status={status}
-                />
+                <Messages chatId={`workflow-run-${workflow.id}`} messages={messages} status={status} />
             </div>
             <Separator />
             <form
@@ -192,7 +180,7 @@ function WorkflowModeToggle({
     );
 }
 
-export function WorkflowWorkspace({workflow}: {workflow: WorkflowListItem}) {
+export function WorkflowWorkspace({ workflow }: { workflow: WorkflowListItem }) {
     const executionTimerRef = useRef<number | null>(null);
     const nextMessageIdRef = useRef(1);
     const [mode, setMode] = useState<WorkflowWorkspaceMode>('edit');

@@ -1,4 +1,4 @@
-import {WebSearchManagement} from '@/components/web-search-management';
+import { WebSearchManagement } from '@/components/web-search-management';
 
 export default function WebSearchSettingsPage() {
     return (

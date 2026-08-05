@@ -1,5 +1,6 @@
-import { defineConfig } from 'vite';
 import path from 'path';
+import { defineConfig } from 'vite';
+
 //Not used
 // Created a NextPlugin for renderer and added it in forge.config.ts
 export default defineConfig({

@@ -12,11 +12,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { deletePersona, loadPersonas, savePersona } from '@/lib/store/personas-store';
 import type { Persona } from 'core/dto';
 import { Edit, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks";
-import {deletePersona, loadPersonas, savePersona} from "@/lib/store/personas-store";
 
 const getErrorMessage = (error: unknown) => {
     if (error instanceof Error) {
@@ -99,20 +99,24 @@ export function PersonaList() {
 
         try {
             if (editingPersona) {
-                await dispatch(savePersona({
-                    personaId: editingPersona.id,
-                    input: {
-                    name: trimmedName,
-                    details: trimmedDetails,
-                    },
-                })).unwrap();
+                await dispatch(
+                    savePersona({
+                        personaId: editingPersona.id,
+                        input: {
+                            name: trimmedName,
+                            details: trimmedDetails,
+                        },
+                    }),
+                ).unwrap();
             } else {
-                await dispatch(savePersona({
-                    input: {
-                    name: trimmedName,
-                    details: trimmedDetails,
-                    },
-                })).unwrap();
+                await dispatch(
+                    savePersona({
+                        input: {
+                            name: trimmedName,
+                            details: trimmedDetails,
+                        },
+                    }),
+                ).unwrap();
             }
             setIsOpen(false);
         } catch (error) {
@@ -171,7 +175,7 @@ export function PersonaList() {
                         <span>Add persona</span>
                     </Button>
                 </div>
-                {listError ?? (personasStatus === 'failed' ? personasError : null) ? (
+                {(listError ?? (personasStatus === 'failed' ? personasError : null)) ? (
                     <p className="text-sm text-destructive" role="alert">
                         {listError ?? personasError}
                     </p>

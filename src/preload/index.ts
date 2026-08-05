@@ -1,6 +1,6 @@
 import { contextBridge } from 'electron';
-import { rpcApi } from './api';
 import log from 'electron-log/renderer';
+import { rpcApi } from './rpc-api';
 
 const logger = log.scope('preload');
 

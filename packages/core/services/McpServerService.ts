@@ -84,8 +84,8 @@ export class McpServerService {
 
         return this.mcpServerRepository.create({
             ...data,
-            name,
-            transportType,
+            name: name,
+            transportType: transportType,
         });
     }
 

@@ -1,7 +1,5 @@
 'use client';
 
-import type { ComponentProps } from 'react';
-
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -13,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { ChevronDownIcon, ExternalLinkIcon, MessageCircleIcon } from 'lucide-react';
+import type { ComponentProps } from 'react';
 import { createContext, useContext } from 'react';
 
 const providers = {

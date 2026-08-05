@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
 import type { NewPersona, Persona } from 'core/dto';
 import type { PersonaService } from 'core/services/PersonaService';
+import { describe, expect, it, vi } from 'vitest';
 import { PersonaController } from './PersonaController';
 
 describe('PersonaController', () => {

@@ -27,11 +27,11 @@ This document captures UI/UX conventions so new features match the existing Cosm
 - Icons via `lucide-react`.
 - Theme switching via `next-themes`.
 - Renderer-wide shared state lives in a single Redux Toolkit store at the app root.
-- Async renderer data flows should use Redux thunks that resolve the shared app data source adapter.
+- Async renderer data flows should use Redux thunks that resolve the shared store-backed API source.
 - Runtime backend selection is build/dev-time configuration:
-  - `NEXT_PUBLIC_COSMO_BACKEND=electron` uses preload-backed `window.api`.
-  - `NEXT_PUBLIC_COSMO_BACKEND=http` uses the generated HTTP RPC client.
-  - `NEXT_PUBLIC_COSMO_API_BASE` defaults to `/api` for HTTP builds.
+    - `NEXT_PUBLIC_COSMO_BACKEND=electron` uses preload-backed `window.api`.
+    - `NEXT_PUBLIC_COSMO_BACKEND=http` uses the browser-safe `httpApi` from `src/preload/api.ts`.
+    - `NEXT_PUBLIC_COSMO_API_BASE` defaults to `/api` for HTTP builds.
 
 ## Guidelines
 
@@ -60,13 +60,13 @@ This document captures UI/UX conventions so new features match the existing Cosm
     - Always handle failure states (toast + recoverable UI).
     - Clean up IPC listeners when streams end/cancel.
 - Chat page state:
-  - Keep chat history, selected chat, and conversation search state in the root Redux store so sibling panels and settings screens share one source of truth.
+    - Keep chat history, selected chat, and conversation search state in the root Redux store so sibling panels and settings screens share one source of truth.
 - Settings/stateful resources:
-  - Commands, personas, providers, and MCP servers should load through Redux thunks instead of calling preload APIs directly from components.
+    - Commands, personas, providers, and MCP servers should load through Redux thunks instead of calling preload APIs directly from components.
 - Backend adapters:
-  - Request/response flows go through `src/renderer/src/lib/app-data-source.ts`.
-  - HTTP RPC calls go through `src/renderer/src/lib/generated-http-api.ts`.
-  - Presentation components should not branch on Electron versus HTTP.
+    - Request/response flows go through `src/renderer/src/lib/store/store.ts`.
+    - HTTP RPC calls go through `src/preload/api.ts`.
+    - Presentation components should not branch on Electron versus HTTP.
 - Commands:
     - List commands dynamically (built-ins + custom).
     - Allow optional single-argument input and show hints in the UI.

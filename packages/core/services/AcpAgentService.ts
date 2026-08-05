@@ -1,14 +1,8 @@
-import {inject, injectable} from 'inversify';
-import {CORETYPES} from '../types/types';
-import {AcpAgentRepository} from '../repositories/AcpAgentRepository';
-import type {
-    AcpAgent,
-    AcpAgentCreateInput,
-    AcpAgentRuntimeConfig,
-    AcpAgentUpdateInput,
-    AcpAgentView,
-} from '../dto';
-import {Base64SecretStore, type SecretStore} from '../platform/SecretStore';
+import { inject, injectable } from 'inversify';
+import { CORETYPES } from '../types/types';
+import { AcpAgentRepository } from '../repositories/AcpAgentRepository';
+import type { AcpAgent, AcpAgentCreateInput, AcpAgentRuntimeConfig, AcpAgentUpdateInput, AcpAgentView } from '../dto';
+import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
 
 const normalizeRequired = (value: string | null | undefined, field: string): string => {
     if (!value || value.trim().length === 0) {
@@ -21,7 +15,12 @@ const normalizeStringList = (value: unknown, field: string): string[] => {
     if (value === undefined || value === null) {
         return [];
     }
-    if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
+    if (
+        !Array.isArray(value) ||
+        value.some((item) => {
+            return typeof item !== 'string';
+        })
+    ) {
         throw new Error(`${field} must be an array of strings.`);
     }
     return value;
@@ -33,13 +32,15 @@ export class AcpAgentService {
         @inject(CORETYPES.AcpAgentRepository)
         private readonly repository: AcpAgentRepository,
         @inject(CORETYPES.SecretStore)
-        private readonly secretStore: SecretStore = new Base64SecretStore()
+        private readonly secretStore: SecretStore = new Base64SecretStore(),
     ) {}
 
     // Lists agents without leaking encrypted environment values to the renderer.
     public async getAll(): Promise<AcpAgentView[]> {
         const agents = await this.repository.getAll();
-        return agents.map((agent) => this.toView(agent));
+        return agents.map((agent) => {
+            return this.toView(agent);
+        });
     }
 
     // Returns a single redacted agent record for management UI and chat selectors.
@@ -85,11 +86,14 @@ export class AcpAgentService {
         if (!existing) {
             throw new Error(`ACP agent with ID ${id} not found.`);
         }
-        const normalized = this.normalizeInput({
-            ...existing,
-            ...updates,
-            env: updates.env ?? existing.env,
-        } as AcpAgentCreateInput, {envIsEncrypted: updates.env === undefined});
+        const normalized = this.normalizeInput(
+            {
+                ...existing,
+                ...updates,
+                env: updates.env ?? existing.env,
+            } as AcpAgentCreateInput,
+            { envIsEncrypted: updates.env === undefined },
+        );
         const updated = await this.repository.update(id, normalized);
         return this.toView(updated);
     }
@@ -99,27 +103,28 @@ export class AcpAgentService {
     }
 
     public async enable(id: string): Promise<AcpAgentView> {
-        return this.update(id, {enabled: true});
+        return this.update(id, { enabled: true });
     }
 
     public async disable(id: string): Promise<AcpAgentView> {
-        return this.update(id, {enabled: false});
+        return this.update(id, { enabled: false });
     }
 
     private normalizeInput(
         input: AcpAgentCreateInput,
-        options: {envIsEncrypted?: boolean} = {}
+        options: { envIsEncrypted?: boolean } = {},
     ): AcpAgentCreateInput {
         const name = normalizeRequired(input.name, 'Name');
         const command = normalizeRequired(input.command, 'Command');
-        const env = input.env && typeof input.env === 'object' && !Array.isArray(input.env) ?
-            (input.env as Record<string, string>) :
-            {};
+        const env =
+            input.env && typeof input.env === 'object' && !Array.isArray(input.env)
+                ? (input.env as Record<string, string>)
+                : {};
 
         return {
             ...input,
-            name,
-            command,
+            name: name,
+            command: command,
             description: input.description?.trim() || null,
             registryId: input.registryId?.trim() || null,
             version: input.version?.trim() || null,
@@ -129,14 +134,15 @@ export class AcpAgentService {
             authMethodId: input.authMethodId?.trim() || null,
             enabled: input.enabled ?? true,
             mcpServerIds: normalizeStringList(input.mcpServerIds, 'MCP server IDs'),
-            metadata: input.metadata && typeof input.metadata === 'object' && !Array.isArray(input.metadata) ?
-                input.metadata :
-                {},
+            metadata:
+                input.metadata && typeof input.metadata === 'object' && !Array.isArray(input.metadata)
+                    ? input.metadata
+                    : {},
         };
     }
 
     private toView(agent: AcpAgent): AcpAgentView {
-        const {env, ...rest} = agent;
+        const { env, ...rest } = agent;
         return {
             ...rest,
             envKeys: Object.keys((env as Record<string, string>) ?? {}).sort(),
@@ -146,14 +152,20 @@ export class AcpAgentService {
     private encryptEnv(env: Record<string, string>): Record<string, string> {
         return Object.fromEntries(
             Object.entries(env)
-                .filter(([key]) => key.trim().length > 0)
-                .map(([key, value]) => [key.trim(), this.secretStore.encrypt(String(value ?? ''))])
+                .filter(([key]) => {
+                    return key.trim().length > 0;
+                })
+                .map(([key, value]) => {
+                    return [key.trim(), this.secretStore.encrypt(String(value ?? ''))];
+                }),
         );
     }
 
     private decryptEnv(env: Record<string, string>): Record<string, string> {
         return Object.fromEntries(
-            Object.entries(env ?? {}).map(([key, value]) => [key, this.secretStore.decrypt(value)])
+            Object.entries(env ?? {}).map(([key, value]) => {
+                return [key, this.secretStore.decrypt(value)];
+            }),
         );
     }
 }

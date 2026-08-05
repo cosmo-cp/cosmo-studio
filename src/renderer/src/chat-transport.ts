@@ -62,13 +62,15 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
         };
 
         // Get modelId from metadata or fetch from chat
-        const metadata = options?.metadata as {
-            modelId?: string;
-            personaId?: string;
-            runtime?: 'model' | 'agent';
-            agentId?: string | null;
-            agentCwd?: string | null;
-        } | undefined;
+        const metadata = options?.metadata as
+            | {
+                  modelId?: string;
+                  personaId?: string;
+                  runtime?: 'model' | 'agent';
+                  agentId?: string | null;
+                  agentCwd?: string | null;
+              }
+            | undefined;
         const runtime = metadata?.runtime ?? 'model';
         let modelId = metadata?.modelId;
         let personaId = metadata?.personaId;

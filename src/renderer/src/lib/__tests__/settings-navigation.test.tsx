@@ -1,10 +1,10 @@
-import {describe, expect, it} from 'vitest';
 import {
     getDefaultSettingsChildHref,
     getDefaultSettingsHref,
     getVisibleSettingsSections,
     settingsSections,
 } from '@/lib/settings-navigation';
+import { describe, expect, it } from 'vitest';
 
 describe('settings navigation', () => {
     it('hides sections that opt out of the settings UI', () => {
@@ -15,9 +15,7 @@ describe('settings navigation', () => {
             'mcp-server',
             'agents',
         ]);
-        expect(settingsSections.find((section) => section.slug === 'web-search')?.hidden).toBe(
-            true
-        );
+        expect(settingsSections.find((section) => section.slug === 'web-search')?.hidden).toBe(true);
     });
 
     it('uses the first visible settings section as the default destination', () => {

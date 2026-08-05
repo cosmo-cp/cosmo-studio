@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { boolean, pgEnum, pgTable, text, timestamp, uuid, integer } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 // --- ENUM and Base Fields ---
 export enum ModelProviderTypeEnum {
@@ -71,7 +71,12 @@ export const model = pgTable('Model', {
     name: text('name').notNull(),
     modelId: text('modelId').notNull(),
     description: text('description'),
-    providerId: uuid('providerId').references(() => modelProvider.id, { onDelete: 'cascade' }),
+    providerId: uuid('providerId').references(
+        () => {
+            return modelProvider.id;
+        },
+        { onDelete: 'cascade' },
+    ),
     reasoning: boolean('reasoning').default(false),
     attachment: boolean('attachment').default(false),
     toolCall: boolean('toolCall').default(false),
@@ -84,13 +89,17 @@ export const model = pgTable('Model', {
     maxOutputWindow: integer('maxOutputWindow').default(4096),
 });
 
-export const modelProviderRelations = relations(modelProvider, ({ many }) => ({
-    models: many(model),
-}));
+export const modelProviderRelations = relations(modelProvider, ({ many }) => {
+    return {
+        models: many(model),
+    };
+});
 
-export const modelRelations = relations(model, ({ one }) => ({
-    provider: one(modelProvider, {
-        fields: [model.providerId],
-        references: [modelProvider.id],
-    }),
-}));
+export const modelRelations = relations(model, ({ one }) => {
+    return {
+        provider: one(modelProvider, {
+            fields: [model.providerId],
+            references: [modelProvider.id],
+        }),
+    };
+});

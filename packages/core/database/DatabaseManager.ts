@@ -26,7 +26,7 @@ export class DatabaseManager {
         try {
             getCoreLogger().info(`[DB INIT] Attempting to connect PGlite to absolute path: ${absoluteDbPath}`);
             const connection = await PGlite.create(absoluteDbPath);
-            this.instance = drizzle(connection, { schema });
+            this.instance = drizzle(connection, { schema: schema });
             getCoreLogger().info('[DB INIT] Drizzle client successfully initialized.');
 
             // Run migrations automatically after initialization

@@ -1,4 +1,4 @@
-import { CosmoApi } from '../../preload/api';
+import type { CosmoApi } from '../../preload/api';
 
 declare global {
     interface Window {

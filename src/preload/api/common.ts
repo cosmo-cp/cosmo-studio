@@ -1,3 +1,9 @@
+import superjson from 'superjson';
+
+type RpcEnvelope<T> = { ok: true; result: T } | { ok: false; error: { code: string; message: string } };
+
+const apiBase = process.env.NEXT_PUBLIC_COSMO_API_BASE ?? '/api';
+
 function buildRpcUrl(group: string, handler: string): string {
     const base = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
     return `${base}/rpc/${group}/${handler}`;
@@ -10,7 +16,7 @@ export async function callRpc<T>(group: string, handler: string, args: unknown[]
             'Content-Type': 'application/json',
             Accept: 'application/json',
         },
-        body: superjson.stringify({ args }),
+        body: superjson.stringify({ args: args }),
     });
     const envelope = superjson.parse<RpcEnvelope<T>>(await response.text());
     if (!envelope.ok) {

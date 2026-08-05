@@ -1,6 +1,6 @@
 const CORETYPES = {
     DatabaseManager: Symbol.for('DatabaseManager'),
-    SecretStore: Symbol.for("SecretStore"),
+    SecretStore: Symbol.for('SecretStore'),
     // repositories
     ChatRepository: Symbol.for('ChatRepository'),
     MessageRepository: Symbol.for('MessageRepository'),
@@ -9,7 +9,7 @@ const CORETYPES = {
     CommandRepository: Symbol.for('CommandRepository'),
     McpServerRepository: Symbol.for('McpServerRepository'),
     AcpAgentRepository: Symbol.for('AcpAgentRepository'),
-    WebSearchConfigRepository: Symbol.for("WebSearchConfigRepository"),
+    WebSearchConfigRepository: Symbol.for('WebSearchConfigRepository'),
     WorkflowRepository: Symbol.for('WorkflowRepository'),
     WorkflowRunRepository: Symbol.for('WorkflowRunRepository'),
     // services
@@ -22,7 +22,7 @@ const CORETYPES = {
     McpClientManager: Symbol.for('McpClientManager'),
     AcpAgentService: Symbol.for('AcpAgentService'),
     AcpRegistryService: Symbol.for('AcpRegistryService'),
-    WebSearchConfigService: Symbol.for("WebSearchConfigService"),
+    WebSearchConfigService: Symbol.for('WebSearchConfigService'),
     WorkflowService: Symbol.for('WorkflowService'),
     WorkflowRunService: Symbol.for('WorkflowRunService'),
 };

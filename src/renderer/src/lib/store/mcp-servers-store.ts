@@ -1,11 +1,7 @@
-import {createAsyncThunk, createSlice} from "@reduxjs/toolkit";
-import type {
-    McpServer,
-    McpServerCreateInput, McpToolDefinition,
-} from 'core/dto';
-import type {AsyncStatus} from "@/lib/store/async-status";
-import type {AppThunkExtra} from "@/lib/store/store";
-
+import type { AsyncStatus } from '@/lib/store/async-status';
+import type { AppThunkExtra } from '@/lib/store/store';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import type { McpServer, McpServerCreateInput, McpToolDefinition } from 'core/dto';
 
 export interface McpServersState {
     items: McpServer[];
@@ -15,7 +11,7 @@ export interface McpServersState {
 
 const initialState: McpServersState = {
     items: [],
-    status: "idle",
+    status: 'idle',
     errorMessage: null,
 };
 
@@ -38,100 +34,100 @@ function upsertServer(servers: McpServer[], updated: McpServer) {
 }
 
 export const loadMcpServers = createMcpServersAsyncThunk<McpServer[], void>(
-    "mcpServers/load",
-    async (_, {extra, rejectWithValue}) => {
+    'mcpServers/load',
+    async (_, { extra, rejectWithValue }) => {
         try {
             return await extra.appDataSource.mcpServer.getAll();
         } catch (error) {
-            return rejectWithValue(getErrorMessage(error, "Failed to load MCP servers"));
+            return rejectWithValue(getErrorMessage(error, 'Failed to load MCP servers'));
         }
-    }
+    },
 );
 
-export const saveMcpServer = createMcpServersAsyncThunk<
-    McpServer,
-    {serverId?: string; input: McpServerCreateInput}
->("mcpServers/save", async ({serverId, input}, {extra, rejectWithValue}) => {
-    try {
-        if (serverId) {
-            return await extra.appDataSource.mcpServer.update(serverId, input);
+export const saveMcpServer = createMcpServersAsyncThunk<McpServer, { serverId?: string; input: McpServerCreateInput }>(
+    'mcpServers/save',
+    async ({ serverId, input }, { extra, rejectWithValue }) => {
+        try {
+            if (serverId) {
+                return await extra.appDataSource.mcpServer.update(serverId, input);
+            }
+            return await extra.appDataSource.mcpServer.create(input);
+        } catch (error) {
+            return rejectWithValue(getErrorMessage(error, 'Failed to save MCP server'));
         }
-        return await extra.appDataSource.mcpServer.create(input);
-    } catch (error) {
-        return rejectWithValue(getErrorMessage(error, "Failed to save MCP server"));
-    }
-});
+    },
+);
 
 export const deleteMcpServer = createMcpServersAsyncThunk<string, string>(
-    "mcpServers/delete",
-    async (serverId, {extra, rejectWithValue}) => {
+    'mcpServers/delete',
+    async (serverId, { extra, rejectWithValue }) => {
         try {
             await extra.appDataSource.mcpServer.delete(serverId);
             return serverId;
         } catch (error) {
-            return rejectWithValue(getErrorMessage(error, "Failed to delete MCP server"));
+            return rejectWithValue(getErrorMessage(error, 'Failed to delete MCP server'));
         }
-    }
+    },
 );
 
-export const toggleMcpServerEnabled = createMcpServersAsyncThunk<
-    McpServer,
-    {serverId: string; enabled: boolean}
->("mcpServers/toggleEnabled", async ({serverId, enabled}, {extra, rejectWithValue}) => {
-    try {
-        if (enabled) {
-            return await extra.appDataSource.mcpServer.enable(serverId);
+export const toggleMcpServerEnabled = createMcpServersAsyncThunk<McpServer, { serverId: string; enabled: boolean }>(
+    'mcpServers/toggleEnabled',
+    async ({ serverId, enabled }, { extra, rejectWithValue }) => {
+        try {
+            if (enabled) {
+                return await extra.appDataSource.mcpServer.enable(serverId);
+            }
+            return await extra.appDataSource.mcpServer.disable(serverId);
+        } catch (error) {
+            return rejectWithValue(getErrorMessage(error, 'Failed to toggle server'));
         }
-        return await extra.appDataSource.mcpServer.disable(serverId);
-    } catch (error) {
-        return rejectWithValue(getErrorMessage(error, "Failed to toggle server"));
-    }
-});
+    },
+);
 
-export const loadMcpServerTools = createMcpServersAsyncThunk<
-    {serverId: string; tools: McpToolDefinition[]},
-    string
->("mcpServers/loadTools", async (serverId, {extra, rejectWithValue}) => {
-    try {
-        const tools = await extra.appDataSource.mcpServer.getServerTools(serverId);
-        return {serverId, tools};
-    } catch (error) {
-        return rejectWithValue(getErrorMessage(error, "Failed to load tools"));
-    }
-});
+export const loadMcpServerTools = createMcpServersAsyncThunk<{ serverId: string; tools: McpToolDefinition[] }, string>(
+    'mcpServers/loadTools',
+    async (serverId, { extra, rejectWithValue }) => {
+        try {
+            const tools = await extra.appDataSource.mcpServer.getServerTools(serverId);
+            return { serverId, tools };
+        } catch (error) {
+            return rejectWithValue(getErrorMessage(error, 'Failed to load tools'));
+        }
+    },
+);
 
 export const updateMcpToolApproval = createMcpServersAsyncThunk<
     McpServer,
-    {serverId: string; toolName: string; needsApproval: boolean}
->("mcpServers/updateToolApproval", async (input, {extra, rejectWithValue}) => {
+    { serverId: string; toolName: string; needsApproval: boolean }
+>('mcpServers/updateToolApproval', async (input, { extra, rejectWithValue }) => {
     try {
         return await extra.appDataSource.mcpServer.updateToolApproval(
             input.serverId,
             input.toolName,
-            input.needsApproval
+            input.needsApproval,
         );
     } catch (error) {
-        return rejectWithValue(getErrorMessage(error, "Failed to update tool approval"));
+        return rejectWithValue(getErrorMessage(error, 'Failed to update tool approval'));
     }
 });
 
 const mcpServersSlice = createSlice({
-    name: "mcpServers",
+    name: 'mcpServers',
     initialState,
     reducers: {},
     extraReducers: (builder) => {
         builder
             .addCase(loadMcpServers.pending, (state) => {
-                state.status = "loading";
+                state.status = 'loading';
                 state.errorMessage = null;
             })
             .addCase(loadMcpServers.fulfilled, (state, action) => {
-                state.status = "succeeded";
+                state.status = 'succeeded';
                 state.items = action.payload;
             })
             .addCase(loadMcpServers.rejected, (state, action) => {
-                state.status = "failed";
-                state.errorMessage = action.payload ?? "Failed to load MCP servers";
+                state.status = 'failed';
+                state.errorMessage = action.payload ?? 'Failed to load MCP servers';
             })
             .addCase(saveMcpServer.fulfilled, (state, action) => {
                 upsertServer(state.items, action.payload);

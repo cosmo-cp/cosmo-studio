@@ -1,8 +1,8 @@
-import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { Chat } from 'core/dto';
-import { WEB_SEARCH_NONE_OPTION_ID } from '@/lib/web-search-options';
 import type { AppThunkExtra, RootState } from '@/lib/store/store';
+import { WEB_SEARCH_NONE_OPTION_ID } from '@/lib/web-search-options';
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { UIMessage } from 'ai';
+import type { Chat } from 'core/dto';
 
 export interface ChatState {
     chatHistory: Chat[];
@@ -42,10 +42,7 @@ function applyChatHistory(state: ChatState, chats: Chat[]) {
     state.chatHistory = chats;
     state.selectedChat = chats.find((chat) => chat.selected) ?? chats[0] ?? null;
     state.selectedWebSearchOptionByChatId = Object.fromEntries(
-        chats.map((chat) => [
-            chat.id,
-            state.selectedWebSearchOptionByChatId[chat.id] ?? WEB_SEARCH_NONE_OPTION_ID,
-        ]),
+        chats.map((chat) => [chat.id, state.selectedWebSearchOptionByChatId[chat.id] ?? WEB_SEARCH_NONE_OPTION_ID]),
     );
 }
 
@@ -75,9 +72,7 @@ const chatSlice = createSlice({
         },
         updateChatInHistory(state, action: PayloadAction<UpdateChatInHistoryPayload>) {
             const { chatId, updates } = action.payload;
-            state.chatHistory = state.chatHistory.map((chat) =>
-                chat.id === chatId ? { ...chat, ...updates } : chat,
-            );
+            state.chatHistory = state.chatHistory.map((chat) => (chat.id === chatId ? { ...chat, ...updates } : chat));
             if (state.selectedChat?.id === chatId) {
                 state.selectedChat = { ...state.selectedChat, ...updates };
             }
@@ -134,7 +129,6 @@ const chatSlice = createSlice({
     },
 });
 
-
 const createChatAsyncThunk = createAsyncThunk.withTypes<{
     extra: AppThunkExtra;
     state: RootState;
@@ -145,46 +139,43 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
     return error instanceof Error ? error.message : fallbackMessage;
 }
 
-async function reloadChatsFromCurrentSearch(
-    extra: AppThunkExtra,
-    searchQuery: string | null,
-): Promise<Chat[]> {
+async function reloadChatsFromCurrentSearch(extra: AppThunkExtra, searchQuery: string | null): Promise<Chat[]> {
     return extra.appDataSource.chat.getAllChats(searchQuery);
 }
 
-export const loadChatHistory = createChatAsyncThunk<
-    Chat[],
-    string | null
->('mainChatPage/loadChatHistory', async (searchQuery, { extra, rejectWithValue }) => {
-    try {
-        return await extra.appDataSource.chat.getAllChats(searchQuery ?? null);
-    } catch (error) {
-        return rejectWithValue(getErrorMessage(error, 'Failed to load chats'));
-    }
-});
+export const loadChatHistory = createChatAsyncThunk<Chat[], string | null>(
+    'mainChatPage/loadChatHistory',
+    async (searchQuery, { extra, rejectWithValue }) => {
+        try {
+            return await extra.appDataSource.chat.getAllChats(searchQuery ?? null);
+        } catch (error) {
+            return rejectWithValue(getErrorMessage(error, 'Failed to load chats'));
+        }
+    },
+);
 
-export const loadChatMessages = createChatAsyncThunk<
-    UIMessage[] | null,
-    string
->('mainChatPage/loadChatMessages', async (chatId, { extra, rejectWithValue }) => {
-    try {
-        return await extra.appDataSource.chat.getMessagesByChat(chatId);
-    } catch (error) {
-        return rejectWithValue(getErrorMessage(error, 'Failed to load chat messages'));
-    }
-});
+export const loadChatMessages = createChatAsyncThunk<UIMessage[] | null, string>(
+    'mainChatPage/loadChatMessages',
+    async (chatId, { extra, rejectWithValue }) => {
+        try {
+            return await extra.appDataSource.message.getByChat(chatId);
+        } catch (error) {
+            return rejectWithValue(getErrorMessage(error, 'Failed to load chat messages'));
+        }
+    },
+);
 
-export const createChat = createChatAsyncThunk<
-    Chat[],
-    { title: string }
->('mainChatPage/createChat', async (input, { extra, getState, rejectWithValue }) => {
-    try {
-        await extra.appDataSource.chat.createChat(input);
-        return reloadChatsFromCurrentSearch(extra, getState().chat.searchHistoryQuery);
-    } catch (error) {
-        return rejectWithValue(getErrorMessage(error, 'Failed to create chat'));
-    }
-});
+export const createChat = createChatAsyncThunk<Chat[], { title: string }>(
+    'mainChatPage/createChat',
+    async (input, { extra, getState, rejectWithValue }) => {
+        try {
+            await extra.appDataSource.chat.createChat(input);
+            return reloadChatsFromCurrentSearch(extra, getState().chat.searchHistoryQuery);
+        } catch (error) {
+            return rejectWithValue(getErrorMessage(error, 'Failed to create chat'));
+        }
+    },
+);
 
 export const selectChat = createChatAsyncThunk<Chat, Chat>(
     'mainChatPage/selectChat',
@@ -210,17 +201,17 @@ export const deleteChat = createChatAsyncThunk<Chat[], string>(
     },
 );
 
-export const togglePinnedChat = createChatAsyncThunk<
-    Chat[],
-    { chatId: string; pinned: boolean }
->('mainChatPage/togglePinnedChat', async ({ chatId, pinned }, { extra, getState, rejectWithValue }) => {
-    try {
-        await extra.appDataSource.chat.updatePinnedStatusForChat(chatId, pinned);
-        return reloadChatsFromCurrentSearch(extra, getState().chat.searchHistoryQuery);
-    } catch (error) {
-        return rejectWithValue(getErrorMessage(error, 'Failed to update chat pin status'));
-    }
-});
+export const togglePinnedChat = createChatAsyncThunk<Chat[], { chatId: string; pinned: boolean }>(
+    'mainChatPage/togglePinnedChat',
+    async ({ chatId, pinned }, { extra, getState, rejectWithValue }) => {
+        try {
+            await extra.appDataSource.chat.updatePinnedStatusForChat(chatId, pinned);
+            return reloadChatsFromCurrentSearch(extra, getState().chat.searchHistoryQuery);
+        } catch (error) {
+            return rejectWithValue(getErrorMessage(error, 'Failed to update chat pin status'));
+        }
+    },
+);
 
 export const updateSelectedModel = createChatAsyncThunk<
     { chatId: string; updates: Pick<Chat, 'selectedProvider' | 'selectedModelId' | 'selectedRuntime'> },
@@ -286,7 +277,6 @@ export const updateSelectedPersona = createChatAsyncThunk<
         return rejectWithValue(getErrorMessage(error, 'Failed to update chat persona'));
     }
 });
-
 
 export const {
     clearConversationSearch,

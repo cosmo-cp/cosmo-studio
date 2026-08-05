@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { UIMessage } from 'ai';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { IpcChatTransport } from '../chat-transport';
 
 type StreamingApiMock = {
@@ -103,8 +103,6 @@ describe('IpcChatTransport', () => {
         await expect(stream.getReader().read()).rejects.toThrow('send failed');
         expect(streaming.removeListeners).toHaveBeenCalledWith('chat-stream-chat-3');
     });
-
-
 
     it('aborts streaming when the abort signal fires', async () => {
         const streaming = createStreamingApiMock();

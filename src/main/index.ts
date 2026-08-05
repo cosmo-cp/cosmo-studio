@@ -1,16 +1,16 @@
-import { app, BrowserWindow, safeStorage } from 'electron';
 import path from 'path';
-import { IpcHandlerRegistry } from './ipc';
 import { DatabaseManager } from 'core/database/DatabaseManager';
+import { app, BrowserWindow, safeStorage } from 'electron';
+import { IpcHandlerRegistry } from './ipc';
 import 'reflect-metadata';
-import container from './inversify.config';
-import { TYPES } from './types';
-import { config } from 'dotenv';
-import { updateElectronApp, UpdateSourceType } from 'update-electron-app';
-import { logger } from './logger';
+import { setCoreLogger } from 'core/platform/CoreLogger';
 import { McpClientManager } from 'core/services/McpClientManager';
 import { CORETYPES } from 'core/types/types';
-import { setCoreLogger } from 'core/platform/CoreLogger';
+import { config } from 'dotenv';
+import { updateElectronApp, UpdateSourceType } from 'update-electron-app';
+import container from './inversify.config';
+import { logger } from './logger';
+import { TYPES } from './types';
 
 setCoreLogger(logger);
 
@@ -23,7 +23,7 @@ export class Main {
         config();
         app.whenReady().then(async () => {
             if (!safeStorage.isEncryptionAvailable()) {
-                logger.warn('safeStorage encryption unavailable. API keys won\'t be encrypted.');
+                logger.warn("safeStorage encryption unavailable. API keys won't be encrypted.");
             }
             await this.initializeDatabase();
             await this.initializeMcpClients();

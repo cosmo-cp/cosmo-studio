@@ -1,19 +1,16 @@
-import { migrate } from 'drizzle-orm/pglite/migrator';
+import fs from 'fs';
 import path from 'path';
-import fs from "fs";
 import { PgliteDatabase } from 'drizzle-orm/pglite';
+import { migrate } from 'drizzle-orm/pglite/migrator';
+import { getCoreLogger } from '../platform/CoreLogger';
 import * as schema from './schema/schema';
-import {getCoreLogger} from "../platform/CoreLogger";
 
 function hasMigrationJournal(migrationDir: string): boolean {
-    return fs.existsSync(path.join(migrationDir, "meta", "_journal.json"));
+    return fs.existsSync(path.join(migrationDir, 'meta', '_journal.json'));
 }
 
 function resolveMigrationsFolder(): string {
-    const candidates = [
-        path.resolve(__dirname, "./migrations"),
-        path.resolve(process.cwd(), "migrations"),
-    ];
+    const candidates = [path.resolve(__dirname, './migrations'), path.resolve(process.cwd(), 'migrations')];
 
     return candidates.find(hasMigrationJournal) ?? candidates[0];
 }
@@ -28,7 +25,7 @@ export async function runMigrations(db: PgliteDatabase<typeof schema>) {
     try {
         const start = Date.now();
         const migrationDir = resolveMigrationsFolder();
-        await migrate(db, {migrationsFolder: migrationDir});
+        await migrate(db, { migrationsFolder: migrationDir });
 
         const end = Date.now();
         getCoreLogger().info(`Migrations checked/applied successfully in ${end - start} ms.`);

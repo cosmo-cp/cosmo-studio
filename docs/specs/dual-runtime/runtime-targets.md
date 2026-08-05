@@ -6,22 +6,22 @@ Accepted for v1. The repository builds two runtime targets from the same rendere
 
 ## Targets
 
-| Target | Entry | Purpose |
-|---|---|---|
-| `electron` | `src/main/index.ts` | Desktop application packaged with Electron Forge. |
-| `http` | `src/main/http/index.ts` | Local single-user NestJS service that serves the static renderer and `/api/*` endpoints. |
+| Target     | Entry                    | Purpose                                                                                  |
+| ---------- | ------------------------ | ---------------------------------------------------------------------------------------- |
+| `electron` | `src/main/index.ts`      | Desktop application packaged with Electron Forge.                                        |
+| `http`     | `src/main/http/index.ts` | Local single-user NestJS service that serves the static renderer and `/api/*` endpoints. |
 
 ## Environment Contract
 
-| Variable | Values/default | Used by |
-|---|---|---|
-| `COSMO_RUNTIME_TARGET` | `electron` or `http` | Main/runtime scripts and diagnostics. |
-| `NEXT_PUBLIC_COSMO_BACKEND` | `electron` or `http` | Renderer build/dev selection for data and chat transports. |
-| `NEXT_PUBLIC_COSMO_API_BASE` | `/api` by default | Renderer HTTP RPC and chat transport. |
-| `COSMO_HTTP_HOST` | `127.0.0.1` by default | Nest HTTP service bind host. |
-| `COSMO_HTTP_PORT` | `4000` by default | Nest HTTP service port. |
-| `COSMO_HTTP_DATA_DIR` | `.cosmo-http` under current working directory by default | HTTP DB and generated local secret key. |
-| `COSMO_SECRET_KEY` | optional base64/hex/plaintext key | HTTP secret-store override for deployable environments. |
+| Variable                     | Values/default                                           | Used by                                                    |
+| ---------------------------- | -------------------------------------------------------- | ---------------------------------------------------------- |
+| `COSMO_RUNTIME_TARGET`       | `electron` or `http`                                     | Main/runtime scripts and diagnostics.                      |
+| `NEXT_PUBLIC_COSMO_BACKEND`  | `electron` or `http`                                     | Renderer build/dev selection for data and chat transports. |
+| `NEXT_PUBLIC_COSMO_API_BASE` | `/api` by default                                        | Renderer HTTP RPC and chat transport.                      |
+| `COSMO_HTTP_HOST`            | `127.0.0.1` by default                                   | Nest HTTP service bind host.                               |
+| `COSMO_HTTP_PORT`            | `4000` by default                                        | Nest HTTP service port.                                    |
+| `COSMO_HTTP_DATA_DIR`        | `.cosmo-http` under current working directory by default | HTTP DB and generated local secret key.                    |
+| `COSMO_SECRET_KEY`           | optional base64/hex/plaintext key                        | HTTP secret-store override for deployable environments.    |
 
 ## Data Directories
 
@@ -57,4 +57,3 @@ Runtime bindings:
 - Add new platform requirements as core interfaces plus runtime bindings.
 - Do not assume Electron and HTTP encrypted database rows are interchangeable.
 - Keep HTTP v1 local-only unless an auth and deployment spec is accepted first.
-

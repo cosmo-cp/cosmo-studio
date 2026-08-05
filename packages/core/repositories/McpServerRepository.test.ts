@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { mcpServer } from '../database/schema/schema';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DatabaseManager } from '../database/DatabaseManager';
+import { mcpServer } from '../database/schema/schema';
 import type { McpServerInsert, McpServerUpdateInput } from '../dto';
 import { createTestDb, type TestDb } from '../test-utils/testDb';
 import { McpServerRepository } from './McpServerRepository';
@@ -13,7 +13,9 @@ describe('McpServerRepository', () => {
     beforeAll(async () => {
         testDb = await createTestDb();
         const databaseManager = {
-            getInstance: () => testDb.db,
+            getInstance: () => {
+                return testDb.db;
+            },
         } as unknown as DatabaseManager;
         repository = new McpServerRepository(databaseManager);
     });
@@ -50,7 +52,11 @@ describe('McpServerRepository', () => {
         } as unknown as McpServerInsert);
 
         const all = await repository.getAll();
-        expect(all.map((s) => s.name)).toEqual(['A Server', 'B Server']);
+        expect(
+            all.map((s) => {
+                return s.name;
+            }),
+        ).toEqual(['A Server', 'B Server']);
 
         const enabled = await repository.getAllEnabled();
         expect(enabled).toHaveLength(1);

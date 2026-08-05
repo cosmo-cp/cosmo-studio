@@ -1,20 +1,6 @@
-import {
-    Bot,
-    Cable,
-    CircleUserRound,
-    Command,
-    Globe,
-    type LucideIcon,
-    PlugZap,
-} from 'lucide-react';
+import { Bot, Cable, CircleUserRound, Command, Globe, PlugZap, type LucideIcon } from 'lucide-react';
 
-export type SettingsSectionSlug =
-    | 'provider'
-    | 'persona'
-    | 'command'
-    | 'mcp-server'
-    | 'web-search'
-    | 'agents';
+export type SettingsSectionSlug = 'provider' | 'persona' | 'command' | 'mcp-server' | 'web-search' | 'agents';
 
 type SettingsSection = {
     slug: SettingsSectionSlug;
@@ -99,10 +85,7 @@ export function getDefaultSettingsChildHref(): string {
     return `./${getDefaultSettingsSection().slug}`;
 }
 
-export function getSettingsItemHref(
-    pathname: string,
-    slug: SettingsSectionSlug
-): string {
+export function getSettingsItemHref(pathname: string, slug: SettingsSectionSlug): string {
     if (!isSettingsPath(pathname)) {
         return getSettingsLandingHref(slug);
     }
@@ -110,10 +93,7 @@ export function getSettingsItemHref(
     return `./${slug}`;
 }
 
-export function isSettingsItemActive(
-    pathname: string,
-    slug: SettingsSectionSlug
-): boolean {
+export function isSettingsItemActive(pathname: string, slug: SettingsSectionSlug): boolean {
     if (pathname === '/settings') {
         return slug === getDefaultSettingsSection().slug;
     }

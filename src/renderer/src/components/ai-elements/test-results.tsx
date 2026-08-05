@@ -1,11 +1,10 @@
 'use client';
 
-import type { ComponentProps, HTMLAttributes } from 'react';
-
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { CheckCircle2Icon, ChevronRightIcon, CircleDotIcon, CircleIcon, XCircleIcon } from 'lucide-react';
+import type { ComponentProps, HTMLAttributes } from 'react';
 import { createContext, useContext, useMemo } from 'react';
 
 type TestStatus = 'passed' | 'failed' | 'skipped' | 'running';

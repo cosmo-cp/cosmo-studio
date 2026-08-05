@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { ModelProviderTypeEnum } from 'core/database/schema/modelProviderSchema';
 import type { ModelProviderCreateInput, ProviderWithModels } from 'core/dto';
 import type { ModelProviderService } from 'core/services/ModelProviderService';
-import { ModelProviderTypeEnum } from 'core/database/schema/modelProviderSchema';
+import { describe, expect, it, vi } from 'vitest';
 import { ModelProviderController } from './ModelProviderController';
 
 describe('ModelProviderController', () => {

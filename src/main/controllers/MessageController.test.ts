@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
-import type { Message, NewMessage } from 'core/dto';
 import type { UIMessage } from 'ai';
+import type { Message, NewMessage } from 'core/dto';
 import type { MessageService } from 'core/services/MessageService';
+import { describe, expect, it, vi } from 'vitest';
 import { MessageController } from './MessageController';
 
 describe('MessageController', () => {

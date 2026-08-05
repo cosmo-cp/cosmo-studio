@@ -1,3 +1,5 @@
+import type { AsyncStatus } from '@/lib/store/async-status';
+import type { AppThunkExtra } from '@/lib/store/store';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type {
     AcpAgentCreateInput,
@@ -7,8 +9,6 @@ import type {
     AcpRegistryInstallInput,
     AcpRegistryView,
 } from 'core/dto';
-import type { AsyncStatus } from '@/lib/store/async-status';
-import type { AppThunkExtra } from '@/lib/store/store';
 
 export interface AcpAgentsState {
     items: AcpAgentView[];
@@ -83,26 +83,26 @@ export const deleteAcpAgent = createAcpAgentsAsyncThunk<string, string>(
     },
 );
 
-export const toggleAcpAgentEnabled = createAcpAgentsAsyncThunk<
-    AcpAgentView,
-    { agentId: string; enabled: boolean }
->('acpAgents/toggleEnabled', async ({ agentId, enabled }, { extra, rejectWithValue }) => {
-    try {
-        return enabled ?
-            await extra.appDataSource.acpAgent.enable(agentId) :
-            await extra.appDataSource.acpAgent.disable(agentId);
-    } catch (error) {
-        return rejectWithValue(getErrorMessage(error, 'Failed to toggle ACP agent'));
-    }
-});
+export const toggleAcpAgentEnabled = createAcpAgentsAsyncThunk<AcpAgentView, { agentId: string; enabled: boolean }>(
+    'acpAgents/toggleEnabled',
+    async ({ agentId, enabled }, { extra, rejectWithValue }) => {
+        try {
+            return enabled
+                ? await extra.appDataSource.acpAgent.enable(agentId)
+                : await extra.appDataSource.acpAgent.disable(agentId);
+        } catch (error) {
+            return rejectWithValue(getErrorMessage(error, 'Failed to toggle ACP agent'));
+        }
+    },
+);
 
 export const loadAcpRegistry = createAcpAgentsAsyncThunk<AcpRegistryView, { refresh?: boolean } | void>(
     'acpAgents/loadRegistry',
     async (input, { extra, rejectWithValue }) => {
         try {
-            return input?.refresh ?
-                await extra.appDataSource.acpAgent.refreshRegistry() :
-                await extra.appDataSource.acpAgent.getRegistry();
+            return input?.refresh
+                ? await extra.appDataSource.acpAgent.refreshRegistry()
+                : await extra.appDataSource.acpAgent.getRegistry();
         } catch (error) {
             return rejectWithValue(getErrorMessage(error, 'Failed to load ACP registry'));
         }
@@ -120,16 +120,16 @@ export const installAcpAgentFromRegistry = createAcpAgentsAsyncThunk<AcpAgentVie
     },
 );
 
-export const testAcpAgent = createAcpAgentsAsyncThunk<
-    AcpAgentTestResult,
-    { agentId: string; cwd?: string | null }
->('acpAgents/test', async ({ agentId, cwd }, { extra, rejectWithValue }) => {
-    try {
-        return await extra.appDataSource.acpAgent.test(agentId, cwd);
-    } catch (error) {
-        return rejectWithValue(getErrorMessage(error, 'Failed to test ACP agent'));
-    }
-});
+export const testAcpAgent = createAcpAgentsAsyncThunk<AcpAgentTestResult, { agentId: string; cwd?: string | null }>(
+    'acpAgents/test',
+    async ({ agentId, cwd }, { extra, rejectWithValue }) => {
+        try {
+            return await extra.appDataSource.acpAgent.test(agentId, cwd ?? null);
+        } catch (error) {
+            return rejectWithValue(getErrorMessage(error, 'Failed to test ACP agent'));
+        }
+    },
+);
 
 const acpAgentsSlice = createSlice({
     name: 'acpAgents',

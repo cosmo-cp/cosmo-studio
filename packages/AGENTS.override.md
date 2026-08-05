@@ -11,7 +11,7 @@ This file applies to changes under `packages/`.
     - Repositories: `packages/core/repositories/*`
     - Services: `packages/core/services/*`
     - Platform interfaces: `packages/core/platform/*`
-  - DI container: `packages/core/inversify.config.ts`
+    - DI container: `packages/core/inversify.config.ts`
 
 ## What belongs in `core`
 
@@ -27,8 +27,8 @@ This file applies to changes under `packages/`.
     - Prefer interfaces + DI over hard dependencies on Electron.
 - `core` must not import Electron, `safeStorage`, or `src/main/logger`.
 - Platform concerns belong behind injectable adapters:
-  - `SecretStore` for provider/web-search key encryption.
-  - `CoreLogger` for runtime-independent logging.
+    - `SecretStore` for provider/web-search key encryption.
+    - `CoreLogger` for runtime-independent logging.
 - Electron and HTTP provide their own bindings, so do not assume encrypted DB rows can move between runtime data directories.
 
 ## Database rules

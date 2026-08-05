@@ -1,28 +1,27 @@
-import {IpcMainEvent, WebContents} from "electron";
-import {inject, injectable} from "inversify";
-import {z} from "zod";
-import {IpcController, IpcOn, IpcRendererOn} from "../ipc/Decorators";
-import type {ChatAbortArgs, ChatSendMessageArgs} from "core/dto";
-import {Controller} from "./Controller";
-import {logger} from "../logger";
-import {TYPES} from "../types";
-import {ChatStreamingService} from "../services/ChatStreamingService";
+import { IpcMainEvent, WebContents } from 'electron';
+import { inject, injectable } from 'inversify';
+import { z } from 'zod';
+import { IpcController, IpcOn, IpcRendererOn } from '../ipc/Decorators';
+import type { ChatAbortArgs, ChatSendMessageArgs } from 'core/dto';
+import { Controller } from './Controller';
+import { logger } from '../logger';
+import { TYPES } from '../types';
+import { ChatStreamingService } from '../services/ChatStreamingService';
 
 const chatSendMessageArgsSchema = z.custom<ChatSendMessageArgs>();
 const chatAbortArgsSchema = z.custom<ChatAbortArgs>();
 
 @injectable()
-@IpcController("streamingChat")
+@IpcController('streamingChat')
 export class StreamingChatController implements Controller {
     private readonly activeStreams = new Map<string, AbortController>();
 
     constructor(
         @inject(TYPES.ChatStreamingService)
-        private readonly chatStreamingService: ChatStreamingService
-    ) {
-    }
+        private readonly chatStreamingService: ChatStreamingService,
+    ) {}
 
-    @IpcOn("sendMessage", z.tuple([chatSendMessageArgsSchema]))
+    @IpcOn('sendMessage', z.tuple([chatSendMessageArgsSchema]))
     public async sendMessage(args: ChatSendMessageArgs, event: IpcMainEvent) {
         const webContents = event.sender as WebContents;
         const controller = new AbortController();
@@ -32,7 +31,7 @@ export class StreamingChatController implements Controller {
             const stream = await this.chatStreamingService.createMessageStream(args, controller.signal);
             for await (const chunk of stream) {
                 if (webContents.isDestroyed()) {
-                    logger.info("WebContents destroyed, stopping stream.");
+                    logger.info('WebContents destroyed, stopping stream.');
                     controller.abort();
                     break;
                 }
@@ -43,7 +42,7 @@ export class StreamingChatController implements Controller {
                 webContents.send(`${args.streamChannel}-end`);
             }
         } catch (error) {
-            logger.error("Failed to start streamText:", error);
+            logger.error('Failed to start streamText:', error);
             controller.abort();
             this.activeStreams.delete(args.streamChannel);
             if (!webContents.isDestroyed()) {
@@ -52,7 +51,7 @@ export class StreamingChatController implements Controller {
         }
     }
 
-    @IpcOn("abortMessage", z.tuple([chatAbortArgsSchema]))
+    @IpcOn('abortMessage', z.tuple([chatAbortArgsSchema]))
     public abortMessage(args: ChatAbortArgs) {
         const controller = this.activeStreams.get(args.streamChannel);
         if (controller) {
@@ -62,24 +61,21 @@ export class StreamingChatController implements Controller {
         }
     }
 
-    @IpcRendererOn("data")
+    @IpcRendererOn('data')
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public onData(channel: string, listener: (data: unknown) => void): () => void {
-        return () => {
-        };
+        return () => {};
     }
 
-    @IpcRendererOn("end")
+    @IpcRendererOn('end')
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public onEnd(channel: string, listener: () => void): () => void {
-        return () => {
-        };
+        return () => {};
     }
 
-    @IpcRendererOn("error")
+    @IpcRendererOn('error')
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public onError(channel: string, listener: (error: unknown) => void): () => void {
-        return () => {
-        };
+        return () => {};
     }
 }

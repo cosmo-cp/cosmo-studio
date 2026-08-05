@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { chat, message } from '../database/schema/schema';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DatabaseManager } from '../database/DatabaseManager';
+import { chat, message } from '../database/schema/schema';
 import type { NewChat } from '../dto';
 import { createTestDb, type TestDb } from '../test-utils/testDb';
 import { ChatRepository } from './ChatRepository';
@@ -13,7 +13,9 @@ describe('ChatRepository', () => {
     beforeAll(async () => {
         testDb = await createTestDb();
         const databaseManager = {
-            getInstance: () => testDb.db,
+            getInstance: () => {
+                return testDb.db;
+            },
         } as unknown as DatabaseManager;
         repository = new ChatRepository(databaseManager);
     });
@@ -40,10 +42,16 @@ describe('ChatRepository', () => {
         await repository.create({ title: 'New' } as unknown as NewChat);
 
         const rows = await testDb.db.select().from(chat);
-        const selected = rows.filter((c) => c.selected);
+        const selected = rows.filter((c) => {
+            return c.selected;
+        });
         expect(selected).toHaveLength(1);
         expect(selected[0].title).toBe('New');
-        expect(rows.find((c) => c.title === 'Old')?.selected).toBe(false);
+        expect(
+            rows.find((c) => {
+                return c.title === 'Old';
+            })?.selected,
+        ).toBe(false);
     });
 
     it('filters chats by search query and orders pinned chats first', async () => {
@@ -75,15 +83,23 @@ describe('ChatRepository', () => {
         const matches = await repository.getAll('  cosmo  ');
         expect(matches).toHaveLength(2);
         expect(matches[0].title).toBe('Cosmo Two');
-        expect(matches.map((c) => c.title)).toEqual(['Cosmo Two', 'Cosmo One']);
+        expect(
+            matches.map((c) => {
+                return c.title;
+            }),
+        ).toEqual(['Cosmo Two', 'Cosmo One']);
 
         const all = await repository.getAll(null);
-        expect(all.map((c) => c.title)).toEqual(['Cosmo Two', 'Other', 'Cosmo One']);
+        expect(
+            all.map((c) => {
+                return c.title;
+            }),
+        ).toEqual(['Cosmo Two', 'Other', 'Cosmo One']);
     });
 
     it('updates pinned status and pinnedAt', async () => {
         const id = '00000000-0000-0000-0000-00000000d020';
-        await testDb.db.insert(chat).values({ id, title: 'Pinned', selected: false });
+        await testDb.db.insert(chat).values({ id: id, title: 'Pinned', selected: false });
 
         vi.useFakeTimers();
         vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
@@ -131,7 +147,7 @@ describe('ChatRepository', () => {
 
     it('returns chats with UIMessage-converted messages ordered by createdAt', async () => {
         const id = '00000000-0000-0000-0000-00000000d040';
-        await testDb.db.insert(chat).values({ id, title: 'Chat', selected: false });
+        await testDb.db.insert(chat).values({ id: id, title: 'Chat', selected: false });
         await testDb.db.insert(message).values([
             {
                 id: '00000000-0000-0000-0000-00000000e001',
@@ -172,7 +188,7 @@ describe('ChatRepository', () => {
 
     it('updates and deletes chats', async () => {
         const id = '00000000-0000-0000-0000-00000000d050';
-        await testDb.db.insert(chat).values({ id, title: 'Before', selected: false });
+        await testDb.db.insert(chat).values({ id: id, title: 'Before', selected: false });
 
         const updated = await repository.update(id, { title: 'After' } as Partial<NewChat>);
         expect(updated.title).toBe('After');

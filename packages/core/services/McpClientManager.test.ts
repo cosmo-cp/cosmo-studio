@@ -1,12 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMCPClient } from '@ai-sdk/mcp';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { McpServer } from '../dto';
-import type { McpServerService } from './McpServerService';
 import { McpClientManager } from './McpClientManager';
+import type { McpServerService } from './McpServerService';
 
-vi.mock('@ai-sdk/mcp', () => ({
-    createMCPClient: vi.fn(),
-}));
+vi.mock('@ai-sdk/mcp', () => {
+    return {
+        createMCPClient: vi.fn(),
+    };
+});
 
 describe('McpClientManager', () => {
     let mcpServerService: McpServerService;
@@ -192,9 +194,9 @@ describe('McpClientManager', () => {
             a: createServer({ id: 'a', name: 'A', transportType: 'sse', config: { url: 'https://a' } }),
             b: createServer({ id: 'b', name: 'B', transportType: 'http', config: { url: 'https://b' } }),
         };
-        (mcpServerService.getById as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-            async (id: string) => serverById[id],
-        );
+        (mcpServerService.getById as unknown as ReturnType<typeof vi.fn>).mockImplementation(async (id: string) => {
+            return serverById[id];
+        });
 
         const clientA = {
             tools: vi.fn().mockResolvedValue({ alpha: { execute: vi.fn() }, shared: { execute: vi.fn() } }),

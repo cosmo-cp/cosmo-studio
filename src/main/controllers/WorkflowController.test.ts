@@ -1,10 +1,10 @@
-import {describe, expect, it, vi} from 'vitest';
-import type {WorkflowGraph, WorkflowRun, WorkflowRunInsert, WorkflowVersion} from 'core/dto';
-import type {WorkflowRunService} from 'core/services/WorkflowRunService';
-import type {WorkflowService} from 'core/services/WorkflowService';
-import type {WorkflowExecutionService} from '../services/WorkflowExecutionService';
-import type {WorkflowRunStreamingService} from '../services/WorkflowRunStreamingService';
-import {WorkflowController} from './WorkflowController';
+import type { WorkflowGraph, WorkflowRun, WorkflowRunInsert, WorkflowVersion } from 'core/dto';
+import type { WorkflowRunService } from 'core/services/WorkflowRunService';
+import type { WorkflowService } from 'core/services/WorkflowService';
+import { describe, expect, it, vi } from 'vitest';
+import type { WorkflowExecutionService } from '../services/WorkflowExecutionService';
+import type { WorkflowRunStreamingService } from '../services/WorkflowRunStreamingService';
+import { WorkflowController } from './WorkflowController';
 
 describe('WorkflowController', () => {
     it('starts a run with the persisted workflow version graph', async () => {
@@ -23,15 +23,15 @@ describe('WorkflowController', () => {
         };
         const run = {
             id: '33333333-3333-4333-8333-333333333333',
-            workflowId,
-            workflowVersionId,
+            workflowId: workflowId,
+            workflowVersionId: workflowVersionId,
             status: 'queued',
         } as WorkflowRun;
         const workflowService = {
             getWorkflowVersions: vi.fn().mockResolvedValue([
                 {
                     id: workflowVersionId,
-                    graph,
+                    graph: graph,
                 } as WorkflowVersion,
             ]),
         } as unknown as WorkflowService;
@@ -53,8 +53,8 @@ describe('WorkflowController', () => {
             workflowExecutionService,
         );
         const input = {
-            workflowId,
-            workflowVersionId,
+            workflowId: workflowId,
+            workflowVersionId: workflowVersionId,
         } as WorkflowRunInsert;
 
         await expect(controller.runStart(input)).resolves.toEqual(run);
@@ -63,7 +63,7 @@ describe('WorkflowController', () => {
         expect(workflowService.getWorkflowVersions).toHaveBeenCalledWith(workflowId);
         expect(workflowExecutionService.executeRun).toHaveBeenCalledWith({
             runId: run.id,
-            graph,
+            graph: graph,
         });
     });
 
@@ -86,7 +86,7 @@ describe('WorkflowController', () => {
             workflowExecutionService,
         );
 
-        await expect(controller.runCancel({runId, message: 'Stop'})).resolves.toEqual(cancelledRun);
+        await expect(controller.runCancel({ runId: runId, message: 'Stop' })).resolves.toEqual(cancelledRun);
 
         expect(workflowExecutionService.cancelRun).toHaveBeenCalledWith(runId, 'Stop');
     });

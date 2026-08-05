@@ -27,7 +27,7 @@ export const parseCommandInput = (input: string): ParsedCommand | null => {
 
     const argument = rest.length > 0 ? rest.join(' ').trim() : undefined;
     return {
-        name,
+        name: name,
         argument: argument && argument.length > 0 ? argument : undefined,
     };
 };

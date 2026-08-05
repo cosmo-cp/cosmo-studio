@@ -19,5 +19,12 @@
                 "project": ["src/renderer/tsconfig.json", "./tsconfig.json"]
             }
         }
+    },
+    "plugins": ["unused-imports"],
+    "rules": {
+        "no-unused-vars": "off",
+        "unused-imports/no-unused-imports": "error",
+        "arrow-body-style": ["error", "always"],
+        "object-shorthand": ["error", "never"]
     }
 }

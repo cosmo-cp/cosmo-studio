@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { McpServer, McpServerCreateInput, McpServerUpdateInput } from 'core/dto';
 import type { McpClientManager } from 'core/services/McpClientManager';
 import type { McpServerService } from 'core/services/McpServerService';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { McpServerController } from './McpServerController';
 
 describe('McpServerController', () => {

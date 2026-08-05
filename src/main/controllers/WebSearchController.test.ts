@@ -1,14 +1,11 @@
-import {describe, expect, it, vi} from "vitest";
-import type {
-    WebSearchConfigSaveInput,
-    WebSearchConfigView,
-} from "core/dto";
-import {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
-import type {WebSearchConfigService} from "core/services/WebSearchConfigService";
-import {WebSearchController} from "./WebSearchController";
+import { WebSearchProviderTypeEnum } from 'core/database/schema/webSearchConfigSchema';
+import type { WebSearchConfigSaveInput, WebSearchConfigView } from 'core/dto';
+import type { WebSearchConfigService } from 'core/services/WebSearchConfigService';
+import { describe, expect, it, vi } from 'vitest';
+import { WebSearchController } from './WebSearchController';
 
-describe("WebSearchController", () => {
-    it("delegates config reads to the service", async () => {
+describe('WebSearchController', () => {
+    it('delegates config reads to the service', async () => {
         const service = {
             getConfig: vi.fn().mockResolvedValue(null),
         } as unknown as WebSearchConfigService;
@@ -19,33 +16,33 @@ describe("WebSearchController", () => {
         expect(service.getConfig).toHaveBeenCalledWith(WebSearchProviderTypeEnum.EXA);
     });
 
-    it("delegates config writes after validation", async () => {
+    it('delegates config writes after validation', async () => {
         const service = {
-            saveConfig: vi.fn().mockResolvedValue({id: "config-id"} as WebSearchConfigView),
+            saveConfig: vi.fn().mockResolvedValue({ id: 'config-id' } as WebSearchConfigView),
         } as unknown as WebSearchConfigService;
         const controller = new WebSearchController(service);
         const input: WebSearchConfigSaveInput = {
             type: WebSearchProviderTypeEnum.EXA,
             enabled: true,
-            apiKey: "secret",
+            apiKey: 'secret',
         };
 
         const result = await controller.saveConfig(input);
 
         expect(service.saveConfig).toHaveBeenCalledWith(input);
-        expect(result.id).toBe("config-id");
+        expect(result.id).toBe('config-id');
     });
 
-    it("normalizes blank api keys so edits can keep the stored secret", async () => {
+    it('normalizes blank api keys so edits can keep the stored secret', async () => {
         const service = {
-            saveConfig: vi.fn().mockResolvedValue({id: "config-id"} as WebSearchConfigView),
+            saveConfig: vi.fn().mockResolvedValue({ id: 'config-id' } as WebSearchConfigView),
         } as unknown as WebSearchConfigService;
         const controller = new WebSearchController(service);
 
         await controller.saveConfig({
             type: WebSearchProviderTypeEnum.EXA,
             enabled: false,
-            apiKey: "   ",
+            apiKey: '   ',
         });
 
         expect(service.saveConfig).toHaveBeenCalledWith({
@@ -55,7 +52,7 @@ describe("WebSearchController", () => {
         });
     });
 
-    it("delegates config deletion to the service", async () => {
+    it('delegates config deletion to the service', async () => {
         const service = {
             deleteConfig: vi.fn().mockResolvedValue(undefined),
         } as unknown as WebSearchConfigService;

@@ -5,9 +5,15 @@ export interface CoreLogger {
 }
 
 const consoleCoreLogger: CoreLogger = {
-    info: (message, ...optionalParams) => console.info(message, ...optionalParams),
-    warn: (message, ...optionalParams) => console.warn(message, ...optionalParams),
-    error: (message, ...optionalParams) => console.error(message, ...optionalParams),
+    info: (message, ...optionalParams) => {
+        return console.info(message, ...optionalParams);
+    },
+    warn: (message, ...optionalParams) => {
+        return console.warn(message, ...optionalParams);
+    },
+    error: (message, ...optionalParams) => {
+        return console.error(message, ...optionalParams);
+    },
 };
 
 let currentLogger: CoreLogger = consoleCoreLogger;

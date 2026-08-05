@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { Providers } from '../providers';
 
@@ -25,7 +25,7 @@ describe('Providers', () => {
         render(
             <Providers>
                 <span data-testid="child">child</span>
-            </Providers>
+            </Providers>,
         );
 
         expect(storeProviderMock).toHaveBeenCalledTimes(1);
@@ -36,11 +36,7 @@ describe('Providers', () => {
             enableSystem: true,
             disableTransitionOnChange: true,
         });
-        expect(screen.getByTestId('store-provider')).toContainElement(
-            screen.getByTestId('theme-provider')
-        );
-        expect(screen.getByTestId('theme-provider')).toContainElement(
-            screen.getByTestId('child')
-        );
+        expect(screen.getByTestId('store-provider')).toContainElement(screen.getByTestId('theme-provider'));
+        expect(screen.getByTestId('theme-provider')).toContainElement(screen.getByTestId('child'));
     });
 });

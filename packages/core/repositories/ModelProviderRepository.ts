@@ -2,8 +2,8 @@ import { inject, injectable } from 'inversify';
 import { model, modelProvider } from '../database/schema/modelProviderSchema'; // Use Drizzle-derived types
 import { and, eq, getTableColumns } from 'drizzle-orm';
 import { CORETYPES } from '../types/types';
-import {  DatabaseManager } from '../database/DatabaseManager';
-import {Base64SecretStore, type SecretStore} from "../platform/SecretStore";
+import { DatabaseManager } from '../database/DatabaseManager';
+import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
 import {
     Model,
     ModelProvider,
@@ -20,7 +20,7 @@ export class ModelProviderRepository {
 
     constructor(
         @inject(CORETYPES.DatabaseManager) databaseManager: DatabaseManager,
-        @inject(CORETYPES.SecretStore) private readonly secretStore: SecretStore = new Base64SecretStore()
+        @inject(CORETYPES.SecretStore) private readonly secretStore: SecretStore = new Base64SecretStore(),
     ) {
         this.db = databaseManager.getInstance();
     }
@@ -96,12 +96,14 @@ export class ModelProviderRepository {
                 .values(encryptedData)
                 .returning({ ...providerRest }); // Returning the DB record (with encrypted key)
             if (newModels && newModels.length > 0) {
-                const modelsWithProvider = newModels.map((newModel) => ({
-                    ...newModel,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                    providerId: savedProvider.id,
-                }));
+                const modelsWithProvider = newModels.map((newModel) => {
+                    return {
+                        ...newModel,
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        providerId: savedProvider.id,
+                    };
+                });
                 const savedModels = await tx
                     .insert(model)
                     .values(modelsWithProvider)
@@ -149,12 +151,14 @@ export class ModelProviderRepository {
                 await tx.delete(model).where(eq(model.providerId, providerId));
 
                 // Insert new models
-                const modelsWithProvider = newModels.map((newModel) => ({
-                    ...newModel,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                    providerId: providerId,
-                }));
+                const modelsWithProvider = newModels.map((newModel) => {
+                    return {
+                        ...newModel,
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        providerId: providerId,
+                    };
+                });
                 const savedModels = await tx
                     .insert(model)
                     .values(modelsWithProvider)

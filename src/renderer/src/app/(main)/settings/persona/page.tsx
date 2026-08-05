@@ -1,4 +1,4 @@
-import {PersonaList} from '@/components/persona-list';
+import { PersonaList } from '@/components/persona-list';
 
 export default function PersonaSettingsPage() {
     return (

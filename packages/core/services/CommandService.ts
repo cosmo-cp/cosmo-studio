@@ -46,10 +46,10 @@ export class CommandService {
         }
 
         const created = await this.commandRepository.create({
-            name,
-            description,
-            template,
-            argumentLabel,
+            name: name,
+            description: description,
+            template: template,
+            argumentLabel: argumentLabel,
         });
 
         return {
@@ -133,7 +133,7 @@ export class CommandService {
         return {
             name: command.name,
             argument: parsed.argument,
-            resolvedText,
+            resolvedText: resolvedText,
         };
     }
 

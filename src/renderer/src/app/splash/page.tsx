@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { CosmoIcon } from '@/components/cosmo-icon';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function SplashPage() {
     const router = useRouter();

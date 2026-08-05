@@ -1,19 +1,20 @@
-import { configureStore, isPlain } from '@reduxjs/toolkit';
 import { acpAgentsReducer } from '@/lib/store/acp-agents-store';
-import { commandsReducer } from '@/lib/store/commands-store';
 import { chatReducer } from '@/lib/store/chat-store';
+import { commandsReducer } from '@/lib/store/commands-store';
 import { mcpServersReducer } from '@/lib/store/mcp-servers-store';
 import { personasReducer } from '@/lib/store/personas-store';
 import { providersReducer } from '@/lib/store/providers-store';
 import { webSearchReducer } from '@/lib/store/web-search-store';
-import { CosmoApi, httpApi } from '../../../../preload/api';
+import { configureStore, isPlain } from '@reduxjs/toolkit';
+import { httpApi, type CosmoApi } from '../../../../preload/api';
 
-
-const isSerializableValue = (value: unknown) =>
-    value instanceof Date || isPlain(value);
-
+const isSerializableValue = (value: unknown) => value instanceof Date || isPlain(value);
 
 export function resolveAppDataSource(): CosmoApi {
+    if (typeof window === 'undefined') {
+        return httpApi;
+    }
+
     const isHTTP = process.env.NEXT_PUBLIC_COSMO_BACKEND === 'http';
     if (isHTTP) {
         return httpApi;
@@ -21,10 +22,12 @@ export function resolveAppDataSource(): CosmoApi {
     return window.api;
 }
 
-// Build a fresh app store once at the renderer root.
-export function makeStore() {
-    const appDataSource = resolveAppDataSource();
+export interface AppThunkExtra {
+    appDataSource: CosmoApi;
+}
 
+// Build a fresh app store once at the renderer root.
+export function makeStore(appDataSource: CosmoApi = resolveAppDataSource()) {
     return configureStore({
         reducer: {
             chat: chatReducer,
@@ -40,7 +43,7 @@ export function makeStore() {
                 thunk: {
                     extraArgument: {
                         appDataSource,
-                    },
+                    } satisfies AppThunkExtra,
                 },
                 serializableCheck: {
                     isSerializable: isSerializableValue,

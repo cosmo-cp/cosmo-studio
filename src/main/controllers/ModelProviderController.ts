@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify';
-import { z} from "zod";
-import {IpcController, IpcHandler } from '../ipc/Decorators';
+import { z } from 'zod';
+import { IpcController, IpcHandler } from '../ipc/Decorators';
 import type { ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels } from 'core/dto';
 import { CORETYPES } from 'core/types/types';
 import { ModelProviderService } from 'core/services/ModelProviderService';

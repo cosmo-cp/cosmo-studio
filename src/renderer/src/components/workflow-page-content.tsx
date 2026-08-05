@@ -1,20 +1,19 @@
 'use client';
 
-import {Button} from '@/components/ui/button';
-import {Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle} from '@/components/ui/empty';
-import {ConfirmDialog} from '@/components/confirm-dialog';
-import {WorkflowHistory, type WorkflowListItem} from '@/components/workflow-history';
-import {WorkflowWorkspace} from '@/components/workflow-workspace';
-import {resolveAppDataSource} from '@/lib/app-data-source';
-import type {WorkflowGraph} from 'core/dto';
-import {Workflow} from 'lucide-react';
-import {useEffect, useMemo, useState} from 'react';
-import { useAppSelector } from '@/lib/store/hooks';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { Button } from '@/components/ui/button';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { WorkflowHistory, type WorkflowListItem } from '@/components/workflow-history';
+import { WorkflowWorkspace } from '@/components/workflow-workspace';
+import { resolveAppDataSource } from '@/lib/store/store';
+import type { WorkflowGraph } from 'core/dto';
+import { Workflow } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
-const DEFAULT_WORKFLOW_GRAPH: WorkflowGraph = {nodes: [], edges: []};
+const DEFAULT_WORKFLOW_GRAPH: WorkflowGraph = { nodes: [], edges: [] };
 
 export function WorkflowPageContent() {
-    const appDataSource = useAppSelector((state) => state.workflow);
+    const appDataSource = useMemo(() => resolveAppDataSource(), []);
     const [searchQuery, setSearchQuery] = useState('');
     const [workflows, setWorkflows] = useState<WorkflowListItem[]>([]);
     const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
@@ -22,31 +21,37 @@ export function WorkflowPageContent() {
 
     const normalizedSearchQuery = searchQuery.trim().toLowerCase();
     const selectedWorkflow = workflows.find((workflow) => workflow.id === selectedWorkflowId) ?? null;
-    const visibleWorkflows = normalizedSearchQuery.length > 0 ?
-        workflows.filter((workflow) => {
-            const title = workflow.title.toLowerCase();
-            const summary = workflow.summary.toLowerCase();
-            return title.includes(normalizedSearchQuery) || summary.includes(normalizedSearchQuery);
-        }) :
-        workflows;
+    const visibleWorkflows =
+        normalizedSearchQuery.length > 0
+            ? workflows.filter((workflow) => {
+                  const title = workflow.title.toLowerCase();
+                  const summary = workflow.summary.toLowerCase();
+                  return title.includes(normalizedSearchQuery) || summary.includes(normalizedSearchQuery);
+              })
+            : workflows;
 
     useEffect(() => {
         void appDataSource.workflow.list(null).then((items) => {
-            setWorkflows(items.map((item) => ({
-                id: item.id,
-                title: item.title,
-                summary: item.summary ?? 'Empty workflow',
-                updatedAt: item.updatedAt,
-                latestVersion: item.latestVersion,
-            })));
+            setWorkflows(
+                items.map((item) => ({
+                    id: item.id,
+                    title: item.title,
+                    summary: item.summary ?? 'Empty workflow',
+                    updatedAt: item.updatedAt,
+                    latestVersion: item.latestVersion,
+                })),
+            );
         });
     }, [appDataSource]);
 
     const handleCreateWorkflow = async () => {
-        const created = await appDataSource.workflow.create({
-            title: 'Untitled Workflow',
-            summary: 'Empty workflow',
-        }, DEFAULT_WORKFLOW_GRAPH);
+        const created = await appDataSource.workflow.create(
+            {
+                title: 'Untitled Workflow',
+                summary: 'Empty workflow',
+            },
+            DEFAULT_WORKFLOW_GRAPH,
+        );
         const nextWorkflow: WorkflowListItem = {
             id: created.id,
             title: created.title,
@@ -95,9 +100,7 @@ export function WorkflowPageContent() {
                                     <Workflow />
                                 </EmptyMedia>
                                 <EmptyTitle>Start a new Workflow</EmptyTitle>
-                                <EmptyDescription>
-                                    Create a workflow to begin building your flow.
-                                </EmptyDescription>
+                                <EmptyDescription>Create a workflow to begin building your flow.</EmptyDescription>
                             </EmptyHeader>
                             <EmptyContent>
                                 <Button variant="outline" size="sm" onClick={() => void handleCreateWorkflow()}>

@@ -13,8 +13,8 @@ Cosmo Studio uses Drizzle ORM with PGlite (embedded Postgres) and runs migration
 - Generated migrations: `migrations/`
 - Runtime migrator: `packages/core/database/migrator.ts`
 - DB initialization: `packages/core/database/DatabaseManager.ts`
-  - Electron: called from `src/main/index.ts`
-  - HTTP: called from `src/main/http/index.ts`
+    - Electron: called from `src/main/index.ts`
+    - HTTP: called from `src/main/http/index.ts`
 
 ## Tables (current)
 
@@ -33,8 +33,8 @@ Electron runtime:
 HTTP runtime:
 
 - `COSMO_HTTP_DATA_DIR/database`
-  - Defaults to `.cosmo-http/database` under the current working directory.
-  - `COSMO_HTTP_DATA_DIR` is also used for the generated HTTP secret-store key when `COSMO_SECRET_KEY` is not set.
+    - Defaults to `.cosmo-http/database` under the current working directory.
+    - `COSMO_HTTP_DATA_DIR` is also used for the generated HTTP secret-store key when `COSMO_SECRET_KEY` is not set.
 
 Electron and HTTP intentionally use separate default directories. Provider and web-search API keys are encrypted with runtime-specific secret stores, so encrypted rows should not be shared between the two DBs by default.
 

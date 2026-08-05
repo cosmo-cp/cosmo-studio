@@ -1,11 +1,7 @@
-import {createAsyncThunk, createSlice} from "@reduxjs/toolkit";
-import type {
-    CommandCreateInput,
-    CommandDefinition,
-    CommandExecution,
-} from "core/dto";
-import type {AsyncStatus} from "@/lib/store/async-status";
-import type {AppThunkExtra} from "@/lib/store/store";
+import type { AsyncStatus } from '@/lib/store/async-status';
+import type { AppThunkExtra } from '@/lib/store/store';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import type { CommandCreateInput, CommandDefinition, CommandExecution } from 'core/dto';
 
 export interface CommandsState {
     items: CommandDefinition[];
@@ -15,7 +11,7 @@ export interface CommandsState {
 
 const initialState: CommandsState = {
     items: [],
-    status: "idle",
+    status: 'idle',
     errorMessage: null,
 };
 
@@ -29,70 +25,70 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 export const loadCommands = createCommandsAsyncThunk<CommandDefinition[], void>(
-    "commands/load",
-    async (_, {extra, rejectWithValue}) => {
+    'commands/load',
+    async (_, { extra, rejectWithValue }) => {
         try {
             return await extra.appDataSource.command.listAll();
         } catch (error) {
-            return rejectWithValue(getErrorMessage(error, "Failed to load commands"));
+            return rejectWithValue(getErrorMessage(error, 'Failed to load commands'));
         }
-    }
+    },
 );
 
 export const saveCommand = createCommandsAsyncThunk<
     CommandDefinition,
-    {commandId?: string; input: CommandCreateInput}
->("commands/save", async ({commandId, input}, {extra, rejectWithValue}) => {
+    { commandId?: string; input: CommandCreateInput }
+>('commands/save', async ({ commandId, input }, { extra, rejectWithValue }) => {
     try {
         if (commandId) {
             return await extra.appDataSource.command.update(commandId, input);
         }
         return await extra.appDataSource.command.create(input);
     } catch (error) {
-        return rejectWithValue(getErrorMessage(error, "Failed to save command"));
+        return rejectWithValue(getErrorMessage(error, 'Failed to save command'));
     }
 });
 
 export const deleteCommand = createCommandsAsyncThunk<string, string>(
-    "commands/delete",
-    async (commandId, {extra, rejectWithValue}) => {
+    'commands/delete',
+    async (commandId, { extra, rejectWithValue }) => {
         try {
             await extra.appDataSource.command.delete(commandId);
             return commandId;
         } catch (error) {
-            return rejectWithValue(getErrorMessage(error, "Failed to delete command"));
+            return rejectWithValue(getErrorMessage(error, 'Failed to delete command'));
         }
-    }
+    },
 );
 
-export const executeCommand = createCommandsAsyncThunk<CommandExecution, {input: string}>(
-    "commands/execute",
-    async (input, {extra, rejectWithValue}) => {
+export const executeCommand = createCommandsAsyncThunk<CommandExecution, { input: string }>(
+    'commands/execute',
+    async (input, { extra, rejectWithValue }) => {
         try {
             return await extra.appDataSource.command.execute(input);
         } catch (error) {
-            return rejectWithValue(getErrorMessage(error, "Failed to execute command"));
+            return rejectWithValue(getErrorMessage(error, 'Failed to execute command'));
         }
-    }
+    },
 );
 
 const commandsSlice = createSlice({
-    name: "commands",
+    name: 'commands',
     initialState,
     reducers: {},
     extraReducers: (builder) => {
         builder
             .addCase(loadCommands.pending, (state) => {
-                state.status = "loading";
+                state.status = 'loading';
                 state.errorMessage = null;
             })
             .addCase(loadCommands.fulfilled, (state, action) => {
-                state.status = "succeeded";
+                state.status = 'succeeded';
                 state.items = action.payload;
             })
             .addCase(loadCommands.rejected, (state, action) => {
-                state.status = "failed";
-                state.errorMessage = action.payload ?? "Failed to load commands";
+                state.status = 'failed';
+                state.errorMessage = action.payload ?? 'Failed to load commands';
             })
             .addCase(saveCommand.fulfilled, (state, action) => {
                 const existingIndex = state.items.findIndex((command) => command.id === action.payload.id);

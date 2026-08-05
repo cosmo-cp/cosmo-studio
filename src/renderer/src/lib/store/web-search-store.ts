@@ -1,18 +1,15 @@
-import {createAsyncThunk, createSlice, type PayloadAction} from "@reduxjs/toolkit";
-import type {
-    WebSearchConfigSaveInput,
-    WebSearchConfigView,
-} from "core/dto";
-import {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
-import type {AsyncStatus} from "@/lib/store/async-status";
-import type {AppThunkExtra} from "@/lib/store/store";
+import type { AsyncStatus } from '@/lib/store/async-status';
+import type { AppThunkExtra, RootState } from '@/lib/store/store';
 import {
     buildWebSearchOptions,
     getFrontendWebSearchProviderConfig,
     PARALLEL_WEB_SEARCH_PROVIDER_ID,
     type FrontendWebSearchProviderConfig,
     type WebSearchOption,
-} from "@/lib/web-search-options";
+} from '@/lib/web-search-options';
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { WebSearchProviderTypeEnum } from 'core/database/schema/webSearchConfigSchema';
+import type { WebSearchConfigSaveInput, WebSearchConfigView } from 'core/dto';
 
 interface SaveParallelWebSearchConfigPayload {
     enabled: boolean;
@@ -32,18 +29,19 @@ export interface WebSearchState {
 const initialState: WebSearchState = {
     config: null,
     parallelConfig: null,
-    status: "idle",
+    status: 'idle',
     errorMessage: null,
     options: buildWebSearchOptions({
         exaConfig: null,
         parallelConfig: null,
     }),
-    optionsStatus: "idle",
+    optionsStatus: 'idle',
     optionsErrorMessage: null,
 };
 
 const createWebSearchAsyncThunk = createAsyncThunk.withTypes<{
     extra: AppThunkExtra;
+    state: RootState;
     rejectValue: string;
 }>();
 
@@ -60,51 +58,55 @@ function syncOptions(state: WebSearchState) {
 }
 
 export const loadWebSearchConfig = createWebSearchAsyncThunk<WebSearchConfigView | null, void>(
-    "webSearch/load",
-    async (_, {extra, rejectWithValue}) => {
+    'webSearch/load',
+    async (_, { extra, rejectWithValue }) => {
         try {
             return await extra.appDataSource.webSearch.getConfig(WebSearchProviderTypeEnum.EXA);
         } catch (error) {
-            return rejectWithValue(getErrorMessage(error, "Failed to load web search settings"));
+            return rejectWithValue(getErrorMessage(error, 'Failed to load web search settings'));
         }
-    }
+    },
 );
 
-export const saveWebSearchConfig = createWebSearchAsyncThunk<
-    WebSearchConfigView,
-    WebSearchConfigSaveInput
->("webSearch/save", async (input, {extra, rejectWithValue}) => {
-    try {
-        return await extra.appDataSource.webSearch.saveConfig(input);
-    } catch (error) {
-        return rejectWithValue(getErrorMessage(error, "Failed to save web search settings"));
-    }
-});
+export const saveWebSearchConfig = createWebSearchAsyncThunk<WebSearchConfigView, WebSearchConfigSaveInput>(
+    'webSearch/save',
+    async (input, { extra, rejectWithValue }) => {
+        try {
+            return await extra.appDataSource.webSearch.saveConfig(input);
+        } catch (error) {
+            return rejectWithValue(getErrorMessage(error, 'Failed to save web search settings'));
+        }
+    },
+);
 
 export const deleteWebSearchConfig = createWebSearchAsyncThunk<void, void>(
-    "webSearch/delete",
-    async (_, {extra, rejectWithValue}) => {
+    'webSearch/delete',
+    async (_, { extra, rejectWithValue }) => {
         try {
             await extra.appDataSource.webSearch.deleteConfig(WebSearchProviderTypeEnum.EXA);
         } catch (error) {
-            return rejectWithValue(getErrorMessage(error, "Failed to remove web search settings"));
+            return rejectWithValue(getErrorMessage(error, 'Failed to remove web search settings'));
         }
-    }
+    },
 );
 
 export const loadWebSearchOptions = createWebSearchAsyncThunk<WebSearchOption[], void>(
-    "webSearch/loadOptions",
-    async (_, {extra, rejectWithValue}) => {
+    'webSearch/loadOptions',
+    async (_, { extra, getState, rejectWithValue }) => {
         try {
-            return await extra.appDataSource.webSearch.listOptions();
+            const exaConfig = await extra.appDataSource.webSearch.getConfig(WebSearchProviderTypeEnum.EXA);
+            return buildWebSearchOptions({
+                exaConfig,
+                parallelConfig: getState().webSearch.parallelConfig,
+            });
         } catch (error) {
-            return rejectWithValue(getErrorMessage(error, "Failed to load web search options"));
+            return rejectWithValue(getErrorMessage(error, 'Failed to load web search options'));
         }
-    }
+    },
 );
 
 const webSearchSlice = createSlice({
-    name: "webSearch",
+    name: 'webSearch',
     initialState,
     reducers: {
         saveParallelWebSearchConfig(state, action: PayloadAction<SaveParallelWebSearchConfigPayload>) {
@@ -122,17 +124,17 @@ const webSearchSlice = createSlice({
     extraReducers: (builder) => {
         builder
             .addCase(loadWebSearchConfig.pending, (state) => {
-                state.status = "loading";
+                state.status = 'loading';
                 state.errorMessage = null;
             })
             .addCase(loadWebSearchConfig.fulfilled, (state, action) => {
-                state.status = "succeeded";
+                state.status = 'succeeded';
                 state.config = action.payload;
                 syncOptions(state);
             })
             .addCase(loadWebSearchConfig.rejected, (state, action) => {
-                state.status = "failed";
-                state.errorMessage = action.payload ?? "Failed to load web search settings";
+                state.status = 'failed';
+                state.errorMessage = action.payload ?? 'Failed to load web search settings';
             })
             .addCase(saveWebSearchConfig.fulfilled, (state, action) => {
                 state.config = action.payload;
@@ -140,7 +142,7 @@ const webSearchSlice = createSlice({
                 syncOptions(state);
             })
             .addCase(saveWebSearchConfig.rejected, (state, action) => {
-                state.errorMessage = action.payload ?? "Failed to save web search settings";
+                state.errorMessage = action.payload ?? 'Failed to save web search settings';
             })
             .addCase(deleteWebSearchConfig.fulfilled, (state) => {
                 state.config = null;
@@ -148,29 +150,26 @@ const webSearchSlice = createSlice({
                 syncOptions(state);
             })
             .addCase(deleteWebSearchConfig.rejected, (state, action) => {
-                state.errorMessage = action.payload ?? "Failed to remove web search settings";
+                state.errorMessage = action.payload ?? 'Failed to remove web search settings';
             })
             .addCase(loadWebSearchOptions.pending, (state) => {
-                state.optionsStatus = "loading";
+                state.optionsStatus = 'loading';
                 state.optionsErrorMessage = null;
             })
             .addCase(loadWebSearchOptions.fulfilled, (state, action) => {
-                state.optionsStatus = "succeeded";
+                state.optionsStatus = 'succeeded';
                 state.options = action.payload;
                 state.parallelConfig = getFrontendWebSearchProviderConfig(
                     action.payload,
-                    PARALLEL_WEB_SEARCH_PROVIDER_ID
+                    PARALLEL_WEB_SEARCH_PROVIDER_ID,
                 );
             })
             .addCase(loadWebSearchOptions.rejected, (state, action) => {
-                state.optionsStatus = "failed";
-                state.optionsErrorMessage = action.payload ?? "Failed to load web search options";
+                state.optionsStatus = 'failed';
+                state.optionsErrorMessage = action.payload ?? 'Failed to load web search options';
             });
     },
 });
 
-export const {
-    deleteParallelWebSearchConfig,
-    saveParallelWebSearchConfig,
-} = webSearchSlice.actions;
+export const { deleteParallelWebSearchConfig, saveParallelWebSearchConfig } = webSearchSlice.actions;
 export const webSearchReducer = webSearchSlice.reducer;

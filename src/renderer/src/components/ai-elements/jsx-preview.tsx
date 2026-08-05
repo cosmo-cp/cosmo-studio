@@ -1,11 +1,10 @@
 'use client';
 
-import type { ComponentProps, ReactNode } from 'react';
-import type { TProps as JsxParserProps } from 'react-jsx-parser';
-
 import { cn } from '@/lib/utils';
 import { AlertCircle } from 'lucide-react';
+import type { ComponentProps, ReactNode } from 'react';
 import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import type { TProps as JsxParserProps } from 'react-jsx-parser';
 import JsxParser from 'react-jsx-parser';
 
 interface JSXPreviewContextValue {

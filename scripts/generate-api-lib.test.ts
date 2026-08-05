@@ -34,7 +34,11 @@ describe('generatePreloadApiFiles', () => {
         expect(files['src/preload/api/streaming.ts']).toContain(
             "import type {ChatSendMessageArgs} from '../../../packages/core/dto';",
         );
-        expect(files['src/preload/api/streaming.ts']).toContain('onData: (channel: string, listener: (data: UIMessageChunk) => void) => void;');
-        expect(files['src/preload/api/streaming.ts']).toContain('const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);');
+        expect(files['src/preload/api/streaming.ts']).toContain(
+            'onData: (channel: string, listener: (data: UIMessageChunk) => void) => void;',
+        );
+        expect(files['src/preload/api/streaming.ts']).toContain(
+            'const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);',
+        );
     });
 });

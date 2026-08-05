@@ -1,17 +1,25 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DatabaseManager } from '../database/DatabaseManager';
 import { model, modelProvider, ModelProviderTypeEnum } from '../database/schema/modelProviderSchema';
 import type { ModelProviderCreateInput, NewModel } from '../dto';
-import type {SecretStore} from "../platform/SecretStore"
+import type { SecretStore } from '../platform/SecretStore';
 import { createTestDb, type TestDb } from '../test-utils/testDb';
 import { ModelProviderRepository } from './ModelProviderRepository';
 
-const secretStore = vi.hoisted(() => ({
-  isEncryptionAvailable: vi.fn(() => true),
-  encrypt: vi.fn((value: string) => Buffer.from(`enc:${value}`).toString("base64")),
-  decrypt: vi.fn((value: string) => Buffer.from(value, "base64").toString("utf-8")),
-}))
+const secretStore = vi.hoisted(() => {
+    return {
+        isEncryptionAvailable: vi.fn(() => {
+            return true;
+        }),
+        encrypt: vi.fn((value: string) => {
+            return Buffer.from(`enc:${value}`).toString('base64');
+        }),
+        decrypt: vi.fn((value: string) => {
+            return Buffer.from(value, 'base64').toString('utf-8');
+        }),
+    };
+});
 
 describe('ModelProviderRepository', () => {
     let testDb: TestDb;
@@ -20,7 +28,9 @@ describe('ModelProviderRepository', () => {
     beforeAll(async () => {
         testDb = await createTestDb();
         const databaseManager = {
-            getInstance: () => testDb.db,
+            getInstance: () => {
+                return testDb.db;
+            },
         } as unknown as DatabaseManager;
         repository = new ModelProviderRepository(databaseManager, secretStore as SecretStore);
     }, 20000);
@@ -32,8 +42,10 @@ describe('ModelProviderRepository', () => {
     beforeEach(async () => {
         vi.useRealTimers();
         secretStore.isEncryptionAvailable.mockReturnValue(true);
-        secretStore.encrypt.mockImplementation((value: string) => Buffer.from(`enc:${value}`).toString("base64"))
-    secretStore.encrypt.mockClear();
+        secretStore.encrypt.mockImplementation((value: string) => {
+            return Buffer.from(`enc:${value}`).toString('base64');
+        });
+        secretStore.encrypt.mockClear();
         await testDb.db.delete(model);
         await testDb.db.delete(modelProvider);
     });
@@ -101,13 +113,25 @@ describe('ModelProviderRepository', () => {
         );
 
         expect(updated.name).toBe('Updated');
-        expect(updated.models.map((m) => m.modelId).sort()).toEqual(['new', 'new2']);
+        expect(
+            updated.models
+                .map((m) => {
+                    return m.modelId;
+                })
+                .sort(),
+        ).toEqual(['new', 'new2']);
 
         const [stored] = await testDb.db.select().from(modelProvider).where(eq(modelProvider.id, created.id)).limit(1);
         expect(stored.apiKey).toBe(Buffer.from('enc:new-secret').toString('base64'));
 
         const storedModels = await testDb.db.select().from(model).where(eq(model.providerId, created.id));
-        expect(storedModels.map((m) => m.modelId).sort()).toEqual(['new', 'new2']);
+        expect(
+            storedModels
+                .map((m) => {
+                    return m.modelId;
+                })
+                .sort(),
+        ).toEqual(['new', 'new2']);
     });
 
     it('encrypts api key updates even when set to an empty string', async () => {
@@ -128,9 +152,11 @@ describe('ModelProviderRepository', () => {
         expect(stored.apiKey).toBe(Buffer.from('enc:').toString('base64'));
     });
 
-  it("falls back to base64 when encryption is unavailable", async () => {
-    secretStore.isEncryptionAvailable.mockReturnValue(false)
-    secretStore.encrypt.mockImplementation((value: string) => Buffer.from(value, "utf-8").toString("base64"))
+    it('falls back to base64 when encryption is unavailable', async () => {
+        secretStore.isEncryptionAvailable.mockReturnValue(false);
+        secretStore.encrypt.mockImplementation((value: string) => {
+            return Buffer.from(value, 'utf-8').toString('base64');
+        });
 
         await repository.addProvider(
             {
@@ -142,7 +168,7 @@ describe('ModelProviderRepository', () => {
             [],
         );
 
-        expect(secretStore.encrypt).toHaveBeenCalledWith("plain");
+        expect(secretStore.encrypt).toHaveBeenCalledWith('plain');
 
         const [stored] = await testDb.db.select().from(modelProvider).limit(1);
         expect(stored.apiKey).toBe(Buffer.from('plain', 'utf-8').toString('base64'));
@@ -189,7 +215,13 @@ describe('ModelProviderRepository', () => {
             .where(eq(modelProvider.id, created.id))
             .limit(1);
         const models = await repository.getModels(storedProvider as never);
-        expect(models.map((m) => m.modelId).sort()).toEqual(['a', 'b']);
+        expect(
+            models
+                .map((m) => {
+                    return m.modelId;
+                })
+                .sort(),
+        ).toEqual(['a', 'b']);
     });
 
     it('finds duplicates when all stored fields match exactly', async () => {

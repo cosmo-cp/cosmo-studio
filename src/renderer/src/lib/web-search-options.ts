@@ -1,8 +1,8 @@
-import type {WebSearchConfigView} from "core/dto";
-import {WebSearchProviderTypeEnum} from "core/database/schema/webSearchConfigSchema";
+import { WebSearchProviderTypeEnum } from 'core/database/schema/webSearchConfigSchema';
+import type { WebSearchConfigView } from 'core/dto';
 
-export const WEB_SEARCH_NONE_OPTION_ID = "__web_search_none__";
-export const PARALLEL_WEB_SEARCH_PROVIDER_ID = "parallel";
+export const WEB_SEARCH_NONE_OPTION_ID = '__web_search_none__';
+export const PARALLEL_WEB_SEARCH_PROVIDER_ID = 'parallel';
 
 export interface FrontendWebSearchProviderConfig {
     enabled: boolean;
@@ -23,25 +23,22 @@ interface BuildWebSearchOptionsInput {
 }
 
 // Keep the chat dropdown labels consistent across the adapter, store, and UI.
-export function buildWebSearchOptions({
-    exaConfig,
-    parallelConfig,
-}: BuildWebSearchOptionsInput): WebSearchOption[] {
+export function buildWebSearchOptions({ exaConfig, parallelConfig }: BuildWebSearchOptionsInput): WebSearchOption[] {
     return [
         {
             id: WEB_SEARCH_NONE_OPTION_ID,
-            label: "Disabled"
+            label: 'Disabled',
         },
         {
             id: WebSearchProviderTypeEnum.EXA,
-            label: "Exa web search",
+            label: 'Exa web search',
             disabled: !exaConfig?.enabled,
             configured: Boolean(exaConfig),
             hasApiKey: exaConfig?.hasApiKey ?? false,
         },
         {
             id: PARALLEL_WEB_SEARCH_PROVIDER_ID,
-            label: "Parallel web search",
+            label: 'Parallel web search',
             disabled: !parallelConfig?.enabled,
             configured: Boolean(parallelConfig),
             hasApiKey: parallelConfig?.hasApiKey ?? false,
@@ -52,7 +49,7 @@ export function buildWebSearchOptions({
 // Rehydrate renderer-only provider state from dummy adapter option payloads.
 export function getFrontendWebSearchProviderConfig(
     options: WebSearchOption[],
-    providerId: string
+    providerId: string,
 ): FrontendWebSearchProviderConfig | null {
     const provider = options.find((option) => option.id === providerId);
     if (!provider?.configured) {

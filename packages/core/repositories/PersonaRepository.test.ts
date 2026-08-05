@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { persona } from '../database/schema/schema';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DatabaseManager } from '../database/DatabaseManager';
+import { persona } from '../database/schema/schema';
 import type { NewPersona } from '../dto';
 import { createTestDb, type TestDb } from '../test-utils/testDb';
 import { PersonaRepository } from './PersonaRepository';
@@ -13,7 +13,9 @@ describe('PersonaRepository', () => {
     beforeAll(async () => {
         testDb = await createTestDb();
         const databaseManager = {
-            getInstance: () => testDb.db,
+            getInstance: () => {
+                return testDb.db;
+            },
         } as unknown as DatabaseManager;
         repository = new PersonaRepository(databaseManager);
     });
@@ -44,7 +46,11 @@ describe('PersonaRepository', () => {
         } as unknown as NewPersona);
 
         const all = await repository.getAll();
-        expect(all.map((p) => p.name)).toEqual(['A', 'B']);
+        expect(
+            all.map((p) => {
+                return p.name;
+            }),
+        ).toEqual(['A', 'B']);
 
         await expect(repository.getById(created.id)).resolves.toEqual(expect.objectContaining({ name: 'B' }));
         await expect(repository.getByName('A')).resolves.toEqual(expect.objectContaining({ details: 'a' }));

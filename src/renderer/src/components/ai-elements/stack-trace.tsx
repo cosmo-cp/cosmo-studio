@@ -1,12 +1,11 @@
 'use client';
 
-import type { ComponentProps } from 'react';
-
-import { useControllableState } from '@radix-ui/react-use-controllable-state';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { useControllableState } from '@radix-ui/react-use-controllable-state';
 import { AlertTriangleIcon, CheckIcon, ChevronDownIcon, CopyIcon } from 'lucide-react';
+import type { ComponentProps } from 'react';
 import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 // Regex patterns for parsing stack traces

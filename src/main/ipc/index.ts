@@ -4,7 +4,7 @@ import {
     IPC_ARGS_SCHEMA_METADATA_KEY,
     IPC_CONTROLLER_METADATA_KEY,
     IPC_HANDLE_METADATA_KEY,
-    IPC_ON_METADATA_KEY
+    IPC_ON_METADATA_KEY,
 } from './Decorators';
 import { TYPES } from '../types';
 import { Controller } from '../controllers/Controller';
@@ -21,17 +21,17 @@ export class IpcHandlerRegistry {
             // Register @IpcHandle decorators
             const handleHandlers = Reflect.getMetadata(IPC_HANDLE_METADATA_KEY, controller.constructor);
             if (handleHandlers) {
-                this.registerHandlers(controller, controllerPrefix, handleHandlers, (channel, listener) =>
-                    ipcMain.handle(channel, listener),
-                );
+                this.registerHandlers(controller, controllerPrefix, handleHandlers, (channel, listener) => {
+                    return ipcMain.handle(channel, listener);
+                });
             }
 
             // Register @IpcOn decorators
             const onHandlers = Reflect.getMetadata(IPC_ON_METADATA_KEY, controller.constructor);
             if (onHandlers) {
-                this.registerHandlers(controller, controllerPrefix, onHandlers, (channel, listener) =>
-                    ipcMain.on(channel, listener),
-                );
+                this.registerHandlers(controller, controllerPrefix, onHandlers, (channel, listener) => {
+                    return ipcMain.on(channel, listener);
+                });
             }
         });
     }

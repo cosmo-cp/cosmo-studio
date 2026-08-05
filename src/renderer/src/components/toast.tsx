@@ -1,9 +1,9 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import React, { useEffect, useRef, useState, type ReactNode } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { CheckCircleFillIcon, WarningIcon } from './icons';
-import { cn } from '@/lib/utils';
 
 const iconsByType: Record<'success' | 'error', ReactNode> = {
     success: <CheckCircleFillIcon />,
