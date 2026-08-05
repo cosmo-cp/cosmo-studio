@@ -42,6 +42,19 @@ function renderWorkflowPageContent() {
     );
 }
 
+ // Start each workflow-focused test from the same created-workflow state.
+async function createWorkflow(user: ReturnType<typeof userEvent.setup>) {
+    renderWorkflowPageContent();
+
+    expect(screen.getByText(/no workflows yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/start a new workflow/i)).toBeInTheDocument();
+
+    await user.click(screen.getAllByRole('button', { name: /new workflow/i })[0]);
+
+    expect(await screen.findByTestId('workflow-mode-toggle')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /delete untitled workflow/i })).toBeInTheDocument();
+}
+
 describe('WorkflowPageContent', () => {
     it('clamps drop-open picker placement and centers new nodes around the drop point', () => {
         const anchor = getDropPickerAnchorPosition({
@@ -60,17 +73,11 @@ describe('WorkflowPageContent', () => {
         expect(getNodePositionFromDrop({ x: 10, y: 10 })).toEqual({ x: 24, y: 24 });
     });
 
-    it('creates workflows from the history panel and deletes them from the same list', async () => {
+    it('creates workflows from the history panel and toggles between edit and run modes', async () => {
         const user = userEvent.setup();
 
-        renderWorkflowPageContent();
+        await createWorkflow(user);
 
-        expect(screen.getByText(/no workflows yet/i)).toBeInTheDocument();
-        expect(screen.getByText(/start a new workflow/i)).toBeInTheDocument();
-
-        await user.click(screen.getAllByRole('button', { name: /new workflow/i })[0]);
-
-        expect(screen.getByTestId('workflow-mode-toggle')).toBeInTheDocument();
         expect(screen.getByTestId('workflow-mode-toggle')).toHaveClass(
             'top-4',
             'left-1/2',
@@ -97,7 +104,6 @@ describe('WorkflowPageContent', () => {
         expect(screen.queryByText(/mark where a workflow path completes/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/start a new workflow/i)).not.toBeInTheDocument();
         expect(screen.getAllByText(/^start$/i)).not.toHaveLength(0);
-        expect(screen.getByRole('button', { name: /delete untitled workflow/i })).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', { name: /^run$/i }));
 
@@ -117,7 +123,9 @@ describe('WorkflowPageContent', () => {
         await user.click(screen.getByRole('button', { name: /^run$/i }));
 
         const workflowInput = screen.getByTestId('workflow-run-input');
-        await user.type(workflowInput, 'Review the workflow execution path{enter}');
+        await user.click(workflowInput);
+        await user.paste('Review the workflow execution path');
+        await user.click(screen.getByRole('button', { name: /execute/i }));
 
         expect(screen.getByText('Review the workflow execution path')).toBeInTheDocument();
         expect(
@@ -129,6 +137,12 @@ describe('WorkflowPageContent', () => {
 
         expect(await screen.findByTestId('workflow-toolbar')).toBeInTheDocument();
         expect(screen.getByTestId('workflow-run-drawer')).toHaveAttribute('data-state', 'closed');
+    });
+
+    it('opens the node picker, adds a node, and switches the canvas interaction mode', async () => {
+        const user = userEvent.setup();
+
+        await createWorkflow(user);
 
         await user.click(screen.getByRole('button', { name: /add node/i }));
 
@@ -178,6 +192,12 @@ describe('WorkflowPageContent', () => {
         expect(screen.getByTestId('workflow-toolbar-panel')).toHaveStyle({
             transform: 'translate(0px, calc(-50% + 0px))',
         });
+    });
+
+    it('deletes workflows from the history panel', async () => {
+        const user = userEvent.setup();
+
+        await createWorkflow(user);
 
         await user.click(screen.getByRole('button', { name: /delete untitled workflow/i }));
         await user.click(screen.getByRole('button', { name: /^delete$/i }));
