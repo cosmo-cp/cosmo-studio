@@ -16,245 +16,51 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import {
-    deleteMcpServer,
-    loadMcpServers,
-    loadMcpServerTools,
-    saveMcpServer,
-    toggleMcpServerEnabled,
-    updateMcpToolApproval,
-} from '@/lib/store/mcp-servers-store';
-import type { McpServer, McpServerCreateInput, McpServerUpdateInput } from 'core/dto';
+import { CONFIG_PLACEHOLDER, useMcpServerPageState } from '@/features/mcp-servers/use-mcp-server-page-state';
 import { ChevronDown, ChevronRight, Edit, Plus, RefreshCw, Trash2, Wrench } from 'lucide-react';
-import { Fragment, useEffect, useState } from 'react';
-import { toast } from 'sonner';
-
-type TransportType = 'stdio' | 'sse' | 'http';
-
-interface McpTool {
-    name: string;
-    title?: string;
-    description?: string;
-}
-
-const CONFIG_PLACEHOLDER: Record<TransportType, string> = {
-    stdio: JSON.stringify(
-        { command: 'npx', args: ['-y', '@modelcontextprotocol/server-everything'], env: {}, cwd: '' },
-        null,
-        2,
-    ),
-    sse: JSON.stringify({ url: 'http://localhost:3001/sse', headers: {} }, null, 2),
-    http: JSON.stringify({ url: 'http://localhost:3001', headers: {} }, null, 2),
-};
-
-const buildDefaultFormState = () => ({
-    name: '',
-    description: '',
-    transportType: 'stdio' as TransportType,
-    configJson: CONFIG_PLACEHOLDER['stdio'],
-    enabled: true,
-});
+import { Fragment } from 'react';
 
 export function McpServerManagement() {
-    const dispatch = useAppDispatch();
-    const servers = useAppSelector((state) => state.mcpServers.items);
-    const serversStatus = useAppSelector((state) => state.mcpServers.status);
-    const serversError = useAppSelector((state) => state.mcpServers.errorMessage);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [editingServer, setEditingServer] = useState<McpServer | null>(null);
-    const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; serverId: string | null }>({
-        isOpen: false,
-        serverId: null,
-    });
-    const [formState, setFormState] = useState(buildDefaultFormState());
-    const [jsonError, setJsonError] = useState<string | null>(null);
+    const {
+        servers,
+        isLoading,
+        error,
+        hasServers,
+        isDialogOpen,
+        isSubmitting,
+        editingServer,
+        deleteConfirmation,
+        formState,
+        jsonError,
+        expandedServerId,
+        serverTools,
+        loadingToolsFor,
+        setFormState,
+        setTransportType,
+        setJsonError,
+        openCreateDialog,
+        closeDialog,
+        handleDialogOpenChange,
+        editServer,
+        saveServer,
+        requestDeleteServer,
+        clearDeleteConfirmation,
+        confirmDeleteServer,
+        toggleServerEnabled,
+        toggleServerTools,
+        refreshServerTools,
+        updateToolApproval,
+    } = useMcpServerPageState();
 
-    // Tool listing per server
-    const [expandedServerId, setExpandedServerId] = useState<string | null>(null);
-    const [serverTools, setServerTools] = useState<Record<string, McpTool[]>>({});
-    const [loadingToolsFor, setLoadingToolsFor] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (serversStatus === 'idle') {
-            void dispatch(loadMcpServers());
-        }
-    }, [dispatch, serversStatus]);
-
-    const handleOpenDialog = () => {
-        setEditingServer(null);
-        setFormState(buildDefaultFormState());
-        setJsonError(null);
-        setIsDialogOpen(true);
-    };
-
-    const handleCloseDialog = () => {
-        setIsDialogOpen(false);
-        setEditingServer(null);
-        setFormState(buildDefaultFormState());
-        setJsonError(null);
-    };
-
-    const handleEdit = (server: McpServer) => {
-        setEditingServer(server);
-        setFormState({
-            name: server.name,
-            description: (server.description as string) ?? '',
-            transportType: server.transportType as TransportType,
-            configJson: JSON.stringify(server.config, null, 2),
-            enabled: server.enabled,
-        });
-        setJsonError(null);
-        setIsDialogOpen(true);
-    };
-
-    const handleSubmit = async (event: React.FormEvent) => {
-        event.preventDefault();
-        if (isSubmitting) return;
-
-        // Validate JSON
-        let parsedConfig: unknown;
-        try {
-            parsedConfig = JSON.parse(formState.configJson);
-        } catch {
-            setJsonError('Invalid JSON configuration.');
-            return;
-        }
-
-        if (typeof parsedConfig !== 'object' || parsedConfig === null || Array.isArray(parsedConfig)) {
-            setJsonError('Configuration must be a JSON object.');
-            return;
-        }
-
-        setIsSubmitting(true);
-        setJsonError(null);
-
-        try {
-            if (editingServer) {
-                const updates: McpServerUpdateInput = {
-                    name: formState.name.trim(),
-                    description: formState.description.trim() || null,
-                    transportType: formState.transportType,
-                    config: parsedConfig,
-                    enabled: formState.enabled,
-                };
-                await dispatch(
-                    saveMcpServer({
-                        serverId: editingServer.id,
-                        input: updates as McpServerCreateInput,
-                    }),
-                ).unwrap();
-                toast.success('MCP server updated');
-            } else {
-                const createPayload: McpServerCreateInput = {
-                    name: formState.name.trim(),
-                    description: formState.description.trim() || null,
-                    transportType: formState.transportType,
-                    config: parsedConfig,
-                    enabled: formState.enabled,
-                };
-                await dispatch(saveMcpServer({ input: createPayload })).unwrap();
-                toast.success('MCP server added');
-            }
-            handleCloseDialog();
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to save MCP server.';
-            toast.error(message);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleDeleteClick = (serverId: string) => {
-        setDeleteConfirmation({ isOpen: true, serverId });
-    };
-
-    const handleConfirmDelete = async () => {
-        if (!deleteConfirmation.serverId) return;
-
-        const serverId = deleteConfirmation.serverId;
-        setDeleteConfirmation({ isOpen: false, serverId: null });
-
-        try {
-            await dispatch(deleteMcpServer(serverId)).unwrap();
-            // Clear tools cache
-            setServerTools((prev) => {
-                const next = { ...prev };
-                delete next[serverId];
-                return next;
-            });
-            if (expandedServerId === serverId) {
-                setExpandedServerId(null);
-            }
-            toast.success('MCP server deleted');
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to delete MCP server.';
-            toast.error(message);
-        }
-    };
-
-    const handleToggleEnabled = async (server: McpServer) => {
-        try {
-            const updated = await dispatch(
-                toggleMcpServerEnabled({
-                    serverId: server.id,
-                    enabled: !server.enabled,
-                }),
-            ).unwrap();
-            toast.success(`${server.name} ${updated.enabled ? 'enabled' : 'disabled'}`);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to toggle server.';
-            toast.error(message);
-        }
-    };
-
-    const handleToggleTools = async (serverId: string) => {
-        if (expandedServerId === serverId) {
-            setExpandedServerId(null);
-            return;
-        }
-
-        setExpandedServerId(serverId);
-
-        // Fetch tools if not cached
-        if (!serverTools[serverId]) {
-            setLoadingToolsFor(serverId);
-            try {
-                const { tools } = await dispatch(loadMcpServerTools(serverId)).unwrap();
-                setServerTools((prev) => ({ ...prev, [serverId]: tools }));
-            } catch (error) {
-                console.error('Failed to load tools for server', error);
-                setServerTools((prev) => ({ ...prev, [serverId]: [] }));
-            } finally {
-                setLoadingToolsFor(null);
-            }
-        }
-    };
-
-    const handleRefreshTools = async (serverId: string) => {
-        setLoadingToolsFor(serverId);
-        try {
-            const { tools } = await dispatch(loadMcpServerTools(serverId)).unwrap();
-            setServerTools((prev) => ({ ...prev, [serverId]: tools }));
-        } catch (error) {
-            console.error('Failed to refresh tools for server', error);
-        } finally {
-            setLoadingToolsFor(null);
-        }
-    };
-
-    const hasServers = servers.length > 0;
-
-    if (serversStatus === 'loading' && servers.length === 0) {
+    if (isLoading && servers.length === 0) {
         return <div className="text-sm text-muted-foreground">Loading MCP servers...</div>;
     }
 
     return (
         <div className="space-y-4">
-            {serversError ? (
+            {error ? (
                 <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                    {serversError}
+                    {error}
                 </div>
             ) : null}
             <div className="flex items-center justify-between">
@@ -264,7 +70,7 @@ export function McpServerManagement() {
                         Configure Model Context Protocol servers to extend AI capabilities with external tools.
                     </p>
                 </div>
-                <Button onClick={handleOpenDialog}>
+                <Button onClick={openCreateDialog}>
                     <Plus className="h-4 w-4 mr-1" />
                     Add Server
                 </Button>
@@ -296,7 +102,7 @@ export function McpServerManagement() {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-6 w-6"
-                                                    onClick={() => handleToggleTools(server.id)}
+                                                    onClick={() => toggleServerTools(server.id)}
                                                     disabled={!server.enabled}
                                                     aria-label={isExpanded ? 'Collapse tools' : 'Expand tools'}
                                                 >
@@ -311,7 +117,7 @@ export function McpServerManagement() {
                                                 <Switch
                                                     size="sm"
                                                     checked={server.enabled}
-                                                    onCheckedChange={() => handleToggleEnabled(server)}
+                                                    onCheckedChange={() => void toggleServerEnabled(server)}
                                                     aria-label={`Toggle ${server.name}`}
                                                 />
                                             </TableCell>
@@ -335,7 +141,7 @@ export function McpServerManagement() {
                                                     size="icon"
                                                     variant="ghost"
                                                     aria-label={`Edit ${server.name}`}
-                                                    onClick={() => handleEdit(server)}
+                                                    onClick={() => editServer(server)}
                                                 >
                                                     <Edit className="size-4" />
                                                 </Button>
@@ -343,7 +149,7 @@ export function McpServerManagement() {
                                                     size="icon"
                                                     variant="ghost"
                                                     aria-label={`Delete ${server.name}`}
-                                                    onClick={() => handleDeleteClick(server.id)}
+                                                    onClick={() => requestDeleteServer(server.id)}
                                                 >
                                                     <Trash2 className="size-4" />
                                                 </Button>
@@ -370,7 +176,7 @@ export function McpServerManagement() {
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className="h-6 w-6"
-                                                                onClick={() => handleRefreshTools(server.id)}
+                                                                onClick={() => refreshServerTools(server.id)}
                                                                 disabled={isLoadingTools}
                                                                 aria-label="Refresh tools"
                                                             >
@@ -419,27 +225,12 @@ export function McpServerManagement() {
                                                                                 <Switch
                                                                                     size="sm"
                                                                                     checked={isApprovalRequired}
-                                                                                    onCheckedChange={async (
-                                                                                        checked,
-                                                                                    ) => {
-                                                                                        try {
-                                                                                            await dispatch(
-                                                                                                updateMcpToolApproval({
-                                                                                                    serverId: server.id,
-                                                                                                    toolName: tool.name,
-                                                                                                    needsApproval:
-                                                                                                        checked,
-                                                                                                }),
-                                                                                            ).unwrap();
-                                                                                        } catch (error) {
-                                                                                            console.error(
-                                                                                                'Failed to update tool approval',
-                                                                                                error,
-                                                                                            );
-                                                                                            toast.error(
-                                                                                                'Failed to update tool approval',
-                                                                                            );
-                                                                                        }
+                                                                                    onCheckedChange={(checked) => {
+                                                                                        void updateToolApproval(
+                                                                                            server.id,
+                                                                                            tool.name,
+                                                                                            checked,
+                                                                                        );
                                                                                     }}
                                                                                     aria-label={`Require approval for ${tool.name}`}
                                                                                 />
@@ -470,7 +261,7 @@ export function McpServerManagement() {
             )}
 
             {/* Add/Edit Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
                 <DialogContent className="sm:max-w-[550px]">
                     <DialogHeader>
                         <DialogTitle>{editingServer ? 'Edit MCP Server' : 'Add MCP Server'}</DialogTitle>
@@ -480,7 +271,7 @@ export function McpServerManagement() {
                                 : 'Configure a new MCP server connection.'}
                         </DialogDescription>
                     </DialogHeader>
-                    <form className="space-y-4" onSubmit={handleSubmit}>
+                    <form className="space-y-4" onSubmit={saveServer}>
                         <div className="space-y-2">
                             <label className="text-sm font-medium" htmlFor="server-name">
                                 Name
@@ -506,20 +297,7 @@ export function McpServerManagement() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Transport Type</label>
-                            <Select
-                                value={formState.transportType}
-                                onValueChange={(value) => {
-                                    const type = value as TransportType;
-                                    setFormState((prev) => ({
-                                        ...prev,
-                                        transportType: type,
-                                        // Update placeholder if config hasn't been modified from a previous placeholder
-                                        configJson: Object.values(CONFIG_PLACEHOLDER).includes(prev.configJson)
-                                            ? CONFIG_PLACEHOLDER[type]
-                                            : prev.configJson,
-                                    }));
-                                }}
-                            >
+                            <Select value={formState.transportType} onValueChange={setTransportType}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select transport type" />
                                 </SelectTrigger>
@@ -567,7 +345,7 @@ export function McpServerManagement() {
                             />
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={handleCloseDialog}>
+                            <Button type="button" variant="ghost" onClick={closeDialog}>
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={isSubmitting || !formState.name.trim()}>
@@ -583,10 +361,10 @@ export function McpServerManagement() {
                 open={deleteConfirmation.isOpen}
                 onOpenChange={(open) => {
                     if (!open) {
-                        setDeleteConfirmation({ isOpen: false, serverId: null });
+                        clearDeleteConfirmation();
                     }
                 }}
-                onConfirm={handleConfirmDelete}
+                onConfirm={confirmDeleteServer}
                 title="Delete MCP server?"
                 description="This will remove the server configuration and disconnect any active client. This action cannot be undone."
                 variant="destructive"

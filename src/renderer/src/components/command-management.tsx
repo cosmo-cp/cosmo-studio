@@ -8,150 +8,40 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { deleteCommand, loadCommands, saveCommand } from '@/lib/store/commands-store';
-import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import type { CommandCreateInput, CommandDefinition, CommandUpdateInput } from 'core/dto';
+import { useCommandManagementState } from '@/features/commands/use-command-management-state';
 import { Edit, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { logger } from '../../logger';
-
-type ArgumentMode = 'none' | 'optional';
-
-// Provide a clean form state when creating or resetting commands.
-const buildDefaultFormState = () => ({
-    name: '',
-    description: '',
-    template: '',
-    argumentMode: 'none' as ArgumentMode,
-    argumentLabel: '',
-});
 
 export function CommandManagement() {
-    const dispatch = useAppDispatch();
-    const commands = useAppSelector((state) => state.commands.items);
-    const commandsStatus = useAppSelector((state) => state.commands.status);
-    const commandsError = useAppSelector((state) => state.commands.errorMessage);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [editingCommand, setEditingCommand] = useState<CommandDefinition | null>(null);
-    const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; commandId: string | null }>({
-        isOpen: false,
-        commandId: null,
-    });
-    const [formState, setFormState] = useState(buildDefaultFormState());
+    const {
+        commands,
+        isLoading,
+        error,
+        hasCommands,
+        isDialogOpen,
+        isSubmitting,
+        editingCommand,
+        deleteConfirmation,
+        formState,
+        setFormState,
+        openCreateDialog,
+        closeDialog,
+        handleDialogOpenChange,
+        editCommand,
+        submitCommand,
+        requestDeleteCommand,
+        clearDeleteConfirmation,
+        confirmDeleteCommand,
+    } = useCommandManagementState();
 
-    useEffect(() => {
-        if (commandsStatus === 'idle') {
-            void dispatch(loadCommands());
-        }
-    }, [commandsStatus, dispatch]);
-
-    // Reset state before opening the create dialog.
-    const handleOpenDialog = () => {
-        setEditingCommand(null);
-        setFormState(buildDefaultFormState());
-        setIsDialogOpen(true);
-    };
-
-    // Clear transient form state when closing the dialog.
-    const handleCloseDialog = () => {
-        setIsDialogOpen(false);
-        setEditingCommand(null);
-        setFormState(buildDefaultFormState());
-    };
-
-    // Load command details into the form for editing.
-    const handleEdit = (command: CommandDefinition) => {
-        if (command.builtIn) {
-            return;
-        }
-        setEditingCommand(command);
-        setFormState({
-            name: command.name,
-            description: command.description,
-            template: command.template,
-            argumentMode: command.argumentLabel ? 'optional' : 'none',
-            argumentLabel: command.argumentLabel ?? '',
-        });
-        setIsDialogOpen(true);
-    };
-
-    // Save the current form state as a new or updated command.
-    const handleSubmit = async (event: React.FormEvent) => {
-        event.preventDefault();
-        if (isSubmitting) {
-            return;
-        }
-        setIsSubmitting(true);
-
-        const payloadBase = {
-            name: formState.name.trim(),
-            description: formState.description.trim(),
-            template: formState.template.trim(),
-            argumentLabel: formState.argumentMode === 'optional' ? formState.argumentLabel.trim() || null : null,
-        };
-
-        try {
-            if (editingCommand) {
-                const updatePayload: CommandUpdateInput = {
-                    ...payloadBase,
-                };
-                await dispatch(
-                    saveCommand({
-                        commandId: editingCommand.id as string,
-                        input: updatePayload as CommandCreateInput,
-                    }),
-                ).unwrap();
-                toast.success('Command updated');
-            } else {
-                const createPayload: CommandCreateInput = payloadBase;
-                await dispatch(saveCommand({ input: createPayload })).unwrap();
-                toast.success('Command created');
-            }
-            handleCloseDialog();
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to save command.';
-            toast.error(message);
-            logger.error('Failed to save command', error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // Prompt for deletion confirmation for a custom command.
-    const handleDeleteClick = (commandId: string) => {
-        setDeleteConfirmation({ isOpen: true, commandId });
-    };
-
-    // Execute the delete after confirmation.
-    const handleConfirmDelete = async () => {
-        if (!deleteConfirmation.commandId) {
-            return;
-        }
-        const commandId = deleteConfirmation.commandId;
-        setDeleteConfirmation({ isOpen: false, commandId: null });
-        try {
-            await dispatch(deleteCommand(commandId)).unwrap();
-            toast.success('Command deleted');
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to delete command.';
-            toast.error(message);
-            logger.error('Failed to delete command', error);
-        }
-    };
-
-    const hasCommands = commands.length > 0;
-
-    if (commandsStatus === 'loading' && !hasCommands) {
+    if (isLoading && !hasCommands) {
         return <div className="text-sm text-muted-foreground">Loading commands...</div>;
     }
 
     return (
         <div className="space-y-4">
-            {commandsError ? (
+            {error ? (
                 <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                    {commandsError}
+                    {error}
                 </div>
             ) : null}
             <div className="flex items-center justify-between">
@@ -161,7 +51,7 @@ export function CommandManagement() {
                         Create quick prompts that start with a slash and optionally take one argument.
                     </p>
                 </div>
-                <Button onClick={handleOpenDialog}>Add Command</Button>
+                <Button onClick={openCreateDialog}>Add Command</Button>
             </div>
 
             {hasCommands ? (
@@ -194,7 +84,7 @@ export function CommandManagement() {
                                             size="icon"
                                             variant="ghost"
                                             aria-label={`Edit ${command.name}`}
-                                            onClick={() => handleEdit(command)}
+                                            onClick={() => editCommand(command)}
                                             disabled={command.builtIn}
                                         >
                                             <Edit className="size-4" />
@@ -203,7 +93,7 @@ export function CommandManagement() {
                                             size="icon"
                                             variant="ghost"
                                             aria-label={`Delete ${command.name}`}
-                                            onClick={() => handleDeleteClick(command.id as string)}
+                                            onClick={() => requestDeleteCommand(command.id as string)}
                                             disabled={command.builtIn}
                                         >
                                             <Trash2 className="size-4" />
@@ -220,12 +110,12 @@ export function CommandManagement() {
                 </div>
             )}
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{editingCommand ? 'Edit Command' : 'Create Command'}</DialogTitle>
                     </DialogHeader>
-                    <form className="space-y-4" onSubmit={handleSubmit}>
+                    <form className="space-y-4" onSubmit={submitCommand}>
                         <div className="space-y-2">
                             <label className="text-sm font-medium" htmlFor="command-name">
                                 Name
@@ -284,7 +174,7 @@ export function CommandManagement() {
                                 onValueChange={(value) =>
                                     setFormState((prev) => ({
                                         ...prev,
-                                        argumentMode: value as ArgumentMode,
+                                        argumentMode: value as 'none' | 'optional',
                                         argumentLabel: value === 'none' ? '' : prev.argumentLabel,
                                     }))
                                 }
@@ -317,7 +207,7 @@ export function CommandManagement() {
                             )}
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={handleCloseDialog}>
+                            <Button type="button" variant="ghost" onClick={closeDialog}>
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={isSubmitting}>
@@ -332,10 +222,10 @@ export function CommandManagement() {
                 open={deleteConfirmation.isOpen}
                 onOpenChange={(open) => {
                     if (!open) {
-                        setDeleteConfirmation({ isOpen: open, commandId: null });
+                        clearDeleteConfirmation();
                     }
                 }}
-                onConfirm={handleConfirmDelete}
+                onConfirm={confirmDeleteCommand}
                 title="Delete command?"
                 description="This action cannot be undone."
             />

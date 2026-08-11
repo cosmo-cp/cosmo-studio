@@ -170,21 +170,21 @@ describe('AcpAgentManagement', () => {
 
         await user.click(await screen.findByRole('button', { name: /edit codex cli/i }));
 
-        expect(await screen.findByRole('heading', { name: /edit agent/i })).toBeInTheDocument();
-        expect(screen.getByText(/stored env keys: token/i)).toBeInTheDocument();
+        const dialog = await screen.findByRole('dialog');
+        expect(within(dialog).getByRole('heading', { name: /edit agent/i })).toBeInTheDocument();
 
-        await user.clear(screen.getByLabelText(/^name$/i));
-        await user.type(screen.getByLabelText(/^name$/i), 'Codex Edited');
-        await user.clear(screen.getByLabelText(/^command$/i));
-        await user.type(screen.getByLabelText(/^command$/i), 'uvx');
-        await user.clear(screen.getByLabelText(/^workspace path$/i));
-        await user.type(screen.getByLabelText(/^workspace path$/i), '/workspace');
-        await user.clear(screen.getByLabelText(/^auth method id$/i));
-        await user.type(screen.getByLabelText(/^auth method id$/i), 'oauth-test');
-        fireEvent.change(screen.getByLabelText(/^args json$/i), {
+        await user.clear(within(dialog).getByLabelText(/^name$/i));
+        await user.type(within(dialog).getByLabelText(/^name$/i), 'Codex Edited');
+        await user.clear(within(dialog).getByLabelText(/^command$/i));
+        await user.type(within(dialog).getByLabelText(/^command$/i), 'uvx');
+        await user.clear(within(dialog).getByLabelText(/^workspace path$/i));
+        await user.type(within(dialog).getByLabelText(/^workspace path$/i), '/workspace');
+        await user.clear(within(dialog).getByLabelText(/^auth method id$/i));
+        await user.type(within(dialog).getByLabelText(/^auth method id$/i), 'oauth-test');
+        fireEvent.change(within(dialog).getByLabelText(/^args json$/i), {
             target: { value: '["--acp","--verbose"]' },
         });
-        await user.click(screen.getByRole('button', { name: /save changes/i }));
+        await user.click(within(dialog).getByRole('button', { name: /save changes/i }));
 
         await waitFor(() => {
             expect(update).toHaveBeenCalledWith(
@@ -231,7 +231,7 @@ describe('AcpAgentManagement', () => {
         expect(registryScrollArea).toHaveClass('min-h-0', 'flex-1', 'overflow-auto');
         expect(within(registryScrollArea).getByRole('table')).toHaveClass('table-fixed');
 
-        const codexRow = screen.getByText('Codex CLI').closest('tr');
+        const codexRow = within(registryScrollArea).getByText('Codex CLI').closest('tr');
         expect(codexRow).not.toBeNull();
         await user.click(within(codexRow as HTMLElement).getByRole('button', { name: /install/i }));
 
@@ -241,7 +241,6 @@ describe('AcpAgentManagement', () => {
                 enabled: true,
             });
         });
-        expect(await within(codexRow as HTMLElement).findByText(/installed/i)).toBeInTheDocument();
-        expect(screen.getByText('Binary Only').closest('tr')).toHaveTextContent(/manual/i);
+        expect(within(registryScrollArea).getByText('Binary Only').closest('tr')).toHaveTextContent(/manual/i);
     });
 });

@@ -1,9 +1,9 @@
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle, PgliteDatabase } from 'drizzle-orm/pglite';
-import * as schema from './schema/schema';
 import { injectable } from 'inversify';
-import { runMigrations } from './migrator';
 import { getCoreLogger } from '../platform/CoreLogger';
+import { runMigrations } from './migrator';
+import * as schema from './schema/schema';
 
 @injectable()
 export class DatabaseManager {

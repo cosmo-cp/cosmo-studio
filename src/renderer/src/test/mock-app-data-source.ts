@@ -1,6 +1,4 @@
-import type { AppThunkExtra } from '@/lib/store/store';
-
-type AppDataSource = AppThunkExtra['appDataSource'];
+import type { AppDataSource } from '@/lib/store/app-data-source';
 
 type AppDataSourceOverrides = {
     chat?: Partial<AppDataSource['chat']>;

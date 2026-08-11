@@ -45,8 +45,8 @@ If logic can be **pure domain logic** (no Electron objects), it should live in `
     - Prod uses folder name `"database"`.
 - HTTP DB lives under `COSMO_HTTP_DATA_DIR/database`, defaulting to `.cosmo-http/database`.
 - Migrations are generated into `migrations/` via `drizzle-kit`.
-- `vite.main.config.ts` copies `migrations/` into `.vite/build/migrations` at build time so runtime migrations can run inside the packaged app.
-- `vite.http.config.ts` copies `migrations/` into `.vite/http/migrations` for the built HTTP service.
+- `vite.main.config.mts` copies `migrations/` into `.vite/build/migrations` at build time so runtime migrations can run inside the packaged app.
+- `vite.http.config.mts` copies `migrations/` into `.vite/http/migrations` for the built HTTP service.
 
 ## Security and privacy
 
@@ -57,10 +57,11 @@ If logic can be **pure domain logic** (no Electron objects), it should live in `
 
 ## Packaging/build notes
 
-- Main is bundled by Vite (`vite.main.config.ts`) through Electron Forge’s Vite plugin (`forge.config.ts`).
+- Main is bundled by Vite (`vite.main.config.mts`) through Electron Forge’s Vite plugin (`forge.config.ts`).
+- Root `postinstall` runs `scripts/patch-electron-forge-plugin-vite.mjs` to keep Forge's preload build compatible with the current Vite version.
 - PGlite is treated as external (not bundled); Forge hooks copy `@electric-sql/*` into the packaged app.
 - Renderer assets come from `src/renderer/out/` and are copied into the package via `src/NextPlugin.ts`.
-- HTTP is bundled by `vite.http.config.ts`; renderer assets are copied to `.vite/http/public`.
+- HTTP is bundled by `vite.http.config.mts`; renderer assets are copied to `.vite/http/public`.
 
 ## Logging
 

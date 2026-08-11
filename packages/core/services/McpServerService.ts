@@ -1,6 +1,4 @@
 import { inject, injectable } from 'inversify';
-import { CORETYPES } from '../types/types';
-import { McpServerRepository } from '../repositories/McpServerRepository';
 import {
     HttpTransportConfig,
     McpServer,
@@ -9,6 +7,8 @@ import {
     SseTransportConfig,
     StdioTransportConfig,
 } from '../dto';
+import { McpServerRepository } from '../repositories/McpServerRepository';
+import { CORETYPES } from '../types/types';
 
 const normalizeRequired = (value: string | null | undefined, field: string) => {
     if (!value || value.trim().length === 0) {

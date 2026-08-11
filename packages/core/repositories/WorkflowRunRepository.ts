@@ -1,9 +1,9 @@
-import { inject, injectable } from 'inversify';
 import { and, desc, eq } from 'drizzle-orm';
+import { inject, injectable } from 'inversify';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { workflowRun, workflowRunEvent, workflowVersion } from '../database/schema/schema';
-import { CORETYPES } from '../types/types';
 import { WorkflowRun, WorkflowRunEvent, WorkflowRunEventInsert, WorkflowRunInsert } from '../dto';
+import { CORETYPES } from '../types/types';
 
 @injectable()
 export class WorkflowRunRepository {

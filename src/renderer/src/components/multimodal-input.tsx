@@ -14,12 +14,12 @@ import {
 } from '@/components/ai-elements/model-selector';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { loadAcpAgents } from '@/lib/store/acp-agents-store';
-import { executeCommand } from '@/lib/store/commands-store';
-import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import { loadPersonas } from '@/lib/store/personas-store';
-import { loadProviders } from '@/lib/store/providers-store';
-import { loadWebSearchOptions } from '@/lib/store/web-search-store';
+import { useGetAcpAgentsQuery } from '@/features/acp-agents/acp-agents-api';
+import { useExecuteCommandMutation } from '@/features/commands/commands-api';
+import { useGetPersonasQuery } from '@/features/personas/personas-api';
+import { useGetProvidersQuery } from '@/features/providers/providers-api';
+import { useGetWebSearchOptionsQuery } from '@/features/web-search/web-search-api';
+import { useAppStore } from '@/lib/store/hooks';
 import { WEB_SEARCH_NONE_OPTION_ID, type WebSearchOption } from '@/lib/web-search-options';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';
@@ -106,15 +106,13 @@ export function MultimodalInput({
     selectedWebSearchOptionId: string;
     stop?: UseChatHelpers<UIMessage>['stop'];
 }) {
-    const dispatch = useAppDispatch();
-    const providers = useAppSelector((state) => state.providers.items);
-    const providersStatus = useAppSelector((state) => state.providers.status);
-    const personas = useAppSelector((state) => state.personas.items);
-    const personasStatus = useAppSelector((state) => state.personas.status);
-    const webSearchOptions = useAppSelector((state) => state.webSearch.options);
-    const webSearchOptionsStatus = useAppSelector((state) => state.webSearch.optionsStatus);
-    const agents = useAppSelector((state) => state.acpAgents.items);
-    const agentsStatus = useAppSelector((state) => state.acpAgents.status);
+    const parallelConfig = useAppStore((state) => state.parallelConfig);
+    const { data: providers = [] } = useGetProvidersQuery();
+    const { data: personas = [] } = useGetPersonasQuery();
+    const { data: agents = [] } = useGetAcpAgentsQuery();
+    const { data: webSearchOptionsPayload } = useGetWebSearchOptionsQuery(parallelConfig);
+    const [executeCommand] = useExecuteCommandMutation();
+    const webSearchOptions = webSearchOptionsPayload?.options ?? [];
     const [input, setInput] = useState<string>('');
     const [agentCwd, setAgentCwd] = useState<string>('');
     const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
@@ -127,30 +125,6 @@ export function MultimodalInput({
                       label: 'Disabled',
                   },
               ];
-
-    useEffect(() => {
-        if (providersStatus === 'idle') {
-            void dispatch(loadProviders());
-        }
-    }, [dispatch, providersStatus]);
-
-    useEffect(() => {
-        if (personasStatus === 'idle') {
-            void dispatch(loadPersonas());
-        }
-    }, [dispatch, personasStatus]);
-
-    useEffect(() => {
-        if (webSearchOptionsStatus === 'idle') {
-            void dispatch(loadWebSearchOptions());
-        }
-    }, [dispatch, webSearchOptionsStatus]);
-
-    useEffect(() => {
-        if (agentsStatus === 'idle') {
-            void dispatch(loadAcpAgents());
-        }
-    }, [agentsStatus, dispatch]);
 
     const selectedModelInfo = useMemo(() => {
         if (providers.length === 0) return undefined;
@@ -206,14 +180,11 @@ export function MultimodalInput({
             }
 
             if (resolvedText.trim().startsWith('/') && !resolvedText.trim().startsWith('/agent')) {
-                try {
-                    const result = await dispatch(executeCommand({ input: resolvedText })).unwrap();
-                    resolvedText = result.resolvedText;
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : 'Failed to execute command.';
-                    toast.error(message);
+                const commandResult = await executeCommand({ input: resolvedText });
+                if ('error' in commandResult) {
                     return;
                 }
+                resolvedText = commandResult.data.resolvedText;
             }
 
             const activeAgent = agents.find((agent) => agent.id === selectedAgentId);
@@ -266,9 +237,9 @@ export function MultimodalInput({
             chat.selectedProvider,
             chat.selectedRuntime,
             chat.selectedAgentId,
-            dispatch,
             agents,
             agentCwd,
+            executeCommand,
             selectedWebSearchOptionId,
             sendMessage,
         ],

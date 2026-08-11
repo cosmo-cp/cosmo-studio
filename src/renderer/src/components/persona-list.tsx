@@ -12,155 +12,34 @@ import {
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import { deletePersona, loadPersonas, savePersona } from '@/lib/store/personas-store';
-import type { Persona } from 'core/dto';
+import { usePersonaPageState } from '@/features/personas/use-persona-page-state';
 import { Edit, Plus, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-
-const getErrorMessage = (error: unknown) => {
-    if (error instanceof Error) {
-        return error.message;
-    }
-
-    if (typeof error === 'string') {
-        return error;
-    }
-
-    return 'Unable to create persona.';
-};
-
-const isUniqueNameError = (message: string) => {
-    const normalized = message.toLowerCase();
-    return normalized.includes('unique') || normalized.includes('duplicate') || normalized.includes('already exists');
-};
 
 export function PersonaList() {
-    const dispatch = useAppDispatch();
-    const personas = useAppSelector((state) => state.personas.items);
-    const personasStatus = useAppSelector((state) => state.personas.status);
-    const personasError = useAppSelector((state) => state.personas.errorMessage);
-    const [isOpen, setIsOpen] = useState(false);
-    const [name, setName] = useState('');
-    const [details, setDetails] = useState('');
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
-    const [listError, setListError] = useState<string | null>(null);
-    const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
-    const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
-
-    useEffect(() => {
-        if (personasStatus === 'idle') {
-            void dispatch(loadPersonas());
-        }
-    }, [dispatch, personasStatus]);
-
-    useEffect(() => {
-        if (!isOpen) {
-            setName('');
-            setDetails('');
-            setErrorMessage(null);
-            setIsSaving(false);
-            setEditingPersona(null);
-        }
-    }, [isOpen]);
-
-    const hasPersonas = personas.length > 0;
-    const trimmedName = name.trim();
-    const trimmedDetails = details.trim();
-
-    const canSave = useMemo(() => {
-        return trimmedName.length > 0 && trimmedDetails.length > 0 && !isSaving;
-    }, [trimmedName, trimmedDetails, isSaving]);
-
-    const handleSave = async () => {
-        if (!trimmedName && !trimmedDetails) {
-            setErrorMessage('Name and details are required.');
-            return;
-        }
-
-        if (!trimmedName) {
-            setErrorMessage('Name is required.');
-            return;
-        }
-
-        if (!trimmedDetails) {
-            setErrorMessage('Details are required.');
-            return;
-        }
-
-        if (editingPersona && !editingPersona.id) {
-            setErrorMessage('Unable to update persona without an id.');
-            return;
-        }
-
-        setIsSaving(true);
-        setErrorMessage(null);
-
-        try {
-            if (editingPersona) {
-                await dispatch(
-                    savePersona({
-                        personaId: editingPersona.id,
-                        input: {
-                            name: trimmedName,
-                            details: trimmedDetails,
-                        },
-                    }),
-                ).unwrap();
-            } else {
-                await dispatch(
-                    savePersona({
-                        input: {
-                            name: trimmedName,
-                            details: trimmedDetails,
-                        },
-                    }),
-                ).unwrap();
-            }
-            setIsOpen(false);
-        } catch (error) {
-            const message = getErrorMessage(error);
-            if (isUniqueNameError(message)) {
-                setErrorMessage('A persona with this name already exists.');
-            } else {
-                setErrorMessage(message);
-            }
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const handleEdit = (persona: Persona) => {
-        setEditingPersona(persona);
-        setName(persona.name ?? '');
-        setDetails(persona.details ?? '');
-        setErrorMessage(null);
-        setIsOpen(true);
-    };
-
-    const handleDelete = async (persona: Persona) => {
-        if (!persona.id) {
-            setListError('Unable to delete persona without an id.');
-            return;
-        }
-
-        const confirmed = window.confirm(`Delete persona "${persona.name}"?`);
-        if (!confirmed) {
-            return;
-        }
-
-        setIsDeletingId(persona.id);
-        setListError(null);
-
-        try {
-            await dispatch(deletePersona(persona.id)).unwrap();
-        } catch (error) {
-            setListError(getErrorMessage(error));
-        } finally {
-            setIsDeletingId(null);
-        }
-    };
+    const {
+        personas,
+        isLoading,
+        error,
+        hasPersonas,
+        isOpen,
+        name,
+        details,
+        errorMessage,
+        isSaving,
+        listError,
+        isDeletingId,
+        editingPersona,
+        canSave,
+        setIsOpen,
+        setName,
+        setDetails,
+        handleDialogOpenChange,
+        openCreateDialog,
+        editPersona,
+        savePersonaDraft,
+        deletePersonaById,
+        getErrorMessage,
+    } = usePersonaPageState();
 
     return (
         <>
@@ -170,17 +49,17 @@ export function PersonaList() {
                         <h4 className="text-lg font-medium">Personas</h4>
                         <p className="text-xs text-muted-foreground">Create and manage personas</p>
                     </div>
-                    <Button onClick={() => setIsOpen(true)}>
+                    <Button onClick={openCreateDialog}>
                         <Plus className="h-4 w-4" />
                         <span>Add persona</span>
                     </Button>
                 </div>
-                {(listError ?? (personasStatus === 'failed' ? personasError : null)) ? (
+                {(listError ?? (error ? getErrorMessage(error) : null)) ? (
                     <p className="text-sm text-destructive" role="alert">
-                        {listError ?? personasError}
+                        {listError ?? getErrorMessage(error)}
                     </p>
                 ) : null}
-                {personasStatus === 'loading' && !hasPersonas ? (
+                {isLoading && !hasPersonas ? (
                     <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
                         Loading personas...
                     </div>
@@ -208,7 +87,7 @@ export function PersonaList() {
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon-sm"
-                                                onClick={() => handleEdit(persona)}
+                                                onClick={() => editPersona(persona)}
                                                 disabled={!persona.id}
                                                 aria-label={`Edit ${persona.name}`}
                                             >
@@ -218,7 +97,7 @@ export function PersonaList() {
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon-sm"
-                                                onClick={() => handleDelete(persona)}
+                                                onClick={() => deletePersonaById(persona)}
                                                 disabled={!persona.id || isDeletingId === persona.id}
                                                 aria-label={`Delete ${persona.name}`}
                                             >
@@ -237,7 +116,7 @@ export function PersonaList() {
                 )}
             </section>
 
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
                         <DialogTitle>{editingPersona ? 'Edit persona' : 'Add persona'}</DialogTitle>
@@ -284,7 +163,7 @@ export function PersonaList() {
                         <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} disabled={isSaving}>
                             Cancel
                         </Button>
-                        <Button type="button" onClick={handleSave} disabled={!canSave}>
+                        <Button type="button" onClick={savePersonaDraft} disabled={!canSave}>
                             {isSaving ? 'Saving...' : editingPersona ? 'Update persona' : 'Save persona'}
                         </Button>
                     </DialogFooter>

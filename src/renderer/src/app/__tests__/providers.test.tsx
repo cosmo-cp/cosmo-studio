@@ -3,13 +3,14 @@ import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { Providers } from '../providers';
 
-const { themeProviderMock, storeProviderMock } = vi.hoisted(() => ({
+const { themeProviderMock, storeProviderMock, uiFeedbackHostMock } = vi.hoisted(() => ({
     themeProviderMock: vi.fn(({ children }: { children: ReactNode }) => (
         <div data-testid="theme-provider">{children}</div>
     )),
     storeProviderMock: vi.fn(({ children }: { children: ReactNode }) => (
         <section data-testid="store-provider">{children}</section>
     )),
+    uiFeedbackHostMock: vi.fn(() => <div data-testid="ui-feedback-host" />),
 }));
 
 vi.mock('next-themes', () => ({
@@ -18,6 +19,10 @@ vi.mock('next-themes', () => ({
 
 vi.mock('@/app/store-provider', () => ({
     StoreProvider: storeProviderMock,
+}));
+
+vi.mock('@/components/ui-feedback-host', () => ({
+    UiFeedbackHost: uiFeedbackHostMock,
 }));
 
 describe('Providers', () => {
@@ -37,6 +42,7 @@ describe('Providers', () => {
             disableTransitionOnChange: true,
         });
         expect(screen.getByTestId('store-provider')).toContainElement(screen.getByTestId('theme-provider'));
+        expect(screen.getByTestId('theme-provider')).toContainElement(screen.getByTestId('ui-feedback-host'));
         expect(screen.getByTestId('theme-provider')).toContainElement(screen.getByTestId('child'));
     });
 });

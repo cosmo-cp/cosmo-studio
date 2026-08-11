@@ -33,12 +33,8 @@ describe('generatePreloadApiFiles', () => {
             'src/preload/http-api/streaming.ts',
             'src/preload/rpc-api.ts',
         ]);
-        expect(files['src/preload/api.ts']).toContain(
-            "import { streamingHttpApi } from './http-api/streaming';",
-        );
-        expect(files['src/preload/api.ts']).toContain(
-            "import type { StreamingApi } from './contracts/streaming';",
-        );
+        expect(files['src/preload/api.ts']).toContain("import { streamingHttpApi } from './http-api/streaming';");
+        expect(files['src/preload/api.ts']).toContain("import type { StreamingApi } from './contracts/streaming';");
         expect(files['src/preload/api.ts']).toContain('export interface CosmoApi {');
         expect(files['src/preload/api.ts']).toContain('streaming: streamingHttpApi,');
         expect(files['src/preload/api/streaming.ts']).toContain(
@@ -51,9 +47,7 @@ describe('generatePreloadApiFiles', () => {
         expect(files['src/preload/http-api/streaming.ts']).toContain(
             "throw new Error('Streaming is handled by createChatTransport() in HTTP builds.');",
         );
-        expect(files['src/preload/rpc-api.ts']).toContain(
-            "import { streamingApi } from './api/streaming';",
-        );
+        expect(files['src/preload/rpc-api.ts']).toContain("import { streamingApi } from './api/streaming';");
         expect(files['src/preload/rpc-api.ts']).toContain('export const rpcApi: CosmoApi = {');
         expect(files['src/preload/api/streaming.ts']).toContain(
             'const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);',

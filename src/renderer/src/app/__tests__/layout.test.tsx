@@ -17,6 +17,7 @@ describe('RootLayout', () => {
         expect(tree.type).toBe('html');
         expect(tree.props.lang).toBe('en');
         expect(tree.props.suppressHydrationWarning).toBe(true);
+        expect(tree.props['data-scroll-behavior']).toBe('smooth');
 
         const body = tree.props.children;
         expect(body.type).toBe('body');

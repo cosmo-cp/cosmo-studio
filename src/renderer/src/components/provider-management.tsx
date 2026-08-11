@@ -8,21 +8,12 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import {
-    deleteProvider,
-    loadAvailableModelsForProvider,
-    loadProviders,
-    saveProvider,
-} from '@/lib/store/providers-store';
-import { defineStepper } from '@stepperize/react';
+import { useProviderPageState } from '@/features/providers/use-provider-page-state';
 import { ModelProviderTypeEnum } from 'core/database/schema/modelProviderSchema';
-import type { NewModel, ProviderWithModels } from 'core/dto';
-import { ProviderCatalog, ProviderCatalogByType } from 'core/providerCatalog';
+import { ProviderCatalogByType } from 'core/providerCatalog';
 import { ArrowDownToLine, ArrowUpFromLine, Brain, Edit, Trash2, Wrench } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import React, { useEffect, useState } from 'react';
-import { logger } from '../../logger';
+import React from 'react';
 
 export const ProviderInfo: Record<ModelProviderTypeEnum, { name: string; description: string }> = Object.values(
     ProviderCatalogByType,
@@ -35,272 +26,43 @@ export const ProviderInfo: Record<ModelProviderTypeEnum, { name: string; descrip
 );
 
 export function ProviderManagement() {
-    const dispatch = useAppDispatch();
     const { resolvedTheme } = useTheme();
-    const providers = useAppSelector((state) => state.providers.items);
-    const providersStatus = useAppSelector((state) => state.providers.status);
-    const providersError = useAppSelector((state) => state.providers.errorMessage);
-    const [models, setModels] = useState<NewModel[]>([]);
-    const [isOpen, setIsOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [isLoadingModels, setIsLoadingModels] = useState(false);
-    const [isDeleting, setIsDeleting] = useState<string | null>(null);
-    const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; providerId: string | null }>({
-        isOpen: false,
-        providerId: null,
-    });
-
-    // Form state
-    const [selectedProviderType, setSelectedProviderType] = useState<ModelProviderTypeEnum | null>(null);
-    const [name, setName] = useState('');
-    const [apiKey, setApiKey] = useState('');
-    const [apiUrl, setApiUrl] = useState('');
-    const [editingProvider, setEditingProvider] = useState<ProviderWithModels | null>(null);
-    const [selectedModels, setSelectedModels] = useState<NewModel[]>([]);
-    const [providerSearch, setProviderSearch] = useState('');
-
-    // Providers that don't require an API key
-    const LOCAL_PROVIDERS = [ModelProviderTypeEnum.OLLAMA, ModelProviderTypeEnum.LMSTUDIO];
-    const isLocalProvider = selectedProviderType !== null && LOCAL_PROVIDERS.includes(selectedProviderType);
-
-    const { useStepper } = defineStepper([
-        { id: 'step-1', title: 'Select Provider' },
-        { id: 'step-2', title: 'Enter Info' },
-        { id: 'step-3', title: 'Select Models' },
-    ]);
-
-    const methods = useStepper();
-
-    useEffect(() => {
-        if (providersStatus === 'idle') {
-            void dispatch(loadProviders());
-        }
-    }, [dispatch, providersStatus]);
-
-    const handleOpenDialog = () => {
-        setEditingProvider(null);
-        setSelectedProviderType(null);
-        setName('');
-        setApiKey('');
-        setApiUrl('');
-        setSelectedModels([]);
-        setModels([]);
-        setIsOpen(true);
-        setError(null);
-        setProviderSearch('');
-        methods.goTo('step-1');
-    };
-
-    const handleCloseDialog = () => {
-        setIsOpen(false);
-        setModels([]);
-    };
-
-    const handleDialogOpenChange = (open: boolean) => {
-        if (!open) {
-            handleCloseDialog();
-            return;
-        }
-        setIsOpen(true);
-    };
-
-    const getErrorMessage = (error: unknown): string => {
-        if (error instanceof Error) {
-            return error.message;
-        }
-        return 'Unexpected error';
-    };
-
-    const validateProviderForm = () => {
-        const trimmedName = name.trim();
-        const trimmedApiKey = apiKey.trim();
-        const trimmedApiUrl = apiUrl.trim();
-
-        if (!trimmedName) {
-            return 'Name is required.';
-        }
-        if (!isLocalProvider && !trimmedApiKey) {
-            return 'API key is required.';
-        }
-
-        if (selectedProviderType === ModelProviderTypeEnum.CUSTOM && !trimmedApiUrl) {
-            return 'API URL is required for custom providers.';
-        }
-
-        if (trimmedApiUrl) {
-            try {
-                // Validate URL format before hitting IPC/database.
-                new URL(trimmedApiUrl);
-            } catch {
-                return 'API URL must be a valid URL.';
-            }
-        }
-
-        return null;
-    };
-
-    const handleProviderTypeChange = (type: ModelProviderTypeEnum) => {
-        // Reset fields when picking a provider type from the catalog
-        // to avoid carrying over details from a previous attempt or failed attempt.
-        // We only preserve the details if we were already editing a provider of the same type.
-        if (type !== selectedProviderType || !editingProvider) {
-            setApiKey('');
-            setApiUrl('');
-            setSelectedModels([]);
-            setModels([]);
-            setError(null);
-        }
-
-        setSelectedProviderType(type);
-        const info = ProviderInfo[type];
-        setName(info.name);
-        methods.next();
-    };
-
-    const loadModelsForSelectedProvider = async () => {
-        if (!selectedProviderType) {
-            return;
-        }
-
-        const currentType = selectedProviderType;
-        setIsLoadingModels(true);
-        setError(null);
-        setModels([]);
-
-        try {
-            const values = await dispatch(
-                loadAvailableModelsForProvider({
-                    type: selectedProviderType,
-                    apiKey,
-                    apiUrl,
-                    name,
-                }),
-            ).unwrap();
-
-            // Prevent updating state if the user has navigated away or changed providers
-            if (currentType === selectedProviderType) {
-                setModels(values);
-                if (values.length === 0) {
-                    setError('No models found for this provider.');
-                }
-            }
-        } catch (error) {
-            if (currentType === selectedProviderType) {
-                logger.error(error);
-                setError('Failed to load models for this provider.');
-            }
-        } finally {
-            if (currentType === selectedProviderType) {
-                setIsLoadingModels(false);
-            }
-        }
-    };
-
-    const handleAddProvider = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedProviderType || isSubmitting) return;
-
-        const validationError = validateProviderForm();
-        if (validationError) {
-            setError(validationError);
-            return;
-        }
-
-        setIsSubmitting(true);
-        setError(null);
-
-        try {
-            const isCustomProvider = selectedProviderType === ModelProviderTypeEnum.CUSTOM;
-            const providerData = {
-                type: selectedProviderType,
-                name: name.trim(),
-                apiKey: apiKey.trim(),
-                apiUrl: apiUrl.trim() || (isCustomProvider ? '' : undefined),
-            } as const;
-
-            if (editingProvider) {
-                await dispatch(
-                    saveProvider({
-                        providerId: editingProvider.id,
-                        providerData,
-                        models: selectedModels,
-                    }),
-                ).unwrap();
-                handleCloseDialog();
-            } else {
-                await dispatch(
-                    saveProvider({
-                        providerData,
-                        models: selectedModels,
-                    }),
-                ).unwrap();
-                handleCloseDialog();
-            }
-        } catch (err) {
-            const errorMessage = getErrorMessage(err);
-            logger.error(`Failed to ${editingProvider ? 'update' : 'add'} provider:`, err);
-            setError(errorMessage);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleEditProvider = (provider: ProviderWithModels) => {
-        setEditingProvider(provider);
-        setSelectedProviderType(provider.type);
-        setName(provider.name ?? '');
-        setApiKey(provider.apiKey ?? '');
-        setApiUrl(provider.apiUrl ?? '');
-        setSelectedModels(provider.models ?? []);
-        setIsOpen(true);
-        setError(null);
-        methods.goTo('step-2');
-    };
-
-    const handleDeleteClick = (providerId: string) => {
-        setDeleteConfirmation({ isOpen: true, providerId });
-    };
-
-    const handleConfirmDelete = async () => {
-        if (!deleteConfirmation.providerId) return;
-        const providerId = deleteConfirmation.providerId;
-
-        setIsDeleting(providerId);
-        setDeleteConfirmation({ isOpen: false, providerId: null });
-
-        try {
-            await dispatch(deleteProvider(providerId)).unwrap();
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to delete provider';
-            logger.error('Failed to delete provider:', err);
-            setError(errorMessage);
-        } finally {
-            setIsDeleting(null);
-        }
-    };
-
-    const handleModelToggle = (modelId: string) => {
-        setSelectedModels((prev) => {
-            const modelIdSet = new Set(prev.map((m) => m.modelId));
-            if (modelIdSet.has(modelId)) {
-                return prev.filter((m) => m.modelId !== modelId);
-            }
-            const modelToAdd = models.find((m) => m.modelId === modelId);
-            if (!modelToAdd) {
-                return prev;
-            }
-            return [...prev, modelToAdd];
-        });
-    };
-
-    const filteredProviders = ProviderCatalog.filter((provider) => {
-        if (!providerSearch.trim()) {
-            return true;
-        }
-        const query = providerSearch.trim().toLowerCase();
-        return provider.name.toLowerCase().includes(query) || provider.type.toLowerCase().includes(query);
-    });
+    const {
+        providers,
+        isLoadingProviders,
+        providersError,
+        models,
+        isOpen,
+        error,
+        isLoadingModels,
+        isDeleting,
+        deleteConfirmation,
+        selectedProviderType,
+        name,
+        apiKey,
+        apiUrl,
+        editingProvider,
+        selectedModels,
+        providerSearch,
+        filteredProviders,
+        isLocalProvider,
+        stepper,
+        setName,
+        setApiKey,
+        setApiUrl,
+        setProviderSearch,
+        handleDialogOpenChange,
+        openCreateDialog,
+        closeDialog,
+        changeProviderType,
+        loadModels,
+        saveProviderDraft,
+        editProvider,
+        requestDeleteProvider,
+        clearDeleteConfirmation,
+        confirmDeleteProvider,
+        toggleModel,
+    } = useProviderPageState();
 
     const capabilityClassName = (isPresent: boolean) => (isPresent ? 'text-green-600' : 'text-red-600');
 
@@ -332,7 +94,7 @@ export function ProviderManagement() {
         </Tooltip>
     );
 
-    if (providersStatus === 'loading' && providers.length === 0) {
+    if (isLoadingProviders && providers.length === 0) {
         return <div className="text-sm text-muted-foreground">Loading providers...</div>;
     }
 
@@ -345,7 +107,7 @@ export function ProviderManagement() {
                         Manage your AI provider configurations and API keys.
                     </p>
                 </div>
-                <Button onClick={handleOpenDialog} className="ml-auto">
+                <Button onClick={openCreateDialog} className="ml-auto">
                     Add Provider
                 </Button>
             </div>
@@ -379,7 +141,7 @@ export function ProviderManagement() {
                                         type="button"
                                         variant="ghost"
                                         size="icon-sm"
-                                        onClick={() => handleEditProvider(provider)}
+                                        onClick={() => editProvider(provider)}
                                         aria-label="Edit provider"
                                         title="Edit provider"
                                     >
@@ -389,7 +151,7 @@ export function ProviderManagement() {
                                         type="button"
                                         variant="ghost"
                                         size="icon-sm"
-                                        onClick={() => handleDeleteClick(provider.id)}
+                                        onClick={() => requestDeleteProvider(provider.id)}
                                         disabled={isDeleting === provider.id}
                                         aria-label="Delete provider"
                                         title="Delete provider"
@@ -414,7 +176,7 @@ export function ProviderManagement() {
                         <DialogTitle>{editingProvider ? 'Edit Provider' : 'Add Provider'}</DialogTitle>
                     </DialogHeader>
                     <div className="py-2">
-                        {methods.is('step-1') && (
+                        {stepper.is('step-1') && (
                             <div className="space-y-4">
                                 <div>
                                     <p className="text-sm text-muted-foreground mb-2">Select a provider type:</p>
@@ -440,7 +202,7 @@ export function ProviderManagement() {
                                                 <button
                                                     key={providerType.type}
                                                     type="button"
-                                                    onClick={() => handleProviderTypeChange(providerType.type)}
+                                                    onClick={() => changeProviderType(providerType.type)}
                                                     className={`w-full flex items-center gap-3 p-3 border rounded-lg transition-colors text-left ${selectedProviderType === providerType.type ? 'bg-secondary text-secondary-foreground' : 'hover:bg-accent'}`}
                                                 >
                                                     <ProviderIcon
@@ -466,7 +228,7 @@ export function ProviderManagement() {
                                 </ScrollArea>
                             </div>
                         )}
-                        {selectedProviderType && methods.is('step-2') && (
+                        {selectedProviderType && stepper.is('step-2') && (
                             <div className="space-y-4 pr-2 max-h-[60dvh] overflow-y-auto">
                                 <div className="flex items-center gap-2 pb-2 border-b">
                                     <ProviderIcon type={selectedProviderType} theme={resolvedTheme} size={32} />
@@ -527,7 +289,7 @@ export function ProviderManagement() {
                                 )}
                             </div>
                         )}
-                        {methods.is('step-3') && (
+                        {stepper.is('step-3') && (
                             //iterate over the models
                             <div className="space-y-4">
                                 <ScrollArea type="always" className="h-[50dvh] rounded-md border w-full">
@@ -549,7 +311,7 @@ export function ProviderManagement() {
                                                         checked={selectedModels.some(
                                                             (m) => m.modelId === model.modelId,
                                                         )}
-                                                        onChange={() => handleModelToggle(model.modelId)}
+                                                        onChange={() => toggleModel(model.modelId)}
                                                     />
                                                     <label
                                                         htmlFor={model.modelId}
@@ -598,39 +360,39 @@ export function ProviderManagement() {
                         )}
                     </div>
                     <div className="mt-2 space-y-4">
-                        {(error ?? providersError) && (
+                        {(error ?? (providersError ? providersError : null)) && (
                             <div className="p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-600">
-                                {error ?? providersError}
+                                {error ?? providersError ?? 'Failed to load providers'}
                             </div>
                         )}
                         <DialogFooter>
-                            {!methods.isFirst && (
-                                <Button type="button" variant="outline" onClick={() => methods.prev()}>
+                            {!stepper.isFirst && (
+                                <Button type="button" variant="outline" onClick={() => stepper.prev()}>
                                     Prev
                                 </Button>
                             )}
-                            {!methods.isLast && !(selectedProviderType === ModelProviderTypeEnum.CUSTOM) && (
+                            {!stepper.isLast && !(selectedProviderType === ModelProviderTypeEnum.CUSTOM) && (
                                 <Button
                                     type="button"
-                                    disabled={methods.current.id === 'step-1' && !selectedProviderType}
+                                    disabled={stepper.current.id === 'step-1' && !selectedProviderType}
                                     onClick={() => {
-                                        if (methods.current.id === 'step-2') {
-                                            void loadModelsForSelectedProvider();
+                                        if (stepper.current.id === 'step-2') {
+                                            void loadModels();
                                         }
-                                        methods.next();
+                                        stepper.next();
                                     }}
                                 >
                                     Next
                                 </Button>
                             )}
-                            {(methods.isLast ||
-                                (methods.current.id === 'step-2' &&
+                            {(stepper.isLast ||
+                                (stepper.current.id === 'step-2' &&
                                     selectedProviderType === ModelProviderTypeEnum.CUSTOM)) && (
-                                <Button type="button" onClick={handleAddProvider}>
+                                <Button type="button" onClick={(event) => void saveProviderDraft(event)}>
                                     Save
                                 </Button>
                             )}
-                            <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                            <Button type="button" variant="outline" onClick={closeDialog}>
                                 Cancel
                             </Button>
                         </DialogFooter>
@@ -639,12 +401,16 @@ export function ProviderManagement() {
             </Dialog>
             <ConfirmDialog
                 open={deleteConfirmation.isOpen}
-                onOpenChange={(open) => setDeleteConfirmation((prev) => ({ ...prev, isOpen: open }))}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        clearDeleteConfirmation();
+                    }
+                }}
                 title="Delete Provider"
                 description="Are you sure you want to delete this provider? This action cannot be undone."
                 confirmText="Delete"
                 variant="destructive"
-                onConfirm={handleConfirmDelete}
+                onConfirm={confirmDeleteProvider}
             />
         </div>
     );

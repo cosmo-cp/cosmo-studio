@@ -1,15 +1,9 @@
 'use client';
 
-import { getDefaultSettingsChildHref } from '@/lib/settings-navigation';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useSettingsPageState } from '@/features/settings/use-settings-page-state';
 
 export default function SettingsPage() {
-    const router = useRouter();
-
-    useEffect(() => {
-        router.replace(getDefaultSettingsChildHref());
-    }, [router]);
+    useSettingsPageState();
 
     return (
         <div className="flex h-full w-full items-center justify-center p-4">

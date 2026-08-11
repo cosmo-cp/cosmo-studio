@@ -74,7 +74,7 @@ describe('WebSearchManagement', () => {
         expect(screen.getByText(/api key saved securely/i)).toBeInTheDocument();
     });
 
-    it('saves Parallel settings in Redux state and updates the card state', async () => {
+    it('saves Parallel settings in Zustand state and updates the card state', async () => {
         const user = userEvent.setup();
 
         render(
@@ -107,7 +107,7 @@ describe('WebSearchManagement', () => {
         await user.click(screen.getByRole('button', { name: /save parallel/i }));
 
         expect(await screen.findAllByText(/^configured$/i)).toHaveLength(1);
-        expect(screen.getByText(/api key kept in redux state/i)).toBeInTheDocument();
+        expect(screen.getByText(/api key kept in zustand state/i)).toBeInTheDocument();
         expect(screen.getByText(/parallel search and extraction are available/i)).toBeInTheDocument();
     });
 });

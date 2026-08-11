@@ -1,10 +1,10 @@
-import { inject, injectable } from 'inversify';
 import { eq, getTableColumns } from 'drizzle-orm';
-import { CORETYPES } from '../types/types';
+import { inject, injectable } from 'inversify';
 import { DatabaseManager } from '../database/DatabaseManager';
-import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
-import { WebSearchConfig, WebSearchConfigCreateInput, WebSearchConfigInsert } from '../dto';
 import { webSearchConfig, WebSearchProviderTypeEnum } from '../database/schema/webSearchConfigSchema';
+import { WebSearchConfig, WebSearchConfigCreateInput, WebSearchConfigInsert } from '../dto';
+import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
+import { CORETYPES } from '../types/types';
 
 @injectable()
 export class WebSearchConfigRepository {

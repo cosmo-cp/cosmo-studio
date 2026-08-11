@@ -1,10 +1,4 @@
-import { inject, injectable } from 'inversify';
-import { z } from 'zod';
-import { IpcController, IpcHandler } from '../ipc/Decorators';
-import { Controller } from './Controller';
-import { CORETYPES } from 'core/types/types';
-import { AcpAgentService } from 'core/services/AcpAgentService';
-import { AcpRegistryService } from 'core/services/AcpRegistryService';
+import { AcpAgentInstallStatusEnum, AcpAgentSourceEnum } from 'core/database/schema/acpAgentSchema';
 import type {
     AcpAgentCreateInput,
     AcpAgentTestResult,
@@ -13,9 +7,15 @@ import type {
     AcpRegistryInstallInput,
     AcpRegistryView,
 } from 'core/dto';
-import { TYPES } from '../types';
+import { AcpAgentService } from 'core/services/AcpAgentService';
+import { AcpRegistryService } from 'core/services/AcpRegistryService';
+import { CORETYPES } from 'core/types/types';
+import { inject, injectable } from 'inversify';
+import { z } from 'zod';
+import { IpcController, IpcHandler } from '../ipc/Decorators';
 import { AcpAgentRuntimeService } from '../services/AcpAgentRuntimeService';
-import { AcpAgentInstallStatusEnum, AcpAgentSourceEnum } from 'core/database/schema/acpAgentSchema';
+import { TYPES } from '../types';
+import { Controller } from './Controller';
 
 const acpAgentCreateSchema = z
     .object({

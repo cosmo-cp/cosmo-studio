@@ -1,8 +1,8 @@
-import { inject, injectable } from 'inversify';
-import { CORETYPES } from '../types/types';
-import { MessageRepository } from '../repositories/MessageRepository';
-import { Message, NewMessage } from '../dto';
 import { UIMessage } from 'ai';
+import { inject, injectable } from 'inversify';
+import { Message, NewMessage } from '../dto';
+import { MessageRepository } from '../repositories/MessageRepository';
+import { CORETYPES } from '../types/types';
 import { toUiMessages } from '../uiMessageMapper';
 
 @injectable()

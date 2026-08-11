@@ -9,6 +9,7 @@
         "src/renderer"
     ],
     "scripts": {
+        "postinstall": "node scripts/patch-electron-forge-plugin-vite.mjs",
         "generate-api": "ts-node -r tsconfig-paths/register scripts/generate-api.ts && npm run prettier",
         "download-provider-logos": "ts-node scripts/download-provider-logos.ts",
         "next:dev": "cd src/renderer && npm run dev",
@@ -19,7 +20,7 @@
         "start:http:dev": "ts-node -r tsconfig-paths/register src/main/http/index.ts",
         "build:renderer:electron": "cd src/renderer && cross-env NEXT_PUBLIC_COSMO_BACKEND=electron npm run build",
         "build:renderer:http": "cd src/renderer && cross-env NEXT_PUBLIC_COSMO_BACKEND=http NEXT_PUBLIC_COSMO_API_BASE=/api npm run build",
-        "build:http": "npm run generate-api && npm run build:renderer:http && cross-env NODE_ENV=production COSMO_RUNTIME_TARGET=http vite build --config vite.http.config.ts",
+        "build:http": "npm run generate-api && npm run build:renderer:http && cross-env NODE_ENV=production COSMO_RUNTIME_TARGET=http vite build --config vite.http.config.mts",
         "start:http": "node .vite/http/main.js",
         "package": "npm run build:renderer:electron && cross-env NODE_ENV=production COSMO_RUNTIME_TARGET=electron electron-forge package",
         "make": "npm run build:renderer:electron && cross-env NODE_ENV=production COSMO_RUNTIME_TARGET=electron electron-forge make",
@@ -34,9 +35,9 @@
         "db:pull": "drizzle-kit pull",
         "db:check": "drizzle-kit check",
         "db:up": "drizzle-kit up",
-        "test": "vitest run",
-        "test:coverage": "vitest run --coverage",
-        "test:watch": "vitest"
+        "test": "vitest run --config vitest.config.mts",
+        "test:coverage": "vitest run --coverage --config vitest.config.mts",
+        "test:watch": "vitest --config vitest.config.mts"
     },
     "keywords": [],
     "author": {

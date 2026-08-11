@@ -3,8 +3,8 @@ import { Body, Controller, HttpStatus, Param, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { deserialize, serialize } from 'superjson';
 import { z } from 'zod';
-import { IPC_ARGS_SCHEMA_METADATA_KEY, IPC_CONTROLLER_METADATA_KEY, IPC_HANDLE_METADATA_KEY } from '../ipc/Decorators';
 import { Controller as CosmoController } from '../controllers/Controller';
+import { IPC_ARGS_SCHEMA_METADATA_KEY, IPC_CONTROLLER_METADATA_KEY, IPC_HANDLE_METADATA_KEY } from '../ipc/Decorators';
 import { TYPES } from '../types';
 import { httpContainer } from './http-container';
 

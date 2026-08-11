@@ -8,15 +8,15 @@ import {
     type ToolSet,
     type UIMessageChunk,
 } from 'ai';
-import { inject, injectable } from 'inversify';
 import type { ChatSendMessageArgs } from 'core/dto';
-import { CORETYPES } from 'core/types/types';
-import { ModelProviderService } from 'core/services/ModelProviderService';
-import { MessageService } from 'core/services/MessageService';
-import { PersonaService } from 'core/services/PersonaService';
-import { McpClientManager } from 'core/services/McpClientManager';
-import { WebSearchConfigService } from 'core/services/WebSearchConfigService';
 import { getCoreLogger } from 'core/platform/CoreLogger';
+import { McpClientManager } from 'core/services/McpClientManager';
+import { MessageService } from 'core/services/MessageService';
+import { ModelProviderService } from 'core/services/ModelProviderService';
+import { PersonaService } from 'core/services/PersonaService';
+import { WebSearchConfigService } from 'core/services/WebSearchConfigService';
+import { CORETYPES } from 'core/types/types';
+import { inject, injectable } from 'inversify';
 import { TYPES } from '../types';
 import { AcpAgentRuntimeService } from './AcpAgentRuntimeService';
 import { createExaWebSearchTool } from './ExaWebSearchTool';

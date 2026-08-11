@@ -1,10 +1,10 @@
-import { Controller, Get, HttpCode, Post, Req, Res, Body } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
 import { pipeUIMessageStreamToResponse, type UIMessage } from 'ai';
-import { z } from 'zod';
 import type { ChatSendMessageArgs } from 'core/dto';
-import { CORETYPES } from 'core/types/types';
 import { ChatService } from 'core/services/ChatService';
+import { CORETYPES } from 'core/types/types';
+import type { Request, Response } from 'express';
+import { z } from 'zod';
 import { ChatStreamingService } from '../services/ChatStreamingService';
 import { TYPES } from '../types';
 import { httpContainer } from './http-container';

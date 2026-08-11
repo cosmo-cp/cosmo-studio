@@ -1,9 +1,9 @@
 import path from 'path';
 import { Module } from '@nestjs/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { RpcController } from './RpcController';
 import { ChatHttpController } from './ChatHttpController';
 import { HealthController } from './HealthController';
+import { RpcController } from './RpcController';
 import { WorkflowRunHttpController } from './WorkflowRunHttpController';
 
 const rendererOutDir = path.resolve(__dirname, 'public');

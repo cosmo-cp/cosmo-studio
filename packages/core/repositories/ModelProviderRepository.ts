@@ -1,9 +1,8 @@
-import { inject, injectable } from 'inversify';
-import { model, modelProvider } from '../database/schema/modelProviderSchema'; // Use Drizzle-derived types
 import { and, eq, getTableColumns } from 'drizzle-orm';
-import { CORETYPES } from '../types/types';
+import { inject, injectable } from 'inversify';
 import { DatabaseManager } from '../database/DatabaseManager';
-import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
+import { model, modelProvider } from '../database/schema/modelProviderSchema'; // Use Drizzle-derived types
+
 import {
     Model,
     ModelProvider,
@@ -13,6 +12,8 @@ import {
     NewModel,
     ProviderWithModels,
 } from '../dto';
+import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
+import { CORETYPES } from '../types/types';
 
 @injectable()
 export class ModelProviderRepository {
@@ -50,7 +51,7 @@ export class ModelProviderRepository {
     }
 
     public async findProviderById(id: string): Promise<ProviderWithModels | undefined> {
-        const result = await this.db.query.modelProvider.findFirst({
+        return await this.db.query.modelProvider.findFirst({
             columns: {
                 apiKey: false,
             },
@@ -59,7 +60,6 @@ export class ModelProviderRepository {
                 models: true,
             },
         });
-        return result;
     }
 
     public async getAllWithModels(): Promise<ProviderWithModels[]> {

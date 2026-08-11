@@ -1,10 +1,10 @@
 import { inject, injectable } from 'inversify';
-import { CORETYPES } from '../types/types';
-import { CommandRepository } from '../repositories/CommandRepository';
-import { Command, CommandCreateInput, CommandDefinition, CommandExecution, CommandUpdateInput } from '../dto';
-import { findCommand, mergeCommands } from '../commands/registry';
 import { normalizeCommandName, parseCommandInput } from '../commands/parser';
+import { findCommand, mergeCommands } from '../commands/registry';
 import { renderCommandTemplate } from '../commands/template';
+import { Command, CommandCreateInput, CommandDefinition, CommandExecution, CommandUpdateInput } from '../dto';
+import { CommandRepository } from '../repositories/CommandRepository';
+import { CORETYPES } from '../types/types';
 
 // Ensure required text inputs are present before persistence.
 const normalizeRequired = (value: string | null | undefined, field: string) => {

@@ -1,9 +1,9 @@
-import { inject, injectable } from 'inversify';
 import { createMCPClient, type MCPClient, type MCPTransport } from '@ai-sdk/mcp';
 import type { ToolSet } from 'ai';
+import { inject, injectable } from 'inversify';
+import { HttpTransportConfig, McpToolDefinition, SseTransportConfig, StdioTransportConfig } from '../dto';
 import { CORETYPES } from '../types/types';
 import { McpServerService } from './McpServerService';
-import { HttpTransportConfig, McpToolDefinition, SseTransportConfig, StdioTransportConfig } from '../dto';
 
 interface McpClientInstance {
     client: MCPClient;

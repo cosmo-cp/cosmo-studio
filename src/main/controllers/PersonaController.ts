@@ -1,10 +1,10 @@
+import type { NewPersona, Persona } from 'core/dto';
+import { PersonaService } from 'core/services/PersonaService';
+import { CORETYPES } from 'core/types/types';
 import { inject, injectable } from 'inversify';
 import { z } from 'zod';
 import { IpcController, IpcHandler } from '../ipc/Decorators';
-import { CORETYPES } from 'core/types/types';
-import { PersonaService } from 'core/services/PersonaService';
 import { Controller } from './Controller';
-import type { NewPersona, Persona } from 'core/dto';
 
 const newPersonaSchema = z.custom<NewPersona>();
 const personaUpdateSchema = z.custom<Partial<NewPersona>>();

@@ -1,16 +1,18 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
+
+const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const copyRuntimeAssetsPlugin = () => {
     return {
         name: 'copy-http-runtime-assets',
         closeBundle: function () {
-            const outDir = path.resolve(__dirname, '.vite/http');
-            const migrationsSource = path.resolve(__dirname, 'migrations');
+            const outDir = path.resolve(dirname, '.vite/http');
+            const migrationsSource = path.resolve(dirname, 'migrations');
             const migrationsTarget = path.resolve(outDir, 'migrations');
-            const rendererSource = path.resolve(__dirname, 'src/renderer/out');
+            const rendererSource = path.resolve(dirname, 'src/renderer/out');
             const rendererTarget = path.resolve(outDir, 'public');
 
             fs.mkdirSync(migrationsTarget, { recursive: true });
@@ -25,6 +27,9 @@ const copyRuntimeAssetsPlugin = () => {
 };
 
 export default defineConfig({
+    resolve: {
+        tsconfigPaths: true,
+    },
     ssr: {
         noExternal: ['core'],
     },
@@ -38,9 +43,9 @@ export default defineConfig({
                 format: 'cjs',
             },
         },
-        outDir: path.resolve(__dirname, '.vite/http'),
+        outDir: path.resolve(dirname, '.vite/http'),
         sourcemap: true,
         emptyOutDir: true,
     },
-    plugins: [tsconfigPaths(), copyRuntimeAssetsPlugin()],
+    plugins: [copyRuntimeAssetsPlugin()],
 });

@@ -1,10 +1,10 @@
+import type { UIMessage } from 'ai';
 import { inject, injectable } from 'inversify';
 import { z } from 'zod';
-import { CORETYPES } from '../../../packages/core/types/types';
-import { MessageService } from '../../../packages/core/services/MessageService';
-import type { Message, NewMessage } from '../../../packages/core/dto';
+import type { Message, NewMessage } from 'core/dto';
+import { MessageService } from 'core/services/MessageService';
+import { CORETYPES } from 'core/types/types';
 import { IpcController, IpcHandler } from '../ipc/Decorators';
-import type { UIMessage } from 'ai';
 
 const newMessageSchema = z.custom<NewMessage>();
 const messageUpdateSchema = z.custom<Partial<NewMessage>>();

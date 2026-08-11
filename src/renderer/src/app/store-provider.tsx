@@ -1,32 +1,34 @@
 'use client';
 
-import { makeStore, resolveAppDataSource } from '@/lib/store/store';
-import { createContext, useContext, useState, type JSX, type ReactNode } from 'react';
-import { Provider } from 'react-redux';
-import type { CosmoApi } from '../../../preload/api';
+import { resolveAppDataSource } from '@/lib/store/app-data-source';
+import type { AppDataSource } from '@/lib/store/app-data-source';
+import { createAppStore, type AppStore } from '@/lib/store/store';
+import { createContext, useState, type JSX, type ReactNode } from 'react';
+import { SWRConfig } from 'swr';
 
-const AppDataSourceContext = createContext<CosmoApi | null>(null);
+export const StoreContext = createContext<AppStore | null>(null);
 
-// Exposes the resolved adapter so client components can honor injected app data sources in tests.
-export function useAppDataSource(): CosmoApi {
-    const appDataSource = useContext(AppDataSourceContext);
-    return appDataSource ?? resolveAppDataSource();
-}
-
-// Keep the Redux store stable for the lifetime of the renderer app.
+// Keep one app store instance per renderer tree so tests can inject a custom backend.
 export function StoreProvider({
     children,
     appDataSource,
 }: {
     children: ReactNode;
-    appDataSource?: CosmoApi;
+    appDataSource?: AppDataSource;
 }): JSX.Element {
-    const resolvedAppDataSource = appDataSource ?? resolveAppDataSource();
-    const [store] = useState(() => makeStore(resolvedAppDataSource));
+    const resolvedAppDataSource = appDataSource ??  resolveAppDataSource();
+    const [store] = useState(() => createAppStore(resolvedAppDataSource));
 
     return (
-        <AppDataSourceContext.Provider value={resolvedAppDataSource}>
-            <Provider store={store}>{children}</Provider>
-        </AppDataSourceContext.Provider>
+        <StoreContext.Provider value={store}>
+            <SWRConfig
+                value={{
+                    provider: () => new Map(),
+                    revalidateOnFocus: false,
+                }}
+            >
+                {children}
+            </SWRConfig>
+        </StoreContext.Provider>
     );
 }

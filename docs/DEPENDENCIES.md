@@ -36,32 +36,32 @@ This document maps `package.json` dependencies to their official documentation (
 
 ### Dev dependencies (tooling/build)
 
-| Package                                      | Used for                          | Docs                                                                  |
-| -------------------------------------------- | --------------------------------- | --------------------------------------------------------------------- |
-| `electron`                                   | Electron runtime                  | https://www.electronjs.org/docs/latest                                |
-| `@electron-forge/cli`                        | Electron Forge CLI                | https://www.electronforge.io/                                         |
-| `@electron-forge/plugin-vite`                | Build main/preload via Vite       | https://www.electronforge.io/config/plugins/vite                      |
-| `@electron-forge/plugin-fuses`               | Configure Electron fuses          | https://www.electronforge.io/config/plugins/fuses                     |
-| `@electron-forge/plugin-auto-unpack-natives` | Unpack native deps                | https://www.electronforge.io/config/plugins/auto-unpack-natives       |
-| `@electron-forge/publisher-github`           | GitHub releases publishing        | https://www.electronforge.io/config/publishers/github                 |
-| `@electron-forge/maker-zip`                  | macOS zip packaging               | https://www.electronforge.io/config/makers/zip                        |
-| `@electron-forge/maker-squirrel`             | Windows Squirrel packaging        | https://www.electronforge.io/config/makers/squirrel.windows           |
-| `@electron-forge/maker-deb`                  | Linux deb packaging               | https://www.electronforge.io/config/makers/deb                        |
-| `@electron-forge/maker-rpm`                  | Linux rpm packaging               | https://www.electronforge.io/config/makers/rpm                        |
-| `@electron/fuses`                            | Electron fuse flags               | https://www.electronjs.org/docs/latest/tutorial/fuses                 |
-| `vite`                                       | Bundler for main/preload          | https://vite.dev/guide/                                               |
-| `vite-tsconfig-paths`                        | TS path alias support in Vite     | https://github.com/aleclarson/vite-tsconfig-paths#readme              |
-| `typescript`                                 | TypeScript compiler               | https://www.typescriptlang.org/docs/                                  |
-| `ts-node`                                    | Running TS scripts (generate-api) | https://typestrong.org/ts-node/docs/                                  |
-| `tsconfig-paths`                             | TS runtime path resolution        | https://github.com/dividab/tsconfig-paths#readme                      |
-| `concurrently`                               | Run multiple dev processes        | https://github.com/open-cli-tools/concurrently#readme                 |
-| `cross-env`                                  | Cross-platform env vars           | https://github.com/kentcdodds/cross-env#readme                        |
-| `drizzle-kit`                                | Schema → migrations CLI           | https://orm.drizzle.team/kit-docs/overview                            |
-| `gts`                                        | Google TS style (lint/fix)        | https://github.com/google/gts#readme                                  |
-| `@typescript-eslint/parser`                  | ESLint TS parser                  | https://typescript-eslint.io/                                         |
-| `@typescript-eslint/eslint-plugin`           | ESLint rules for TS               | https://typescript-eslint.io/                                         |
-| `eslint-plugin-import`                       | Import lint rules                 | https://github.com/import-js/eslint-plugin-import#readme              |
-| `eslint-import-resolver-typescript`          | TS import resolution for ESLint   | https://github.com/import-js/eslint-import-resolver-typescript#readme |
+| Package                                      | Used for                                                                         | Docs                                                                  |
+| -------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `electron`                                   | Electron runtime                                                                 | https://www.electronjs.org/docs/latest                                |
+| `@electron-forge/cli`                        | Electron Forge CLI                                                               | https://www.electronforge.io/                                         |
+| `@electron-forge/plugin-vite`                | Build main/preload via Vite (patched in `postinstall` for preload compatibility) | https://www.electronforge.io/config/plugins/vite                      |
+| `@electron-forge/plugin-fuses`               | Configure Electron fuses                                                         | https://www.electronforge.io/config/plugins/fuses                     |
+| `@electron-forge/plugin-auto-unpack-natives` | Unpack native deps                                                               | https://www.electronforge.io/config/plugins/auto-unpack-natives       |
+| `@electron-forge/publisher-github`           | GitHub releases publishing                                                       | https://www.electronforge.io/config/publishers/github                 |
+| `@electron-forge/maker-zip`                  | macOS zip packaging                                                              | https://www.electronforge.io/config/makers/zip                        |
+| `@electron-forge/maker-squirrel`             | Windows Squirrel packaging                                                       | https://www.electronforge.io/config/makers/squirrel.windows           |
+| `@electron-forge/maker-deb`                  | Linux deb packaging                                                              | https://www.electronforge.io/config/makers/deb                        |
+| `@electron-forge/maker-rpm`                  | Linux rpm packaging                                                              | https://www.electronforge.io/config/makers/rpm                        |
+| `@electron/fuses`                            | Electron fuse flags                                                              | https://www.electronjs.org/docs/latest/tutorial/fuses                 |
+| `vite`                                       | Bundler for main/preload                                                         | https://vite.dev/guide/                                               |
+| `vite-tsconfig-paths`                        | TS path alias support in Vite                                                    | https://github.com/aleclarson/vite-tsconfig-paths#readme              |
+| `typescript`                                 | TypeScript compiler                                                              | https://www.typescriptlang.org/docs/                                  |
+| `ts-node`                                    | Running TS scripts (generate-api)                                                | https://typestrong.org/ts-node/docs/                                  |
+| `tsconfig-paths`                             | TS runtime path resolution                                                       | https://github.com/dividab/tsconfig-paths#readme                      |
+| `concurrently`                               | Run multiple dev processes                                                       | https://github.com/open-cli-tools/concurrently#readme                 |
+| `cross-env`                                  | Cross-platform env vars                                                          | https://github.com/kentcdodds/cross-env#readme                        |
+| `drizzle-kit`                                | Schema → migrations CLI                                                          | https://orm.drizzle.team/kit-docs/overview                            |
+| `gts`                                        | Google TS style (lint/fix)                                                       | https://github.com/google/gts#readme                                  |
+| `@typescript-eslint/parser`                  | ESLint TS parser                                                                 | https://typescript-eslint.io/                                         |
+| `@typescript-eslint/eslint-plugin`           | ESLint rules for TS                                                              | https://typescript-eslint.io/                                         |
+| `eslint-plugin-import`                       | Import lint rules                                                                | https://github.com/import-js/eslint-plugin-import#readme              |
+| `eslint-import-resolver-typescript`          | TS import resolution for ESLint                                                  | https://github.com/import-js/eslint-import-resolver-typescript#readme |
 
 ## Renderer (`src/renderer/package.json`)
 
@@ -71,8 +71,7 @@ This document maps `package.json` dependencies to their official documentation (
 | -------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------- |
 | `next`                     | Next.js App Router                              | https://nextjs.org/docs                                                     |
 | `react` / `react-dom`      | UI runtime                                      | https://react.dev/                                                          |
-| `@reduxjs/toolkit`         | Renderer-wide state management and async thunks | https://redux-toolkit.js.org/                                               |
-| `react-redux`              | React bindings for Redux state                  | https://react-redux.js.org/                                                 |
+| `zustand`                  | Bounded renderer state store                    | https://zustand.docs.pmnd.rs/getting-started/introduction                   |
 | `next-themes`              | Theme switching                                 | https://github.com/pacocoursey/next-themes#readme                           |
 | `tailwindcss`              | Styling                                         | https://tailwindcss.com/docs                                                |
 | `@tailwindcss/postcss`     | Tailwind PostCSS integration                    | https://tailwindcss.com/docs/installation/using-postcss                     |
@@ -83,7 +82,7 @@ This document maps `package.json` dependencies to their official documentation (
 | `class-variance-authority` | Variant class patterns (shadcn)                 | https://cva.style/docs                                                      |
 | `lucide-react`             | Icons                                           | https://lucide.dev/guide/packages/lucide-react                              |
 | `sonner`                   | Toast notifications                             | https://sonner.emilkowal.ski/                                               |
-| `swr`                      | Client data fetching + caching                  | https://swr.vercel.app/docs/getting-started                                 |
+| `swr`                      | Client data fetching, caching, and revalidation | https://swr.vercel.app/docs/getting-started                                 |
 | `ai`                       | Vercel AI SDK shared types                      | https://sdk.vercel.ai/docs                                                  |
 | `@ai-sdk/react`            | AI SDK React hooks                              | https://sdk.vercel.ai/docs/ai-sdk-ui/react                                  |
 | `react-markdown`           | Markdown rendering                              | https://github.com/remarkjs/react-markdown#readme                           |

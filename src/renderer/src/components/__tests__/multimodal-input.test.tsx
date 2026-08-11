@@ -87,7 +87,7 @@ describe('MultimodalInput', () => {
         HTMLElement.prototype.scrollIntoView = vi.fn();
     });
 
-    it('shows web search choices from the Redux-backed data source and reports selection changes', async () => {
+    it('shows web search choices from the shared app data source and reports selection changes', async () => {
         const user = userEvent.setup();
         const onWebSearchChange = vi.fn();
         const sendMessage = vi.fn(async () => undefined);

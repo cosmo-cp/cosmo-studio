@@ -18,9 +18,12 @@ Cosmo Studio is a dual-runtime app with a static-exported Next.js UI. It builds 
     - Exposes a minimal, typed `window.api` via `contextBridge`.
     - `src/preload/api.ts`, `src/preload/rpc-api.ts`, and the generated `src/preload/contracts/*`, `src/preload/api/*`, `src/preload/http-api/*` modules are generated (see “IPC & API generation”).
 - **Renderer (Next.js UI)**: `src/renderer/` (Next app: `src/renderer/src/`)
-    - Runs in the BrowserWindow or browser, talks to the active backend through the root Redux store and chat transport adapters.
+    - Runs in the BrowserWindow or browser, talks to the active backend through a bounded Zustand store, feature SWR hooks, and chat transport adapters.
     - Next config is `output: "export"` (static build to `src/renderer/out/`).
-    - Uses a single root Redux store created in `src/renderer/src/lib/store/store.ts` and mounted in `src/renderer/src/app/store-provider.tsx`; renderer components should dispatch thunks/selectors instead of calling preload APIs directly.
+    - Uses a single bounded Zustand store created in `src/renderer/src/lib/store/store.ts` and mounted in `src/renderer/src/app/store-provider.tsx`; `StoreProvider` also owns the renderer SWR cache.
+    - Request/response flows go through feature-owned SWR hooks under `src/renderer/src/features/*/*-api.ts`, all built on `src/renderer/src/lib/store/backend-hooks.ts`, while renderer-only state stays in focused slices.
+    - Feature orchestration belongs in `src/renderer/src/features/*/use-*-page-state.ts`; keep page/components presentational where possible.
+    - Backend resolution lives in `src/renderer/src/lib/store/app-data-source.ts`; user-facing toasts are queued in `src/renderer/src/lib/store/ui-feedback-store.ts` and rendered by `src/renderer/src/components/ui-feedback-host.tsx`.
     - `NEXT_PUBLIC_COSMO_BACKEND=electron|http` selects `window.api` versus the browser-safe `httpApi` exported from `src/preload/api.ts`.
 - **Core package (domain + DB + AI)**: `packages/core/` (workspace package name: `core`)
     - Drizzle schema, repositories/services, DTOs shared across processes.
@@ -29,8 +32,9 @@ Cosmo Studio is a dual-runtime app with a static-exported Next.js UI. It builds 
 - **ACP agents**: `packages/core/services/AcpAgentService.ts`, `packages/core/services/AcpRegistryService.ts`, `src/main/services/AcpAgentRuntimeService.ts`
     - Agent definitions and registry cache are shared domain data; process spawning and ACP provider sessions stay in main/HTTP runtime.
     - Renderer receives redacted agent views only; env values are never returned.
-- **Tooling/scripts**: `scripts/` (currently: `scripts/generate-api.ts`)
-    - Generates the preload RPC modules, browser-safe HTTP API modules, and HTTP RPC manifest from main IPC controllers.
+- **Tooling/scripts**: `scripts/`
+    - `scripts/generate-api.ts` generates the preload RPC modules, browser-safe HTTP API modules, and HTTP RPC manifest from main IPC controllers.
+    - `scripts/patch-electron-forge-plugin-vite.mjs` patches Electron Forge's preload Vite config after install for the current Vite compatibility issue.
 - **Database**: Drizzle ORM + PGlite
     - Schema: `packages/core/database/schema/`
     - Migrations output: `migrations/`
@@ -82,7 +86,7 @@ Before coding, decide **where the feature belongs**. Default to keeping the rend
 
 7. **Anything crossing the process boundary** (renderer ⇄ main/backend)
    → Add `@IpcHandler` in `src/main/controllers/*` with a zod tuple schema, then regenerate APIs.
-   → Renderer components should use Redux thunks/selectors backed by `makeStore()` or `createChatTransport()`.
+   → Renderer components should use feature hooks/page-state hooks backed by `useBackendQuery()`, `useBackendMutation()`, or `createChatTransport()`.
 
 ### Non‑negotiables
 
@@ -110,7 +114,7 @@ We use a declarative IPC pattern:
 2. Add a `z.tuple([...])` schema to the decorator and keep any deeper domain validation in the controller/service.
 3. Bind every new controller in `src/main/inversify.config.ts` with the same ServiceIdentifier type `TYPES.Controller`.
 4. Run `npm run generate-api` (root) to regenerate `src/preload/api.ts`, `src/preload/rpc-api.ts`, `src/preload/contracts/*`, `src/preload/api/*`, `src/preload/http-api/*`, and `src/main/http/rpc-manifest.ts`.
-5. Ensure renderer components use the shared Redux store/thunks for request-response flows, and keep any direct transport calls isolated to store setup and `src/renderer/src/chat-transport.ts`.
+5. Ensure renderer components use the shared Zustand store plus feature backend/page-state hooks for request-response flows, and keep any direct transport calls isolated to `src/renderer/src/lib/store/app-data-source.ts` and `src/renderer/src/chat-transport.ts`.
 6. Add tests (unit + integration) for the new behavior.
 
 ### Generated files policy
@@ -159,6 +163,7 @@ For renderer-specific implementation conventions, see `src/renderer/AGENTS.overr
 
 - Root is an npm workspace: installs root + `packages/*` + `src/renderer`.
 - Prefer running `npm install` once at the repo root.
+- Root `postinstall` applies a local compatibility patch to `@electron-forge/plugin-vite` so Electron preload packaging stays clean under the current Vite version.
 
 ### Day-to-day commands (root)
 
@@ -171,7 +176,7 @@ For renderer-specific implementation conventions, see `src/renderer/AGENTS.overr
 - `npm run build:http` — Generate APIs, build HTTP renderer, build Nest entry, copy renderer output and migrations.
 - `npm run start:http` — Start the built HTTP service from `.vite/http/main.js`.
 - `npm run lint` / `npm run fix` — Google TypeScript style (`gts`) lint/fix for main/preload/core/scripts.
-- `npm run test` / `npm run test:watch` — Run Vitest suites for main/preload/core/scripts.
+- `npm run test` / `npm run test:watch` — Run Vitest suites for main/preload/core/scripts via `vitest.config.mts`.
 - `npm run db:generate` — Generate new migrations from schema changes.
 - `npm run db:migrate` — Apply migrations to the configured DB (see `drizzle.config.ts`).
 - `npm run db:studio` — Launch Drizzle Studio.
@@ -182,7 +187,7 @@ For renderer-specific implementation conventions, see `src/renderer/AGENTS.overr
 - `npm run dev` — Next dev (Turbopack).
 - `npm run build` — Static export build (`output: "export"`) to `src/renderer/out/`.
 - `npm run lint` — Next lint for UI code.
-- `npm run test` / `npm run test:watch` — Run renderer component tests (Vitest + React Testing Library).
+- `npm run test` / `npm run test:watch` — Run renderer component tests (Vitest + React Testing Library) via `src/renderer/vitest.config.mts`.
 
 ### CI mindset (even locally)
 

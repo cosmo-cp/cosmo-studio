@@ -1,6 +1,5 @@
-import { inject, injectable } from 'inversify';
 import { asc, eq } from 'drizzle-orm';
-import { CORETYPES } from '../types/types';
+import { inject, injectable } from 'inversify';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { acpAgent, acpRegistryCache } from '../database/schema/schema';
 import type {
@@ -10,6 +9,7 @@ import type {
     AcpRegistryCache,
     AcpRegistryCacheInsert,
 } from '../dto';
+import { CORETYPES } from '../types/types';
 
 @injectable()
 export class AcpAgentRepository {

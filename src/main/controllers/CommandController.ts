@@ -1,11 +1,11 @@
+import type { CommandCreateInput, CommandDefinition, CommandExecution, CommandUpdateInput } from 'core/dto';
+import { getCoreLogger } from 'core/platform/CoreLogger';
+import { CommandService } from 'core/services/CommandService';
+import { CORETYPES } from 'core/types/types';
 import { inject, injectable } from 'inversify';
 import { z } from 'zod';
 import { IpcController, IpcHandler } from '../ipc/Decorators';
-import { CORETYPES } from 'core/types/types';
-import { CommandService } from 'core/services/CommandService';
-import type { CommandCreateInput, CommandDefinition, CommandExecution, CommandUpdateInput } from 'core/dto';
 import { Controller } from './Controller';
-import { getCoreLogger } from 'core/platform/CoreLogger';
 
 const commandCreateSchema = z.object({
     name: z.string().min(1),

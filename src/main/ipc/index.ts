@@ -1,13 +1,13 @@
 import { ipcMain } from 'electron';
 import { injectable, multiInject } from 'inversify';
+import { Controller } from '../controllers/Controller';
+import { TYPES } from '../types';
 import {
     IPC_ARGS_SCHEMA_METADATA_KEY,
     IPC_CONTROLLER_METADATA_KEY,
     IPC_HANDLE_METADATA_KEY,
     IPC_ON_METADATA_KEY,
 } from './Decorators';
-import { TYPES } from '../types';
-import { Controller } from '../controllers/Controller';
 
 @injectable()
 export class IpcHandlerRegistry {

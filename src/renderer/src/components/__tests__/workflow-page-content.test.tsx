@@ -42,7 +42,7 @@ function renderWorkflowPageContent() {
     );
 }
 
- // Start each workflow-focused test from the same created-workflow state.
+// Start each workflow-focused test from the same created-workflow state.
 async function createWorkflow(user: ReturnType<typeof userEvent.setup>) {
     renderWorkflowPageContent();
 

@@ -10,8 +10,7 @@ import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-e
 import { Source, Sources, SourcesContent, SourcesTrigger } from '@/components/ai-elements/sources';
 import { PreviewAttachment } from '@/components/preview-attachment';
 import ProviderIcon from '@/components/provider-icon';
-import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import { loadProviders } from '@/lib/store/providers-store';
+import { useGetProvidersQuery } from '@/features/providers/providers-api';
 import { cn } from '@/lib/utils';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import { DynamicToolUIPart, UIMessage } from 'ai';
@@ -418,17 +417,9 @@ function PureMessages({
     onMatchesFound,
     addToolApprovalResponse,
 }: MessagesProps) {
-    const dispatch = useAppDispatch();
-    const providers = useAppSelector((state) => state.providers.items);
-    const providersStatus = useAppSelector((state) => state.providers.status);
+    const { data: providers = [] } = useGetProvidersQuery();
     const { resolvedTheme } = useTheme();
     const prevMatchIndexRef = useRef<number | null>(null);
-
-    useEffect(() => {
-        if (providersStatus === 'idle') {
-            void dispatch(loadProviders());
-        }
-    }, [dispatch, providersStatus]);
 
     const providersByName = useMemo(() => {
         return new Map(providers.map((provider) => [provider.name, provider]));

@@ -8,11 +8,15 @@ Cosmo Studio is a dual-runtime application with a static-exported Next.js UI. It
 flowchart LR
   subgraph Renderer["Next Renderer"]
     UI["Components"]
-    Redux["Redux thunks"]
-    DataSource["AppDataSource"]
+    Zustand["Zustand store"]
+    Swr["Feature SWR hooks"]
+    UiState["Renderer-only slices"]
+    DataSource["Resolved app data source"]
     ChatTransport["ChatTransport"]
-    UI --> Redux
-    Redux --> DataSource
+    UI --> Zustand
+    UI --> Swr
+    Zustand --> UiState
+    Swr --> DataSource
     UI --> ChatTransport
   end
 
@@ -70,11 +74,12 @@ flowchart LR
 ### Renderer (`src/renderer`)
 
 - Next.js App Router UI.
-- Owns a single root Redux store for renderer state.
-- Renderer components should dispatch thunks/selectors instead of calling preload APIs directly.
+- Owns a single bounded Zustand store for shared renderer state.
+- `src/renderer/src/app/store-provider.tsx` creates the app store once per renderer tree and owns the SWR cache provider used by feature hooks.
+- Renderer components should use feature SWR hooks for backend-backed request/response data, feature `use-*-page-state.ts` hooks for orchestration, and focused Zustand slices for renderer-only state.
 - Production output is static (`next.config.ts` uses `output: "export"`), written to `src/renderer/out/`.
-- Request/response data flows resolve in `src/renderer/src/lib/store/store.ts`, so the same thunk layer can talk to Electron preload or the browser-safe HTTP API.
-- Direct `window.api` usage should stay isolated to transport modules such as `src/renderer/src/chat-transport.ts` and root store wiring.
+- Request/response data flows resolve in feature backend modules under `src/renderer/src/features/*/*-api.ts`, all built on `src/renderer/src/lib/store/backend-hooks.ts`, which consume the resolved adapter from `src/renderer/src/lib/store/app-data-source.ts`.
+- Direct `window.api` usage should stay isolated to `src/renderer/src/lib/store/app-data-source.ts` and transport modules such as `src/renderer/src/chat-transport.ts`.
 - `NEXT_PUBLIC_COSMO_BACKEND=electron|http` selects the runtime adapter at build/dev time.
 - HTTP RPC calls use `src/preload/api.ts`.
 
@@ -91,9 +96,9 @@ flowchart LR
 
 ### Command flow (high-level)
 
-1. Renderer dispatches command thunks from the root Redux store.
+1. Renderer triggers a feature mutation hook from the bounded store-backed UI.
 2. User submits a command (typed or selected).
-3. The thunk resolves through the shared app data source adapter to preload or HTTP.
+3. The feature hook resolves through the shared app data source adapter to preload or HTTP.
 4. The active backend resolves the command through `CommandController` -> `CommandService`.
 5. The resolved prompt is sent through the normal chat streaming pipeline.
 
@@ -123,7 +128,8 @@ flowchart LR
 1. Build renderer: `npm run build:renderer:electron`
     - Produces static output under `src/renderer/out/`.
 2. Electron Forge packaging:
-    - Vite plugin builds main and preload (`vite.main.config.ts`, `vite.preload.config.ts`).
+    - Root `postinstall` runs `scripts/patch-electron-forge-plugin-vite.mjs` so Forge's preload build stays compatible with the current Vite version.
+    - Vite plugin builds main and preload (`vite.main.config.mts`, `vite.preload.config.mts`).
     - `NextPlugin` copies `src/renderer/out/` into the packaged renderer directory.
     - `@electric-sql/*` is copied into the package so PGlite works at runtime.
 
@@ -132,7 +138,7 @@ flowchart LR
 1. Generate APIs: preload API, HTTP RPC manifest, and renderer HTTP client.
 2. Build renderer: `npm run build:renderer:http`.
 3. Vite builds the Nest entry from `src/main/http/index.ts` to `.vite/http/main.js`.
-4. `vite.http.config.ts` copies `src/renderer/out/` to `.vite/http/public` and `migrations/` to `.vite/http/migrations`.
+4. `vite.http.config.mts` copies `src/renderer/out/` to `.vite/http/public` and `migrations/` to `.vite/http/migrations`.
 5. `npm run start:http` starts the built Nest service.
 
 For the detailed accepted specs, see `docs/specs/dual-runtime/`.

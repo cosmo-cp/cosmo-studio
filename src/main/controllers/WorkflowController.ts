@@ -1,9 +1,3 @@
-import type { IpcMainEvent, WebContents } from 'electron';
-import { inject, injectable } from 'inversify';
-import { z } from 'zod';
-import { CORETYPES } from 'core/types/types';
-import { WorkflowService } from 'core/services/WorkflowService';
-import { WorkflowRunService } from 'core/services/WorkflowRunService';
 import type {
     Workflow,
     WorkflowCreateInput,
@@ -15,6 +9,12 @@ import type {
     WorkflowRunStreamStartArgs,
     WorkflowVersion,
 } from 'core/dto';
+import { WorkflowRunService } from 'core/services/WorkflowRunService';
+import { WorkflowService } from 'core/services/WorkflowService';
+import { CORETYPES } from 'core/types/types';
+import type { IpcMainEvent, WebContents } from 'electron';
+import { inject, injectable } from 'inversify';
+import { z } from 'zod';
 import { IpcController, IpcHandler, IpcOn, IpcRendererOn } from '../ipc/Decorators';
 import { logger } from '../logger';
 import { WorkflowExecutionService } from '../services/WorkflowExecutionService';

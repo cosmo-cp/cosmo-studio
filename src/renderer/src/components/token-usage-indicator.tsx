@@ -3,10 +3,12 @@
 import { Button } from '@/components/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useGetMcpToolCatalogQuery } from '@/features/mcp-servers/mcp-servers-api';
+import { useGetPersonaByIdQuery } from '@/features/personas/personas-api';
+import { useGetProvidersQuery } from '@/features/providers/providers-api';
 import { DynamicToolUIPart, UIMessage } from 'ai';
-import type { McpServer } from 'core/dto';
 import { Info, PieChart } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 interface TokenUsageIndicatorProps {
     messages: UIMessage[];
@@ -27,93 +29,52 @@ const getSafeLength = (obj: unknown) => {
 };
 
 export function TokenUsageIndicator({ messages, modelId, personaId }: TokenUsageIndicatorProps) {
-    const [toolsLength, setToolsLength] = useState(0);
-    const [personaLength, setPersonaLength] = useState(0);
+    const { data: providers = [] } = useGetProvidersQuery();
+    const { data: toolCatalog } = useGetMcpToolCatalogQuery();
+    const { data: persona } = useGetPersonaByIdQuery(personaId);
+    const getModelTokenLimits = () => {
+        if (!modelId) {
+            return {
+                maxTokens: 128000,
+                maxOutputTokens: 4096,
+            };
+        }
 
-    const [maxTokens, setMaxTokens] = useState<number>(128000);
-    const [maxOutputTokens, setMaxOutputTokens] = useState<number>(4096);
-
-    useEffect(() => {
-        const fetchMaxTokens = async () => {
-            if (!modelId) return;
-            try {
-                const providers = await window.api.modelProvider.getProvidersWithModels();
-                for (const provider of providers) {
-                    const found = provider.models.find((m) => m.modelId === modelId);
-                    if (found) {
-                        if (found.contextWindow && found.contextWindow > 0) setMaxTokens(found.contextWindow);
-                        if (found.maxOutputWindow && found.maxOutputWindow > 0)
-                            setMaxOutputTokens(found.maxOutputWindow);
-                        return;
-                    }
-                }
-
-                // Fallback
-                const lowerModel = modelId.toLowerCase();
-                if (lowerModel.includes('claude-3-5') || lowerModel.includes('claude-3-opus')) {
-                    setMaxTokens(200000);
-                    setMaxOutputTokens(8192);
-                } else if (lowerModel.includes('gemini-1.5-pro')) {
-                    setMaxTokens(2000000);
-                    setMaxOutputTokens(8192);
-                } else if (lowerModel.includes('gemini-1.5-flash')) {
-                    setMaxTokens(1000000);
-                    setMaxOutputTokens(8192);
-                } else if (lowerModel.includes('gpt-4') || lowerModel.includes('gpt-4o')) {
-                    setMaxTokens(128000);
-                    setMaxOutputTokens(4096);
-                } else if (lowerModel.includes('o1') || lowerModel.includes('o3')) {
-                    setMaxTokens(200000);
-                    setMaxOutputTokens(100000);
-                } else {
-                    setMaxTokens(128000);
-                    setMaxOutputTokens(4096);
-                }
-            } catch (err) {
-                console.error('Failed to parse models for token usage indicator', err);
+        for (const provider of providers) {
+            const found = provider.models.find((model) => model.modelId === modelId);
+            if (found) {
+                return {
+                    maxTokens: found.contextWindow && found.contextWindow > 0 ? found.contextWindow : 128000,
+                    maxOutputTokens: found.maxOutputWindow && found.maxOutputWindow > 0 ? found.maxOutputWindow : 4096,
+                };
             }
-        };
-        fetchMaxTokens();
-    }, [modelId]);
+        }
 
-    useEffect(() => {
-        const fetchToolsLength = async () => {
-            try {
-                const list = await window.api.mcpServer.getAll();
-                const enabledServers = list.filter((s: McpServer) => s.enabled);
-                let length = 0;
-                for (const server of enabledServers) {
-                    const tools = await window.api.mcpServer.getServerTools(server.id);
-                    length += JSON.stringify(tools).length;
-                }
-                setToolsLength(length);
-            } catch (error) {
-                console.error('Failed to calculate tools length for tokens', error);
-            }
-        };
-        fetchToolsLength();
-    }, []);
+        const lowerModel = modelId.toLowerCase();
+        if (lowerModel.includes('claude-3-5') || lowerModel.includes('claude-3-opus')) {
+            return { maxTokens: 200000, maxOutputTokens: 8192 };
+        } else if (lowerModel.includes('gemini-1.5-pro')) {
+            return { maxTokens: 2000000, maxOutputTokens: 8192 };
+        } else if (lowerModel.includes('gemini-1.5-flash')) {
+            return { maxTokens: 1000000, maxOutputTokens: 8192 };
+        } else if (lowerModel.includes('gpt-4') || lowerModel.includes('gpt-4o')) {
+            return { maxTokens: 128000, maxOutputTokens: 4096 };
+        } else if (lowerModel.includes('o1') || lowerModel.includes('o3')) {
+            return { maxTokens: 200000, maxOutputTokens: 100000 };
+        }
 
-    useEffect(() => {
-        const fetchPersonaLength = async () => {
-            if (!personaId) {
-                setPersonaLength(0);
-                return;
-            }
-            try {
-                const persona = await window.api.persona.getById(personaId);
-                if (persona && persona.details) {
-                    setPersonaLength(persona.details.length);
-                } else {
-                    setPersonaLength(0);
-                }
-            } catch (error) {
-                console.error('Failed to fetch persona length for tokens', error);
-                setPersonaLength(0);
-            }
-        };
-        fetchPersonaLength();
-    }, [personaId]);
+        return { maxTokens: 128000, maxOutputTokens: 4096 };
+    };
+    const { maxTokens, maxOutputTokens } = getModelTokenLimits();
+
+    const toolsLength = useMemo(() => {
+        return Object.values(toolCatalog?.toolsByServerId ?? {}).reduce(
+            (length, tools) => length + JSON.stringify(tools).length,
+            0,
+        );
+    }, [toolCatalog?.toolsByServerId]);
+
+    const personaLength = persona?.details?.length ?? 0;
 
     const tokens = useMemo(() => {
         const systemInstructionsTokens = Math.ceil(personaLength / CHARS_PER_TOKEN);

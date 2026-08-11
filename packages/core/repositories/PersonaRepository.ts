@@ -1,9 +1,9 @@
-import { inject, injectable } from 'inversify';
 import { asc, eq } from 'drizzle-orm';
-import { CORETYPES } from '../types/types';
+import { inject, injectable } from 'inversify';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { persona } from '../database/schema/schema';
 import { NewPersona, Persona } from '../dto';
+import { CORETYPES } from '../types/types';
 
 @injectable()
 export class PersonaRepository {

@@ -1,4 +1,4 @@
-import superjson from 'superjson';
+import { parse, stringify } from 'superjson';
 
 type RpcEnvelope<T> = { ok: true; result: T } | { ok: false; error: { code: string; message: string } };
 
@@ -16,9 +16,9 @@ export async function callRpc<T>(group: string, handler: string, args: unknown[]
             'Content-Type': 'application/json',
             Accept: 'application/json',
         },
-        body: superjson.stringify({ args: args }),
+        body: stringify({ args: args }),
     });
-    const envelope = superjson.parse<RpcEnvelope<T>>(await response.text());
+    const envelope = parse<RpcEnvelope<T>>(await response.text());
     if (!envelope.ok) {
         throw new Error(envelope.error.message || 'HTTP RPC request failed.');
     }

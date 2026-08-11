@@ -52,9 +52,9 @@ When you change schema:
 
 ## Migrations in packaged builds
 
-During Electron bundling, `vite.main.config.ts` copies the `migrations/` directory into `.vite/build/migrations`.
+During Electron bundling, `vite.main.config.mts` copies the `migrations/` directory into `.vite/build/migrations`.
 
-During HTTP bundling, `vite.http.config.ts` copies the `migrations/` directory into `.vite/http/migrations`.
+During HTTP bundling, `vite.http.config.mts` copies the `migrations/` directory into `.vite/http/migrations`.
 
 At runtime, `packages/core/database/migrator.ts` looks for migrations relative to the compiled output.
 

@@ -1,8 +1,8 @@
 import { inject, injectable } from 'inversify';
-import { CORETYPES } from '../types/types';
-import { AcpAgentRepository } from '../repositories/AcpAgentRepository';
 import type { AcpAgent, AcpAgentCreateInput, AcpAgentRuntimeConfig, AcpAgentUpdateInput, AcpAgentView } from '../dto';
 import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
+import { AcpAgentRepository } from '../repositories/AcpAgentRepository';
+import { CORETYPES } from '../types/types';
 
 const normalizeRequired = (value: string | null | undefined, field: string): string => {
     if (!value || value.trim().length === 0) {

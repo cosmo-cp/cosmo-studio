@@ -17,247 +17,40 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
-    deleteAcpAgent,
-    installAcpAgentFromRegistry,
-    loadAcpAgents,
-    loadAcpRegistry,
-    saveAcpAgent,
-    testAcpAgent,
-    toggleAcpAgentEnabled,
-} from '@/lib/store/acp-agents-store';
-import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import { AcpAgentInstallStatusEnum, AcpAgentSourceEnum } from 'core/database/schema/acpAgentSchema';
-import type { AcpAgentCreateInput, AcpAgentUpdateInput, AcpAgentView, AcpRegistryAgent } from 'core/dto';
+    getDistributionLabel,
+    isInstallable,
+    useAcpAgentPageState,
+} from '@/features/acp-agents/use-acp-agent-page-state';
 import { CheckCircle2, Download, Pencil, Plus, RefreshCw, TestTube2, Trash2, XCircle } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
-
-const emptyForm = {
-    name: '',
-    description: '',
-    command: '',
-    argsJson: '[]',
-    envJson: '{}',
-    defaultCwd: '',
-    authMethodId: '',
-};
-
-const emptyEditForm = {
-    name: '',
-    description: '',
-    command: '',
-    argsJson: '[]',
-    envJson: '',
-    defaultCwd: '',
-    authMethodId: '',
-};
-
-function parseStringArrayJson(value: string, field: string): string[] {
-    let parsed: unknown;
-    try {
-        parsed = JSON.parse(value);
-    } catch {
-        throw new Error(`${field} must be valid JSON.`);
-    }
-    if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== 'string')) {
-        throw new Error(`${field} must be a JSON string array.`);
-    }
-    return parsed;
-}
-
-function parseStringRecordJson(value: string, field: string): Record<string, string> {
-    let parsed: unknown;
-    try {
-        parsed = JSON.parse(value);
-    } catch {
-        throw new Error(`${field} must be valid JSON.`);
-    }
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        throw new Error(`${field} must be a JSON object.`);
-    }
-    return Object.fromEntries(Object.entries(parsed).map(([key, recordValue]) => [key, String(recordValue ?? '')]));
-}
-
-function getDistributionLabel(agent: AcpRegistryAgent): string {
-    const distribution = agent.distribution ?? {};
-    if (distribution.npx) return 'npx';
-    if (distribution.uvx) return 'uvx';
-    if (distribution.binary) return 'binary';
-    return 'unknown';
-}
-
-function isInstallable(agent: AcpRegistryAgent): boolean {
-    const distribution = agent.distribution ?? {};
-    return Boolean(distribution.npx || distribution.uvx);
-}
 
 export function AcpAgentManagement() {
-    const dispatch = useAppDispatch();
-    const agents = useAppSelector((state) => state.acpAgents.items);
-    const status = useAppSelector((state) => state.acpAgents.status);
-    const errorMessage = useAppSelector((state) => state.acpAgents.errorMessage);
-    const registry = useAppSelector((state) => state.acpAgents.registry);
-    const registryStatus = useAppSelector((state) => state.acpAgents.registryStatus);
-    const registryError = useAppSelector((state) => state.acpAgents.registryErrorMessage);
-    const [search, setSearch] = useState('');
-    const [form, setForm] = useState(emptyForm);
-    const [editForm, setEditForm] = useState(emptyEditForm);
-    const [editingAgent, setEditingAgent] = useState<AcpAgentView | null>(null);
-    const [registryDialogOpen, setRegistryDialogOpen] = useState(false);
-    const [installingRegistryId, setInstallingRegistryId] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (status === 'idle') {
-            void dispatch(loadAcpAgents());
-        }
-    }, [dispatch, status]);
-
-    const installedRegistryIds = useMemo(
-        () => new Set(agents.map((agent) => agent.registryId).filter(Boolean)),
-        [agents],
-    );
-    const visibleRegistryAgents = useMemo(() => {
-        const normalized = search.trim().toLowerCase();
-        const registryAgents = registry?.agents ?? [];
-        if (!normalized) return registryAgents;
-        return registryAgents.filter((agent) =>
-            `${agent.name} ${agent.description ?? ''} ${agent.id}`.toLowerCase().includes(normalized),
-        );
-    }, [registry?.agents, search]);
-
-    const handleCreateCustomAgent = async (event: React.FormEvent) => {
-        event.preventDefault();
-        let args: string[];
-        let env: Record<string, string>;
-        try {
-            args = parseStringArrayJson(form.argsJson, 'Args');
-            env = parseStringRecordJson(form.envJson, 'Env');
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Invalid ACP agent form.');
-            return;
-        }
-
-        const input: AcpAgentCreateInput = {
-            name: form.name.trim(),
-            description: form.description.trim() || null,
-            source: AcpAgentSourceEnum.CUSTOM,
-            registryId: null,
-            version: null,
-            command: form.command.trim(),
-            args,
-            env,
-            defaultCwd: form.defaultCwd.trim() || null,
-            authMethodId: form.authMethodId.trim() || null,
-            enabled: true,
-            installStatus: AcpAgentInstallStatusEnum.INSTALLED,
-            mcpServerIds: [],
-            metadata: {},
-        };
-        try {
-            await dispatch(saveAcpAgent({ input })).unwrap();
-            setForm(emptyForm);
-            toast.success('ACP agent added');
-        } catch (error) {
-            toast.error(typeof error === 'string' ? error : 'Failed to add ACP agent');
-        }
-    };
-
-    const handleEdit = (agent: AcpAgentView) => {
-        setEditingAgent(agent);
-        setEditForm({
-            name: agent.name,
-            description: agent.description ?? '',
-            command: agent.command,
-            argsJson: JSON.stringify(agent.args, null, 2),
-            envJson: '',
-            defaultCwd: agent.defaultCwd ?? '',
-            authMethodId: agent.authMethodId ?? '',
-        });
-    };
-
-    const handleEditDialogOpenChange = (open: boolean) => {
-        if (!open) {
-            setEditingAgent(null);
-            setEditForm(emptyEditForm);
-        }
-    };
-
-    const handleUpdateAgent = async (event: React.FormEvent) => {
-        event.preventDefault();
-        if (!editingAgent) {
-            return;
-        }
-
-        let args: string[];
-        let env: Record<string, string> | undefined;
-        try {
-            args = parseStringArrayJson(editForm.argsJson, 'Args');
-            env =
-                editForm.envJson.trim().length > 0
-                    ? parseStringRecordJson(editForm.envJson, 'Replacement env')
-                    : undefined;
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Invalid ACP agent form.');
-            return;
-        }
-
-        const input: AcpAgentUpdateInput = {
-            name: editForm.name.trim(),
-            description: editForm.description.trim() || null,
-            command: editForm.command.trim(),
-            args,
-            defaultCwd: editForm.defaultCwd.trim() || null,
-            authMethodId: editForm.authMethodId.trim() || null,
-        };
-        if (env !== undefined) {
-            input.env = env;
-        }
-
-        try {
-            await dispatch(saveAcpAgent({ agentId: editingAgent.id, input })).unwrap();
-            setEditingAgent(null);
-            setEditForm(emptyEditForm);
-            toast.success('ACP agent updated');
-        } catch (error) {
-            toast.error(typeof error === 'string' ? error : 'Failed to update ACP agent');
-        }
-    };
-
-    const handleToggle = async (agent: AcpAgentView) => {
-        try {
-            await dispatch(toggleAcpAgentEnabled({ agentId: agent.id, enabled: !agent.enabled })).unwrap();
-        } catch (error) {
-            toast.error(typeof error === 'string' ? error : 'Failed to update ACP agent');
-        }
-    };
-
-    const handleTest = async (agent: AcpAgentView) => {
-        const result = await dispatch(testAcpAgent({ agentId: agent.id })).unwrap();
-        if (result.ok) {
-            toast.success(result.message);
-            return;
-        }
-        toast.error(result.message);
-    };
-
-    const handleRegistryOpenChange = (open: boolean) => {
-        setRegistryDialogOpen(open);
-        if (open && registryStatus === 'idle') {
-            void dispatch(loadAcpRegistry());
-        }
-    };
-
-    const handleInstall = async (agent: AcpRegistryAgent) => {
-        setInstallingRegistryId(agent.id);
-        try {
-            await dispatch(installAcpAgentFromRegistry({ registryId: agent.id, enabled: true })).unwrap();
-            toast.success(`${agent.name} installed`);
-        } catch (error) {
-            toast.error(typeof error === 'string' ? error : 'Failed to install ACP agent');
-        } finally {
-            setInstallingRegistryId(null);
-        }
-    };
+    const {
+        agents,
+        agentsError,
+        search,
+        setSearch,
+        form,
+        setForm,
+        editForm,
+        setEditForm,
+        editingAgent,
+        registryDialogOpen,
+        installingRegistryId,
+        isRegistryLoading,
+        registryError,
+        installedRegistryIds,
+        visibleRegistryAgents,
+        setRegistryDialogOpen,
+        createCustomAgent,
+        editAgent,
+        handleEditDialogOpenChange,
+        updateAgent,
+        toggleAgent,
+        testAgent,
+        installRegistryAgent,
+        deleteAgent,
+        refreshRegistry,
+    } = useAcpAgentPageState();
 
     return (
         <TooltipProvider>
@@ -269,7 +62,7 @@ export function AcpAgentManagement() {
                             Manage local ACP agents for chat and workflow execution.
                         </p>
                     </div>
-                    <Button onClick={() => handleRegistryOpenChange(true)} className="self-start sm:self-auto">
+                    <Button onClick={() => setRegistryDialogOpen(true)} className="self-start sm:self-auto">
                         <Download className="size-4" />
                         Registry
                     </Button>
@@ -280,20 +73,20 @@ export function AcpAgentManagement() {
                         <TabsTrigger value="custom">Custom</TabsTrigger>
                     </TabsList>
                     <TabsContent value="installed" className="min-h-0 overflow-auto">
-                        {errorMessage ? (
+                        {agentsError ? (
                             <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                                {errorMessage}
+                                {agentsError}
                             </div>
                         ) : null}
                         <div className="rounded-md border">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[48px]">On</TableHead>
+                                        <TableHead className="w-12">On</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Command</TableHead>
                                         <TableHead>Workspace</TableHead>
-                                        <TableHead className="w-[192px] text-right">Actions</TableHead>
+                                        <TableHead className="w-48 text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -303,7 +96,7 @@ export function AcpAgentManagement() {
                                                 <Switch
                                                     size="sm"
                                                     checked={agent.enabled}
-                                                    onCheckedChange={() => void handleToggle(agent)}
+                                                    onCheckedChange={() => void toggleAgent(agent)}
                                                     aria-label={`Toggle ${agent.name}`}
                                                 />
                                             </TableCell>
@@ -327,10 +120,10 @@ export function AcpAgentManagement() {
                                                     </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="max-w-[260px] truncate font-mono text-xs">
+                                            <TableCell className="max-w-65 truncate font-mono text-xs">
                                                 {[agent.command, ...agent.args].join(' ')}
                                             </TableCell>
-                                            <TableCell className="max-w-[220px] truncate text-xs text-muted-foreground">
+                                            <TableCell className="max-w-55 truncate text-xs text-muted-foreground">
                                                 {agent.defaultCwd || 'Not set'}
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -340,7 +133,7 @@ export function AcpAgentManagement() {
                                                             aria-label={`Test ${agent.name}`}
                                                             size="icon"
                                                             variant="ghost"
-                                                            onClick={() => void handleTest(agent)}
+                                                            onClick={() => void testAgent(agent)}
                                                         >
                                                             <TestTube2 className="size-4" />
                                                         </Button>
@@ -353,7 +146,7 @@ export function AcpAgentManagement() {
                                                             aria-label={`Edit ${agent.name}`}
                                                             size="icon"
                                                             variant="ghost"
-                                                            onClick={() => handleEdit(agent)}
+                                                            onClick={() => editAgent(agent)}
                                                         >
                                                             <Pencil className="size-4" />
                                                         </Button>
@@ -366,7 +159,7 @@ export function AcpAgentManagement() {
                                                             aria-label={`Delete ${agent.name}`}
                                                             size="icon"
                                                             variant="ghost"
-                                                            onClick={() => void dispatch(deleteAcpAgent(agent.id))}
+                                                            onClick={() => void deleteAgent(agent.id)}
                                                         >
                                                             <Trash2 className="size-4" />
                                                         </Button>
@@ -381,7 +174,7 @@ export function AcpAgentManagement() {
                         </div>
                     </TabsContent>
                     <TabsContent value="custom" className="overflow-auto">
-                        <form className="max-w-2xl space-y-4" onSubmit={(event) => void handleCreateCustomAgent(event)}>
+                        <form className="max-w-2xl space-y-4" onSubmit={(event) => void createCustomAgent(event)}>
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <Input
                                     placeholder="Name"
@@ -429,7 +222,7 @@ export function AcpAgentManagement() {
                     </TabsContent>
                 </Tabs>
                 <Dialog open={editingAgent !== null} onOpenChange={handleEditDialogOpenChange}>
-                    <DialogContent className="flex max-h-[85dvh] flex-col overflow-hidden sm:max-w-[640px]">
+                    <DialogContent className="flex max-h-[85dvh] flex-col overflow-hidden sm:max-w-160">
                         <DialogHeader>
                             <DialogTitle>Edit agent</DialogTitle>
                             <DialogDescription>
@@ -439,7 +232,7 @@ export function AcpAgentManagement() {
                         </DialogHeader>
                         <form
                             className="flex min-h-0 flex-1 flex-col gap-4"
-                            onSubmit={(event) => void handleUpdateAgent(event)}
+                            onSubmit={(event) => void updateAgent(event)}
                         >
                             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
                                 <div className="grid gap-3 sm:grid-cols-2">
@@ -546,8 +339,8 @@ export function AcpAgentManagement() {
                         </form>
                     </DialogContent>
                 </Dialog>
-                <Dialog open={registryDialogOpen} onOpenChange={handleRegistryOpenChange}>
-                    <DialogContent className="flex max-h-[85dvh] w-[calc(100vw-2rem)] max-w-[900px] min-w-0 flex-col overflow-hidden p-0">
+                <Dialog open={registryDialogOpen} onOpenChange={setRegistryDialogOpen}>
+                    <DialogContent className="flex max-h-[85dvh] w-[calc(100vw-2rem)] max-w-225 min-w-0 flex-col overflow-hidden p-0">
                         <DialogHeader className="shrink-0 px-6 pt-6 pr-12">
                             <DialogTitle>ACP Registry</DialogTitle>
                             <DialogDescription>
@@ -564,13 +357,11 @@ export function AcpAgentManagement() {
                                 />
                                 <Button
                                     variant="outline"
-                                    onClick={() => void dispatch(loadAcpRegistry({ refresh: true }))}
-                                    disabled={registryStatus === 'loading'}
+                                    onClick={() => void refreshRegistry()}
+                                    disabled={isRegistryLoading}
                                     className="sm:ml-auto"
                                 >
-                                    <RefreshCw
-                                        className={registryStatus === 'loading' ? 'size-4 animate-spin' : 'size-4'}
-                                    />
+                                    <RefreshCw className={isRegistryLoading ? 'size-4 animate-spin' : 'size-4'} />
                                     Refresh
                                 </Button>
                             </div>
@@ -587,13 +378,13 @@ export function AcpAgentManagement() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="w-[52%]">Name</TableHead>
-                                            <TableHead className="w-[120px]">Distribution</TableHead>
-                                            <TableHead className="w-[100px]">Version</TableHead>
-                                            <TableHead className="w-[128px] text-right">Install</TableHead>
+                                            <TableHead className="w-30">Distribution</TableHead>
+                                            <TableHead className="w-25">Version</TableHead>
+                                            <TableHead className="w-32 text-right">Install</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {registryStatus === 'loading' && visibleRegistryAgents.length === 0 ? (
+                                        {isRegistryLoading && visibleRegistryAgents.length === 0 ? (
                                             <TableRow>
                                                 <TableCell
                                                     colSpan={4}
@@ -603,7 +394,7 @@ export function AcpAgentManagement() {
                                                 </TableCell>
                                             </TableRow>
                                         ) : null}
-                                        {registryStatus !== 'loading' && visibleRegistryAgents.length === 0 ? (
+                                        {!isRegistryLoading && visibleRegistryAgents.length === 0 ? (
                                             <TableRow>
                                                 <TableCell
                                                     colSpan={4}
@@ -622,7 +413,7 @@ export function AcpAgentManagement() {
                                                     <TableCell className="min-w-0 whitespace-normal">
                                                         <div className="flex min-w-0 flex-col">
                                                             <span className="truncate font-medium">{agent.name}</span>
-                                                            <span className="line-clamp-2 break-words text-xs text-muted-foreground">
+                                                            <span className="line-clamp-2 wrap-break-word text-xs text-muted-foreground">
                                                                 {agent.description}
                                                             </span>
                                                         </div>
@@ -642,7 +433,7 @@ export function AcpAgentManagement() {
                                                         ) : installable ? (
                                                             <Button
                                                                 size="sm"
-                                                                onClick={() => void handleInstall(agent)}
+                                                                onClick={() => void installRegistryAgent(agent)}
                                                                 disabled={installingRegistryId !== null}
                                                             >
                                                                 {installing ? (

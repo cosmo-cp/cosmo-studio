@@ -1,9 +1,9 @@
+import type { ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels } from 'core/dto';
+import { ModelProviderService } from 'core/services/ModelProviderService';
+import { CORETYPES } from 'core/types/types';
 import { inject, injectable } from 'inversify';
 import { z } from 'zod';
 import { IpcController, IpcHandler } from '../ipc/Decorators';
-import type { ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels } from 'core/dto';
-import { CORETYPES } from 'core/types/types';
-import { ModelProviderService } from 'core/services/ModelProviderService';
 import { Controller } from './Controller';
 
 const modelProviderCreateInputSchema = z.custom<ModelProviderCreateInput>();

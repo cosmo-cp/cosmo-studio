@@ -1,6 +1,6 @@
+import { Base64SecretStore, type SecretStore } from 'core/platform/SecretStore';
 import { safeStorage } from 'electron';
 import { injectable } from 'inversify';
-import { Base64SecretStore, type SecretStore } from 'core/platform/SecretStore';
 
 @injectable()
 export class ElectronSecretStore implements SecretStore {

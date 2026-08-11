@@ -1,9 +1,9 @@
-import { inject, injectable } from 'inversify';
 import { asc, eq } from 'drizzle-orm';
-import { CORETYPES } from '../types/types';
+import { inject, injectable } from 'inversify';
 import { DatabaseManager } from '../database/DatabaseManager';
-import { Message, NewMessage } from '../dto';
 import { chat, message } from '../database/schema/chatSchema';
+import { Message, NewMessage } from '../dto';
+import { CORETYPES } from '../types/types';
 
 @injectable()
 export class MessageRepository {

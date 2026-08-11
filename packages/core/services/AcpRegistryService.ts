@@ -1,9 +1,9 @@
 import { inject, injectable } from 'inversify';
 import { z } from 'zod';
-import { CORETYPES } from '../types/types';
-import { AcpAgentRepository } from '../repositories/AcpAgentRepository';
-import type { AcpAgentCreateInput, AcpRegistryAgent, AcpRegistryInstallInput, AcpRegistryView } from '../dto';
 import { AcpAgentInstallStatusEnum, AcpAgentSourceEnum } from '../database/schema/acpAgentSchema';
+import type { AcpAgentCreateInput, AcpRegistryAgent, AcpRegistryInstallInput, AcpRegistryView } from '../dto';
+import { AcpAgentRepository } from '../repositories/AcpAgentRepository';
+import { CORETYPES } from '../types/types';
 import { AcpAgentService } from './AcpAgentService';
 
 const REGISTRY_CACHE_ID = 'latest';

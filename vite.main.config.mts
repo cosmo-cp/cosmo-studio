@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
+
+const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Custom Vite plugin to copy the migrations folder
 const copyMigrationsPlugin = () => {
@@ -10,8 +12,8 @@ const copyMigrationsPlugin = () => {
         // Hook into the build process after all modules are bundled but before the final output
         closeBundle: function () {
             // Define source and destination paths relative to the project root
-            const sourceDir = path.resolve(__dirname, 'migrations');
-            const targetDir = path.resolve(__dirname, '.vite/build', 'migrations');
+            const sourceDir = path.resolve(dirname, 'migrations');
+            const targetDir = path.resolve(dirname, '.vite/build', 'migrations');
 
             console.log(`[Vite Plugin] Copying migrations from ${sourceDir} to ${targetDir}`);
 
@@ -29,6 +31,9 @@ const copyMigrationsPlugin = () => {
 };
 
 export default defineConfig({
+    resolve: {
+        tsconfigPaths: true,
+    },
     optimizeDeps: {
         exclude: ['@electric-sql/pglite'],
     },
@@ -37,7 +42,7 @@ export default defineConfig({
         rollupOptions: {
             external: ['@electric-sql/pglite'],
         },
-        outDir: path.resolve(__dirname, '.vite/build'),
+        outDir: path.resolve(dirname, '.vite/build'),
         lib: {
             entry: './src/main/index.ts',
             formats: ['cjs'],
@@ -47,5 +52,5 @@ export default defineConfig({
         emptyOutDir: true, // Ensures a clean build every time
     },
     // Add the custom plugin to the plugins array
-    plugins: [tsconfigPaths(), copyMigrationsPlugin()],
+    plugins: [copyMigrationsPlugin()],
 });

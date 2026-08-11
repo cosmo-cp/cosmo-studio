@@ -6,67 +6,22 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { McpServer } from 'core/dto';
+import { useGetMcpToolCatalogQuery } from '@/features/mcp-servers/mcp-servers-api';
 import { ChevronUp, RefreshCw, Wrench } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
-
-interface McpTool {
-    name: string;
-    title?: string;
-    description?: string;
-}
+import { useState } from 'react';
 
 export function McpToolsSelector() {
-    const [servers, setServers] = useState<McpServer[]>([]);
-    const [serverTools, setServerTools] = useState<Record<string, McpTool[]>>({});
-    const [isLoading, setIsLoading] = useState(false);
-    const [loadingToolsFor, setLoadingToolsFor] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
-
-    const loadServers = useCallback(async () => {
-        try {
-            const list = await window.api.mcpServer.getAll();
-            setServers(list.filter((s) => s.enabled));
-        } catch (error) {
-            console.error('Failed to load MCP servers', error);
-        }
-    }, []);
-
-    const loadToolsForServer = useCallback(async (serverId: string) => {
-        setLoadingToolsFor(serverId);
-        try {
-            const tools = await window.api.mcpServer.getServerTools(serverId);
-            setServerTools((prev) => ({ ...prev, [serverId]: tools }));
-        } catch (error) {
-            console.error(`Failed to load tools for server ${serverId}`, error);
-            setServerTools((prev) => ({ ...prev, [serverId]: [] }));
-        } finally {
-            setLoadingToolsFor(null);
-        }
-    }, []);
-
-    const handleOpenChange = (open: boolean) => {
-        setIsOpen(open);
-        if (open) {
-            loadServers();
-        }
-    };
-
-    useEffect(() => {
-        if (isOpen) {
-            servers.forEach((server) => {
-                if (!serverTools[server.id]) {
-                    loadToolsForServer(server.id);
-                }
-            });
-        }
-    }, [isOpen, servers, serverTools, loadToolsForServer]);
-
+    const { data, isFetching, refetch } = useGetMcpToolCatalogQuery(undefined, {
+        skip: !isOpen,
+    });
+    const servers = data?.servers ?? [];
+    const serverTools = data?.toolsByServerId ?? {};
     const totalTools = Object.values(serverTools).reduce((acc, tools) => acc + tools.length, 0);
     const enabledServersCount = servers.length;
 
     return (
-        <Popover open={isOpen} onOpenChange={handleOpenChange}>
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -107,15 +62,11 @@ export function McpToolsSelector() {
                         size="icon"
                         className="h-7 w-7"
                         onClick={() => {
-                            setIsLoading(true);
-                            loadServers().finally(() => {
-                                servers.forEach((s) => loadToolsForServer(s.id));
-                                setIsLoading(false);
-                            });
+                            void refetch();
                         }}
-                        disabled={isLoading}
+                        disabled={isFetching}
                     >
-                        <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
                     </Button>
                 </div>
                 <Separator />
@@ -148,7 +99,7 @@ export function McpToolsSelector() {
                                     </div>
 
                                     <div className="grid gap-1">
-                                        {loadingToolsFor === server.id ? (
+                                        {isFetching && !serverTools[server.id] ? (
                                             <div className="px-2 py-1 text-[11px] text-muted-foreground">
                                                 Loading tools...
                                             </div>

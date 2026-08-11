@@ -1,10 +1,10 @@
 import { generateText, stepCountIs, type ToolSet } from 'ai';
-import { inject, injectable } from 'inversify';
 import type { WorkflowGraph, WorkflowRun } from 'core/dto';
 import { McpClientManager } from 'core/services/McpClientManager';
 import { ModelProviderService } from 'core/services/ModelProviderService';
 import { WorkflowRunService } from 'core/services/WorkflowRunService';
 import { CORETYPES } from 'core/types/types';
+import { inject, injectable } from 'inversify';
 import { logger } from '../logger';
 
 const SUPPORTED_NODE_TYPES = new Set<WorkflowNodeType>([

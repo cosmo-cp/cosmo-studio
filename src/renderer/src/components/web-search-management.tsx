@@ -14,249 +14,31 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import {
-    deleteParallelWebSearchConfig,
-    deleteWebSearchConfig,
-    loadWebSearchConfig,
-    loadWebSearchOptions,
-    saveParallelWebSearchConfig,
-    saveWebSearchConfig,
-} from '@/lib/store/web-search-store';
-import { PARALLEL_WEB_SEARCH_PROVIDER_ID, type FrontendWebSearchProviderConfig } from '@/lib/web-search-options';
-import { WebSearchProviderTypeEnum } from 'core/database/schema/webSearchConfigSchema';
-import type { LucideIcon } from 'lucide-react';
-import { ExternalLink, Globe, KeyRound, Search, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-
-type WebSearchProviderId = WebSearchProviderTypeEnum.EXA | typeof PARALLEL_WEB_SEARCH_PROVIDER_ID;
-
-interface WebSearchProviderDefinition {
-    id: WebSearchProviderId;
-    name: string;
-    title: string;
-    description: string;
-    docsUrl: string;
-    apiKeyUrl: string;
-    defaults: Array<{ label: string; value: string }>;
-    dialogDescription: string;
-    emptyRuntimeDescription: string;
-    enabledRuntimeDescription: string;
-    disabledRuntimeDescription: string;
-    emptyApiKeyPlaceholder: string;
-    savedApiKeyPlaceholder: string;
-    emptyApiKeyHelperText: string;
-    savedApiKeyHelperText: string;
-    removeDescription: string;
-    storageBadge: string;
-    addLabel: string;
-    editLabel: string;
-    saveLabel: string;
-    icon: LucideIcon;
-}
-
-const providerDefinitions: WebSearchProviderDefinition[] = [
-    {
-        id: WebSearchProviderTypeEnum.EXA,
-        name: 'Exa',
-        title: 'Exa web search',
-        description: 'Adds live web search to the chat tool set when you need fresh results.',
-        docsUrl: 'https://ai-sdk.dev/tools-registry/exa',
-        apiKeyUrl: 'https://dashboard.exa.ai/api-keys',
-        defaults: [
-            { label: 'Search type', value: 'Auto hybrid search' },
-            { label: 'Results', value: '10 results' },
-            { label: 'Text', value: '3000 characters per result' },
-            { label: 'Livecrawl', value: 'Fallback when freshness matters' },
-        ],
-        dialogDescription: 'Save the Exa API key used to expose the `webSearch()` tool during chat streams.',
-        emptyRuntimeDescription: 'Add your Exa API key to make the web search option available in chat.',
-        enabledRuntimeDescription: 'Exa web search is available to chats that need fresh results.',
-        disabledRuntimeDescription: 'Exa is saved, but chats will not use web search until you enable it.',
-        emptyApiKeyPlaceholder: 'Enter your Exa API key',
-        savedApiKeyPlaceholder: 'Leave blank to keep the saved key',
-        emptyApiKeyHelperText: 'The key is stored securely and used only for Exa web search.',
-        savedApiKeyHelperText: 'Leave this blank to keep the existing key. Enter a new key to rotate it.',
-        removeDescription: 'This removes the saved Exa API key and disables the web-search option for future chats.',
-        storageBadge: 'API key saved securely',
-        addLabel: 'Add Exa',
-        editLabel: 'Edit Exa',
-        saveLabel: 'Save Exa',
-        icon: Search,
-    },
-    {
-        id: PARALLEL_WEB_SEARCH_PROVIDER_ID,
-        name: 'Parallel',
-        title: 'Parallel web search',
-        description: "Adds Parallel's search and extraction registry tools for broader web context in chat.",
-        docsUrl: 'https://ai-sdk.dev/tools-registry/parallel',
-        apiKeyUrl: 'https://platform.parallel.ai',
-        defaults: [
-            { label: 'Search tool', value: 'searchTool' },
-            { label: 'Extract tool', value: 'extractTool' },
-            { label: 'Output', value: 'Compressed web context' },
-            { label: 'Best for', value: 'Search + page extraction' },
-        ],
-        dialogDescription:
-            'Store a Parallel API key in renderer state for this frontend-only search and extraction flow.',
-        emptyRuntimeDescription: 'Add a Parallel API key to make the Parallel option available in chat.',
-        enabledRuntimeDescription: 'Parallel search and extraction are available to chats in this frontend-only flow.',
-        disabledRuntimeDescription: 'Parallel is configured, but chats will not use it until you enable it.',
-        emptyApiKeyPlaceholder: 'Enter your Parallel API key',
-        savedApiKeyPlaceholder: 'Leave blank to keep the in-memory key',
-        emptyApiKeyHelperText: 'This key stays in Redux state only for the frontend preview flow.',
-        savedApiKeyHelperText: 'Leave this blank to keep the current in-memory key for this session.',
-        removeDescription:
-            'This removes the in-memory Parallel API key from Redux state and disables the option for future chats.',
-        storageBadge: 'API key kept in Redux state',
-        addLabel: 'Add Parallel',
-        editLabel: 'Edit Parallel',
-        saveLabel: 'Save Parallel',
-        icon: Globe,
-    },
-];
-
-function toFrontendConfig(
-    config: { enabled: boolean; hasApiKey: boolean } | null,
-): FrontendWebSearchProviderConfig | null {
-    return config
-        ? {
-              enabled: config.enabled,
-              hasApiKey: config.hasApiKey,
-          }
-        : null;
-}
+import { useWebSearchPageState, webSearchProviderDefinitions } from '@/features/web-search/use-web-search-page-state';
+import { ExternalLink, Globe, KeyRound, Trash2 } from 'lucide-react';
 
 export function WebSearchManagement() {
-    const dispatch = useAppDispatch();
-    const exaConfig = useAppSelector((state) => state.webSearch.config);
-    const parallelConfig = useAppSelector((state) => state.webSearch.parallelConfig);
-    const status = useAppSelector((state) => state.webSearch.status);
-    const optionsStatus = useAppSelector((state) => state.webSearch.optionsStatus);
-    const errorMessage = useAppSelector((state) => state.webSearch.errorMessage);
-    const [activeDialogProviderId, setActiveDialogProviderId] = useState<WebSearchProviderId | null>(null);
-    const [activeDeleteProviderId, setActiveDeleteProviderId] = useState<WebSearchProviderId | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [apiKey, setApiKey] = useState('');
-    const [enabled, setEnabled] = useState(true);
-    const [formError, setFormError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (status === 'idle') {
-            void dispatch(loadWebSearchConfig());
-        }
-        if (optionsStatus === 'idle') {
-            void dispatch(loadWebSearchOptions());
-        }
-    }, [dispatch, optionsStatus, status]);
-
-    const providerConfigs = useMemo<Record<WebSearchProviderId, FrontendWebSearchProviderConfig | null>>(
-        () => ({
-            [WebSearchProviderTypeEnum.EXA]: toFrontendConfig(exaConfig),
-            [PARALLEL_WEB_SEARCH_PROVIDER_ID]: parallelConfig,
-        }),
-        [exaConfig, parallelConfig],
-    );
-
-    const activeProvider = useMemo(
-        () => providerDefinitions.find((provider) => provider.id === activeDialogProviderId) ?? null,
-        [activeDialogProviderId],
-    );
-    const activeDeleteProvider = useMemo(
-        () => providerDefinitions.find((provider) => provider.id === activeDeleteProviderId) ?? null,
-        [activeDeleteProviderId],
-    );
-    const activeProviderConfig = activeProvider ? providerConfigs[activeProvider.id] : null;
-
-    const openDialog = (providerId: WebSearchProviderId) => {
-        setApiKey('');
-        setEnabled(providerConfigs[providerId]?.enabled ?? true);
-        setFormError(null);
-        setActiveDialogProviderId(providerId);
-    };
-
-    const handleCloseDialog = () => {
-        setActiveDialogProviderId(null);
-        setApiKey('');
-        setFormError(null);
-    };
-
-    const handleSave = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        if (!activeProvider) {
-            return;
-        }
-
-        setIsSubmitting(true);
-        setFormError(null);
-
-        try {
-            if (activeProvider.id === WebSearchProviderTypeEnum.EXA) {
-                await dispatch(
-                    saveWebSearchConfig({
-                        type: WebSearchProviderTypeEnum.EXA,
-                        enabled,
-                        apiKey,
-                    }),
-                ).unwrap();
-            } else {
-                dispatch(saveParallelWebSearchConfig({ enabled, apiKey }));
-            }
-            handleCloseDialog();
-        } catch (error) {
-            setFormError(error instanceof Error ? error.message : `Failed to save ${activeProvider.name} settings.`);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleToggleEnabled = async (providerId: WebSearchProviderId, checked: boolean) => {
-        const providerConfig = providerConfigs[providerId];
-        if (!providerConfig) {
-            return;
-        }
-
-        setFormError(null);
-        if (providerId === WebSearchProviderTypeEnum.EXA) {
-            try {
-                await dispatch(
-                    saveWebSearchConfig({
-                        type: WebSearchProviderTypeEnum.EXA,
-                        enabled: checked,
-                    }),
-                ).unwrap();
-            } catch (error) {
-                setFormError(error instanceof Error ? error.message : 'Failed to update Exa settings.');
-            }
-            return;
-        }
-
-        dispatch(saveParallelWebSearchConfig({ enabled: checked }));
-    };
-
-    const handleDelete = async () => {
-        if (!activeDeleteProvider) {
-            return;
-        }
-
-        setIsSubmitting(true);
-        setFormError(null);
-
-        try {
-            if (activeDeleteProvider.id === WebSearchProviderTypeEnum.EXA) {
-                await dispatch(deleteWebSearchConfig()).unwrap();
-            } else {
-                dispatch(deleteParallelWebSearchConfig());
-            }
-            setActiveDeleteProviderId(null);
-        } catch (error) {
-            setFormError(
-                error instanceof Error ? error.message : `Failed to remove ${activeDeleteProvider.name} settings.`,
-            );
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    const {
+        providerConfigs,
+        activeProvider,
+        activeDeleteProvider,
+        activeProviderConfig,
+        isLoading,
+        error,
+        isSubmitting,
+        apiKey,
+        enabled,
+        formError,
+        setApiKey,
+        setEnabled,
+        openDialog,
+        closeDialog,
+        saveProviderConfig,
+        toggleEnabled,
+        requestDeleteProvider,
+        clearDeleteProvider,
+        deleteProviderConfig,
+    } = useWebSearchPageState();
 
     return (
         <div className="space-y-6">
@@ -268,7 +50,7 @@ export function WebSearchManagement() {
             </header>
 
             <div className="grid gap-6 xl:grid-cols-2">
-                {providerDefinitions.map((provider) => {
+                {webSearchProviderDefinitions.map((provider) => {
                     const config = providerConfigs[provider.id];
                     const Icon = provider.icon;
 
@@ -351,9 +133,9 @@ export function WebSearchManagement() {
                                             <Switch
                                                 id={`${provider.id}-enabled`}
                                                 checked={config.enabled}
-                                                disabled={isSubmitting}
+                                                disabled={isSubmitting || isLoading}
                                                 onCheckedChange={(checked) => {
-                                                    void handleToggleEnabled(provider.id, checked);
+                                                    void toggleEnabled(provider.id, checked);
                                                 }}
                                             />
                                         </div>
@@ -369,7 +151,7 @@ export function WebSearchManagement() {
                                             variant="outline"
                                             size="sm"
                                             className="text-destructive hover:text-destructive"
-                                            onClick={() => setActiveDeleteProviderId(provider.id)}
+                                            onClick={() => requestDeleteProvider(provider.id)}
                                         >
                                             <Trash2 className="size-4" aria-hidden="true" />
                                             Remove {provider.name}
@@ -382,9 +164,9 @@ export function WebSearchManagement() {
                 })}
             </div>
 
-            {(formError ?? errorMessage) && (
+            {(formError ?? error) && (
                 <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                    {formError ?? errorMessage}
+                    {formError ?? error ?? 'Failed to load web search settings'}
                 </div>
             )}
 
@@ -392,7 +174,7 @@ export function WebSearchManagement() {
                 open={activeProvider !== null}
                 onOpenChange={(open) => {
                     if (!open) {
-                        handleCloseDialog();
+                        closeDialog();
                     }
                 }}
             >
@@ -406,7 +188,7 @@ export function WebSearchManagement() {
                     <form
                         className="space-y-4"
                         onSubmit={(event) => {
-                            void handleSave(event);
+                            void saveProviderConfig(event);
                         }}
                     >
                         <div className="space-y-2">
@@ -439,7 +221,7 @@ export function WebSearchManagement() {
                         </div>
 
                         <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={handleCloseDialog}>
+                            <Button type="button" variant="ghost" onClick={closeDialog}>
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={isSubmitting}>
@@ -454,7 +236,7 @@ export function WebSearchManagement() {
                 open={activeDeleteProvider !== null}
                 onOpenChange={(open) => {
                     if (!open) {
-                        setActiveDeleteProviderId(null);
+                        clearDeleteProvider();
                     }
                 }}
                 title={activeDeleteProvider ? `Remove ${activeDeleteProvider.title}?` : 'Remove web search?'}
@@ -462,7 +244,7 @@ export function WebSearchManagement() {
                 confirmText="Remove"
                 variant="destructive"
                 onConfirm={() => {
-                    void handleDelete();
+                    void deleteProviderConfig();
                 }}
             />
         </div>

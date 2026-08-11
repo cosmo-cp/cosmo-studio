@@ -1,10 +1,10 @@
+import { WebSearchProviderTypeEnum } from 'core/database/schema/webSearchConfigSchema';
+import type { WebSearchConfigSaveInput, WebSearchConfigView } from 'core/dto';
+import { WebSearchConfigService } from 'core/services/WebSearchConfigService';
+import { CORETYPES } from 'core/types/types';
 import { inject, injectable } from 'inversify';
 import { z } from 'zod';
 import { IpcController, IpcHandler } from '../ipc/Decorators';
-import { CORETYPES } from 'core/types/types';
-import type { WebSearchConfigSaveInput, WebSearchConfigView } from 'core/dto';
-import { WebSearchProviderTypeEnum } from 'core/database/schema/webSearchConfigSchema';
-import { WebSearchConfigService } from 'core/services/WebSearchConfigService';
 import { Controller } from './Controller';
 
 const providerTypeSchema = z.nativeEnum(WebSearchProviderTypeEnum);

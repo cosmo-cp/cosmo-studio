@@ -1,11 +1,11 @@
+import type { McpServer, McpServerCreateInput, McpServerUpdateInput, McpToolDefinition } from 'core/dto';
+import { McpClientManager } from 'core/services/McpClientManager';
+import { McpServerService } from 'core/services/McpServerService';
+import { CORETYPES } from 'core/types/types';
 import { inject, injectable } from 'inversify';
 import { z } from 'zod';
 import { IpcController, IpcHandler } from '../ipc/Decorators';
-import { CORETYPES } from 'core/types/types';
-import { McpServerService } from 'core/services/McpServerService';
-import { McpClientManager } from 'core/services/McpClientManager';
 import { Controller } from './Controller';
-import type { McpServer, McpServerCreateInput, McpServerUpdateInput, McpToolDefinition } from 'core/dto';
 
 const mcpServerCreateSchema = z.custom<McpServerCreateInput>();
 const mcpServerUpdateSchema = z.custom<McpServerUpdateInput>();

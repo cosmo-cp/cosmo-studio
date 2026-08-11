@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
-import { CORETYPES } from '../types/types';
-import { PersonaRepository } from '../repositories/PersonaRepository';
 import { NewPersona, Persona } from '../dto';
+import { PersonaRepository } from '../repositories/PersonaRepository';
+import { CORETYPES } from '../types/types';
 
 const normalizeRequired = (value: string | null | undefined, field: string) => {
     if (!value || value.trim().length === 0) {

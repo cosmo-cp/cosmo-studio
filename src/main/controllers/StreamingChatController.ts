@@ -1,12 +1,12 @@
+import type { ChatAbortArgs, ChatSendMessageArgs } from 'core/dto';
 import { IpcMainEvent, WebContents } from 'electron';
 import { inject, injectable } from 'inversify';
 import { z } from 'zod';
 import { IpcController, IpcOn, IpcRendererOn } from '../ipc/Decorators';
-import type { ChatAbortArgs, ChatSendMessageArgs } from 'core/dto';
-import { Controller } from './Controller';
 import { logger } from '../logger';
-import { TYPES } from '../types';
 import { ChatStreamingService } from '../services/ChatStreamingService';
+import { TYPES } from '../types';
+import { Controller } from './Controller';
 
 const chatSendMessageArgsSchema = z.custom<ChatSendMessageArgs>();
 const chatAbortArgsSchema = z.custom<ChatAbortArgs>();

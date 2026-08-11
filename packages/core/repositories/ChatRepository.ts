@@ -1,10 +1,10 @@
-import { inject, injectable } from 'inversify';
+import { UIMessage } from 'ai';
 import { and, asc, desc, eq, ilike, SQL } from 'drizzle-orm';
-import { CORETYPES } from '../types/types';
+import { inject, injectable } from 'inversify';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { chat, message } from '../database/schema/schema';
 import { AgentIdentifier, Chat, ChatWithMessages, Message, ModelIdentifier, NewChat, PersonaIdentifier } from '../dto';
-import { UIMessage } from 'ai';
+import { CORETYPES } from '../types/types';
 import { toUiMessages } from '../uiMessageMapper';
 
 @injectable()

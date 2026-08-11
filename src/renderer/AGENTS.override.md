@@ -22,10 +22,10 @@ This file applies to changes under `src/renderer/`.
 - Renderer must not import Node/Electron APIs.
 - All privileged operations go through preload-backed capabilities.
 - Renderer components should not call `window.api` directly:
-    - Use the root Redux store, selectors, and thunks for cached request/response flows.
-    - Keep backend resolution isolated to `src/renderer/src/lib/store/store.ts` and streaming transport code such as `src/renderer/src/chat-transport.ts`.
+    - Use the bounded Zustand store, feature backend hooks, and UI slices for shared renderer state and cached request/response flows.
+    - Keep backend resolution isolated to `src/renderer/src/lib/store/app-data-source.ts`, feature SWR-backed modules under `src/renderer/src/features/*/*-api.ts`, and streaming transport code such as `src/renderer/src/chat-transport.ts`.
 - Renderer components should not branch on Electron versus HTTP:
-    - Request/response backend selection belongs in `src/renderer/src/lib/store/store.ts` via the thunk `extraArgument`.
+    - Request/response backend selection belongs in `src/renderer/src/lib/store/app-data-source.ts` and is consumed by `useBackendQuery()` / `useBackendMutation()` through the shared store context.
     - Streaming backend selection belongs in `src/renderer/src/chat-transport.ts`.
     - Browser-safe HTTP RPC calls live in `src/preload/api.ts`; Electron-only preload calls live behind `window.api` via `src/preload/rpc-api.ts`.
 - Prefer `import type` when consuming `core/dto` types to avoid bundling heavy runtime code:
@@ -36,7 +36,8 @@ This file applies to changes under `src/renderer/`.
 - Styling: Tailwind CSS v4 + CSS variables in `src/renderer/src/app/globals.css`.
 - Component primitives: shadcn/ui + Radix (`src/renderer/src/components/ui/*`).
 - Icons: `lucide-react`.
-- Themes: `next-themes` (`ThemeProvider` in `src/renderer/src/app/layout.tsx`).
+- Themes: `next-themes` (`ThemeProvider` in `src/renderer/src/app/providers.tsx`).
+- App provider stack: `src/renderer/src/app/providers.tsx` composes `StoreProvider`, `ThemeProvider`, and `UiFeedbackHost`.
 - Notifications: `sonner`.
 
 ## Design guidelines (match current product)
@@ -76,11 +77,16 @@ Apply the highest-impact rules first:
 
 ## Data flow conventions
 
-- Prefer a single renderer-wide Redux store as the source of truth for cached UI state.
-- Keep side effects in Redux thunks or adapter modules, not in reducers or presentation components.
+- Prefer a single renderer-wide Zustand store as the source of truth for shared UI state.
+- Keep backend request/response side effects in feature backend hooks or adapter modules, not in store slices or presentation components.
 - Keep renderer logic focused on presentation + orchestration:
     - DB queries, encryption, provider registries belong in `packages/core` and/or main controllers.
-- Resolve backend-specific request/response access in `src/renderer/src/lib/store/store.ts` so the same thunk layer can talk to Electron preload or HTTP RPC.
+- Resolve backend-specific request/response access through `src/renderer/src/lib/store/app-data-source.ts`, `src/renderer/src/lib/store/backend-hooks.ts`, and colocated feature modules such as `src/renderer/src/features/chat/chat-api.ts`, `src/renderer/src/features/providers/providers-api.ts`, and `src/renderer/src/features/mcp-servers/mcp-servers-api.ts`.
+- Keep page-level orchestration in `src/renderer/src/features/*/use-*-page-state.ts` hooks so large components stay mostly presentational.
+- Keep backend error handling and cache updates centralized in `src/renderer/src/lib/store/backend-hooks.ts`; keep toast presentation in `src/renderer/src/lib/store/ui-feedback-store.ts` and `src/renderer/src/components/ui-feedback-host.tsx`.
+- Keep Zustand slices renderer-only:
+    - `src/renderer/src/features/chat/chat-store.ts` owns page-local chat selection and search state.
+    - `src/renderer/src/features/web-search/web-search-store.ts` owns the frontend-only Parallel web-search session config.
 - For streaming chat:
     - Renderer uses `@ai-sdk/react` and `createChatTransport()` (`src/renderer/src/chat-transport.ts`).
     - Electron builds use `IpcChatTransport`; ensure stream channels are stable (`chat-stream-${chatId}`) and all listeners are cleaned up.

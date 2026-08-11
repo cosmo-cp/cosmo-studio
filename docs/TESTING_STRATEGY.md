@@ -7,6 +7,11 @@ The quality bar is “no untested behavior”. New code should ship with unit + 
 - 100%+ coverage mindset for new/changed code (line + branch).
 - Every error path should be asserted (including validation failures).
 
+## Test runners
+
+- Root tests run through `vitest.config.mts` and cover `packages/`, `scripts/`, `src/main/`, and `src/preload/`.
+- Renderer tests run through `src/renderer/vitest.config.mts` with JSDOM and `src/renderer/src/test/setup.ts`.
+
 ## What to test
 
 ### `packages/core`
@@ -39,7 +44,8 @@ The quality bar is “no untested behavior”. New code should ship with unit + 
 - Component tests for UI behavior:
     - Chat selection, message rendering, search highlighting, model/persona selection.
     - Command management screens and dropdown integration.
-- Mock `window.api` for unit tests; do not require Electron runtime.
+- Prefer wrapping components with `StoreProvider` and injecting a test `appDataSource` when testing feature hooks or backend-backed UI flows.
+- Mock `window.api` only when verifying the Electron adapter path; most renderer tests should stay backend-agnostic through the shared app data source.
 
 ## Automation / E2E
 

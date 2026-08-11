@@ -1,9 +1,9 @@
 import { inject, injectable } from 'inversify';
-import { CORETYPES } from '../types/types';
-import { WebSearchConfig, WebSearchConfigSaveInput, WebSearchConfigView } from '../dto';
-import { WebSearchConfigRepository } from '../repositories/WebSearchConfigRepository';
 import { WebSearchProviderTypeEnum } from '../database/schema/webSearchConfigSchema';
+import { WebSearchConfig, WebSearchConfigSaveInput, WebSearchConfigView } from '../dto';
 import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
+import { WebSearchConfigRepository } from '../repositories/WebSearchConfigRepository';
+import { CORETYPES } from '../types/types';
 
 @injectable()
 export class WebSearchConfigService {
