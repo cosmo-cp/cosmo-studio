@@ -40,6 +40,12 @@ This file applies to changes under `src/renderer/`.
 - App provider stack: `src/renderer/src/app/providers.tsx` composes `StoreProvider`, `ThemeProvider`, and `UiFeedbackHost`.
 - Notifications: `sonner`.
 
+## Renderer file placement
+
+- Put reusable renderer components in `src/renderer/src/components/`.
+- Keep feature-specific hooks, API adapters, store slices, and page orchestration in `src/renderer/src/features/*`.
+- Do not place shared/reusable UI components under `src/renderer/src/features/`.
+
 ## Design guidelines (match current product)
 
 The current UI establishes:

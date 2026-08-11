@@ -1,8 +1,8 @@
 'use client';
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { PageEmptyState } from '@/components/page-empty-state';
 import { Button } from '@/components/ui/button';
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { WorkflowHistory } from '@/components/workflow-history';
 import { WorkflowWorkspace } from '@/components/workflow-workspace';
 import { useWorkflowPageState } from '@/features/workflows/use-workflow-page-state';
@@ -34,38 +34,24 @@ export function WorkflowPageContent() {
                     onSelectWorkflow={selectWorkflow}
                 />
                 {!hasWorkflows ? (
-                    <div className="flex h-full flex-1 flex-col items-center justify-center">
-                        <Empty>
-                            <EmptyHeader>
-                                <EmptyMedia variant="icon">
-                                    <Workflow />
-                                </EmptyMedia>
-                                <EmptyTitle>Start a new Workflow</EmptyTitle>
-                                <EmptyDescription>Create a workflow to begin building your flow.</EmptyDescription>
-                            </EmptyHeader>
-                            <EmptyContent>
-                                <Button variant="outline" size="sm" onClick={() => void createWorkflow()}>
-                                    New Workflow
-                                </Button>
-                            </EmptyContent>
-                        </Empty>
-                    </div>
+                    <PageEmptyState
+                        icon={Workflow}
+                        title="Start a new Workflow"
+                        description="Create a workflow to begin building your flow."
+                        action={
+                            <Button variant="outline" size="sm" onClick={() => void createWorkflow()}>
+                                New Workflow
+                            </Button>
+                        }
+                    />
                 ) : selectedWorkflow ? (
                     <WorkflowWorkspace key={selectedWorkflow.id} workflow={selectedWorkflow} />
                 ) : (
-                    <div className="flex h-full flex-1 flex-col items-center justify-center">
-                        <Empty>
-                            <EmptyHeader>
-                                <EmptyMedia variant="icon">
-                                    <Workflow />
-                                </EmptyMedia>
-                                <EmptyTitle>Select a Workflow</EmptyTitle>
-                                <EmptyDescription>
-                                    Choose a workflow from the history panel to open its canvas.
-                                </EmptyDescription>
-                            </EmptyHeader>
-                        </Empty>
-                    </div>
+                    <PageEmptyState
+                        icon={Workflow}
+                        title="Select a Workflow"
+                        description="Choose a workflow from the history panel to open its canvas."
+                    />
                 )}
             </div>
             <ConfirmDialog

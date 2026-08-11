@@ -23,6 +23,7 @@ Cosmo Studio is a dual-runtime app with a static-exported Next.js UI. It builds 
     - Uses a single bounded Zustand store created in `src/renderer/src/lib/store/store.ts` and mounted in `src/renderer/src/app/store-provider.tsx`; `StoreProvider` also owns the renderer SWR cache.
     - Request/response flows go through feature-owned SWR hooks under `src/renderer/src/features/*/*-api.ts`, all built on `src/renderer/src/lib/store/backend-hooks.ts`, while renderer-only state stays in focused slices.
     - Feature orchestration belongs in `src/renderer/src/features/*/use-*-page-state.ts`; keep page/components presentational where possible.
+    - Reusable renderer UI components belong in `src/renderer/src/components/`; do not place shared components under `src/renderer/src/features/`.
     - Backend resolution lives in `src/renderer/src/lib/store/app-data-source.ts`; user-facing toasts are queued in `src/renderer/src/lib/store/ui-feedback-store.ts` and rendered by `src/renderer/src/components/ui-feedback-host.tsx`.
     - `NEXT_PUBLIC_COSMO_BACKEND=electron|http` selects `window.api` versus the browser-safe `httpApi` exported from `src/preload/api.ts`.
 - **Core package (domain + DB + AI)**: `packages/core/` (workspace package name: `core`)
@@ -62,6 +63,8 @@ Before coding, decide **where the feature belongs**. Default to keeping the rend
 
 1. **Pure UI/UX change (layout, styling, components, interaction)**  
    → `src/renderer/src/...`
+   → Reusable renderer components must live in `src/renderer/src/components/`.
+   → Keep feature-specific orchestration, hooks, and state in `src/renderer/src/features/*`.
 
 2. **Needs OS access / Electron APIs / desktop app lifecycle**
    → `src/main/...`
