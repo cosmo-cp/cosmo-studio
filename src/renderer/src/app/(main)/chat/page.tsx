@@ -1,11 +1,12 @@
 'use client';
 
 import { ChatConversationPane } from '@/components/chat-conversation-pane';
-import { ChatHistory } from '@/components/chat-history';
+import { HistoryPanel } from '@/components/history-panel';
 import { PageEmptyState } from '@/components/page-empty-state';
 import { Button } from '@/components/ui/button';
 import { useChatPageState } from '@/features/chat/use-chat-page-state';
-import { MessageCirclePlus } from 'lucide-react';
+import { formatHistoryTimestamp } from '@/lib/utils';
+import { MessageCirclePlus, Pin } from 'lucide-react';
 import { JSX } from 'react';
 
 function MainChatPage(): JSX.Element {
@@ -39,12 +40,34 @@ function MainChatPage(): JSX.Element {
 
     return (
         <div className="flex-1 min-h-0 flex rounded-b-lg border-t-0 overflow-hidden bg-background">
-            <ChatHistory
-                chats={chatHistory}
-                selectedChat={selectedChat}
-                onChangeSelectedChat={selectChatById}
-                onNewChat={createNewChat}
+            <HistoryPanel
+                action={{
+                    ariaLabel: 'New Chat',
+                    icon: MessageCirclePlus,
+                    label: 'New Chat',
+                    onClick: createNewChat,
+                }}
+                getItemKey={(chat) => chat.id}
+                items={chatHistory}
                 onSearch={searchChatHistory}
+                renderPreview={(chat) => ({
+                    className: 'items-center',
+                    footerTrailing: chat.pinned ? (
+                        <Pin className="h-3 w-3 shrink-0 text-muted-foreground" fill="black" />
+                    ) : null,
+                    headerTrailing: formatHistoryTimestamp(chat.lastMessageAt),
+                    onSelect: () => selectChatById(chat),
+                    selected: selectedChat?.id === chat.id,
+                    summary: (
+                        <p className="max-w-[140px] truncate pr-2 text-sm text-muted-foreground lg:max-w-[170px]">
+                            {chat.lastMessage}
+                        </p>
+                    ),
+                    title: <h3 className="max-w-[160px] truncate font-medium lg:max-w-[180px]">{chat.title}</h3>,
+                })}
+                searchAriaLabel="Search chats"
+                searchPlaceholder="Search history..."
+                title="Chat"
             />
             <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {selectedChat ? (

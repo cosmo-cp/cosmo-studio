@@ -1,6 +1,6 @@
 'use client';
 
-import type { WorkflowListItem } from '@/components/workflow-history';
+import type { WorkflowListItem } from '@/features/workflows/workflow-list-item';
 import {
     useCreateWorkflowMutation,
     useDeleteWorkflowMutation,

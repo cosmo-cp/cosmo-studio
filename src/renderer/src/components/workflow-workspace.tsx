@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { WorkflowCanvas } from '@/components/workflow-canvas';
-import type { WorkflowListItem } from '@/components/workflow-history';
+import type { WorkflowListItem } from '@/features/workflows/workflow-list-item';
 import { cn } from '@/lib/utils';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';

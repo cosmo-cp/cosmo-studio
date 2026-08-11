@@ -45,6 +45,7 @@ This file applies to changes under `src/renderer/`.
 - Put reusable renderer components in `src/renderer/src/components/`.
 - Keep feature-specific hooks, API adapters, store slices, and page orchestration in `src/renderer/src/features/*`.
 - Do not place shared/reusable UI components under `src/renderer/src/features/`.
+- Put shared renderer utility files and pure helper functions in `src/renderer/src/lib/`; prefer extending `src/renderer/src/lib/utils.ts` for small generic helpers instead of creating utility files under `src/renderer/src/components/`.
 
 ## Design guidelines (match current product)
 

@@ -7,7 +7,7 @@ import { Panel } from '@/components/ai-elements/panel';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { WorkflowListItem } from '@/components/workflow-history';
+import type { WorkflowListItem } from '@/features/workflows/workflow-list-item';
 import { cn } from '@/lib/utils';
 import type { Connection, Edge, Node, NodeProps, OnNodesChange, ReactFlowInstance, XYPosition } from '@xyflow/react';
 import { addEdge, Handle, MarkerType, Position, useEdgesState, useNodesState } from '@xyflow/react';
