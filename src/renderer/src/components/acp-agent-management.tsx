@@ -340,7 +340,7 @@ export function AcpAgentManagement() {
                     </DialogContent>
                 </Dialog>
                 <Dialog open={registryDialogOpen} onOpenChange={setRegistryDialogOpen}>
-                    <DialogContent className="flex max-h-[85dvh] w-[calc(100vw-2rem)] max-w-225 min-w-0 flex-col overflow-hidden p-0">
+                    <DialogContent className="flex max-h-[85dvh] w-[calc(100vw-2rem)] max-w-[900px] min-w-0 flex-col overflow-hidden p-0">
                         <DialogHeader className="shrink-0 px-6 pt-6 pr-12">
                             <DialogTitle>ACP Registry</DialogTitle>
                             <DialogDescription>

@@ -16,7 +16,7 @@ export function StoreProvider({
     children: ReactNode;
     appDataSource?: AppDataSource;
 }): JSX.Element {
-    const resolvedAppDataSource = appDataSource ??  resolveAppDataSource();
+    const resolvedAppDataSource = appDataSource ?? resolveAppDataSource();
     const [store] = useState(() => createAppStore(resolvedAppDataSource));
 
     return (

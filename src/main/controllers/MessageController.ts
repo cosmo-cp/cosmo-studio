@@ -1,9 +1,9 @@
 import type { UIMessage } from 'ai';
-import { inject, injectable } from 'inversify';
-import { z } from 'zod';
 import type { Message, NewMessage } from 'core/dto';
 import { MessageService } from 'core/services/MessageService';
 import { CORETYPES } from 'core/types/types';
+import { inject, injectable } from 'inversify';
+import { z } from 'zod';
 import { IpcController, IpcHandler } from '../ipc/Decorators';
 
 const newMessageSchema = z.custom<NewMessage>();
