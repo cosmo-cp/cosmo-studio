@@ -1,3 +1,4 @@
+import path from 'path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setCoreLogger } from '../platform/CoreLogger';
 import { DatabaseManager } from './DatabaseManager';
@@ -118,19 +119,19 @@ describe('DatabaseManager', () => {
     it('removes a stale postmaster pid file before initializing', async () => {
         const connection = { connected: true };
         const db = { db: true };
+        const dbPath = '/tmp/cosmo-db';
+        const postmasterPidPath = path.join(dbPath, 'postmaster.pid');
         fsExistsSyncMock.mockReturnValue(true);
         fsReadFileSyncMock.mockReturnValue('-42\n/tmp/pglite/base\n');
         pgliteCreate.mockResolvedValue(connection);
         drizzleMock.mockReturnValue(db);
         runMigrationsMock.mockResolvedValue(undefined);
 
-        await expect(DatabaseManager.initialize('/tmp/cosmo-db')).resolves.toBeUndefined();
+        await expect(DatabaseManager.initialize(dbPath)).resolves.toBeUndefined();
 
-        expect(fsReadFileSyncMock).toHaveBeenCalledWith('/tmp/cosmo-db/postmaster.pid', 'utf8');
-        expect(fsRmSyncMock).toHaveBeenCalledWith('/tmp/cosmo-db/postmaster.pid', { force: true });
-        expect(logger.warn).toHaveBeenCalledWith(
-            '[DB INIT] Removed stale PGlite lock file at /tmp/cosmo-db/postmaster.pid',
-        );
+        expect(fsReadFileSyncMock).toHaveBeenCalledWith(postmasterPidPath, 'utf8');
+        expect(fsRmSyncMock).toHaveBeenCalledWith(postmasterPidPath, { force: true });
+        expect(logger.warn).toHaveBeenCalledWith(`[DB INIT] Removed stale PGlite lock file at ${postmasterPidPath}`);
     });
 
     it('fails fast when the database directory is already in use', async () => {
