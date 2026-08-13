@@ -94,6 +94,7 @@ function MainChatPage(): JSX.Element {
                         onPersonaChange={(personaId) => changeSelectedPersona({ personaId })}
                         onWebSearchChange={changeWebSearchOption}
                         hideAgentControls
+                        hideWebSearchControls
                     />
                 ) : (
                     <PageEmptyState

@@ -79,6 +79,7 @@ describe('ChatConversationPane', () => {
         const onPersonaChange = vi.fn();
         const onWebSearchChange = vi.fn();
         const hideAgentControls = true;
+        const hideWebSearchControls = true;
 
         render(
             <ChatConversationPane
@@ -104,6 +105,7 @@ describe('ChatConversationPane', () => {
                 onPersonaChange={onPersonaChange}
                 onWebSearchChange={onWebSearchChange}
                 hideAgentControls={hideAgentControls}
+                hideWebSearchControls={hideWebSearchControls}
             />,
         );
 
@@ -141,6 +143,7 @@ describe('ChatConversationPane', () => {
             onPersonaChange,
             onWebSearchChange,
             hideAgentControls,
+            hideWebSearchControls,
             selectedWebSearchOptionId: 'search-option-1',
             stop,
         });

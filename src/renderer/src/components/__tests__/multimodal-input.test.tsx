@@ -205,4 +205,74 @@ describe('MultimodalInput', () => {
             );
         });
     });
+
+    it('hides web search controls and submits without web search metadata when configured', async () => {
+        const user = userEvent.setup();
+        const sendMessage = vi.fn(async () => undefined);
+        const exaConfig: WebSearchConfigView = {
+            id: 'exa-config-1',
+            createdAt: new Date('2026-03-18T00:00:00.000Z'),
+            updatedAt: new Date('2026-03-18T01:00:00.000Z'),
+            type: WebSearchProviderTypeEnum.EXA,
+            enabled: true,
+            hasApiKey: true,
+        };
+
+        render(
+            <TooltipProvider>
+                <StoreProvider
+                    appDataSource={createMockAppDataSource({
+                        modelProvider: {
+                            getProvidersWithModels: async () => [buildProvider()],
+                        },
+                        persona: {
+                            getAll: async () => [buildPersona()],
+                        },
+                        webSearch: {
+                            getConfig: async () => exaConfig,
+                        },
+                    })}
+                >
+                    <MultimodalInput
+                        chat={buildChat()}
+                        hideWebSearchControls
+                        messages={[] as UIMessage[]}
+                        status="ready"
+                        sendMessage={sendMessage}
+                        onModelChange={vi.fn()}
+                        onAgentChange={vi.fn()}
+                        onPersonaChange={vi.fn()}
+                        onWebSearchChange={vi.fn()}
+                        selectedWebSearchOptionId={WebSearchProviderTypeEnum.EXA}
+                    />
+                </StoreProvider>
+            </TooltipProvider>,
+        );
+
+        await waitFor(() => {
+            expect(screen.queryByRole('combobox', { name: /web search/i })).not.toBeInTheDocument();
+        });
+
+        await user.type(screen.getByRole('textbox'), 'Do not use web search');
+        await user.click(screen.getByRole('button', { name: /submit/i }));
+
+        await waitFor(() => {
+            expect(sendMessage).toHaveBeenCalledWith(
+                {
+                    text: 'Do not use web search',
+                    files: [],
+                },
+                {
+                    metadata: {
+                        modelId: 'Primary Provider:model-a',
+                        runtime: 'model',
+                        agentId: null,
+                        agentCwd: null,
+                        personaId: null,
+                        webSearchOptionId: null,
+                    },
+                },
+            );
+        });
+    });
 });

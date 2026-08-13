@@ -85,6 +85,7 @@ const parseAgentDirective = (text: string) => {
 export function MultimodalInput({
     chat,
     hideAgentControls = false,
+    hideWebSearchControls = false,
     status,
     sendMessage,
     onModelChange,
@@ -96,6 +97,7 @@ export function MultimodalInput({
 }: {
     chat: Chat;
     hideAgentControls?: boolean;
+    hideWebSearchControls?: boolean;
     status: UseChatHelpers<UIMessage>['status'];
     messages: Array<UIMessage>;
     sendMessage: UseChatHelpers<UIMessage>['sendMessage'];
@@ -225,7 +227,9 @@ export function MultimodalInput({
                         agentCwd: runtime === 'agent' ? agentCwd.trim() || activeAgent?.defaultCwd || null : null,
                         personaId: chat.selectedPersonaId ?? null,
                         webSearchOptionId:
-                            selectedWebSearchOptionId === WEB_SEARCH_NONE_OPTION_ID ? null : selectedWebSearchOptionId,
+                            hideWebSearchControls || selectedWebSearchOptionId === WEB_SEARCH_NONE_OPTION_ID
+                                ? null
+                                : selectedWebSearchOptionId,
                     },
                 },
             )
@@ -246,6 +250,7 @@ export function MultimodalInput({
             agentCwd,
             executeCommand,
             hideAgentControls,
+            hideWebSearchControls,
             selectedAgentId,
             selectedWebSearchOptionId,
             selectedRuntime,
@@ -294,6 +299,7 @@ export function MultimodalInput({
                 submitForm={submitForm}
                 webSearchOptions={resolvedWebSearchOptions}
                 hideAgentControls={hideAgentControls}
+                hideWebSearchControls={hideWebSearchControls}
                 onWebSearchChange={onWebSearchChange}
                 stop={stop}
             />
@@ -310,6 +316,7 @@ function PromptInputContent({
     input,
     modelSelectorOpen,
     hideAgentControls,
+    hideWebSearchControls,
     onAgentChange,
     onAgentCwdChange,
     onModelChange,
@@ -335,6 +342,7 @@ function PromptInputContent({
     input: string;
     modelSelectorOpen: boolean;
     hideAgentControls: boolean;
+    hideWebSearchControls: boolean;
     onAgentChange: (agentId: string | null, runtime: 'model' | 'agent') => void;
     onAgentCwdChange: (value: string) => void;
     onModelChange: (providerName: string, modelId: string) => void;
@@ -601,26 +609,28 @@ function PromptInputContent({
                             />
                         </>
                     )}
-                    <PromptInputSelect
-                        onOpenChange={setWebSearchSelectorOpen}
-                        onValueChange={handleWebSearchValueChange}
-                        open={webSearchSelectorOpen}
-                        value={selectedWebSearchValue}
-                    >
-                        <PromptInputSelectTrigger aria-label="Web search" className="w-max">
-                            <PromptInputSelectValue placeholder="Web Search" />
-                        </PromptInputSelectTrigger>
-                        <PromptInputSelectContent>
-                            {webSearchOptions.map((option) => (
-                                <PromptInputSelectItem disabled={option.disabled} key={option.id} value={option.id}>
-                                    <div className="flex flex-col">
-                                        <span>{option.label}</span>
-                                        <span className="text-xs text-muted-foreground">{option.label}</span>
-                                    </div>
-                                </PromptInputSelectItem>
-                            ))}
-                        </PromptInputSelectContent>
-                    </PromptInputSelect>
+                    {!hideWebSearchControls ? (
+                        <PromptInputSelect
+                            onOpenChange={setWebSearchSelectorOpen}
+                            onValueChange={handleWebSearchValueChange}
+                            open={webSearchSelectorOpen}
+                            value={selectedWebSearchValue}
+                        >
+                            <PromptInputSelectTrigger aria-label="Web search" className="w-max">
+                                <PromptInputSelectValue placeholder="Web Search" />
+                            </PromptInputSelectTrigger>
+                            <PromptInputSelectContent>
+                                {webSearchOptions.map((option) => (
+                                    <PromptInputSelectItem disabled={option.disabled} key={option.id} value={option.id}>
+                                        <div className="flex flex-col">
+                                            <span>{option.label}</span>
+                                            <span className="text-xs text-muted-foreground">{option.label}</span>
+                                        </div>
+                                    </PromptInputSelectItem>
+                                ))}
+                            </PromptInputSelectContent>
+                        </PromptInputSelect>
+                    ) : null}
                     <PromptInputSelect
                         onOpenChange={handlePersonaSelectorOpenChange}
                         onValueChange={handlePersonaValueChange}
