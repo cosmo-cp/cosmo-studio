@@ -11,6 +11,21 @@ const drizzleMock = vi.hoisted(() => {
 const runMigrationsMock = vi.hoisted(() => {
     return vi.fn();
 });
+const fsExistsSyncMock = vi.hoisted(() => {
+    return vi.fn();
+});
+const fsReadFileSyncMock = vi.hoisted(() => {
+    return vi.fn();
+});
+const fsRmSyncMock = vi.hoisted(() => {
+    return vi.fn();
+});
+const fsReaddirSyncMock = vi.hoisted(() => {
+    return vi.fn();
+});
+const fsRenameSyncMock = vi.hoisted(() => {
+    return vi.fn();
+});
 const logger = vi.hoisted(() => {
     return {
         info: vi.fn(),
@@ -33,6 +48,20 @@ vi.mock('drizzle-orm/pglite', () => {
     };
 });
 
+vi.mock('fs', () => {
+    const mockedFs = {
+        existsSync: fsExistsSyncMock,
+        readFileSync: fsReadFileSyncMock,
+        rmSync: fsRmSyncMock,
+        readdirSync: fsReaddirSyncMock,
+        renameSync: fsRenameSyncMock,
+    };
+    return {
+        default: mockedFs,
+        ...mockedFs,
+    };
+});
+
 vi.mock('./migrator', () => {
     return {
         runMigrations: runMigrationsMock,
@@ -51,6 +80,8 @@ describe('DatabaseManager', () => {
         setCoreLogger(logger);
         (DatabaseManager as unknown as { instance: unknown; initPromise: unknown }).instance = null;
         (DatabaseManager as unknown as { instance: unknown; initPromise: unknown }).initPromise = null;
+        fsExistsSyncMock.mockReturnValue(false);
+        fsReaddirSyncMock.mockReturnValue([]);
     });
 
     it('initializes drizzle once and exposes the instance', async () => {
@@ -82,6 +113,65 @@ describe('DatabaseManager', () => {
         await promise1;
         expect(pgliteCreate).toHaveBeenCalledTimes(1);
         expect(pgliteCreate).toHaveBeenCalledWith('/tmp/first');
+    });
+
+    it('removes a stale postmaster pid file before initializing', async () => {
+        const connection = { connected: true };
+        const db = { db: true };
+        fsExistsSyncMock.mockReturnValue(true);
+        fsReadFileSyncMock.mockReturnValue('-42\n/tmp/pglite/base\n');
+        pgliteCreate.mockResolvedValue(connection);
+        drizzleMock.mockReturnValue(db);
+        runMigrationsMock.mockResolvedValue(undefined);
+
+        await expect(DatabaseManager.initialize('/tmp/cosmo-db')).resolves.toBeUndefined();
+
+        expect(fsReadFileSyncMock).toHaveBeenCalledWith('/tmp/cosmo-db/postmaster.pid', 'utf8');
+        expect(fsRmSyncMock).toHaveBeenCalledWith('/tmp/cosmo-db/postmaster.pid', { force: true });
+        expect(logger.warn).toHaveBeenCalledWith(
+            '[DB INIT] Removed stale PGlite lock file at /tmp/cosmo-db/postmaster.pid',
+        );
+    });
+
+    it('fails fast when the database directory is already in use', async () => {
+        const killSpy = vi.spyOn(process, 'kill').mockReturnValue(true);
+        fsExistsSyncMock.mockReturnValue(true);
+        fsReadFileSyncMock.mockReturnValue('12345\n/tmp/pglite/base\n');
+
+        await expect(DatabaseManager.initialize('/tmp/busy-db')).rejects.toThrow(
+            'PGlite database directory is already in use by process 12345.',
+        );
+
+        expect(fsRmSyncMock).not.toHaveBeenCalled();
+        killSpy.mockRestore();
+    });
+
+    it('quarantines unreadable database files and retries initialization once', async () => {
+        const connection = { connected: true };
+        const db = { db: true };
+        const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1234567890);
+
+        fsExistsSyncMock.mockImplementation((targetPath: string) => {
+            return targetPath === '/tmp/recover-db';
+        });
+        fsReaddirSyncMock.mockReturnValue(['PG_VERSION']);
+        pgliteCreate
+            .mockRejectedValueOnce(new Error('PGlite failed to initialize properly'))
+            .mockResolvedValueOnce(connection);
+        drizzleMock.mockReturnValue(db);
+        runMigrationsMock.mockResolvedValue(undefined);
+
+        await expect(DatabaseManager.initialize('/tmp/recover-db')).resolves.toBeUndefined();
+
+        expect(fsRenameSyncMock).toHaveBeenCalledWith('/tmp/recover-db', '/tmp/recover-db.corrupt-1234567890');
+        expect(pgliteCreate).toHaveBeenCalledTimes(2);
+        expect(pgliteCreate).toHaveBeenNthCalledWith(1, '/tmp/recover-db');
+        expect(pgliteCreate).toHaveBeenNthCalledWith(2, '/tmp/recover-db');
+        expect(logger.warn).toHaveBeenCalledWith(
+            '[DB INIT] Moved unreadable PGlite data directory from /tmp/recover-db to /tmp/recover-db.corrupt-1234567890.',
+        );
+
+        nowSpy.mockRestore();
     });
 
     it('resets initialization state on failure so it can be retried', async () => {
