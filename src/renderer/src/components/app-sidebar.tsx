@@ -91,16 +91,21 @@ export function AppSidebar() {
                                     ))}
                                 </>
                             ) : (
-                                menuItems.filter(item => !item.hidden).map((item) => (
-                                    <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton asChild isActive={isMenuItemActive(pathname, item.pathname)}>
-                                            <Link href={item.href} prefetch={false}>
-                                                <item.icon />
-                                                <span>{item.title}</span>
-                                            </Link>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                ))
+                                menuItems
+                                    .filter((item) => !item.hidden)
+                                    .map((item) => (
+                                        <SidebarMenuItem key={item.title}>
+                                            <SidebarMenuButton
+                                                asChild
+                                                isActive={isMenuItemActive(pathname, item.pathname)}
+                                            >
+                                                <Link href={item.href} prefetch={false}>
+                                                    <item.icon />
+                                                    <span>{item.title}</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    ))
                             )}
                         </SidebarMenu>
                     </SidebarGroupContent>

@@ -40,7 +40,7 @@ describe('AppSidebar', () => {
         renderSidebar('/workflow');
 
         expect(screen.getByRole('link', { name: /chat/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /workflow/i })).toHaveAttribute('data-active', 'true');
+        expect(screen.queryByRole('link', { name: /workflow/i })).not.toBeInTheDocument();
         expect(screen.queryByRole('link', { name: /persona/i })).not.toBeInTheDocument();
         expect(screen.queryByRole('link', { name: /command/i })).not.toBeInTheDocument();
         expect(screen.queryByRole('link', { name: /mcp servers/i })).not.toBeInTheDocument();
