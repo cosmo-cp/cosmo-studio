@@ -29,6 +29,8 @@ function buildChat(overrides: Partial<Chat> = {}): Chat {
         selectedProvider: 'Primary Provider',
         selectedModelId: 'model-a',
         selectedPersonaId: null,
+        selectedAgentId: null,
+        selectedRuntime: 'model',
         selected: true,
         lastMessage: null,
         lastMessageAt: null,
@@ -121,6 +123,7 @@ describe('MultimodalInput', () => {
                         status="ready"
                         sendMessage={sendMessage}
                         onModelChange={vi.fn()}
+                        onAgentChange={vi.fn()}
                         onPersonaChange={vi.fn()}
                         onWebSearchChange={onWebSearchChange}
                         selectedWebSearchOptionId={WEB_SEARCH_NONE_OPTION_ID}
@@ -138,5 +141,68 @@ describe('MultimodalInput', () => {
 
         await user.click(screen.getByRole('option', { name: /exa web search/i }));
         expect(onWebSearchChange).toHaveBeenCalledWith(WebSearchProviderTypeEnum.EXA);
+    });
+
+    it('hides agent controls and falls back to model submission when configured', async () => {
+        const user = userEvent.setup();
+        const sendMessage = vi.fn(async () => undefined);
+
+        render(
+            <TooltipProvider>
+                <StoreProvider
+                    appDataSource={createMockAppDataSource({
+                        modelProvider: {
+                            getProvidersWithModels: async () => [buildProvider()],
+                        },
+                        persona: {
+                            getAll: async () => [buildPersona()],
+                        },
+                    })}
+                >
+                    <MultimodalInput
+                        chat={buildChat({
+                            selectedAgentId: 'agent-1',
+                            selectedRuntime: 'agent',
+                        })}
+                        hideAgentControls
+                        messages={[] as UIMessage[]}
+                        status="ready"
+                        sendMessage={sendMessage}
+                        onModelChange={vi.fn()}
+                        onAgentChange={vi.fn()}
+                        onPersonaChange={vi.fn()}
+                        onWebSearchChange={vi.fn()}
+                        selectedWebSearchOptionId={WEB_SEARCH_NONE_OPTION_ID}
+                    />
+                </StoreProvider>
+            </TooltipProvider>,
+        );
+
+        await waitFor(() => {
+            expect(screen.queryByRole('button', { name: 'Agent' })).not.toBeInTheDocument();
+            expect(screen.queryByLabelText(/agent workspace/i)).not.toBeInTheDocument();
+        });
+
+        await user.type(screen.getByRole('textbox'), 'Use the model runtime');
+        await user.click(screen.getByRole('button', { name: /submit/i }));
+
+        await waitFor(() => {
+            expect(sendMessage).toHaveBeenCalledWith(
+                {
+                    text: 'Use the model runtime',
+                    files: [],
+                },
+                {
+                    metadata: {
+                        modelId: 'Primary Provider:model-a',
+                        runtime: 'model',
+                        agentId: null,
+                        agentCwd: null,
+                        personaId: null,
+                        webSearchOptionId: null,
+                    },
+                },
+            );
+        });
     });
 });

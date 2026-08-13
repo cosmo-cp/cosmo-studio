@@ -31,6 +31,7 @@ interface ChatConversationPaneProps {
     onAgentChange: MultimodalInputProps['onAgentChange'];
     onPersonaChange: MultimodalInputProps['onPersonaChange'];
     onWebSearchChange: MultimodalInputProps['onWebSearchChange'];
+    hideAgentControls?: MultimodalInputProps['hideAgentControls'];
 }
 
 // Keep the selected-chat column reusable so pages only orchestrate chat state.
@@ -56,6 +57,7 @@ export function ChatConversationPane({
     onAgentChange,
     onPersonaChange,
     onWebSearchChange,
+    hideAgentControls,
 }: ChatConversationPaneProps): JSX.Element {
     return (
         <>
@@ -95,6 +97,7 @@ export function ChatConversationPane({
                     onAgentChange={onAgentChange}
                     onPersonaChange={onPersonaChange}
                     onWebSearchChange={onWebSearchChange}
+                    hideAgentControls={hideAgentControls}
                     selectedWebSearchOptionId={selectedWebSearchOptionId}
                     stop={stop}
                 />

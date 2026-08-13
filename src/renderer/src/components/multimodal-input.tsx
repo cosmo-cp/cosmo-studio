@@ -84,6 +84,7 @@ const parseAgentDirective = (text: string) => {
 
 export function MultimodalInput({
     chat,
+    hideAgentControls = false,
     status,
     sendMessage,
     onModelChange,
@@ -94,6 +95,7 @@ export function MultimodalInput({
     stop,
 }: {
     chat: Chat;
+    hideAgentControls?: boolean;
     status: UseChatHelpers<UIMessage>['status'];
     messages: Array<UIMessage>;
     sendMessage: UseChatHelpers<UIMessage>['sendMessage'];
@@ -116,6 +118,8 @@ export function MultimodalInput({
     const [input, setInput] = useState<string>('');
     const [agentCwd, setAgentCwd] = useState<string>('');
     const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+    const selectedRuntime = hideAgentControls ? 'model' : (chat.selectedRuntime ?? 'model');
+    const selectedAgentId = hideAgentControls ? null : (chat.selectedAgentId ?? null);
     const resolvedWebSearchOptions =
         webSearchOptions.length > 0
             ? webSearchOptions
@@ -156,15 +160,16 @@ export function MultimodalInput({
 
     const submitForm = useCallback(
         async (message: PromptInputMessage) => {
-            const selectedRuntime = chat.selectedRuntime ?? 'model';
             let runtime = selectedRuntime;
-            let selectedAgentId = chat.selectedAgentId ?? null;
+            let resolvedAgentId = selectedAgentId;
             let modelId =
                 chat.selectedProvider && chat.selectedModelId
                     ? chat.selectedProvider + ':' + chat.selectedModelId
                     : undefined;
             const { text: cleanedText } = parsePersonaDirective(message.text);
-            const agentDirective = parseAgentDirective(cleanedText);
+            const agentDirective = hideAgentControls
+                ? { text: cleanedText, agentName: undefined }
+                : parseAgentDirective(cleanedText);
             let resolvedText = agentDirective.text;
 
             if (agentDirective.agentName) {
@@ -176,7 +181,7 @@ export function MultimodalInput({
                     return;
                 }
                 runtime = 'agent';
-                selectedAgentId = directiveAgent.id;
+                resolvedAgentId = directiveAgent.id;
             }
 
             if (resolvedText.trim().startsWith('/') && !resolvedText.trim().startsWith('/agent')) {
@@ -187,7 +192,7 @@ export function MultimodalInput({
                 resolvedText = commandResult.data.resolvedText;
             }
 
-            const activeAgent = agents.find((agent) => agent.id === selectedAgentId);
+            const activeAgent = agents.find((agent) => agent.id === resolvedAgentId);
             if (runtime === 'model' && !modelId) {
                 return;
             }
@@ -216,7 +221,7 @@ export function MultimodalInput({
                     metadata: {
                         modelId,
                         runtime,
-                        agentId: runtime === 'agent' ? selectedAgentId : null,
+                        agentId: runtime === 'agent' ? resolvedAgentId : null,
                         agentCwd: runtime === 'agent' ? agentCwd.trim() || activeAgent?.defaultCwd || null : null,
                         personaId: chat.selectedPersonaId ?? null,
                         webSearchOptionId:
@@ -240,7 +245,10 @@ export function MultimodalInput({
             agents,
             agentCwd,
             executeCommand,
+            hideAgentControls,
+            selectedAgentId,
             selectedWebSearchOptionId,
+            selectedRuntime,
             sendMessage,
         ],
     );
@@ -276,8 +284,8 @@ export function MultimodalInput({
                 personaOptions={personaOptions}
                 providers={providers}
                 selectedModelInfo={selectedModelInfo}
-                selectedRuntime={chat.selectedRuntime ?? 'model'}
-                selectedAgentId={chat.selectedAgentId ?? null}
+                selectedRuntime={selectedRuntime}
+                selectedAgentId={selectedAgentId}
                 selectedPersonaId={chat.selectedPersonaId ?? null}
                 selectedWebSearchOptionId={selectedWebSearchOptionId}
                 setInput={setInput}
@@ -285,6 +293,7 @@ export function MultimodalInput({
                 status={status}
                 submitForm={submitForm}
                 webSearchOptions={resolvedWebSearchOptions}
+                hideAgentControls={hideAgentControls}
                 onWebSearchChange={onWebSearchChange}
                 stop={stop}
             />
@@ -300,6 +309,7 @@ function PromptInputContent({
     agentCwd,
     input,
     modelSelectorOpen,
+    hideAgentControls,
     onAgentChange,
     onAgentCwdChange,
     onModelChange,
@@ -324,6 +334,7 @@ function PromptInputContent({
     agentCwd: string;
     input: string;
     modelSelectorOpen: boolean;
+    hideAgentControls: boolean;
     onAgentChange: (agentId: string | null, runtime: 'model' | 'agent') => void;
     onAgentCwdChange: (value: string) => void;
     onModelChange: (providerName: string, modelId: string) => void;
@@ -464,32 +475,34 @@ function PromptInputContent({
             </PromptInputBody>
             <PromptInputFooter>
                 <PromptInputTools>
-                    <div className="flex h-8 items-center gap-0.5 rounded-md border bg-background p-0.5">
-                        <button
-                            aria-pressed={selectedRuntime === 'model'}
-                            className={
-                                selectedRuntime === 'model'
-                                    ? 'h-6 rounded-sm bg-secondary px-2 text-xs font-medium text-secondary-foreground'
-                                    : 'h-6 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground'
-                            }
-                            onClick={() => onAgentChange(null, 'model')}
-                            type="button"
-                        >
-                            Model
-                        </button>
-                        <button
-                            aria-pressed={selectedRuntime === 'agent'}
-                            className={
-                                selectedRuntime === 'agent'
-                                    ? 'h-6 rounded-sm bg-secondary px-2 text-xs font-medium text-secondary-foreground'
-                                    : 'h-6 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground'
-                            }
-                            onClick={() => onAgentChange(selectedAgentId, 'agent')}
-                            type="button"
-                        >
-                            Agent
-                        </button>
-                    </div>
+                    {!hideAgentControls ? (
+                        <div className="flex h-8 items-center gap-0.5 rounded-md border bg-background p-0.5">
+                            <button
+                                aria-pressed={selectedRuntime === 'model'}
+                                className={
+                                    selectedRuntime === 'model'
+                                        ? 'h-6 rounded-sm bg-secondary px-2 text-xs font-medium text-secondary-foreground'
+                                        : 'h-6 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground'
+                                }
+                                onClick={() => onAgentChange(null, 'model')}
+                                type="button"
+                            >
+                                Model
+                            </button>
+                            <button
+                                aria-pressed={selectedRuntime === 'agent'}
+                                className={
+                                    selectedRuntime === 'agent'
+                                        ? 'h-6 rounded-sm bg-secondary px-2 text-xs font-medium text-secondary-foreground'
+                                        : 'h-6 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground'
+                                }
+                                onClick={() => onAgentChange(selectedAgentId, 'agent')}
+                                type="button"
+                            >
+                                Agent
+                            </button>
+                        </div>
+                    ) : null}
                     <PromptInputActionMenu>
                         <Tooltip>
                             <TooltipTrigger asChild>
