@@ -31,12 +31,14 @@ const menuItems = [
         href: './chat',
         pathname: '/chat',
         icon: MessageCircle,
+        hidden: false,
     },
     {
         title: 'Workflow',
         href: './workflow',
         pathname: '/workflow',
         icon: Workflow,
+        hidden: true,
     },
 ] as const;
 
@@ -89,7 +91,7 @@ export function AppSidebar() {
                                     ))}
                                 </>
                             ) : (
-                                menuItems.map((item) => (
+                                menuItems.filter(item => !item.hidden).map((item) => (
                                     <SidebarMenuItem key={item.title}>
                                         <SidebarMenuButton asChild isActive={isMenuItemActive(pathname, item.pathname)}>
                                             <Link href={item.href} prefetch={false}>
