@@ -143,6 +143,136 @@ describe('MultimodalInput', () => {
         expect(onWebSearchChange).toHaveBeenCalledWith(WebSearchProviderTypeEnum.EXA);
     });
 
+    it('shows the persona selector as @ when personas are available', async () => {
+        const user = userEvent.setup();
+        const onPersonaChange = vi.fn();
+
+        render(
+            <TooltipProvider>
+                <StoreProvider
+                    appDataSource={createMockAppDataSource({
+                        modelProvider: {
+                            getProvidersWithModels: async () => [buildProvider()],
+                        },
+                        persona: {
+                            getAll: async () => [buildPersona()],
+                        },
+                    })}
+                >
+                    <MultimodalInput
+                        chat={buildChat()}
+                        messages={[] as UIMessage[]}
+                        status="ready"
+                        sendMessage={vi.fn(async () => undefined)}
+                        onModelChange={vi.fn()}
+                        onAgentChange={vi.fn()}
+                        onPersonaChange={onPersonaChange}
+                        onWebSearchChange={vi.fn()}
+                        selectedWebSearchOptionId={WEB_SEARCH_NONE_OPTION_ID}
+                    />
+                </StoreProvider>
+            </TooltipProvider>,
+        );
+
+        const personaTrigger = await screen.findByRole('button', { name: /persona/i });
+        expect(personaTrigger).toHaveTextContent('@');
+
+        await user.click(personaTrigger);
+        await user.click(await screen.findByRole('menuitemradio', { name: /research assistant/i }));
+
+        expect(onPersonaChange).toHaveBeenCalledWith('persona-1');
+    });
+
+    it('shows the selected persona name instead of @ when a persona is active', async () => {
+        render(
+            <TooltipProvider>
+                <StoreProvider
+                    appDataSource={createMockAppDataSource({
+                        modelProvider: {
+                            getProvidersWithModels: async () => [buildProvider()],
+                        },
+                        persona: {
+                            getAll: async () => [buildPersona()],
+                        },
+                    })}
+                >
+                    <MultimodalInput
+                        chat={buildChat({
+                            selectedPersonaId: 'persona-1',
+                        })}
+                        messages={[] as UIMessage[]}
+                        status="ready"
+                        sendMessage={vi.fn(async () => undefined)}
+                        onModelChange={vi.fn()}
+                        onAgentChange={vi.fn()}
+                        onPersonaChange={vi.fn()}
+                        onWebSearchChange={vi.fn()}
+                        selectedWebSearchOptionId={WEB_SEARCH_NONE_OPTION_ID}
+                    />
+                </StoreProvider>
+            </TooltipProvider>,
+        );
+
+        const personaTrigger = await screen.findByRole('button', { name: /persona/i });
+        expect(personaTrigger).toHaveTextContent('Research Assistant');
+        expect(personaTrigger).not.toHaveTextContent(/^@$/);
+    });
+
+    it('hides the persona selector when no personas exist and leaves @ input untouched', async () => {
+        const user = userEvent.setup();
+        const sendMessage = vi.fn(async () => undefined);
+
+        render(
+            <TooltipProvider>
+                <StoreProvider
+                    appDataSource={createMockAppDataSource({
+                        modelProvider: {
+                            getProvidersWithModels: async () => [buildProvider()],
+                        },
+                    })}
+                >
+                    <MultimodalInput
+                        chat={buildChat()}
+                        messages={[] as UIMessage[]}
+                        status="ready"
+                        sendMessage={sendMessage}
+                        onModelChange={vi.fn()}
+                        onAgentChange={vi.fn()}
+                        onPersonaChange={vi.fn()}
+                        onWebSearchChange={vi.fn()}
+                        selectedWebSearchOptionId={WEB_SEARCH_NONE_OPTION_ID}
+                    />
+                </StoreProvider>
+            </TooltipProvider>,
+        );
+
+        await waitFor(() => {
+            expect(screen.queryByRole('combobox', { name: /persona/i })).not.toBeInTheDocument();
+        });
+
+        await user.type(screen.getByRole('textbox'), '@research');
+        await user.click(screen.getByRole('button', { name: /submit/i }));
+
+        await waitFor(() => {
+            expect(sendMessage).toHaveBeenCalledWith(
+                {
+                    text: '@research',
+                    files: [],
+                },
+                {
+                    metadata: {
+                        modelId: 'Primary Provider:model-a',
+                        runtime: 'model',
+                        agentId: null,
+                        agentCwd: null,
+                        personaId: null,
+                        webSearchOptionId: null,
+                    },
+                },
+            );
+        });
+    });
+
     it('hides agent controls and falls back to model submission when configured', async () => {
         const user = userEvent.setup();
         const sendMessage = vi.fn(async () => undefined);

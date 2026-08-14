@@ -65,13 +65,6 @@ export class ChatStreamingService {
               ? await this.personaService.getByName(args.personaName)
               : undefined;
 
-        if (persona?.details) {
-            modelMessages.unshift({
-                role: 'system',
-                content: persona.details,
-            });
-        }
-
         const lastUserMsg = args.messages[args.messages.length - 1];
         const txtMsg = lastUserMsg.parts.find((part) => {
             return part.type === 'text';
@@ -97,6 +90,7 @@ export class ChatStreamingService {
         const result = streamText({
             // @ts-expect-error/type-does-not-exist
             model: streamConfig.model,
+            instructions: persona?.details || undefined,
             messages: modelMessages,
             tools: streamConfig.tools,
             stopWhen: streamConfig.hasTools ? stepCountIs(5) : undefined,

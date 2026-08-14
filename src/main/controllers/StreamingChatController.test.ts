@@ -243,7 +243,8 @@ describe('StreamingChatController', () => {
 
         const streamOptions = ai.streamText.mock.calls[0][0];
         expect(streamOptions.experimental_transform).toBe('transform');
-        expect(streamOptions.messages[0]).toEqual({ role: 'system', content: 'persona-details' });
+        expect(streamOptions.instructions).toBe('persona-details');
+        expect(streamOptions.messages).toEqual([{ role: 'user', content: 'hi' }]);
         expect(streamOptions.stopWhen).toBeUndefined();
 
         expect(messageService.createMessage).toHaveBeenCalledWith({
@@ -306,7 +307,8 @@ describe('StreamingChatController', () => {
 
         expect(personaService.getByName).toHaveBeenCalledWith('Persona');
         const streamOptions = ai.streamText.mock.calls[0][0];
-        expect(streamOptions.messages[0]).toEqual({ role: 'system', content: 'persona-by-name' });
+        expect(streamOptions.instructions).toBe('persona-by-name');
+        expect(streamOptions.messages).toEqual([{ role: 'user', content: 'hi' }]);
         expect(
             (controller as unknown as { activeStreams: Map<string, AbortController> }).activeStreams.has('chan'),
         ).toBe(false);

@@ -12,6 +12,13 @@ import {
     ModelSelectorName,
     ModelSelectorTrigger,
 } from '@/components/ai-elements/model-selector';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useGetAcpAgentsQuery } from '@/features/acp-agents/acp-agents-api';
@@ -244,8 +251,6 @@ export function MultimodalInput({
             chat.selectedModelId,
             chat.selectedPersonaId,
             chat.selectedProvider,
-            chat.selectedRuntime,
-            chat.selectedAgentId,
             agents,
             agentCwd,
             executeCommand,
@@ -366,6 +371,7 @@ function PromptInputContent({
     const [webSearchSelectorOpen, setWebSearchSelectorOpen] = useState(false);
     const [agentSelectorOpen, setAgentSelectorOpen] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const personaTriggerRef = useRef<HTMLButtonElement | null>(null);
     const personaSelectorTriggeredByShortcutRef = useRef(false);
 
     const selectedPersonaValue = useMemo(() => {
@@ -376,6 +382,12 @@ function PromptInputContent({
             ? selectedPersonaId
             : PERSONA_NONE_VALUE;
     }, [personaOptions, selectedPersonaId]);
+    const selectedPersonaLabel = useMemo(() => {
+        if (selectedPersonaValue === PERSONA_NONE_VALUE) {
+            return '@';
+        }
+        return personaOptions.find((persona) => persona.id === selectedPersonaValue)?.name ?? '@';
+    }, [personaOptions, selectedPersonaValue]);
 
     const selectedWebSearchValue = useMemo(() => {
         return webSearchOptions.some((option) => option.id === selectedWebSearchOptionId && !option.disabled)
@@ -393,6 +405,7 @@ function PromptInputContent({
     const selectedAgent = useMemo(() => {
         return selectedAgentId ? agents.find((agent) => agent.id === selectedAgentId) : undefined;
     }, [agents, selectedAgentId]);
+    const hasPersonaOptions = personaOptions.length > 0;
 
     const focusTextarea = useCallback(() => {
         window.requestAnimationFrame(() => {
@@ -442,24 +455,31 @@ function PromptInputContent({
         textareaRef.current = event.currentTarget;
     }, []);
 
-    const handleTextareaKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
-        textareaRef.current = event.currentTarget;
-        const isPersonaShortcut = event.key === '@' && !event.altKey && !event.ctrlKey && !event.metaKey;
-        if (!isPersonaShortcut) {
-            return;
-        }
+    const handleTextareaKeyDown = useCallback(
+        (event: KeyboardEvent<HTMLTextAreaElement>) => {
+            textareaRef.current = event.currentTarget;
+            const isPersonaShortcut = event.key === '@' && !event.altKey && !event.ctrlKey && !event.metaKey;
+            if (!isPersonaShortcut) {
+                return;
+            }
+            if (!hasPersonaOptions) {
+                return;
+            }
 
-        const selectionStart = event.currentTarget.selectionStart ?? 0;
-        const textBeforeCursor = event.currentTarget.value.slice(0, selectionStart);
-        const isStartOfToken = textBeforeCursor.length === 0 || /\s$/.test(textBeforeCursor);
-        if (!isStartOfToken) {
-            return;
-        }
+            const selectionStart = event.currentTarget.selectionStart ?? 0;
+            const textBeforeCursor = event.currentTarget.value.slice(0, selectionStart);
+            const isStartOfToken = textBeforeCursor.length === 0 || /\s$/.test(textBeforeCursor);
+            if (!isStartOfToken) {
+                return;
+            }
 
-        event.preventDefault();
-        personaSelectorTriggeredByShortcutRef.current = true;
-        setPersonaSelectorOpen(true);
-    }, []);
+            event.preventDefault();
+            personaSelectorTriggeredByShortcutRef.current = true;
+            personaTriggerRef.current?.focus();
+            setPersonaSelectorOpen(true);
+        },
+        [hasPersonaOptions],
+    );
 
     return (
         <PromptInput globalDrop multiple onSubmit={submitForm}>
@@ -631,24 +651,43 @@ function PromptInputContent({
                             </PromptInputSelectContent>
                         </PromptInputSelect>
                     ) : null}
-                    <PromptInputSelect
-                        onOpenChange={handlePersonaSelectorOpenChange}
-                        onValueChange={handlePersonaValueChange}
-                        open={personaSelectorOpen}
-                        value={selectedPersonaValue}
-                    >
-                        <PromptInputSelectTrigger className="w-max">
-                            <PromptInputSelectValue placeholder="Persona" />
-                        </PromptInputSelectTrigger>
-                        <PromptInputSelectContent>
-                            <PromptInputSelectItem value={PERSONA_NONE_VALUE}>None</PromptInputSelectItem>
-                            {personaOptions.map((persona) => (
-                                <PromptInputSelectItem key={persona.id} value={persona.id}>
-                                    {persona.name}
-                                </PromptInputSelectItem>
-                            ))}
-                        </PromptInputSelectContent>
-                    </PromptInputSelect>
+                    {hasPersonaOptions ? (
+                        <DropdownMenu onOpenChange={handlePersonaSelectorOpenChange} open={personaSelectorOpen}>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    aria-label="Persona"
+                                    className="inline-flex h-8 max-w-40 items-center justify-center rounded-md px-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
+                                    ref={personaTriggerRef}
+                                    type="button"
+                                >
+                                    <span
+                                        aria-hidden
+                                        className={
+                                            selectedPersonaValue === PERSONA_NONE_VALUE
+                                                ? 'font-mono'
+                                                : 'max-w-full truncate'
+                                        }
+                                    >
+                                        {selectedPersonaLabel}
+                                    </span>
+                                    <span className="sr-only">Persona</span>
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                                <DropdownMenuRadioGroup
+                                    onValueChange={handlePersonaValueChange}
+                                    value={selectedPersonaValue}
+                                >
+                                    <DropdownMenuRadioItem value={PERSONA_NONE_VALUE}>None</DropdownMenuRadioItem>
+                                    {personaOptions.map((persona) => (
+                                        <DropdownMenuRadioItem key={persona.id} value={persona.id}>
+                                            {persona.name}
+                                        </DropdownMenuRadioItem>
+                                    ))}
+                                </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    ) : null}
                 </PromptInputTools>
                 <PromptInputSubmit
                     disabled={
