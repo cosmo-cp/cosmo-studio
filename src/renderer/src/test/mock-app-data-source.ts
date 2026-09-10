@@ -72,6 +72,7 @@ export function createMockAppDataSource(overrides: AppDataSourceOverrides = {}):
             getProviderForId: async () => undefined,
             getProviders: async () => [],
             getProvidersWithModels: async () => [],
+            getProviderRegistry: async () => ({ version: '1.0.0', providers: [] }),
             getAvailableModelsFromProviders: async () => [],
             addProvider: async () => {
                 throw new Error('modelProvider.addProvider not mocked');

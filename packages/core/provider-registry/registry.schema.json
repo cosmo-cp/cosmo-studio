@@ -1,0 +1,174 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://cosmocp.com/schemas/provider-registry-v1.json",
+    "title": "Cosmo provider registry v1",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["version", "providers", "extensions"],
+    "properties": {
+        "version": { "const": "1.0.0" },
+        "providers": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/provider" } },
+        "extensions": { "type": "array", "maxItems": 0 }
+    },
+    "$defs": {
+        "identifier": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "fieldKey": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" },
+        "semver": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "field": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "scope", "type", "label", "group", "required"],
+            "properties": {
+                "key": { "$ref": "#/$defs/fieldKey" },
+                "scope": { "enum": ["connection", "model", "chat"] },
+                "type": { "enum": ["string", "secret", "url", "number", "boolean", "select", "string-list"] },
+                "label": { "type": "string", "minLength": 1 },
+                "helpText": { "type": "string", "minLength": 1 },
+                "placeholder": { "type": "string", "minLength": 1 },
+                "group": { "enum": ["simple", "advanced"] },
+                "required": { "type": "boolean" },
+                "defaultValue": {
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "number" },
+                        { "type": "boolean" },
+                        { "type": "array", "items": { "type": "string" } }
+                    ]
+                },
+                "options": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["value", "label"],
+                        "properties": {
+                            "value": { "type": "string", "minLength": 1 },
+                            "label": { "type": "string", "minLength": 1 }
+                        }
+                    }
+                },
+                "constraints": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "minLength": { "type": "integer", "minimum": 0 },
+                        "maxLength": { "type": "integer", "minimum": 0 },
+                        "minimum": { "type": "number" },
+                        "maximum": { "type": "number" },
+                        "allowedSchemes": { "type": "array", "minItems": 1, "items": { "enum": ["https", "http"] } }
+                    }
+                },
+                "mapsTo": { "$ref": "#/$defs/fieldKey" }
+            }
+        },
+        "provider": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "id",
+                "version",
+                "display",
+                "support",
+                "adapter",
+                "fields",
+                "validation",
+                "discovery",
+                "capabilities",
+                "migrations"
+            ],
+            "properties": {
+                "id": { "$ref": "#/$defs/identifier" },
+                "version": { "$ref": "#/$defs/semver" },
+                "aliases": { "type": "array", "items": { "$ref": "#/$defs/identifier" } },
+                "display": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["name", "description", "iconKey", "documentationUrl", "categories"],
+                    "properties": {
+                        "name": { "type": "string", "minLength": 1 },
+                        "description": { "type": "string", "minLength": 1 },
+                        "iconKey": { "$ref": "#/$defs/identifier" },
+                        "documentationUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
+                        "categories": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": { "enum": ["hosted", "local", "router", "compatible", "enterprise"] }
+                        }
+                    }
+                },
+                "support": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["route", "level"],
+                    "properties": {
+                        "route": { "enum": ["direct", "compatible", "local", "gateway"] },
+                        "level": { "enum": ["stable", "experimental", "compatible", "deprecated", "hidden"] },
+                        "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+                        "deprecatedAt": { "type": "string", "format": "date-time" },
+                        "replacementProviderId": { "$ref": "#/$defs/identifier" },
+                        "removalEligibleAfter": { "type": "string", "format": "date-time" }
+                    }
+                },
+                "adapter": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["key", "apiVersion", "compatibilityRange"],
+                    "properties": {
+                        "key": { "$ref": "#/$defs/identifier" },
+                        "apiVersion": { "const": 1 },
+                        "compatibilityRange": { "type": "string", "pattern": "^\\^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+                    }
+                },
+                "fields": { "type": "array", "items": { "$ref": "#/$defs/field" } },
+                "validation": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["ruleSetKey", "normalizationKey"],
+                    "properties": {
+                        "ruleSetKey": { "$ref": "#/$defs/identifier" },
+                        "normalizationKey": { "$ref": "#/$defs/identifier" }
+                    }
+                },
+                "discovery": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["strategy", "allowManualModels"],
+                    "properties": {
+                        "strategy": {
+                            "enum": ["models-dev", "provider-api", "openai-compatible", "local-api", "static", "manual"]
+                        },
+                        "adapterKey": { "$ref": "#/$defs/identifier" },
+                        "sourceKey": { "$ref": "#/$defs/identifier" },
+                        "allowManualModels": { "type": "boolean" }
+                    }
+                },
+                "capabilities": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["modelFamilies"],
+                    "properties": {
+                        "modelFamilies": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": { "enum": ["language", "embedding", "image", "speech", "transcription", "rerank"] }
+                        }
+                    }
+                },
+                "migrations": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["fromVersion", "toVersion", "migrationKey"],
+                        "properties": {
+                            "fromVersion": { "$ref": "#/$defs/semver" },
+                            "toVersion": { "$ref": "#/$defs/semver" },
+                            "migrationKey": { "$ref": "#/$defs/identifier" }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

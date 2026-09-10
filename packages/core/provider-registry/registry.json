@@ -1,0 +1,515 @@
+{
+    "version": "1.0.0",
+    "providers": [
+        {
+            "id": "openai",
+            "version": "1.0.0",
+            "display": {
+                "name": "OpenAI",
+                "description": "Access state-of-the-art OpenAI models.",
+                "iconKey": "openai",
+                "documentationUrl": "https://platform.openai.com/docs",
+                "categories": ["hosted"]
+            },
+            "support": { "route": "direct", "level": "experimental" },
+            "adapter": { "key": "openai-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiKey",
+                    "scope": "connection",
+                    "type": "secret",
+                    "label": "API key",
+                    "group": "simple",
+                    "required": true
+                },
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "advanced",
+                    "required": false,
+                    "constraints": { "allowedSchemes": ["https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "hosted-v1", "normalizationKey": "hosted-v1" },
+            "discovery": { "strategy": "models-dev", "sourceKey": "openai", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language", "embedding", "image", "speech", "transcription"] },
+            "migrations": []
+        },
+        {
+            "id": "anthropic",
+            "version": "1.0.0",
+            "display": {
+                "name": "Anthropic",
+                "description": "Use the Claude family of models.",
+                "iconKey": "anthropic",
+                "documentationUrl": "https://docs.anthropic.com",
+                "categories": ["hosted"]
+            },
+            "support": { "route": "direct", "level": "experimental" },
+            "adapter": { "key": "anthropic-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiKey",
+                    "scope": "connection",
+                    "type": "secret",
+                    "label": "API key",
+                    "group": "simple",
+                    "required": true
+                },
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "advanced",
+                    "required": false,
+                    "constraints": { "allowedSchemes": ["https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "hosted-v1", "normalizationKey": "hosted-v1" },
+            "discovery": { "strategy": "models-dev", "sourceKey": "anthropic", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language"] },
+            "migrations": []
+        },
+        {
+            "id": "google",
+            "version": "1.0.0",
+            "display": {
+                "name": "Google",
+                "description": "Use the Gemini family of models.",
+                "iconKey": "google",
+                "documentationUrl": "https://ai.google.dev/docs",
+                "categories": ["hosted"]
+            },
+            "support": { "route": "direct", "level": "experimental" },
+            "adapter": { "key": "google-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiKey",
+                    "scope": "connection",
+                    "type": "secret",
+                    "label": "API key",
+                    "group": "simple",
+                    "required": true
+                },
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "advanced",
+                    "required": false,
+                    "constraints": { "allowedSchemes": ["https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "hosted-v1", "normalizationKey": "hosted-v1" },
+            "discovery": { "strategy": "models-dev", "sourceKey": "google", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language", "embedding", "image"] },
+            "migrations": []
+        },
+        {
+            "id": "xai",
+            "version": "1.0.0",
+            "display": {
+                "name": "xAI",
+                "description": "Access Grok models from xAI.",
+                "iconKey": "xai",
+                "documentationUrl": "https://docs.x.ai",
+                "categories": ["hosted"]
+            },
+            "support": { "route": "direct", "level": "experimental" },
+            "adapter": { "key": "xai-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiKey",
+                    "scope": "connection",
+                    "type": "secret",
+                    "label": "API key",
+                    "group": "simple",
+                    "required": true
+                },
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "advanced",
+                    "required": false,
+                    "constraints": { "allowedSchemes": ["https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "hosted-v1", "normalizationKey": "hosted-v1" },
+            "discovery": { "strategy": "models-dev", "sourceKey": "xai", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language"] },
+            "migrations": []
+        },
+        {
+            "id": "groq",
+            "version": "1.0.0",
+            "display": {
+                "name": "Groq",
+                "description": "Fast, low-cost inference.",
+                "iconKey": "groq",
+                "documentationUrl": "https://console.groq.com/docs",
+                "categories": ["hosted"]
+            },
+            "support": { "route": "direct", "level": "experimental" },
+            "adapter": { "key": "groq-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiKey",
+                    "scope": "connection",
+                    "type": "secret",
+                    "label": "API key",
+                    "group": "simple",
+                    "required": true
+                },
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "advanced",
+                    "required": false,
+                    "constraints": { "allowedSchemes": ["https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "hosted-v1", "normalizationKey": "hosted-v1" },
+            "discovery": { "strategy": "models-dev", "sourceKey": "groq", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language"] },
+            "migrations": []
+        },
+        {
+            "id": "mistral",
+            "version": "1.0.0",
+            "display": {
+                "name": "Mistral AI",
+                "description": "Use Mistral AI models.",
+                "iconKey": "mistral",
+                "documentationUrl": "https://docs.mistral.ai",
+                "categories": ["hosted"]
+            },
+            "support": { "route": "direct", "level": "experimental" },
+            "adapter": { "key": "mistral-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiKey",
+                    "scope": "connection",
+                    "type": "secret",
+                    "label": "API key",
+                    "group": "simple",
+                    "required": true
+                },
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "advanced",
+                    "required": false,
+                    "constraints": { "allowedSchemes": ["https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "hosted-v1", "normalizationKey": "hosted-v1" },
+            "discovery": { "strategy": "models-dev", "sourceKey": "mistral", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language", "embedding"] },
+            "migrations": []
+        },
+        {
+            "id": "deepseek",
+            "version": "1.0.0",
+            "display": {
+                "name": "DeepSeek",
+                "description": "Use DeepSeek reasoning and language models.",
+                "iconKey": "deepseek",
+                "documentationUrl": "https://api-docs.deepseek.com",
+                "categories": ["hosted"]
+            },
+            "support": { "route": "direct", "level": "experimental" },
+            "adapter": { "key": "deepseek-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiKey",
+                    "scope": "connection",
+                    "type": "secret",
+                    "label": "API key",
+                    "group": "simple",
+                    "required": true
+                },
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "advanced",
+                    "required": false,
+                    "constraints": { "allowedSchemes": ["https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "hosted-v1", "normalizationKey": "hosted-v1" },
+            "discovery": { "strategy": "models-dev", "sourceKey": "deepseek", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language"] },
+            "migrations": []
+        },
+        {
+            "id": "ollama",
+            "version": "1.0.0",
+            "display": {
+                "name": "Ollama",
+                "description": "Run open models locally with Ollama.",
+                "iconKey": "ollama",
+                "documentationUrl": "https://docs.ollama.com",
+                "categories": ["local"]
+            },
+            "support": { "route": "local", "level": "experimental" },
+            "adapter": { "key": "ollama-local", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "simple",
+                    "required": false,
+                    "defaultValue": "http://127.0.0.1:11434/api",
+                    "constraints": { "allowedSchemes": ["http", "https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "local-v1", "normalizationKey": "local-v1" },
+            "discovery": { "strategy": "local-api", "adapterKey": "ollama-model-list-v1", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language", "embedding"] },
+            "migrations": []
+        },
+        {
+            "id": "moonshotai",
+            "version": "1.0.0",
+            "aliases": ["moonshot"],
+            "display": {
+                "name": "Moonshot",
+                "description": "Access Kimi and Moonshot AI models.",
+                "iconKey": "moonshotai",
+                "documentationUrl": "https://platform.moonshot.ai/docs",
+                "categories": ["hosted"]
+            },
+            "support": { "route": "direct", "level": "experimental" },
+            "adapter": { "key": "moonshot-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiKey",
+                    "scope": "connection",
+                    "type": "secret",
+                    "label": "API key",
+                    "group": "simple",
+                    "required": true
+                },
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "advanced",
+                    "required": false,
+                    "constraints": { "allowedSchemes": ["https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "hosted-v1", "normalizationKey": "hosted-v1" },
+            "discovery": { "strategy": "models-dev", "sourceKey": "moonshotai", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language"] },
+            "migrations": []
+        },
+        {
+            "id": "perplexity",
+            "version": "1.0.0",
+            "display": {
+                "name": "Perplexity",
+                "description": "Use Perplexity Sonar models.",
+                "iconKey": "perplexity",
+                "documentationUrl": "https://docs.perplexity.ai",
+                "categories": ["hosted"]
+            },
+            "support": { "route": "direct", "level": "experimental" },
+            "adapter": { "key": "perplexity-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiKey",
+                    "scope": "connection",
+                    "type": "secret",
+                    "label": "API key",
+                    "group": "simple",
+                    "required": true
+                },
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "advanced",
+                    "required": false,
+                    "constraints": { "allowedSchemes": ["https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "hosted-v1", "normalizationKey": "hosted-v1" },
+            "discovery": { "strategy": "models-dev", "sourceKey": "perplexity", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language"] },
+            "migrations": []
+        },
+        {
+            "id": "cohere",
+            "version": "1.0.0",
+            "display": {
+                "name": "Cohere",
+                "description": "Use Cohere language and rerank models.",
+                "iconKey": "cohere",
+                "documentationUrl": "https://docs.cohere.com",
+                "categories": ["hosted", "enterprise"]
+            },
+            "support": { "route": "direct", "level": "experimental" },
+            "adapter": { "key": "cohere-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiKey",
+                    "scope": "connection",
+                    "type": "secret",
+                    "label": "API key",
+                    "group": "simple",
+                    "required": true
+                },
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "advanced",
+                    "required": false,
+                    "constraints": { "allowedSchemes": ["https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "hosted-v1", "normalizationKey": "hosted-v1" },
+            "discovery": { "strategy": "models-dev", "sourceKey": "cohere", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language", "embedding", "rerank"] },
+            "migrations": []
+        },
+        {
+            "id": "lmstudio",
+            "version": "1.0.0",
+            "display": {
+                "name": "LM Studio",
+                "description": "Run local models with LM Studio.",
+                "iconKey": "lmstudio",
+                "documentationUrl": "https://lmstudio.ai/docs",
+                "categories": ["local", "compatible"]
+            },
+            "support": { "route": "local", "level": "experimental" },
+            "adapter": { "key": "openai-compatible", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "simple",
+                    "required": false,
+                    "defaultValue": "http://localhost:1234/v1",
+                    "constraints": { "allowedSchemes": ["http", "https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "local-v1", "normalizationKey": "local-v1" },
+            "discovery": { "strategy": "local-api", "adapterKey": "lmstudio-model-list-v1", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language", "embedding"] },
+            "migrations": []
+        },
+        {
+            "id": "huggingface",
+            "version": "1.0.0",
+            "display": {
+                "name": "HuggingFace",
+                "description": "Access hosted open-source models through Hugging Face.",
+                "iconKey": "huggingface",
+                "documentationUrl": "https://huggingface.co/docs",
+                "categories": ["hosted"]
+            },
+            "support": { "route": "direct", "level": "experimental" },
+            "adapter": { "key": "huggingface-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiKey",
+                    "scope": "connection",
+                    "type": "secret",
+                    "label": "API key",
+                    "group": "simple",
+                    "required": true
+                },
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "advanced",
+                    "required": false,
+                    "constraints": { "allowedSchemes": ["https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "hosted-v1", "normalizationKey": "hosted-v1" },
+            "discovery": { "strategy": "models-dev", "sourceKey": "huggingface", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language", "embedding"] },
+            "migrations": []
+        },
+        {
+            "id": "custom",
+            "version": "1.0.0",
+            "display": {
+                "name": "Custom",
+                "description": "Connect to an OpenAI-compatible API endpoint.",
+                "iconKey": "custom",
+                "documentationUrl": "https://sdk.vercel.ai/providers/openai-compatible-providers",
+                "categories": ["compatible"]
+            },
+            "support": {
+                "route": "compatible",
+                "level": "compatible",
+                "limitations": ["Cosmo supports the tested OpenAI-compatible feature subset."]
+            },
+            "adapter": { "key": "openai-compatible", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "fields": [
+                {
+                    "key": "apiKey",
+                    "scope": "connection",
+                    "type": "secret",
+                    "label": "API key",
+                    "group": "simple",
+                    "required": true
+                },
+                {
+                    "key": "apiUrl",
+                    "scope": "connection",
+                    "type": "url",
+                    "label": "API URL",
+                    "group": "simple",
+                    "required": true,
+                    "constraints": { "allowedSchemes": ["http", "https"] },
+                    "mapsTo": "baseURL"
+                }
+            ],
+            "validation": { "ruleSetKey": "compatible-v1", "normalizationKey": "compatible-v1" },
+            "discovery": { "strategy": "manual", "allowManualModels": true },
+            "capabilities": { "modelFamilies": ["language"] },
+            "migrations": []
+        }
+    ],
+    "extensions": []
+}

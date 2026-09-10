@@ -15,6 +15,9 @@ export const modelProviderApi: ModelProviderApi = {
     getProvidersWithModels: () => {
         return ipcRenderer.invoke('modelProvider:getProvidersWithModels');
     },
+    getProviderRegistry: () => {
+        return ipcRenderer.invoke('modelProvider:getProviderRegistry');
+    },
     deleteProvider: (providerId: string) => {
         return ipcRenderer.invoke('modelProvider:deleteProvider', providerId);
     },

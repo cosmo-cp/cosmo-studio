@@ -28,6 +28,7 @@ describe('ModelProviderController', () => {
             getProviderForId: vi.fn().mockResolvedValue(undefined),
             getProviders: vi.fn().mockResolvedValue([]),
             getProvidersWithModels: vi.fn().mockResolvedValue([]),
+            getPublicProviderRegistry: vi.fn().mockReturnValue({ version: '1.0.0', providers: [] }),
         } as unknown as ModelProviderService;
         const controller = new ModelProviderController(service);
 
@@ -39,6 +40,9 @@ describe('ModelProviderController', () => {
 
         await controller.getProvidersWithModels();
         expect(service.getProvidersWithModels).toHaveBeenCalledTimes(1);
+
+        await expect(controller.getProviderRegistry()).resolves.toEqual({ version: '1.0.0', providers: [] });
+        expect(service.getPublicProviderRegistry).toHaveBeenCalledTimes(1);
     });
 
     it('delegates deletes, updates, and model listing', async () => {

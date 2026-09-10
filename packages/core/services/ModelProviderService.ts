@@ -1,35 +1,20 @@
-import { createAnthropic } from '@ai-sdk/anthropic';
-// import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
-import { createCohere } from '@ai-sdk/cohere';
-import { createDeepSeek } from '@ai-sdk/deepseek';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createGroq } from '@ai-sdk/groq';
-import { createHuggingFace } from '@ai-sdk/huggingface';
-import { createMistral } from '@ai-sdk/mistral';
-import { createMoonshotAI } from '@ai-sdk/moonshotai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { createPerplexity } from '@ai-sdk/perplexity';
-import { ProviderV4 } from '@ai-sdk/provider';
-import { createXai } from '@ai-sdk/xai';
+import type { ProviderV4 } from '@ai-sdk/provider';
 import { createProviderRegistry, ProviderRegistryProvider } from 'ai';
-import { createOllama, OllamaProviderSettings } from 'ai-sdk-ollama';
 import { inject, injectable } from 'inversify';
 import { ModelModalityEnum, ModelProviderTypeEnum, ModelStatusEnum } from '../database/schema/modelProviderSchema';
 import { ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels } from '../dto';
 import type { CoreLogger } from '../platform/CoreLogger';
 import { getCoreLogger } from '../platform/CoreLogger';
 import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
+import {
+    getProviderAdapter,
+    ProviderRegistryById,
+    PublicProviderRegistry,
+    type PublicProviderRegistryV1,
+} from '../provider-registry';
 import { ProviderCatalogByType } from '../providerCatalog';
 import { ModelProviderRepository } from '../repositories/ModelProviderRepository';
 import { CORETYPES } from '../types/types';
-
-export type RemoteProviderOptions = {
-    apiKey?: string;
-    baseURL?: string;
-};
-
-export type LocalProviderOptions = OllamaProviderSettings;
 
 interface LMStudioModelPayload {
     id: string;
@@ -53,60 +38,6 @@ export class ModelProviderService {
     private static MODELS_LMSTUDIO_URL = 'http://localhost:1234/api';
     private static DEFAULT_CONTEXT_WINDOW = 128000;
     private static DEFAULT_MAX_OUTPUT_WINDOW = 4096;
-    private readonly providerFactoryByType: Record<ModelProviderTypeEnum, (provider: ModelProviderLite) => ProviderV4> =
-        {
-            [ModelProviderTypeEnum.ANTHROPIC]: (provider) => {
-                return createAnthropic(this.createRemoteOptions(provider));
-            },
-            [ModelProviderTypeEnum.GOOGLE]: (provider) => {
-                return createGoogleGenerativeAI(this.createRemoteOptions(provider));
-            },
-            [ModelProviderTypeEnum.OPENAI]: (provider) => {
-                return createOpenAI(this.createRemoteOptions(provider));
-            },
-            [ModelProviderTypeEnum.XAI]: (provider) => {
-                return createXai(this.createRemoteOptions(provider));
-            },
-            [ModelProviderTypeEnum.MOONSHOT]: (provider) => {
-                return createMoonshotAI(this.createRemoteOptions(provider));
-            },
-            [ModelProviderTypeEnum.GROQ]: (provider) => {
-                return createGroq(this.createRemoteOptions(provider));
-            },
-            [ModelProviderTypeEnum.MISTRAL]: (provider) => {
-                return createMistral(this.createRemoteOptions(provider));
-            },
-            [ModelProviderTypeEnum.DEEPSEEK]: (provider) => {
-                return createDeepSeek(this.createRemoteOptions(provider));
-            },
-            [ModelProviderTypeEnum.OLLAMA]: (provider) => {
-                return createOllama(this.createLocalOptions(provider));
-            },
-            [ModelProviderTypeEnum.PERPLEXITY]: (provider) => {
-                return createPerplexity(this.createRemoteOptions(provider));
-            },
-            // [ModelProviderTypeEnum.BEDROCK]: (provider) => createAmazonBedrock(this.createRemoteOptions(provider)),
-            [ModelProviderTypeEnum.COHERE]: (provider) => {
-                return createCohere(this.createRemoteOptions(provider));
-            },
-            [ModelProviderTypeEnum.LMSTUDIO]: (provider) => {
-                return createOpenAICompatible({
-                    name: provider.name,
-                    baseURL: (provider.apiUrl && provider.apiUrl.trim()) || 'http://localhost:1234/v1',
-                });
-            },
-            [ModelProviderTypeEnum.HUGGINGFACE]: (provider) => {
-                return createHuggingFace(this.createRemoteOptions(provider));
-            },
-            [ModelProviderTypeEnum.CUSTOM]: (provider) => {
-                return createOpenAI({
-                    name: provider.name,
-                    apiKey: provider.apiKey ?? undefined,
-                    baseURL: provider.apiUrl ?? undefined,
-                });
-            },
-        };
-
     constructor(
         @inject(CORETYPES.ModelProviderRepository) repository: ModelProviderRepository,
         @inject(CORETYPES.SecretStore) private readonly secretStore: SecretStore = new Base64SecretStore(),
@@ -165,6 +96,11 @@ export class ModelProviderService {
         return this.repository.getAllWithModels();
     }
 
+    // Supplies the same secret-free contract to Electron IPC and HTTP RPC callers.
+    public getPublicProviderRegistry(): PublicProviderRegistryV1 {
+        return PublicProviderRegistry;
+    }
+
     public async deleteProvider(providerId: string): Promise<void> {
         try {
             await this.repository.deleteProviderById(providerId);
@@ -197,36 +133,38 @@ export class ModelProviderService {
         this.getProviders({ withApiKey: true })
             .then((providers) => {
                 for (const provider of providers) {
-                    const factory = this.providerFactoryByType[provider.type];
-                    if (!factory) {
-                        throw new Error(`Unknown provider: ${provider.type} , ${provider.name}`);
+                    const definition = ProviderRegistryById.get(provider.type);
+                    if (!definition) {
+                        this.logger.error(`Provider definition is unavailable: ${provider.type}, ${provider.name}`);
+                        continue;
                     }
-                    registryObject[provider.name] = factory(provider);
+                    const adapter = getProviderAdapter(definition.adapter.key);
+                    if (!adapter) {
+                        this.logger.error(
+                            `Provider adapter is unavailable: ${definition.adapter.key}, ${provider.name}`,
+                        );
+                        continue;
+                    }
+
+                    try {
+                        registryObject[provider.name] = adapter.createProvider({
+                            providerId: definition.id,
+                            displayName: provider.name,
+                            apiKey: provider.apiKey || undefined,
+                            baseURL: provider.apiUrl || undefined,
+                        });
+                    } catch (error) {
+                        this.logger.error(
+                            `Failed to create provider runtime: ${definition.id}, ${provider.name}`,
+                            error,
+                        );
+                    }
                 }
                 this.modelProviderRegistry = createProviderRegistry(registryObject);
             })
             .catch((error) => {
                 return this.logger.error('Failed to update model provider registry', error);
             });
-    }
-
-    private createLocalOptions(provider: ModelProviderLite): LocalProviderOptions {
-        const options: LocalProviderOptions = {};
-        if (provider.apiUrl && provider.apiUrl.trim() !== '') {
-            options.baseURL = provider.apiUrl;
-        }
-        return options;
-    }
-
-    private createRemoteOptions(provider: ModelProviderLite): RemoteProviderOptions {
-        const options: RemoteProviderOptions = {};
-        if (provider.apiUrl && provider.apiUrl.trim() !== '') {
-            options.baseURL = provider.apiUrl;
-        }
-        if (provider.apiKey?.trim()) {
-            options.apiKey = provider.apiKey;
-        }
-        return options;
     }
 
     /** Maps a DB record (encrypted key) to the application model (decrypted key). */

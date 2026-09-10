@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import * as fs from 'fs';
 import * as path from 'path';
+import { PublicProviderRegistry } from '../packages/core/provider-registry/public';
 import { AcpAgentController } from '../src/main/controllers/AcpAgentController';
 import { ChatController } from '../src/main/controllers/ChatController';
 import { CommandController } from '../src/main/controllers/CommandController';
@@ -14,6 +15,18 @@ import { WorkflowController } from '../src/main/controllers/WorkflowController';
 import { generateHttpRpcManifestContent, generatePreloadApiFiles, type ControllerSource } from './generate-api-lib';
 
 const httpManifestFilePath = path.resolve(__dirname, '../src/main/http/rpc-manifest.ts');
+
+// Makes a missing local provider asset fail the same generation step used by both runtimes.
+function validateProviderIconFiles(): void {
+    for (const provider of PublicProviderRegistry.providers) {
+        const iconPath = path.resolve(__dirname, `../src/renderer/public/providers/${provider.display.iconKey}.svg`);
+        if (!fs.existsSync(iconPath)) {
+            throw new Error(`Missing provider icon for ${provider.id}: ${iconPath}`);
+        }
+    }
+}
+
+validateProviderIconFiles();
 
 const controllers = [
     ChatController,

@@ -3,6 +3,7 @@ import type {
     ModelProviderLite,
     NewModel,
     ProviderWithModels,
+    PublicProviderRegistryV1,
 } from '../../../packages/core/dto';
 import { callRpc } from '../api/common';
 import type { ModelProviderApi } from '../contracts/modelProvider';
@@ -19,6 +20,9 @@ export const modelProviderHttpApi: ModelProviderApi = {
     },
     getProvidersWithModels: () => {
         return callRpc<ProviderWithModels[]>('modelProvider', 'getProvidersWithModels', []);
+    },
+    getProviderRegistry: () => {
+        return callRpc<PublicProviderRegistryV1>('modelProvider', 'getProviderRegistry', []);
     },
     deleteProvider: (providerId: string) => {
         return callRpc<void>('modelProvider', 'deleteProvider', [providerId]);

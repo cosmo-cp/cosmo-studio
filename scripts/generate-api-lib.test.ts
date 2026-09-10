@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { describe, expect, it } from 'vitest';
-import { IpcController, IpcOn } from '../src/main/ipc/Decorators';
+import { z } from 'zod';
+import { IpcController, IpcHandler, IpcOn } from '../src/main/ipc/Decorators';
 import { generatePreloadApiFiles } from './generate-api-lib';
 
 @IpcController('streamingChat')
@@ -9,6 +10,15 @@ class TestStreamingController {
     @IpcOn('sendMessage')
     public sendMessage(args: { chatId: string }): void {
         void args;
+    }
+}
+
+@IpcController('modelProvider')
+class TestModelProviderController {
+    // Gives both generated transports the same public registry return type.
+    @IpcHandler('getProviderRegistry', z.tuple([]))
+    public async getProviderRegistry(): Promise<never> {
+        throw new Error('generation fixture only');
     }
 }
 
@@ -51,6 +61,28 @@ describe('generatePreloadApiFiles', () => {
         expect(files['src/preload/rpc-api.ts']).toContain('export const rpcApi: CosmoApi = {');
         expect(files['src/preload/api/streaming.ts']).toContain(
             'const subscription = (_event: unknown, data: UIMessageChunk) => listener(data);',
+        );
+    });
+
+    it('imports the public provider registry type for Electron and HTTP clients', () => {
+        const files = generatePreloadApiFiles([
+            {
+                controller: TestModelProviderController,
+                source: `
+          export class TestModelProviderController {
+            @IpcHandler("getProviderRegistry", z.tuple([]))
+            public async getProviderRegistry(): Promise<PublicProviderRegistryV1> {}
+          }
+        `,
+            },
+        ]);
+
+        expect(files['src/preload/contracts/modelProvider.ts']).toContain(
+            "import type {PublicProviderRegistryV1} from '../../../packages/core/dto';",
+        );
+        expect(files['src/preload/api/modelProvider.ts']).toContain('getProviderRegistry');
+        expect(files['src/preload/http-api/modelProvider.ts']).toContain(
+            "callRpc<PublicProviderRegistryV1>('modelProvider', 'getProviderRegistry', [])",
         );
     });
 });

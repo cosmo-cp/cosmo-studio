@@ -1,8 +1,11 @@
+import { createProviderRegistry } from 'ai';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModelProviderTypeEnum } from '../database/schema/modelProviderSchema';
 import type { ModelProviderCreateInput } from '../dto';
 import { setCoreLogger } from '../platform/CoreLogger';
 import type { SecretStore } from '../platform/SecretStore';
+import { PROVIDER_ADAPTERS } from '../provider-registry/adapters';
+import { PublicProviderRegistry } from '../provider-registry/public';
 import type { ModelProviderRepository } from '../repositories/ModelProviderRepository';
 import { ModelProviderService } from './ModelProviderService';
 
@@ -132,6 +135,55 @@ describe('ModelProviderService', () => {
 
         expect(providers[0].apiKey).toBe('decrypted-key');
         expect(providers[0].createdAt).toBeInstanceOf(Date);
+    });
+
+    it('returns the shared secret-free public registry', () => {
+        const service = new ModelProviderService(repository, secretStore);
+
+        expect(service.getPublicProviderRegistry()).toBe(PublicProviderRegistry);
+        expect(JSON.stringify(service.getPublicProviderRegistry())).not.toContain('adapter');
+    });
+
+    it('isolates an unavailable adapter without dropping unrelated providers', async () => {
+        const openAiAdapter = PROVIDER_ADAPTERS.get('openai-native');
+        PROVIDER_ADAPTERS.delete('openai-native');
+        repository.findAll = vi.fn().mockResolvedValue([
+            {
+                id: 'openai-id',
+                name: 'OpenAI account',
+                apiKey: 'encrypted',
+                apiUrl: '',
+                type: ModelProviderTypeEnum.OPENAI,
+                createdAt: new Date(),
+                updatedAt: null,
+            },
+            {
+                id: 'anthropic-id',
+                name: 'Anthropic account',
+                apiKey: 'encrypted',
+                apiUrl: '',
+                type: ModelProviderTypeEnum.ANTHROPIC,
+                createdAt: new Date(),
+                updatedAt: null,
+            },
+        ]);
+
+        try {
+            new ModelProviderService(repository, secretStore);
+
+            await vi.waitFor(() => {
+                expect(logger.error).toHaveBeenCalledWith(
+                    'Provider adapter is unavailable: openai-native, OpenAI account',
+                );
+                expect(createProviderRegistry).toHaveBeenCalledWith({
+                    'Anthropic account': 'anthropic-provider',
+                });
+            });
+        } finally {
+            if (openAiAdapter) {
+                PROVIDER_ADAPTERS.set('openai-native', openAiAdapter);
+            }
+        }
     });
 
     it('skips custom providers when listing models', async () => {

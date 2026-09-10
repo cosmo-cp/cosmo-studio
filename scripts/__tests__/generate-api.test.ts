@@ -8,4 +8,12 @@ describe('generate-api script', () => {
         const content = fs.readFileSync(scriptPath, 'utf-8');
         expect(content).toContain('CommandController');
     });
+
+    it('validates local provider icons before generating transport files', () => {
+        const scriptPath = path.resolve(__dirname, '../generate-api.ts');
+        const content = fs.readFileSync(scriptPath, 'utf-8');
+
+        expect(content).toContain('validateProviderIconFiles();');
+        expect(content).toContain('Missing provider icon');
+    });
 });

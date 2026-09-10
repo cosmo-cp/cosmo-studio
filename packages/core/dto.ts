@@ -17,6 +17,8 @@ import {
     workflowVersion,
 } from './database/schema/schema';
 
+export type { PublicProviderRegistryV1 } from './provider-registry/types';
+
 type Optional<T, K extends keyof T> = Omit<T, K> & Pick<Partial<T>, K>;
 
 //full entity based dto
@@ -215,12 +217,7 @@ export type WorkflowRunEventInsert = InferInsertModel<typeof workflowRunEvent>;
 export type WorkflowRunStatus = WorkflowRun & { events: WorkflowRunEvent[] };
 
 export type WorkflowRunStreamEventType =
-    | 'step.started'
-    | 'step.completed'
-    | 'tool.call'
-    | 'approval.required'
-    | 'error'
-    | 'finished';
+    'step.started' | 'step.completed' | 'tool.call' | 'approval.required' | 'error' | 'finished';
 
 export interface WorkflowRunStreamEventEnvelope {
     runId: string;

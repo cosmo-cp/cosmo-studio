@@ -1,4 +1,10 @@
-import type { ModelProviderCreateInput, ModelProviderLite, NewModel, ProviderWithModels } from 'core/dto';
+import type {
+    ModelProviderCreateInput,
+    ModelProviderLite,
+    NewModel,
+    ProviderWithModels,
+    PublicProviderRegistryV1,
+} from 'core/dto';
 import { ModelProviderService } from 'core/services/ModelProviderService';
 import { CORETYPES } from 'core/types/types';
 import { inject, injectable } from 'inversify';
@@ -36,6 +42,12 @@ export class ModelProviderController implements Controller {
     @IpcHandler('getProvidersWithModels', z.tuple([]))
     public async getProvidersWithModels(): Promise<ProviderWithModels[]> {
         return this.modelProviderService.getProvidersWithModels();
+    }
+
+    // Exposes only serializable provider metadata and field definitions to both renderer transports.
+    @IpcHandler('getProviderRegistry', z.tuple([]))
+    public async getProviderRegistry(): Promise<PublicProviderRegistryV1> {
+        return this.modelProviderService.getPublicProviderRegistry();
     }
 
     @IpcHandler('deleteProvider', z.tuple([z.string().min(1)]))

@@ -51,6 +51,7 @@ const PRELOAD_TYPE_IMPORTS = [
     { name: 'Message', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'NewModel', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'ProviderWithModels', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'PublicProviderRegistryV1', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'ChatWithMessages', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'ModelIdentifier', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'AgentIdentifier', source: PRELOAD_CORE_DTO_IMPORT },

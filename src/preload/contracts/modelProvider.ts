@@ -3,6 +3,7 @@ import type {
     ModelProviderLite,
     NewModel,
     ProviderWithModels,
+    PublicProviderRegistryV1,
 } from '../../../packages/core/dto';
 
 export interface ModelProviderApi {
@@ -10,6 +11,7 @@ export interface ModelProviderApi {
     getProviderForId(providerId: string): Promise<ProviderWithModels | undefined>;
     getProviders(): Promise<ModelProviderLite[]>;
     getProvidersWithModels(): Promise<ProviderWithModels[]>;
+    getProviderRegistry(): Promise<PublicProviderRegistryV1>;
     deleteProvider(providerId: string): Promise<void>;
     updateProvider(
         providerId: string,
