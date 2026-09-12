@@ -57,6 +57,12 @@ export interface ProviderDefinitionV1 {
         apiVersion: 1;
         compatibilityRange: string;
     };
+    npmPackage: {
+        name: string;
+        versionRange: string;
+        dependencyType: 'dependencies' | 'devDependencies';
+        providerFactoryExport: string;
+    };
     fields: ProviderFieldDefinition[];
     validation: {
         ruleSetKey: string;
@@ -84,7 +90,10 @@ export interface ProviderRegistryDocumentV1 {
     extensions: [];
 }
 
-export type PublicProviderDefinitionV1 = Omit<ProviderDefinitionV1, 'adapter' | 'validation' | 'migrations'> & {
+export type PublicProviderDefinitionV1 = Omit<
+    ProviderDefinitionV1,
+    'adapter' | 'npmPackage' | 'validation' | 'migrations'
+> & {
     discovery: Pick<ProviderDefinitionV1['discovery'], 'strategy' | 'allowManualModels'>;
 };
 

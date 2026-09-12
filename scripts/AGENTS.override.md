@@ -9,6 +9,7 @@ Scripts are developer tools run from the repo root (usually via `npm run ...`).
 Current scripts:
 
 - `scripts/generate-api.ts` — regenerates the generated preload API files under `src/preload/api.ts` and `src/preload/api/*` based on IPC controller decorators in `src/main/controllers/*`.
+- `scripts/sync-provider-packages.ts` — installs and records AI SDK provider npm packages declared by `packages/core/provider-registry/registry.json`.
 
 ## Rules for scripts
 

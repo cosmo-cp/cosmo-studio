@@ -174,6 +174,7 @@ For renderer-specific implementation conventions, see `src/renderer/AGENTS.overr
 - `npm run dev:http` — Run Nest HTTP service on `4000` + Next dev on `3000`.
 - `npm run start` — Start Electron (development). Note: currently runs `npm i` first.
 - `npm run generate-api` — Regenerate preload API, HTTP RPC manifest, and HTTP client from controllers.
+- `npm run sync-provider-packages` — Install/update AI SDK provider packages declared by `packages/core/provider-registry/registry.json`.
 - `npm run build:renderer:electron` — Static renderer export configured for Electron packaging.
 - `npm run build:renderer:http` — Static renderer export configured for HTTP serving at `/`.
 - `npm run build:http` — Generate APIs, build HTTP renderer, build Nest entry, copy renderer output and migrations.

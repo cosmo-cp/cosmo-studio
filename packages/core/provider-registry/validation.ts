@@ -5,6 +5,8 @@ const identifierPattern = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
 const fieldKeyPattern = /^[A-Za-z][A-Za-z0-9]*$/;
 const semanticVersionPattern = /^\d+\.\d+\.\d+$/;
 const compatibilityRangePattern = /^\^\d+\.\d+\.\d+$/;
+const npmPackageNamePattern = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/;
+const npmVersionRangePattern = /^(?:\^|~)?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 
 const fieldValueSchema = z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]);
 const fieldSchema = z
@@ -70,6 +72,14 @@ const providerSchema = z
                 compatibilityRange: z.string().regex(compatibilityRangePattern),
             })
             .strict(),
+        npmPackage: z
+            .object({
+                name: z.string().regex(npmPackageNamePattern),
+                versionRange: z.string().regex(npmVersionRangePattern),
+                dependencyType: z.enum(['dependencies', 'devDependencies']),
+                providerFactoryExport: z.string().min(1).regex(fieldKeyPattern),
+            })
+            .strict(),
         fields: z.array(fieldSchema),
         validation: z
             .object({
@@ -130,6 +140,7 @@ export function validateProviderRegistry(
 
     const ids = new Set<string>();
     const aliases = new Set<string>();
+    const npmPackages = new Map<string, { versionRange: string; dependencyType: string }>();
     for (const provider of parsed.data.providers) {
         if (ids.has(provider.id) || aliases.has(provider.id)) {
             throw new Error(`Duplicate provider ID or alias: ${provider.id}`);
@@ -155,6 +166,7 @@ export function validateProviderRegistry(
         if (!dependencies.adapterKeys.has(provider.adapter.key)) {
             throw new Error(`Missing provider adapter for ${provider.id}: ${provider.adapter.key}`);
         }
+        validateNpmPackage(provider.id, provider.npmPackage, npmPackages);
         if (!dependencies.iconKeys.has(provider.display.iconKey)) {
             throw new Error(`Missing provider icon for ${provider.id}: ${provider.display.iconKey}`);
         }
@@ -166,6 +178,25 @@ export function validateProviderRegistry(
     }
 
     return parsed.data;
+}
+
+// Keeps registry-driven installs deterministic when multiple providers share one SDK package.
+function validateNpmPackage(
+    providerId: string,
+    npmPackage: z.infer<typeof providerSchema>['npmPackage'],
+    npmPackages: Map<string, { versionRange: string; dependencyType: string }>,
+): void {
+    const existing = npmPackages.get(npmPackage.name);
+    if (!existing) {
+        npmPackages.set(npmPackage.name, {
+            versionRange: npmPackage.versionRange,
+            dependencyType: npmPackage.dependencyType,
+        });
+        return;
+    }
+    if (existing.versionRange !== npmPackage.versionRange || existing.dependencyType !== npmPackage.dependencyType) {
+        throw new Error(`Conflicting npm package declaration for ${providerId}: ${npmPackage.name}`);
+    }
 }
 
 // Enforces relationships that JSON shape validation cannot express.

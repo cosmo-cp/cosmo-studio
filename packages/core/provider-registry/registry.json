@@ -13,6 +13,12 @@
             },
             "support": { "route": "direct", "level": "experimental" },
             "adapter": { "key": "openai-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/openai",
+                "versionRange": "4.0.27",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createOpenAI"
+            },
             "fields": [
                 {
                     "key": "apiKey",
@@ -50,6 +56,12 @@
             },
             "support": { "route": "direct", "level": "experimental" },
             "adapter": { "key": "anthropic-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/anthropic",
+                "versionRange": "4.0.27",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createAnthropic"
+            },
             "fields": [
                 {
                     "key": "apiKey",
@@ -87,6 +99,12 @@
             },
             "support": { "route": "direct", "level": "experimental" },
             "adapter": { "key": "google-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/google",
+                "versionRange": "4.0.31",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createGoogleGenerativeAI"
+            },
             "fields": [
                 {
                     "key": "apiKey",
@@ -124,6 +142,12 @@
             },
             "support": { "route": "direct", "level": "experimental" },
             "adapter": { "key": "xai-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/xai",
+                "versionRange": "^4.0.25",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createXai"
+            },
             "fields": [
                 {
                     "key": "apiKey",
@@ -161,6 +185,12 @@
             },
             "support": { "route": "direct", "level": "experimental" },
             "adapter": { "key": "groq-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/groq",
+                "versionRange": "^4.0.19",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createGroq"
+            },
             "fields": [
                 {
                     "key": "apiKey",
@@ -198,6 +228,12 @@
             },
             "support": { "route": "direct", "level": "experimental" },
             "adapter": { "key": "mistral-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/mistral",
+                "versionRange": "^4.0.20",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createMistral"
+            },
             "fields": [
                 {
                     "key": "apiKey",
@@ -235,6 +271,12 @@
             },
             "support": { "route": "direct", "level": "experimental" },
             "adapter": { "key": "deepseek-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/deepseek",
+                "versionRange": "^3.0.19",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createDeepSeek"
+            },
             "fields": [
                 {
                     "key": "apiKey",
@@ -272,6 +314,12 @@
             },
             "support": { "route": "local", "level": "experimental" },
             "adapter": { "key": "ollama-local", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "ai-sdk-ollama",
+                "versionRange": "4.1.0",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createOllama"
+            },
             "fields": [
                 {
                     "key": "apiUrl",
@@ -303,6 +351,12 @@
             },
             "support": { "route": "direct", "level": "experimental" },
             "adapter": { "key": "moonshot-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/moonshotai",
+                "versionRange": "^3.0.23",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createMoonshotAI"
+            },
             "fields": [
                 {
                     "key": "apiKey",
@@ -340,6 +394,12 @@
             },
             "support": { "route": "direct", "level": "experimental" },
             "adapter": { "key": "perplexity-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/perplexity",
+                "versionRange": "^4.0.20",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createPerplexity"
+            },
             "fields": [
                 {
                     "key": "apiKey",
@@ -377,6 +437,12 @@
             },
             "support": { "route": "direct", "level": "experimental" },
             "adapter": { "key": "cohere-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/cohere",
+                "versionRange": "^4.0.18",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createCohere"
+            },
             "fields": [
                 {
                     "key": "apiKey",
@@ -414,6 +480,12 @@
             },
             "support": { "route": "local", "level": "experimental" },
             "adapter": { "key": "openai-compatible", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/openai-compatible",
+                "versionRange": "^3.0.20",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createOpenAICompatible"
+            },
             "fields": [
                 {
                     "key": "apiUrl",
@@ -444,6 +516,12 @@
             },
             "support": { "route": "direct", "level": "experimental" },
             "adapter": { "key": "huggingface-native", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/huggingface",
+                "versionRange": "^2.0.20",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createHuggingFace"
+            },
             "fields": [
                 {
                     "key": "apiKey",
@@ -485,6 +563,12 @@
                 "limitations": ["Cosmo supports the tested OpenAI-compatible feature subset."]
             },
             "adapter": { "key": "openai-compatible", "apiVersion": 1, "compatibilityRange": "^1.0.0" },
+            "npmPackage": {
+                "name": "@ai-sdk/openai-compatible",
+                "versionRange": "^3.0.20",
+                "dependencyType": "dependencies",
+                "providerFactoryExport": "createOpenAICompatible"
+            },
             "fields": [
                 {
                     "key": "apiKey",

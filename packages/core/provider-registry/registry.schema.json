@@ -71,6 +71,7 @@
                 "display",
                 "support",
                 "adapter",
+                "npmPackage",
                 "fields",
                 "validation",
                 "discovery",
@@ -118,6 +119,23 @@
                         "key": { "$ref": "#/$defs/identifier" },
                         "apiVersion": { "const": 1 },
                         "compatibilityRange": { "type": "string", "pattern": "^\\^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+                    }
+                },
+                "npmPackage": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["name", "versionRange", "dependencyType", "providerFactoryExport"],
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "pattern": "^(?:@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$"
+                        },
+                        "versionRange": {
+                            "type": "string",
+                            "pattern": "^(?:\\^|~)?[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+                        },
+                        "dependencyType": { "enum": ["dependencies", "devDependencies"] },
+                        "providerFactoryExport": { "$ref": "#/$defs/fieldKey" }
                     }
                 },
                 "fields": { "type": "array", "items": { "$ref": "#/$defs/field" } },

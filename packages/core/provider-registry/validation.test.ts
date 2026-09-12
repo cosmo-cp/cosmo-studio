@@ -14,6 +14,7 @@ interface MutableProvider {
         constraints?: { minLength?: number; maxLength?: number; minimum?: number; maximum?: number };
     }>;
     adapter: { key: string };
+    npmPackage: { name: string; versionRange: string; dependencyType: string; providerFactoryExport: string };
     display: { iconKey: string };
     discovery: { strategy: string; adapterKey?: string; sourceKey?: string };
     support: { route: string; level: string; limitations?: string[]; replacementProviderId?: string };
@@ -159,6 +160,20 @@ describe('provider registry validation', () => {
                 return (value.providers[0].adapter.key = 'missing-adapter');
             },
             'Missing provider adapter',
+        ],
+        [
+            'invalid npm package names',
+            (value: MutableRegistry) => {
+                return (value.providers[0].npmPackage.name = '@AI-SDK/openai');
+            },
+            'Invalid provider registry schema',
+        ],
+        [
+            'conflicting shared npm package declarations',
+            (value: MutableRegistry) => {
+                return (value.providers[13].npmPackage.versionRange = '^99.0.0');
+            },
+            'Conflicting npm package declaration',
         ],
         [
             'missing icons',
