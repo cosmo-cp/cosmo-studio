@@ -215,12 +215,7 @@ export type WorkflowRunEventInsert = InferInsertModel<typeof workflowRunEvent>;
 export type WorkflowRunStatus = WorkflowRun & { events: WorkflowRunEvent[] };
 
 export type WorkflowRunStreamEventType =
-    | 'step.started'
-    | 'step.completed'
-    | 'tool.call'
-    | 'approval.required'
-    | 'error'
-    | 'finished';
+    'step.started' | 'step.completed' | 'tool.call' | 'approval.required' | 'error' | 'finished';
 
 export interface WorkflowRunStreamEventEnvelope {
     runId: string;

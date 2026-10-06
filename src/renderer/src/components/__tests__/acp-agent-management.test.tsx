@@ -84,6 +84,25 @@ describe('AcpAgentManagement', () => {
         vi.stubGlobal('ResizeObserver', ResizeObserverMock);
     });
 
+    it('shows installed agents without custom-agent controls or tabs', async () => {
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => [buildInstalledAgent('codex-cli')],
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+
+        expect(await screen.findByText('Codex CLI')).toBeInTheDocument();
+        expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /add agent/i })).not.toBeInTheDocument();
+        expect(screen.queryByPlaceholderText('Args JSON')).not.toBeInTheDocument();
+    });
+
     it('shows a tooltip for testing installed agents', async () => {
         const user = userEvent.setup();
 
@@ -146,14 +165,12 @@ describe('AcpAgentManagement', () => {
 
     it('opens an edit dialog and preserves env secrets unless replacement env is entered', async () => {
         const user = userEvent.setup();
-        const update = vi.fn(
-            async (id: string, input: AcpAgentUpdateInput): Promise<AcpAgentView> => ({
-                ...buildAgentWithEnvKeys(),
-                ...input,
-                id,
-                updatedAt: new Date('2026-05-20T01:00:00.000Z'),
-            }),
-        );
+        const update = vi.fn(async (id: string, input: AcpAgentUpdateInput): Promise<AcpAgentView> => ({
+            ...buildAgentWithEnvKeys(),
+            ...input,
+            id,
+            updatedAt: new Date('2026-05-20T01:00:00.000Z'),
+        }));
 
         render(
             <StoreProvider

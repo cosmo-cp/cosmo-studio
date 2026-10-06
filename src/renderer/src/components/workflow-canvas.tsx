@@ -35,15 +35,7 @@ type WorkflowNodeTemplateId = 'agent' | 'classify' | 'end' | 'http' | 'if-else' 
 type WorkflowCanvasNodeTemplateId = WorkflowNodeTemplateId | 'start';
 type WorkflowNodeGroupName = 'Core' | 'Logic' | 'Tools';
 type WorkflowCanvasNodeIcon =
-    | 'agent'
-    | 'classify'
-    | 'end'
-    | 'http'
-    | 'if-else'
-    | 'loop'
-    | 'mcp'
-    | 'user-approval'
-    | 'workflow';
+    'agent' | 'classify' | 'end' | 'http' | 'if-else' | 'loop' | 'mcp' | 'user-approval' | 'workflow';
 
 type WorkflowCanvasNodeData = {
     description: string;

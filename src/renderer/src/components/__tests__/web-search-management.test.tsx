@@ -1,6 +1,5 @@
 import { StoreProvider } from '@/app/store-provider';
 import { WebSearchManagement } from '@/components/web-search-management';
-import { PARALLEL_WEB_SEARCH_PROVIDER_ID } from '@/lib/web-search-options';
 import { createMockAppDataSource } from '@/test/mock-app-data-source';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -78,26 +77,7 @@ describe('WebSearchManagement', () => {
         const user = userEvent.setup();
 
         render(
-            <StoreProvider
-                appDataSource={createMockAppDataSource({
-                    webSearch: {
-                        listOptions: async () => [
-                            {
-                                id: WebSearchProviderTypeEnum.EXA,
-                                label: 'Exa web search',
-                                description: 'Use Exa for fresh web results in this chat.',
-                                disabled: true,
-                            },
-                            {
-                                id: PARALLEL_WEB_SEARCH_PROVIDER_ID,
-                                label: 'Parallel web search',
-                                description: 'Setup required in Settings > Web Search.',
-                                disabled: true,
-                            },
-                        ],
-                    },
-                })}
-            >
+            <StoreProvider appDataSource={createMockAppDataSource()}>
                 <WebSearchManagement />
             </StoreProvider>,
         );

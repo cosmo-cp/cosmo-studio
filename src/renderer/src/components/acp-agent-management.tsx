@@ -13,7 +13,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -29,8 +28,6 @@ export function AcpAgentManagement() {
         agentsError,
         search,
         setSearch,
-        form,
-        setForm,
         editForm,
         setEditForm,
         editingAgent,
@@ -41,7 +38,6 @@ export function AcpAgentManagement() {
         installedRegistryIds,
         visibleRegistryAgents,
         setRegistryDialogOpen,
-        createCustomAgent,
         editAgent,
         handleEditDialogOpenChange,
         updateAgent,
@@ -67,160 +63,107 @@ export function AcpAgentManagement() {
                         Registry
                     </Button>
                 </div>
-                <Tabs defaultValue="installed" className="min-h-0 flex-1">
-                    <TabsList>
-                        <TabsTrigger value="installed">Installed</TabsTrigger>
-                        <TabsTrigger value="custom">Custom</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="installed" className="min-h-0 overflow-auto">
-                        {agentsError ? (
-                            <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                                {agentsError}
-                            </div>
-                        ) : null}
-                        <div className="rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-12">On</TableHead>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Command</TableHead>
-                                        <TableHead>Workspace</TableHead>
-                                        <TableHead className="w-48 text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {agents.map((agent) => (
-                                        <TableRow key={agent.id}>
-                                            <TableCell>
-                                                <Switch
-                                                    size="sm"
-                                                    checked={agent.enabled}
-                                                    onCheckedChange={() => void toggleAgent(agent)}
-                                                    aria-label={`Toggle ${agent.name}`}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="font-medium">{agent.name}</span>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        <Badge variant="outline">{agent.source}</Badge>
-                                                        <Badge
-                                                            variant={
-                                                                agent.installStatus === 'installed'
-                                                                    ? 'secondary'
-                                                                    : 'outline'
-                                                            }
-                                                        >
-                                                            {agent.installStatus}
-                                                        </Badge>
-                                                        {agent.authMethodId ? (
-                                                            <Badge variant="outline">{agent.authMethodId}</Badge>
-                                                        ) : null}
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="max-w-65 truncate font-mono text-xs">
-                                                {[agent.command, ...agent.args].join(' ')}
-                                            </TableCell>
-                                            <TableCell className="max-w-55 truncate text-xs text-muted-foreground">
-                                                {agent.defaultCwd || 'Not set'}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            aria-label={`Test ${agent.name}`}
-                                                            size="icon"
-                                                            variant="ghost"
-                                                            onClick={() => void testAgent(agent)}
-                                                        >
-                                                            <TestTube2 className="size-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent side="top">Test connection</TooltipContent>
-                                                </Tooltip>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            aria-label={`Edit ${agent.name}`}
-                                                            size="icon"
-                                                            variant="ghost"
-                                                            onClick={() => editAgent(agent)}
-                                                        >
-                                                            <Pencil className="size-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent side="top">Edit agent</TooltipContent>
-                                                </Tooltip>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            aria-label={`Delete ${agent.name}`}
-                                                            size="icon"
-                                                            variant="ghost"
-                                                            onClick={() => void deleteAgent(agent.id)}
-                                                        >
-                                                            <Trash2 className="size-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent side="top">Delete agent</TooltipContent>
-                                                </Tooltip>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                <div className="min-h-0 flex-1 overflow-auto">
+                    {agentsError ? (
+                        <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                            {agentsError}
                         </div>
-                    </TabsContent>
-                    <TabsContent value="custom" className="overflow-auto">
-                        <form className="max-w-2xl space-y-4" onSubmit={(event) => void createCustomAgent(event)}>
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <Input
-                                    placeholder="Name"
-                                    value={form.name}
-                                    onChange={(event) => setForm({ ...form, name: event.target.value })}
-                                />
-                                <Input
-                                    placeholder="Command"
-                                    value={form.command}
-                                    onChange={(event) => setForm({ ...form, command: event.target.value })}
-                                />
-                            </div>
-                            <Input
-                                placeholder="Workspace path"
-                                value={form.defaultCwd}
-                                onChange={(event) => setForm({ ...form, defaultCwd: event.target.value })}
-                            />
-                            <Input
-                                placeholder="Auth method ID"
-                                value={form.authMethodId}
-                                onChange={(event) => setForm({ ...form, authMethodId: event.target.value })}
-                            />
-                            <Textarea
-                                placeholder="Description"
-                                value={form.description}
-                                onChange={(event) => setForm({ ...form, description: event.target.value })}
-                            />
-                            <Textarea
-                                className="font-mono text-xs"
-                                placeholder="Args JSON"
-                                value={form.argsJson}
-                                onChange={(event) => setForm({ ...form, argsJson: event.target.value })}
-                            />
-                            <Textarea
-                                className="font-mono text-xs"
-                                placeholder="Env JSON"
-                                value={form.envJson}
-                                onChange={(event) => setForm({ ...form, envJson: event.target.value })}
-                            />
-                            <Button type="submit">
-                                <Plus className="size-4" />
-                                Add Agent
-                            </Button>
-                        </form>
-                    </TabsContent>
-                </Tabs>
+                    ) : null}
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-12">On</TableHead>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Command</TableHead>
+                                    <TableHead>Workspace</TableHead>
+                                    <TableHead className="w-48 text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {agents.map((agent) => (
+                                    <TableRow key={agent.id}>
+                                        <TableCell>
+                                            <Switch
+                                                size="sm"
+                                                checked={agent.enabled}
+                                                onCheckedChange={() => void toggleAgent(agent)}
+                                                aria-label={`Toggle ${agent.name}`}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="font-medium">{agent.name}</span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    <Badge variant="outline">{agent.source}</Badge>
+                                                    <Badge
+                                                        variant={
+                                                            agent.installStatus === 'installed'
+                                                                ? 'secondary'
+                                                                : 'outline'
+                                                        }
+                                                    >
+                                                        {agent.installStatus}
+                                                    </Badge>
+                                                    {agent.authMethodId ? (
+                                                        <Badge variant="outline">{agent.authMethodId}</Badge>
+                                                    ) : null}
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="max-w-65 truncate font-mono text-xs">
+                                            {[agent.command, ...agent.args].join(' ')}
+                                        </TableCell>
+                                        <TableCell className="max-w-55 truncate text-xs text-muted-foreground">
+                                            {agent.defaultCwd || 'Not set'}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        aria-label={`Test ${agent.name}`}
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        onClick={() => void testAgent(agent)}
+                                                    >
+                                                        <TestTube2 className="size-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Test connection</TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        aria-label={`Edit ${agent.name}`}
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        onClick={() => editAgent(agent)}
+                                                    >
+                                                        <Pencil className="size-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Edit agent</TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        aria-label={`Delete ${agent.name}`}
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        onClick={() => void deleteAgent(agent.id)}
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Delete agent</TooltipContent>
+                                            </Tooltip>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
                 <Dialog open={editingAgent !== null} onOpenChange={handleEditDialogOpenChange}>
                     <DialogContent className="flex max-h-[85dvh] flex-col overflow-hidden sm:max-w-160">
                         <DialogHeader>
