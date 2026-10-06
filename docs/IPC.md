@@ -104,6 +104,8 @@ The `acpAgent` IPC/RPC group manages local Agent Client Protocol agents:
 - `acpAgent:installFromRegistry` → create an installed agent from supported `npx`/`uvx` registry distributions.
 - `acpAgent:test` → initialize a backend ACP session and return a serializable status.
 
+Chat agent selection uses `chat:updateSelectedAgentForChat` (`chat/updateSelectedAgentForChat` over HTTP RPC). Both runtimes normalize empty or whitespace-only `selectedAgentId` values to `null`, trim nonempty IDs, and preserve the selected `model` or `agent` runtime. The composer ignores empty select form-sync events; choosing the explicit **None** option sends `null`.
+
 ## Security checklist
 
 - Treat all renderer-provided values as untrusted.

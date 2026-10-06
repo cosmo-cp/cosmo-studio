@@ -3,12 +3,13 @@ import { MultimodalInput } from '@/components/multimodal-input';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { WEB_SEARCH_NONE_OPTION_ID } from '@/lib/web-search-options';
 import { createMockAppDataSource } from '@/test/mock-app-data-source';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { UIMessage } from 'ai';
+import { AcpAgentInstallStatusEnum, AcpAgentSourceEnum } from 'core/database/schema/acpAgentSchema';
 import { ModelProviderTypeEnum, ModelStatusEnum } from 'core/database/schema/modelProviderSchema';
 import { WebSearchProviderTypeEnum } from 'core/database/schema/webSearchConfigSchema';
-import type { Chat, Persona, ProviderWithModels, WebSearchConfigView } from 'core/dto';
+import type { AcpAgentView, Chat, Persona, ProviderWithModels, WebSearchConfigView } from 'core/dto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 class ResizeObserverMock {
@@ -87,6 +88,71 @@ describe('MultimodalInput', () => {
         HTMLElement.prototype.setPointerCapture = vi.fn();
         HTMLElement.prototype.releasePointerCapture = vi.fn();
         HTMLElement.prototype.scrollIntoView = vi.fn();
+    });
+
+    it('ignores empty agent form events while preserving selection and explicit None changes', async () => {
+        const user = userEvent.setup();
+        const onAgentChange = vi.fn();
+        const agent: AcpAgentView = {
+            id: 'agent-1',
+            name: 'Test Agent',
+            description: null,
+            source: AcpAgentSourceEnum.CUSTOM,
+            registryId: null,
+            version: null,
+            command: 'test-agent',
+            args: [],
+            envKeys: [],
+            defaultCwd: '/workspace',
+            authMethodId: null,
+            enabled: true,
+            installStatus: AcpAgentInstallStatusEnum.INSTALLED,
+            mcpServerIds: [],
+            metadata: {},
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+        const nextAgent = { ...agent, id: 'agent-2', name: 'Second Agent' };
+
+        const { container } = render(
+            <TooltipProvider>
+                <StoreProvider
+                    appDataSource={createMockAppDataSource({ acpAgent: { getAll: async () => [agent, nextAgent] } })}
+                >
+                    <MultimodalInput
+                        chat={buildChat({ selectedRuntime: 'agent', selectedAgentId: agent.id })}
+                        hideWebSearchControls
+                        messages={[]}
+                        status="ready"
+                        sendMessage={vi.fn(async () => undefined)}
+                        onModelChange={vi.fn()}
+                        onAgentChange={onAgentChange}
+                        onPersonaChange={vi.fn()}
+                        onWebSearchChange={vi.fn()}
+                        selectedWebSearchOptionId={WEB_SEARCH_NONE_OPTION_ID}
+                    />
+                </StoreProvider>
+            </TooltipProvider>,
+        );
+
+        const trigger = screen.getByRole('combobox');
+        await waitFor(() => expect(trigger).toHaveTextContent(agent.name));
+        onAgentChange.mockClear();
+
+        const nativeSelect = container.querySelector('select');
+        expect(nativeSelect).not.toBeNull();
+        fireEvent.change(nativeSelect!, { target: { value: '' } });
+        expect(onAgentChange).not.toHaveBeenCalled();
+        expect(trigger).toHaveTextContent(agent.name);
+
+        await user.click(trigger);
+        await user.click(await screen.findByRole('option', { name: nextAgent.name }));
+        expect(onAgentChange).toHaveBeenLastCalledWith(nextAgent.id, 'agent');
+
+        await user.click(trigger);
+        await user.click(await screen.findByRole('option', { name: 'None' }));
+        expect(onAgentChange).toHaveBeenLastCalledWith(null, 'agent');
+        expect(screen.getByRole('textbox', { name: 'Agent workspace' })).toHaveValue('');
     });
 
     it('shows web search choices from the shared app data source and reports selection changes', async () => {

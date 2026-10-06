@@ -1,5 +1,7 @@
 import 'reflect-metadata';
+import type { ChatService } from 'core/services/ChatService';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ChatController } from '../controllers/ChatController';
 import { IPC_CONTROLLER_METADATA_KEY, IPC_HANDLE_METADATA_KEY, IPC_ON_METADATA_KEY } from './Decorators';
 import { IpcHandlerRegistry } from './index';
 
@@ -73,5 +75,31 @@ describe('IpcHandlerRegistry', () => {
 
         expect(ipcMain.handle).not.toHaveBeenCalled();
         expect(ipcMain.on).not.toHaveBeenCalled();
+    });
+
+    it('normalizes chat agent selections through IPC and propagates validation and service errors', async () => {
+        const service = {
+            updateSelectedAgentForChat: vi.fn().mockResolvedValue(undefined),
+        } as unknown as ChatService;
+        const registry = new IpcHandlerRegistry([new ChatController(service)]);
+        registry.registerIpcHandlers();
+        const listener = ipcMain.handle.mock.calls.find(([channel]) => {
+            return channel === 'chat:updateSelectedAgentForChat';
+        })![1];
+
+        await listener({}, 'chat-1', { selectedAgentId: '', selectedRuntime: 'agent' });
+        expect(service.updateSelectedAgentForChat).toHaveBeenCalledWith('chat-1', {
+            selectedAgentId: null,
+            selectedRuntime: 'agent',
+        });
+
+        await expect(listener({}, 'chat-1', { selectedAgentId: 123, selectedRuntime: 'agent' })).rejects.toThrow();
+        await expect(listener({}, '', { selectedAgentId: null, selectedRuntime: 'model' })).rejects.toThrow();
+        expect(service.updateSelectedAgentForChat).toHaveBeenCalledTimes(1);
+
+        vi.mocked(service.updateSelectedAgentForChat).mockRejectedValueOnce(new Error('Database unavailable'));
+        await expect(listener({}, 'chat-1', { selectedAgentId: null, selectedRuntime: 'model' })).rejects.toThrow(
+            'Database unavailable',
+        );
     });
 });
