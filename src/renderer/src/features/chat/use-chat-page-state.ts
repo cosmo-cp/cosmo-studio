@@ -129,8 +129,7 @@ export function useChatPageState() {
             }
 
             const textPart = message.parts?.find((part) => part.type === 'text') as
-                | { type: 'text'; text: string }
-                | undefined;
+                { type: 'text'; text: string } | undefined;
             const updates: Partial<Chat> = {
                 lastMessage: textPart?.text ? textPart.text.slice(0, 200) : selectedChat.lastMessage,
                 lastMessageAt: new Date(),
@@ -139,8 +138,7 @@ export function useChatPageState() {
             const userMessages = messages.filter((chatMessage) => chatMessage.role === 'user');
             if (userMessages.length === 1) {
                 const userTextPart = userMessages[0].parts?.find((part) => part.type === 'text') as
-                    | { type: 'text'; text: string }
-                    | undefined;
+                    { type: 'text'; text: string } | undefined;
                 if (userTextPart?.text) {
                     updates.title = userTextPart.text.slice(0, 50);
                 }
