@@ -441,8 +441,12 @@ function PromptInputContent({
         [focusTextarea, onWebSearchChange],
     );
 
+    // Ignore empty form-sync events so only the explicit None option clears the agent.
     const handleAgentValueChange = useCallback(
         (value: string) => {
+            if (value === '') {
+                return;
+            }
             onAgentChange(value === AGENT_NONE_VALUE ? null : value, 'agent');
             const nextAgent = agents.find((agent) => agent.id === value);
             onAgentCwdChange(nextAgent?.defaultCwd ?? '');

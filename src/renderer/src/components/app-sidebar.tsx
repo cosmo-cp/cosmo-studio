@@ -28,14 +28,14 @@ import { usePathname } from 'next/navigation';
 const menuItems = [
     {
         title: 'Chat',
-        href: './chat',
+        href: '/chat',
         pathname: '/chat',
         icon: MessageCircle,
         hidden: false,
     },
     {
         title: 'Workflow',
-        href: './workflow',
+        href: '/workflow',
         pathname: '/workflow',
         icon: Workflow,
         hidden: true,
@@ -82,7 +82,7 @@ export function AppSidebar() {
                                                 asChild
                                                 isActive={isSettingsItemActive(pathname, item.slug)}
                                             >
-                                                <Link href={getSettingsItemHref(pathname, item.slug)} prefetch={false}>
+                                                <Link href={getSettingsItemHref(item.slug)} prefetch={false}>
                                                     <item.icon />
                                                     <span>{item.title}</span>
                                                 </Link>

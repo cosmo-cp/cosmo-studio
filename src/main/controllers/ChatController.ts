@@ -22,7 +22,13 @@ const newChatUpdateSchema = z.custom<Partial<NewChat>>();
 const modelIdentifierSchema = z.custom<ModelIdentifier>();
 const agentIdentifierSchema = z
     .object({
-        selectedAgentId: z.string().min(1).nullable().default(null),
+        selectedAgentId: z.preprocess((value) => {
+            if (typeof value !== 'string') {
+                return value;
+            }
+            const trimmedValue = value.trim();
+            return trimmedValue === '' ? null : trimmedValue;
+        }, z.string().min(1).nullable().default(null)),
         selectedRuntime: z.enum(['model', 'agent']).default('agent'),
     })
     .strict();
@@ -72,6 +78,7 @@ export class ChatController implements Controller {
         return this.chatService.updateSelectedModelForChat(id, modelIdentifier);
     }
 
+    // Normalize cleared selections before either runtime persists the agent identifier.
     @IpcHandler('updateSelectedAgentForChat', z.tuple([z.string().min(1), agentIdentifierSchema]))
     public async updateSelectedAgentForChat(id: string, agentIdentifier: AgentIdentifier): Promise<void> {
         const parsedAgentIdentifier = agentIdentifierSchema.parse(agentIdentifier);

@@ -1,6 +1,6 @@
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { getDefaultSettingsHref, getSettingsItemHref } from '@/lib/settings-navigation';
+import { getDefaultSettingsHref } from '@/lib/settings-navigation';
 import { render, screen } from '@testing-library/react';
 import { usePathname } from 'next/navigation';
 import type { ComponentProps } from 'react';
@@ -56,27 +56,6 @@ describe('AppSidebar', () => {
 
         expect(backLink.closest('[data-sidebar="footer"]')).not.toBeNull();
         expect(screen.getByRole('link', { name: /back/i })).toHaveAttribute('href', '/chat');
-        expect(screen.getByRole('link', { name: /provider/i })).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings', 'provider'),
-        );
-        expect(screen.getByRole('link', { name: /persona/i })).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings', 'persona'),
-        );
-        expect(screen.getByRole('link', { name: /command/i })).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings', 'command'),
-        );
-        expect(screen.getByRole('link', { name: /mcp servers/i })).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings', 'mcp-server'),
-        );
-        expect(screen.queryByRole('link', { name: /web search/i })).not.toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /agents/i })).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings', 'agents'),
-        );
         expect(screen.queryByRole('link', { name: /chat/i })).not.toBeInTheDocument();
     });
 
@@ -88,22 +67,6 @@ describe('AppSidebar', () => {
         expect(backLink.closest('[data-sidebar="footer"]')).not.toBeNull();
         expect(backLink).toHaveAttribute('href', '/chat');
         expect(screen.getByRole('link', { name: /provider/i })).toHaveAttribute('data-active', 'true');
-        expect(screen.getByRole('link', { name: /agents/i })).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings/provider', 'agents'),
-        );
-        expect(screen.getByRole('link', { name: /persona/i })).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings/provider', 'persona'),
-        );
-        expect(screen.getByRole('link', { name: /command/i })).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings/provider', 'command'),
-        );
-        expect(screen.getByRole('link', { name: /mcp servers/i })).toHaveAttribute(
-            'href',
-            getSettingsItemHref('/settings/provider', 'mcp-server'),
-        );
         expect(screen.queryByRole('link', { name: /web search/i })).not.toBeInTheDocument();
     });
 

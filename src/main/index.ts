@@ -1,6 +1,6 @@
 import path from 'path';
 import { DatabaseManager } from 'core/database/DatabaseManager';
-import { app, BrowserWindow, safeStorage } from 'electron';
+import { app, BrowserWindow, net, protocol, safeStorage } from 'electron';
 import { IpcHandlerRegistry } from './ipc';
 import 'reflect-metadata';
 import { setCoreLogger } from 'core/platform/CoreLogger';
@@ -11,6 +11,7 @@ import { updateElectronApp, UpdateSourceType } from 'update-electron-app';
 import container from './inversify.config';
 import { logger } from './logger';
 import { TYPES } from './types';
+import { pathToFileURL } from 'node:url';
 
 setCoreLogger(logger);
 
@@ -21,10 +22,21 @@ export class Main {
 
     constructor() {
         config();
+        protocol.registerSchemesAsPrivileged([
+            {
+                scheme: 'app',
+                privileges: {
+                    standard: true,
+                    secure: true,
+                    supportFetchAPI: true,
+                },
+            },
+        ]);
         app.whenReady().then(async () => {
             if (!safeStorage.isEncryptionAvailable()) {
-                logger.warn("safeStorage encryption unavailable. API keys won't be encrypted.");
+                logger.warn('safeStorage encryption unavailable. API keys won\'t be encrypted.');
             }
+            this.protocolInitialization();
             await this.initializeDatabase();
             await this.initializeMcpClients();
             const ipcHandlerRegistry = container.get<IpcHandlerRegistry>(TYPES.IpcHandlerRegistry);
@@ -88,13 +100,16 @@ export class Main {
             },
         });
         this.mainWindow.webContents.reloadIgnoringCache();
+        this.mainWindow.webContents.on('did-navigate', (event, url) => {
+            console.log('Renderer navigated to:', url);
+        });
 
         this.mainWindow.setMenuBarVisibility(false);
 
         if (this.MAIN_WINDOW_VITE_DEV_SERVER_URL) {
             await this.mainWindow.loadURL(this.MAIN_WINDOW_VITE_DEV_SERVER_URL);
         } else {
-            await this.mainWindow.loadFile(path.join(__dirname, `../renderer/main_window/splash.html`));
+            await this.mainWindow.loadURL('app://bundle/splash/');
         }
         if (this.isDev) {
             this.mainWindow.webContents.openDevTools();
@@ -113,6 +128,56 @@ export class Main {
             if (process.platform !== 'darwin') {
                 app.quit();
             }
+        });
+    }
+
+    private protocolInitialization() {
+        const rendererRoot = path.join(
+            app.getAppPath(),
+            '.vite',
+            'renderer',
+            'main_window',
+        );
+
+        protocol.handle('app', (request) => {
+            const url = new URL(request.url);
+
+            if (url.hostname !== 'bundle') {
+                return new Response('Not found', { status: 404 });
+            }
+
+            let pathname: string;
+
+            try {
+                pathname = decodeURIComponent(url.pathname);
+            } catch {
+                return new Response('Invalid path', { status: 400 });
+            }
+
+            if (pathname.includes('\\') || pathname.includes('\0')) {
+                return new Response('Invalid path', { status: 400 });
+            }
+
+            let relativePath = pathname.replace(/^\/+/, '');
+
+            if (!relativePath || relativePath.endsWith('/')) {
+                relativePath += 'index.html';
+            } else if (!path.posix.extname(relativePath)) {
+                relativePath += '/index.html';
+            }
+
+            const filePath = path.resolve(rendererRoot, relativePath);
+            const relative = path.relative(rendererRoot, filePath);
+
+            if (
+                relative === '..' ||
+                relative.startsWith(`..${path.sep}`) ||
+                path.isAbsolute(relative)
+            ) {
+                return new Response('Forbidden', { status: 403 });
+            }
+
+            return net.fetch(pathToFileURL(filePath).toString());
         });
     }
 }

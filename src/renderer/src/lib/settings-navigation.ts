@@ -74,7 +74,7 @@ export function getHomeHref(pathname: string): string {
 }
 
 export function getSettingsLandingHref(slug: SettingsSectionSlug): string {
-    return `./settings/${slug}`;
+    return `/settings/${slug}`;
 }
 
 export function getDefaultSettingsHref(): string {
@@ -82,21 +82,15 @@ export function getDefaultSettingsHref(): string {
 }
 
 export function getDefaultSettingsChildHref(): string {
-    return `./${getDefaultSettingsSection().slug}`;
+    return getSettingsLandingHref(getDefaultSettingsSection().slug);
 }
 
-export function getSettingsItemHref(pathname: string, slug: SettingsSectionSlug): string {
-    if (!isSettingsPath(pathname)) {
-        return getSettingsLandingHref(slug);
-    }
-
-    return `./${slug}`;
+export function getSettingsItemHref(slug: SettingsSectionSlug): string {
+    return getSettingsLandingHref(slug);
 }
 
 export function isSettingsItemActive(pathname: string, slug: SettingsSectionSlug): boolean {
-    if (pathname === '/settings') {
-        return slug === getDefaultSettingsSection().slug;
-    }
+    const itemPathname = getSettingsLandingHref(slug);
 
-    return pathname === `/settings/${slug}`;
+    return pathname === itemPathname || (pathname === '/settings' && slug === getDefaultSettingsSection().slug);
 }

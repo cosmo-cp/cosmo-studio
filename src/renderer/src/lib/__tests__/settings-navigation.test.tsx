@@ -19,7 +19,7 @@ describe('settings navigation', () => {
     });
 
     it('uses the first visible settings section as the default destination', () => {
-        expect(getDefaultSettingsHref()).toBe('./settings/provider');
-        expect(getDefaultSettingsChildHref()).toBe('./provider');
+        expect(getDefaultSettingsHref()).toBe('/settings/provider');
+        expect(getDefaultSettingsChildHref()).toBe('/settings/provider');
     });
 });
