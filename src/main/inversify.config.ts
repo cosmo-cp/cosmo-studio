@@ -1,7 +1,7 @@
 import type { SecretStore } from 'core/platform/SecretStore';
 import { CORETYPES } from 'core/types/types';
 import { Container } from 'inversify';
-import { coreContainer } from '../../packages/core/inversify.config';
+import { coreContainer } from 'core/inversify.config';
 import { AcpAgentController } from './controllers/AcpAgentController';
 import { ChatController } from './controllers/ChatController';
 import { CommandController } from './controllers/CommandController';
@@ -23,7 +23,7 @@ import { TYPES } from './types';
 
 const container = new Container({ parent: coreContainer });
 
-coreContainer.rebindSync<SecretStore>(CORETYPES.SecretStore).to(ElectronSecretStore).inSingletonScope();
+coreContainer.rebind<SecretStore>(CORETYPES.SecretStore).to(ElectronSecretStore).inSingletonScope();
 
 container.bind<IpcHandlerRegistry>(TYPES.IpcHandlerRegistry).to(IpcHandlerRegistry).inSingletonScope();
 container.bind<ChatStreamingService>(TYPES.ChatStreamingService).to(ChatStreamingService).inSingletonScope();

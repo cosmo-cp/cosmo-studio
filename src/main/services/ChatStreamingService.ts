@@ -1,11 +1,13 @@
 import {
-    convertToModelMessages, createUIMessageStreamResponse,
+    convertToModelMessages,
     ModelMessage,
     RetryError,
     smoothStream,
     stepCountIs,
     streamText,
-    type ToolSet, toUIMessageStream,
+    toUIMessageStream,
+    type ToolSet,
+    type UIMessageChunk,
 } from 'ai';
 import type { ChatSendMessageArgs } from 'core/dto';
 import { getCoreLogger } from 'core/platform/CoreLogger';
@@ -48,7 +50,7 @@ export class ChatStreamingService {
     public async createMessageStream(
         args: ChatSendMessageArgs,
         abortSignal: AbortSignal,
-    ): Promise<Response> {
+    ): Promise<ReadableStream<UIMessageChunk>> {
         const runtime = args.runtime ?? 'model';
         if (runtime === 'model' && !args.modelIdentifier) {
             throw new Error('modelIdentifier is required but was not provided');
@@ -115,25 +117,23 @@ export class ChatStreamingService {
             },
         });
 
-        return createUIMessageStreamResponse({
-            stream: toUIMessageStream({
-                stream: result.stream,
-                sendReasoning: true,
-                sendSources: true,
-                messageMetadata: () => {
-                    return {
-                        modelId: persistedModelIdentifier,
-                    };
-                },
-                onError: (error) => {
-                    streamConfig.cleanup?.();
-                    getCoreLogger().error('Failed during chat UI message stream:', error);
-                    if (error instanceof Error) {
-                        return error.message;
-                    }
-                    return 'Stream Error';
-                },
-            })
+        return toUIMessageStream({
+            stream: result.stream,
+            sendReasoning: true,
+            sendSources: true,
+            messageMetadata: () => {
+                return {
+                    modelId: persistedModelIdentifier,
+                };
+            },
+            onError: (error) => {
+                streamConfig.cleanup?.();
+                getCoreLogger().error('Failed during chat UI message stream:', error);
+                if (error instanceof Error) {
+                    return error.message;
+                }
+                return 'Stream Error';
+            },
         });
     }
 
