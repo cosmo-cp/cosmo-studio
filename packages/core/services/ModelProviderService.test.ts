@@ -152,8 +152,8 @@ describe('ModelProviderService', () => {
     it('maps models.dev responses for remote providers', async () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
-            json: async () => {
-                return {
+            text: async () => {
+                return JSON.stringify({
                     openai: {
                         models: {
                             'gpt-4': {
@@ -170,7 +170,7 @@ describe('ModelProviderService', () => {
                             },
                         },
                     },
-                };
+                });
             },
         });
         vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
@@ -189,6 +189,25 @@ describe('ModelProviderService', () => {
         expect(result[0].modelId).toBe('gpt-4');
         expect(result[0].reasoning).toBe(true);
         expect(result[0].inputModalities).toEqual(['text']);
+    });
+
+    it('uses the bundled models.dev snapshot when the request fails', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+        const service = new ModelProviderService(repository, secretStore);
+        const result = await service.getModelsForProviderUsingModelsDotDev({
+            name: 'OpenAI',
+            apiKey: '',
+            type: ModelProviderTypeEnum.OPENAI,
+            apiUrl: '',
+        });
+
+        expect(result.length).toBeGreaterThan(0);
+        expect(
+            result.some((model) => {
+                return model.modelId;
+            }),
+        ).toBe(true);
+        expect(logger.warn).toHaveBeenCalledWith('Models.dev fetch failed; using bundled snapshot.', expect.any(Error));
     });
 
     it('rethrows provider deletion failures so renderer can surface errors', async () => {

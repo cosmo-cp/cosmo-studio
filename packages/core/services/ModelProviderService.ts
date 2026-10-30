@@ -12,6 +12,8 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createPerplexity } from '@ai-sdk/perplexity';
 import { ProviderV4 } from '@ai-sdk/provider';
 import { createXai } from '@ai-sdk/xai';
+import { Models } from '@opencode-ai/models';
+import { providers as snapshotProviders } from '@opencode-ai/models/snapshot';
 import { createProviderRegistry, ProviderRegistryProvider } from 'ai';
 import { createOllama, OllamaProviderSettings } from 'ai-sdk-ollama';
 import { inject, injectable } from 'inversify';
@@ -48,7 +50,6 @@ interface LMStudioModelPayload {
 export class ModelProviderService {
     private readonly repository: ModelProviderRepository;
     private modelProviderRegistry: ProviderRegistryProvider = createProviderRegistry({});
-    private static MODELS_DOT_DEV_URL = 'https://models.dev/api.json';
     private static MODELS_OLLAMA_URL = 'http://127.0.0.1:11434/api';
     private static MODELS_LMSTUDIO_URL = 'http://localhost:1234/api';
     private static DEFAULT_CONTEXT_WINDOW = 128000;
@@ -373,19 +374,12 @@ export class ModelProviderService {
         }
 
         try {
-            const response = await fetch(ModelProviderService.MODELS_DOT_DEV_URL, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                this.logger.error('Models.dev API Error:', await response.text());
-                return result;
-            }
-
-            const data = await response.json();
+            const data = await Models.make()
+                .providers()
+                .catch((err) => {
+                    this.logger.warn('Models.dev fetch failed; using bundled snapshot.', err);
+                    return snapshotProviders;
+                });
             const modelsDevKey = catalogEntry.modelsDevKey ?? provider.type;
             const modelsDict = data[modelsDevKey]?.models ?? {};
             for (const key in modelsDict) {
@@ -399,9 +393,9 @@ export class ModelProviderService {
                     lastUpdatedByProvider: new Date(m.last_updated),
                     attachment: m.attachment,
                     toolCall: m.tool_call,
-                    inputModalities: m.modalities.input,
-                    outputModalities: m.modalities.output,
-                    status: m.status ?? ModelStatusEnum.NOT_DEFINED,
+                    inputModalities: m.modalities.input as NewModel['inputModalities'],
+                    outputModalities: m.modalities.output as NewModel['outputModalities'],
+                    status: m.status === 'deprecated' ? ModelStatusEnum.DEPRECATED : ModelStatusEnum.NOT_DEFINED,
                     contextWindow: m.limit?.context ?? ModelProviderService.DEFAULT_CONTEXT_WINDOW,
                     maxOutputWindow: m.limit?.output ?? ModelProviderService.DEFAULT_MAX_OUTPUT_WINDOW,
                 });
