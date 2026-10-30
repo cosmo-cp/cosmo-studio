@@ -112,6 +112,11 @@ export function ProviderManagement() {
                 </Button>
             </div>
 
+            {providersError && (
+                <div role="alert" className="p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-600">
+                    {providersError}
+                </div>
+            )}
             {providers.length > 0 ? (
                 <ScrollArea type="always" className="h-[50dvh]">
                     <div className="space-y-3">
@@ -164,11 +169,11 @@ export function ProviderManagement() {
                         ))}
                     </div>
                 </ScrollArea>
-            ) : (
+            ) : !providersError ? (
                 <Card className="p-6 text-center">
                     <p className="text-sm text-muted-foreground">No providers added yet.</p>
                 </Card>
-            )}
+            ) : null}
 
             <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
                 <DialogContent className="sm:max-w-[720px] max-h-[85dvh] p-6 overflow-hidden flex flex-col">
@@ -360,9 +365,9 @@ export function ProviderManagement() {
                         )}
                     </div>
                     <div className="mt-2 space-y-4">
-                        {(error ?? (providersError ? providersError : null)) && (
+                        {error && (
                             <div className="p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-600">
-                                {error ?? providersError ?? 'Failed to load providers'}
+                                {error}
                             </div>
                         )}
                         <DialogFooter>
