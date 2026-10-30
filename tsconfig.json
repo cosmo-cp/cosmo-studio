@@ -14,7 +14,9 @@
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "paths": {
-            "@database/*": ["core/database/*"]
+            "@database/*": ["core/database/*"],
+            "@opencode-ai/models": ["../node_modules/@opencode-ai/models/dist/index"],
+            "@opencode-ai/models/snapshot": ["../node_modules/@opencode-ai/models/dist/snapshot"]
         },
         "types": ["node"]
     }
