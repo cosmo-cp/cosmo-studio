@@ -23,7 +23,7 @@ jobs:
             - name: Set up Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: '22.19.0'
+                  node-version: '26.13.0'
                   cache: 'npm'
 
             - name: Install dependencies
@@ -108,7 +108,7 @@ jobs:
                   APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
                   SIGN_IDENTITY: ${{ secrets.SIGN_IDENTITY }}
               run: |
-                  set -euo pipefail 
+                  set -euo pipefail
 
                   if [ -z "${APPLE_ID}" ] || [ -z "${APPLE_ID_PASSWORD}" ] || [ -z "${APPLE_TEAM_ID}" ] || [ -z "${SIGN_IDENTITY}" ]; then
                     echo "Missing one or more Apple notarization/signing secrets."
