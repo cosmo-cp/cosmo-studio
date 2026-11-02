@@ -17,6 +17,9 @@ export enum ModelProviderTypeEnum {
     COHERE = 'cohere',
     LMSTUDIO = 'lmstudio',
     HUGGINGFACE = 'huggingface',
+    TOGETHERAI = 'togetherai',
+    FIREWORKS = 'fireworks',
+    VOYAGE = 'voyage',
     CUSTOM = 'custom',
 }
 

@@ -94,6 +94,8 @@
         "@ai-sdk/openai-compatible": "^3.0.57",
         "@ai-sdk/perplexity": "^5.0.0",
         "@ai-sdk/provider": "^4.0.18",
+        "@ai-sdk/togetherai": "3.0.58",
+        "@ai-sdk/voyage": "^2.0.72",
         "@electric-sql/pglite": "^0.5.8",
         "@mcpc-tech/acp-ai-provider": "^0.3.8",
         "@nestjs/common": "^12.1.0",

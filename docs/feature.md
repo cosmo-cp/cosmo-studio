@@ -25,14 +25,14 @@ Use this file as the quick feature index. For implementation details, follow the
 
 ## Model Providers And Models
 
-- Provider management for OpenAI, Anthropic, Google, xAI, Groq, Mistral, DeepSeek, Ollama, Moonshot, Perplexity, Cohere, LM Studio, HuggingFace, and custom OpenAI-compatible endpoints.
+- Provider management for OpenAI, Anthropic, Google, xAI, Groq, Mistral, DeepSeek, Ollama, Moonshot, Perplexity, Cohere, LM Studio, HuggingFace, Together AI, Fireworks AI, Voyage AI, and custom OpenAI-compatible endpoints.
     - Catalog: `packages/core/providerCatalog.ts`
     - Service: `packages/core/services/ModelProviderService.ts`
     - UI/orchestration: `src/renderer/src/components/provider-management.tsx`, `src/renderer/src/features/providers/use-provider-page-state.ts`
 - Add, edit, delete, and list providers. Remote providers store API keys; local providers such as Ollama and LM Studio can run without API keys.
     - Schema: `packages/core/database/schema/modelProviderSchema.ts`
     - Secret storage boundary: `packages/core/platform/SecretStore.ts`, `src/main/platform/ElectronSecretStore.ts`
-- Model discovery from `models.dev`, Ollama, and LM Studio, including capability metadata such as reasoning, tool calling, context/output windows, attachments, status, and input/output modalities. Remote discovery uses the models.dev SDK and falls back to its bundled snapshot when the live request fails; the snapshot is refreshed when the SDK dependency is updated.
+- Model discovery from `models.dev`, Ollama, LM Studio, and Voyage AI, including capability metadata such as reasoning, tool calling, context/output windows, attachments, status, and input/output modalities. Remote discovery uses the models.dev SDK and falls back to its bundled snapshot when the live request fails; the snapshot is refreshed when the SDK dependency is updated.
     - Service: `packages/core/services/ModelProviderService.ts`
     - UI capability display: `src/renderer/src/components/provider-management.tsx`
 - The planned scalable provider registry has a versioned data contract, explicit support routes/levels, backend-only adapter boundary, lifecycle and migration policy, threat model, and representative stable-support test matrix.
