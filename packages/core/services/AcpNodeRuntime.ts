@@ -22,7 +22,7 @@ let pending: Promise<NodeRuntime> | undefined;
 
 export interface NodeRuntime {
     node: string;
-    npm: string;
+    npx: string;
     bin: string;
 }
 
@@ -31,7 +31,7 @@ function paths(root: string): NodeRuntime {
     const windows = process.platform === 'win32';
     return {
         node: path.join(root, windows ? 'node.exe' : 'bin/node'),
-        npm: path.join(root, windows ? 'node_modules/npm/bin/npm-cli.js' : 'lib/node_modules/npm/bin/npm-cli.js'),
+        npx: path.join(root, windows ? 'node_modules/npm/bin/npx-cli.js' : 'bin/npx'),
         bin: path.join(root, windows ? '.' : 'bin'),
     };
 }
@@ -39,10 +39,10 @@ function paths(root: string): NodeRuntime {
 // Check the actual runtime and npm CLI rather than treating a partial extraction as installed.
 async function usable(runtime: NodeRuntime): Promise<boolean> {
     try {
-        await access(runtime.npm);
+        await access(runtime.npx);
         const result = await run(runtime.node, ['--version'], { timeout: 10000, windowsHide: true });
         if (result.stdout.trim() !== VERSION) return false;
-        await run(runtime.node, [runtime.npm, '--version'], { timeout: 10000, windowsHide: true });
+        await run(runtime.node, [runtime.npx, '--version'], { timeout: 10000, windowsHide: true });
         return true;
     } catch {
         return false;

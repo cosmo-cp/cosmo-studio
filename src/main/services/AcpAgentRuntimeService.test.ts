@@ -5,7 +5,7 @@ vi.mock('core/services/AcpNodeRuntime', () => {
     return {
         ensureAcpNodeRuntime: vi
             .fn()
-            .mockResolvedValue({ node: '/runtime/node', npm: '/runtime/npm-cli.js', bin: '/runtime' }),
+            .mockResolvedValue({ node: '/runtime/node', npx: '/runtime/npx-cli.js', bin: '/runtime' }),
         nodeRuntimeEnv: vi.fn().mockReturnValue({ PATH: '/runtime' }),
     };
 });
@@ -89,7 +89,33 @@ describe('ACP process leases', () => {
         expect(create).toHaveBeenCalledWith(
             expect.objectContaining({
                 command: '/runtime/node',
-                args: ['/runtime/npm-cli.js', 'exec', '-y', 'example'],
+                args: ['/runtime/npx-cli.js', '-y', 'example'],
+                env: { PATH: '/runtime' },
+            }),
+        );
+    });
+    it('uses the shared Node runtime when testing a manually configured npx agent', async () => {
+        const agents = {
+            getRuntimeConfig: vi.fn().mockResolvedValue({
+                enabled: true,
+                source: 'custom',
+                name: 'agent',
+                command: 'npx',
+                args: ['-y', 'example'],
+                env: {},
+                defaultCwd: '/tmp',
+            }),
+        };
+        const service = new AcpAgentRuntimeService(agents as never, {} as never);
+        const create = vi.spyOn(service as never, 'createProcessProvider').mockReturnValue({
+            initSession: vi.fn().mockResolvedValue({}),
+            cleanup: vi.fn(),
+        } as never);
+        expect(await service.testAgent('a')).toMatchObject({ ok: true });
+        expect(create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                command: '/runtime/node',
+                args: ['/runtime/npx-cli.js', '-y', 'example'],
                 env: { PATH: '/runtime' },
             }),
         );

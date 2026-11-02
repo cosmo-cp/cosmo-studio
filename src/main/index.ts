@@ -3,6 +3,7 @@ import { DatabaseManager } from 'core/database/DatabaseManager';
 import { app, BrowserWindow, net, protocol, safeStorage } from 'electron';
 import { IpcHandlerRegistry } from './ipc';
 import 'reflect-metadata';
+import { pathToFileURL } from 'node:url';
 import { setCoreLogger } from 'core/platform/CoreLogger';
 import { McpClientManager } from 'core/services/McpClientManager';
 import { CORETYPES } from 'core/types/types';
@@ -11,7 +12,6 @@ import { updateElectronApp, UpdateSourceType } from 'update-electron-app';
 import container from './inversify.config';
 import { logger } from './logger';
 import { TYPES } from './types';
-import { pathToFileURL } from 'node:url';
 
 setCoreLogger(logger);
 
@@ -34,7 +34,7 @@ export class Main {
         ]);
         app.whenReady().then(async () => {
             if (!safeStorage.isEncryptionAvailable()) {
-                logger.warn('safeStorage encryption unavailable. API keys won\'t be encrypted.');
+                logger.warn("safeStorage encryption unavailable. API keys won't be encrypted.");
             }
             this.protocolInitialization();
             await this.initializeDatabase();
@@ -132,12 +132,7 @@ export class Main {
     }
 
     private protocolInitialization() {
-        const rendererRoot = path.join(
-            app.getAppPath(),
-            '.vite',
-            'renderer',
-            'main_window',
-        );
+        const rendererRoot = path.join(app.getAppPath(), '.vite', 'renderer', 'main_window');
 
         protocol.handle('app', (request) => {
             const url = new URL(request.url);
@@ -169,11 +164,7 @@ export class Main {
             const filePath = path.resolve(rendererRoot, relativePath);
             const relative = path.relative(rendererRoot, filePath);
 
-            if (
-                relative === '..' ||
-                relative.startsWith(`..${path.sep}`) ||
-                path.isAbsolute(relative)
-            ) {
+            if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
                 return new Response('Forbidden', { status: 403 });
             }
 

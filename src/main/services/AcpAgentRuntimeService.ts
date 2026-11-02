@@ -72,12 +72,12 @@ export class AcpAgentRuntimeService {
             throw new Error(`ACP agent ${agent.name} requires a workspace directory.`);
         }
 
-        const useNodeRuntime = agent.source === 'registry' && agent.command === 'npx';
+        const useNodeRuntime = agent.command === 'npx';
         const runtime = useNodeRuntime ? await ensureAcpNodeRuntime() : undefined;
         const settings: ACPProviderSettings = {
             command: runtime?.node ?? agent.command,
             persistSession: true,
-            args: runtime ? [runtime.npm, 'exec', ...agent.args] : agent.args,
+            args: runtime ? [runtime.npx, ...agent.args] : agent.args,
             env: runtime ? nodeRuntimeEnv(runtime, agent.env) : agent.env,
             authMethodId: agent.authMethodId ?? undefined,
             session: {

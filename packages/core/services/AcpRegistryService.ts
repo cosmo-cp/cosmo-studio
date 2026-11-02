@@ -144,7 +144,7 @@ export class AcpRegistryService {
             const runtime = await ensureAcpNodeRuntime();
             await execFileAsync(
                 runtime.node,
-                [runtime.npm, 'exec', '--yes', `--package=${packageName}`, '--', runtime.node, '-e', ''],
+                [runtime.npx, '--yes', `--package=${packageName}`, '--', runtime.node, '-e', ''],
                 { env: { ...process.env, ...nodeRuntimeEnv(runtime) } },
             );
             return;

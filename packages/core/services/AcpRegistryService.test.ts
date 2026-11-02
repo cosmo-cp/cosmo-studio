@@ -8,7 +8,7 @@ vi.mock('./AcpNodeRuntime', () => {
     return {
         ensureAcpNodeRuntime: vi
             .fn()
-            .mockResolvedValue({ node: '/runtime/node', npm: '/runtime/npm-cli.js', bin: '/runtime' }),
+            .mockResolvedValue({ node: '/runtime/node', npx: '/runtime/npx-cli.js', bin: '/runtime' }),
         nodeRuntimeEnv: vi.fn().mockReturnValue({ PATH: '/runtime' }),
     };
 });
@@ -141,7 +141,7 @@ describe('AcpRegistryService', () => {
 
         expect(runPackage).toHaveBeenCalledWith(
             '/runtime/node',
-            ['/runtime/npm-cli.js', 'exec', '--yes', '--package=@example/agent', '--', '/runtime/node', '-e', ''],
+            ['/runtime/npx-cli.js', '--yes', '--package=@example/agent', '--', '/runtime/node', '-e', ''],
             expect.objectContaining({ env: expect.objectContaining({ PATH: '/runtime' }) }),
         );
         expect(runPackage.mock.invocationCallOrder[0]).toBeLessThan(

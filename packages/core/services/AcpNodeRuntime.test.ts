@@ -33,10 +33,9 @@ describe.skipIf(process.platform === 'win32')('shared ACP Node runtime', () => {
             `v24.21.0-${process.platform}-${process.arch}`,
         );
         await mkdir(path.join(root, 'bin'), { recursive: true });
-        await mkdir(path.join(root, 'lib/node_modules/npm/bin'), { recursive: true });
         await writeFile(path.join(root, 'bin/node'), '#!/bin/sh\necho v24.21.0\n');
         await chmod(path.join(root, 'bin/node'), 0o755);
-        await writeFile(path.join(root, 'lib/node_modules/npm/bin/npm-cli.js'), '');
+        await writeFile(path.join(root, 'bin/npx'), '');
         const fetchMock = vi.fn();
         vi.stubGlobal('fetch', fetchMock);
         const runtime = await ensureAcpNodeRuntime();
