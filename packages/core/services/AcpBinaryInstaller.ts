@@ -43,7 +43,7 @@ export async function uninstallAcpBinary(command: string): Promise<void> {
     const directory = path.join(root, parts[0]);
     try {
         if (!(await lstat(directory)).isDirectory()) return;
-        await rm(directory, { recursive: true, force: true });
+        await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
@@ -126,7 +126,7 @@ export async function installAcpBinary(distributions: Record<string, unknown>) {
         await rm(archive);
         return { command: command, args: binary.args, env: binary.env, directory: directory };
     } catch (error) {
-        await rm(directory, { recursive: true, force: true });
+        await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
         throw error;
     }
 }

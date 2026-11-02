@@ -77,6 +77,7 @@ export class AcpAgentController implements Controller {
 
     @IpcHandler('delete', z.tuple([z.string().min(1)]))
     public async delete(id: string): Promise<void> {
+        this.acpAgentRuntimeService.stopAgent(id);
         return this.acpAgentService.delete(id);
     }
 

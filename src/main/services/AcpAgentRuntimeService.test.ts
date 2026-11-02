@@ -54,6 +54,31 @@ describe('ACP process leases', () => {
         expect(providers[0].cleanup).toHaveBeenCalledTimes(1);
         expect(providers[1].cleanup).toHaveBeenCalledTimes(1);
     });
+    it('stops idle and active providers without affecting another agent', async () => {
+        vi.useFakeTimers();
+        const config = { enabled: true, name: 'agent', command: 'agent', args: [], env: {}, defaultCwd: '/tmp' };
+        const service = new AcpAgentRuntimeService(
+            { getRuntimeConfig: vi.fn().mockResolvedValue(config) } as never,
+            {} as never,
+        );
+        const providers: { cleanup: ReturnType<typeof vi.fn> }[] = [];
+        vi.spyOn(service as never, 'createProcessProvider').mockImplementation(() => {
+            const provider = { initSession: vi.fn().mockResolvedValue({}), cleanup: vi.fn() };
+            providers.push(provider);
+            return provider as never;
+        });
+        const idle = await service.createProvider('a');
+        const active = await service.createProvider('a');
+        const other = await service.createProvider('b');
+        idle.cleanup();
+        service.stopAgent('a');
+        active.cleanup();
+        vi.advanceTimersByTime(300000);
+        expect(providers[0].cleanup).toHaveBeenCalledOnce();
+        expect(providers[1].cleanup).toHaveBeenCalledOnce();
+        expect(providers[2].cleanup).not.toHaveBeenCalled();
+        other.cleanup();
+    });
     it('cleans up a failed initialization and reports the test failure', async () => {
         const agents = {
             getRuntimeConfig: vi

@@ -50,6 +50,8 @@ const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 @injectable()
 export class AcpAgentRuntimeService {
     private readonly idleProviders = new Map<string, IdleProvider[]>();
+    private readonly activeProviders = new Map<string, Set<ACPProvider>>();
+    private readonly generations = new Map<string, number>();
     constructor(
         @inject(CORETYPES.AcpAgentService)
         private readonly acpAgentService: AcpAgentService,
@@ -63,6 +65,7 @@ export class AcpAgentRuntimeService {
         cwdOverride?: string | null,
         conversationId?: string,
     ): Promise<ACPProvider> {
+        const generation = this.generations.get(agentId) ?? 0;
         const agent = await this.acpAgentService.getRuntimeConfig(agentId);
         if (!agent.enabled) {
             throw new Error(`ACP agent ${agent.name} is disabled.`);
@@ -85,6 +88,9 @@ export class AcpAgentRuntimeService {
                 mcpServers: await this.buildMcpServers(agent),
             },
         };
+        if ((this.generations.get(agentId) ?? 0) !== generation) {
+            throw new Error('ACP agent was removed while starting.');
+        }
         // A conversation owns its session history; concurrent turns get separate processes.
         const key = JSON.stringify([agentId, conversationId ?? null, settings]);
         const idle = this.idleProviders.get(key);
@@ -96,10 +102,19 @@ export class AcpAgentRuntimeService {
             clearTimeout(entry.timer);
         }
         const provider = entry?.provider ?? this.createProcessProvider(settings);
+        const active = this.activeProviders.get(agentId) ?? new Set<ACPProvider>();
+        active.add(provider);
+        this.activeProviders.set(agentId, active);
         try {
             await provider.initSession();
+            if ((this.generations.get(agentId) ?? 0) !== generation) {
+                throw new Error('ACP agent was removed while starting.');
+            }
         } catch (error) {
-            provider.cleanup();
+            if (active.delete(provider)) provider.cleanup();
+            if (active.size === 0 && this.activeProviders.get(agentId) === active) {
+                this.activeProviders.delete(agentId);
+            }
             throw error;
         }
         let released = false;
@@ -119,6 +134,8 @@ export class AcpAgentRuntimeService {
             cleanup: () => {
                 if (released) return;
                 released = true;
+                if (!active.delete(provider)) return;
+                if (active.size === 0) this.activeProviders.delete(agentId);
                 const timer = setTimeout(() => {
                     const entries = this.idleProviders.get(key);
                     const index =
@@ -136,6 +153,25 @@ export class AcpAgentRuntimeService {
                 this.idleProviders.set(key, entries);
             },
         };
+    }
+
+    // Stops every process for an agent before its installation is removed.
+    public stopAgent(agentId: string): void {
+        this.generations.set(agentId, (this.generations.get(agentId) ?? 0) + 1);
+        const active = this.activeProviders.get(agentId);
+        this.activeProviders.delete(agentId);
+        if (active) {
+            for (const provider of active) provider.cleanup();
+            active.clear();
+        }
+        for (const [key, entries] of this.idleProviders) {
+            if (JSON.parse(key)[0] !== agentId) continue;
+            this.idleProviders.delete(key);
+            for (const entry of entries) {
+                clearTimeout(entry.timer);
+                entry.provider.cleanup();
+            }
+        }
     }
 
     // Starts and tears down an ACP session to validate command/auth configuration.
