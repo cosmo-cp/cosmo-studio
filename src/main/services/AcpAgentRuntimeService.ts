@@ -9,6 +9,7 @@ import type {
     StdioTransportConfig,
 } from 'core/dto';
 import { AcpAgentService } from 'core/services/AcpAgentService';
+import { ensureAcpNodeRuntime, nodeRuntimeEnv } from 'core/services/AcpNodeRuntime';
 import { McpServerService } from 'core/services/McpServerService';
 import { CORETYPES } from 'core/types/types';
 import { inject, injectable } from 'inversify';
@@ -23,6 +24,7 @@ interface ACPProvider {
 
 interface ACPProviderSettings {
     command: string;
+    persistSession?: boolean;
     args?: string[];
     env?: Record<string, string>;
     authMethodId?: string;
@@ -38,8 +40,16 @@ const { createACPProvider } = require('@mcpc-tech/acp-ai-provider') as {
     createACPProvider: (config: ACPProviderSettings) => ACPProvider;
 };
 
+interface IdleProvider {
+    provider: ACPProvider;
+    timer: ReturnType<typeof setTimeout>;
+}
+
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+
 @injectable()
 export class AcpAgentRuntimeService {
+    private readonly idleProviders = new Map<string, IdleProvider[]>();
     constructor(
         @inject(CORETYPES.AcpAgentService)
         private readonly acpAgentService: AcpAgentService,
@@ -47,8 +57,12 @@ export class AcpAgentRuntimeService {
         private readonly mcpServerService: McpServerService,
     ) {}
 
-    // Builds a one-shot ACP provider for a chat turn; callers must cleanup after streaming.
-    public async createProvider(agentId: string, cwdOverride?: string | null): Promise<ACPProvider> {
+    // Leases an initialized process exclusively until the caller releases it.
+    public async createProvider(
+        agentId: string,
+        cwdOverride?: string | null,
+        conversationId?: string,
+    ): Promise<ACPProvider> {
         const agent = await this.acpAgentService.getRuntimeConfig(agentId);
         if (!agent.enabled) {
             throw new Error(`ACP agent ${agent.name} is disabled.`);
@@ -58,16 +72,70 @@ export class AcpAgentRuntimeService {
             throw new Error(`ACP agent ${agent.name} requires a workspace directory.`);
         }
 
-        return createACPProvider({
-            command: agent.command,
-            args: agent.args,
-            env: agent.env,
+        const useNodeRuntime = agent.source === 'registry' && agent.command === 'npx';
+        const runtime = useNodeRuntime ? await ensureAcpNodeRuntime() : undefined;
+        const settings: ACPProviderSettings = {
+            command: runtime?.node ?? agent.command,
+            persistSession: true,
+            args: runtime ? [runtime.npm, 'exec', ...agent.args] : agent.args,
+            env: runtime ? nodeRuntimeEnv(runtime, agent.env) : agent.env,
             authMethodId: agent.authMethodId ?? undefined,
             session: {
                 cwd: cwd,
                 mcpServers: await this.buildMcpServers(agent),
             },
-        });
+        };
+        // A conversation owns its session history; concurrent turns get separate processes.
+        const key = JSON.stringify([agentId, conversationId ?? null, settings]);
+        const idle = this.idleProviders.get(key);
+        const entry = idle?.pop();
+        if (idle?.length === 0) {
+            this.idleProviders.delete(key);
+        }
+        if (entry) {
+            clearTimeout(entry.timer);
+        }
+        const provider = entry?.provider ?? this.createProcessProvider(settings);
+        try {
+            await provider.initSession();
+        } catch (error) {
+            provider.cleanup();
+            throw error;
+        }
+        let released = false;
+        return {
+            languageModel: (modelId, modeId) => {
+                return provider.languageModel(modelId, modeId);
+            },
+            initSession: (tools) => {
+                return provider.initSession(tools);
+            },
+            authenticate: (methodId) => {
+                return provider.authenticate(methodId);
+            },
+            get tools() {
+                return provider.tools;
+            },
+            cleanup: () => {
+                if (released) return;
+                released = true;
+                const timer = setTimeout(() => {
+                    const entries = this.idleProviders.get(key);
+                    const index =
+                        entries?.findIndex((item) => {
+                            return item.provider === provider;
+                        }) ?? -1;
+                    if (!entries || index < 0) return;
+                    entries.splice(index, 1);
+                    if (entries.length === 0) this.idleProviders.delete(key);
+                    provider.cleanup();
+                }, IDLE_TIMEOUT_MS);
+                timer.unref();
+                const entries = this.idleProviders.get(key) ?? [];
+                entries.push({ provider: provider, timer: timer });
+                this.idleProviders.set(key, entries);
+            },
+        };
     }
 
     // Starts and tears down an ACP session to validate command/auth configuration.
@@ -98,6 +166,11 @@ export class AcpAgentRuntimeService {
         } finally {
             provider?.cleanup();
         }
+    }
+
+    // Keeps subprocess construction isolated from lease management.
+    protected createProcessProvider(settings: ACPProviderSettings): ACPProvider {
+        return createACPProvider(settings);
     }
 
     private async buildMcpServers(agent: AcpAgentRuntimeConfig): Promise<Record<string, unknown>[]> {

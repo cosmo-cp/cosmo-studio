@@ -84,7 +84,7 @@ export class ChatStreamingService {
 
         const streamConfig =
             runtime === 'agent'
-                ? await this.buildAcpAgentStreamConfig(args.agentId!, args.agentCwd)
+                ? await this.buildAcpAgentStreamConfig(args.agentId!, args.agentCwd, args.chatId)
                 : await this.buildModelStreamConfig(args.modelIdentifier!);
 
         const result = streamText({
@@ -96,6 +96,9 @@ export class ChatStreamingService {
             stopWhen: streamConfig.hasTools ? stepCountIs(5) : undefined,
             abortSignal: abortSignal,
             experimental_transform: smoothStream({ delayInMs: 30 }),
+            onAbort: () => {
+                streamConfig.cleanup?.();
+            },
             onFinish: (result) => {
                 streamConfig.cleanup?.();
                 void this.messageService.createMessage({
@@ -145,8 +148,12 @@ export class ChatStreamingService {
         };
     }
 
-    private async buildAcpAgentStreamConfig(agentId: string, cwd?: string | null): Promise<ChatStreamConfig> {
-        const provider = await this.acpAgentRuntimeService.createProvider(agentId, cwd);
+    private async buildAcpAgentStreamConfig(
+        agentId: string,
+        cwd: string | null | undefined,
+        chatId: string,
+    ): Promise<ChatStreamConfig> {
+        const provider = await this.acpAgentRuntimeService.createProvider(agentId, cwd, chatId);
         provider.languageModel();
         const tools = (provider.tools ?? {}) as ToolSet;
         return {

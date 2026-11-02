@@ -178,6 +178,7 @@ export interface AcpRegistryView {
     version: string;
     fetchedAt: Date | null;
     agents: AcpRegistryAgent[];
+    error?: string;
 }
 
 export interface AcpRegistryInstallInput {

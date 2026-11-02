@@ -12,6 +12,7 @@ This file applies to changes under `src/renderer/`.
 - In HTTP dev, the UI is served by `next dev` on `http://localhost:3000` and talks to Nest on `http://127.0.0.1:4000/api`.
 - `NEXT_PUBLIC_COSMO_BACKEND=electron|http` selects the runtime adapter at build/dev time.
 - `NEXT_PUBLIC_COSMO_API_BASE` defaults to `/api` for HTTP builds.
+- Electron packaging uses `next build --webpack` so production renderer builds also work when localhost port binding is restricted.
 
 ## Development constraints (important)
 

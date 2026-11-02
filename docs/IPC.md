@@ -99,9 +99,11 @@ The `acpAgent` IPC/RPC group manages local Agent Client Protocol agents:
 
 - `acpAgent:getAll` → list redacted installed agents.
 - `acpAgent:create` / `update` / `delete` → manage custom or registry-installed agents.
+- Deleting a registry binary also removes its app-owned installation directory. The shared npx and uvx caches are retained.
 - `acpAgent:enable` / `disable` → toggle chat/workflow availability.
 - `acpAgent:getRegistry` / `refreshRegistry` → read or refresh the cached ACP registry.
-- `acpAgent:installFromRegistry` → create an installed agent from supported `npx`/`uvx` registry distributions.
+- Registry npx agents share an on-demand Node.js and npm runtime under `~/.cosmo-studio/runtime/node`; downloads use pinned release checksums and are checked again when launching an agent. The app uses npm’s normal user cache.
+- `acpAgent:installFromRegistry` → install an `npx`, `uvx`, or platform-specific binary distribution before creating the agent. Binary archives are stored under `~/.cosmo-studio/acp-agents`, and their SHA-256 digest is verified when provided by the registry.
 - `acpAgent:test` → initialize a backend ACP session and return a serializable status.
 
 Chat agent selection uses `chat:updateSelectedAgentForChat` (`chat/updateSelectedAgentForChat` over HTTP RPC). Both runtimes normalize empty or whitespace-only `selectedAgentId` values to `null`, trim nonempty IDs, and preserve the selected `model` or `agent` runtime. The composer ignores empty select form-sync events; choosing the explicit **None** option sends `null`.

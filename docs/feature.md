@@ -19,6 +19,7 @@ Use this file as the quick feature index. For implementation details, follow the
     - Shared stream assembly: `src/main/services/ChatStreamingService.ts`
 - Rich message rendering with Markdown/GFM, assistant copy actions, reasoning panels, source links, file previews, tool call panels, and tool approval/denial responses.
     - UI: `src/renderer/src/components/messages.tsx`, `src/renderer/src/components/markdown.tsx`, `src/renderer/src/components/preview-attachment.tsx`, `src/renderer/src/components/ai-elements/tool.tsx`, `src/renderer/src/components/ai-elements/confirmation.tsx`
+- ACP agent requests use isolated subprocess leases; idle sessions are retained per conversation and stopped after five minutes. Concurrent requests use separate processes.
 - Per-chat selected model, selected persona, selected runtime (`model` or `agent`), selected ACP agent, and renderer-side selected web-search option.
     - State: `src/renderer/src/features/chat/chat-store.ts`
     - Persisted chat selections: `packages/core/database/schema/chatSchema.ts`
@@ -98,7 +99,7 @@ Use this file as the quick feature index. For implementation details, follow the
     - UI/orchestration: `src/renderer/src/components/acp-agent-management.tsx`, `src/renderer/src/features/acp-agents/use-acp-agent-page-state.ts`
     - Renderer data flow: `src/renderer/src/features/acp-agents/acp-agents-api.ts`
     - Schema/service: `packages/core/database/schema/acpAgentSchema.ts`, `packages/core/services/AcpAgentService.ts`
-- Browse, refresh, search, and install agents from the ACP registry when the registry distribution is installable.
+- Browse, refresh, search, and install agents from the ACP registry when the registry distribution is installable. Registry npx agents use a shared, on-demand Node.js and npm runtime verified against pinned checksums.
     - Registry service: `packages/core/services/AcpRegistryService.ts`
     - Runtime service: `src/main/services/AcpAgentRuntimeService.ts`
 - Enable/disable, test, edit, and delete agents. Agent env values are stored in the backend and renderer views expose only env key names.
