@@ -97,8 +97,9 @@ Apply the highest-impact rules first:
     - `src/renderer/src/features/web-search/web-search-store.ts` owns the frontend-only Parallel web-search session config.
 - For streaming chat:
     - Renderer uses `@ai-sdk/react` and `createChatTransport()` (`src/renderer/src/chat-transport.ts`).
-    - Electron builds use `IpcChatTransport`; ensure stream channels are stable (`chat-stream-${chatId}`) and all listeners are cleaned up.
+    - Electron builds use `IpcChatTransport`; use a unique `chat-stream-${chatId}-${generationId}` channel for each request and clean up all listeners.
     - HTTP builds use AI SDK `DefaultChatTransport` against `POST /api/chat`.
+    - `ChatSessionProvider` owns chat sessions across page navigation; selected-chat components subscribe to the existing session and must not overwrite active messages with fetched history.
 
 ## Testing expectations (renderer)
 

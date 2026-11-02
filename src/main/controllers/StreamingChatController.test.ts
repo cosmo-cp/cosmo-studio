@@ -151,6 +151,7 @@ function createControllerDependencies(
         mcpClientManager,
         webSearchConfigService,
         acpAgentRuntimeService,
+        { getChatById: vi.fn().mockResolvedValue({ id: 'chat-id' }) } as never,
     );
     const controller = new StreamingChatController(chatStreamingService);
 
@@ -174,6 +175,54 @@ describe('StreamingChatController', () => {
         ai.RetryError.isInstance.mockReturnValue(false);
     });
 
+    it('rejects overlapping runs without disrupting the original and releases the reservation', async () => {
+        const { controller } = createControllerDependencies();
+        const service = (controller as unknown as { chatStreamingService: ChatStreamingService }).chatStreamingService;
+        let finish!: () => void;
+        const pending = new Promise<void>((resolve) => {
+            finish = resolve;
+        });
+        vi.spyOn(service, 'createMessageStream').mockImplementation(async () => {
+            return {
+                [Symbol.asyncIterator]: async function* () {
+                    await pending;
+                    yield { type: 'finish' };
+                },
+            } as unknown as ReadableStream<never>;
+        });
+        const sender = { isDestroyed: vi.fn().mockReturnValue(false), send: vi.fn() };
+        const event = createIpcEvent(sender);
+        const args = { chatId: 'same', streamChannel: 'first', messages: [] } satisfies ChatSendMessageArgs;
+        const first = controller.sendMessage(args, event);
+        await controller.sendMessage({ ...args, streamChannel: 'second' }, event);
+        expect(sender.send).toHaveBeenCalledWith(
+            'second-error',
+            expect.objectContaining({ message: expect.stringContaining('already running') }),
+        );
+        expect(service.runs.start('same')).toBeNull();
+        finish();
+        await first;
+        expect(sender.send).toHaveBeenCalledWith('first-end');
+        expect(service.runs.start('same')).not.toBeNull();
+    });
+
+    it('rejects a late request after the chat has been deleted', async () => {
+        const { controller } = createControllerDependencies();
+        const service = (controller as unknown as { chatStreamingService: ChatStreamingService }).chatStreamingService;
+        const chats = (service as unknown as { chatService: { getChatById: ReturnType<typeof vi.fn> } }).chatService;
+        chats.getChatById.mockResolvedValue(undefined);
+        const sender = { isDestroyed: vi.fn().mockReturnValue(false), send: vi.fn() };
+        await controller.sendMessage(
+            { chatId: 'deleted', streamChannel: 'late', messages: [], modelIdentifier: 'provider:model' },
+            createIpcEvent(sender),
+        );
+        expect(sender.send).toHaveBeenCalledWith(
+            'late-error',
+            expect.objectContaining({ message: 'Chat does not exist' }),
+        );
+        expect(service.runs.start('deleted')).not.toBeNull();
+    });
+
     it('aborts an active stream and logs the action', () => {
         const { controller } = createControllerDependencies();
         const abortController = new AbortController();
@@ -183,12 +232,24 @@ describe('StreamingChatController', () => {
             abortController,
         );
 
-        controller.abortMessage({ streamChannel: 'chan' } satisfies ChatAbortArgs);
+        const sender = { isDestroyed: vi.fn().mockReturnValue(false), send: vi.fn() };
+        (controller as unknown as { streamOwners: Map<string, unknown> }).streamOwners.set('chan', sender);
+        controller.abortMessage(
+            { streamChannel: 'chan' } satisfies ChatAbortArgs,
+            createIpcEvent({
+                isDestroyed: () => {
+                    return false;
+                },
+                send: vi.fn(),
+            }),
+        );
+        expect(abortSpy).not.toHaveBeenCalled();
+        controller.abortMessage({ streamChannel: 'chan' } satisfies ChatAbortArgs, createIpcEvent(sender));
 
         expect(abortSpy).toHaveBeenCalledTimes(1);
         expect(
             (controller as unknown as { activeStreams: Map<string, AbortController> }).activeStreams.has('chan'),
-        ).toBe(false);
+        ).toBe(true);
         expect(logger.info).toHaveBeenCalledWith('Aborted stream for channel: chan');
     });
 

@@ -12,7 +12,8 @@ Use this file as the quick feature index. For implementation details, follow the
     - Data: `packages/core/database/schema/chatSchema.ts`, `packages/core/services/ChatService.ts`, `packages/core/services/MessageService.ts`
 - Conversation search with match counts, next/previous navigation, `Ctrl+F`/`Cmd+F`, and inline highlights.
     - UI: `src/renderer/src/components/chat-header.tsx`, `src/renderer/src/components/messages.tsx`
-- Streaming chat responses through AI SDK UI messages, with abort/stop support exposed by the composer.
+- Streaming chat responses through AI SDK UI messages, with per-chat sessions that continue when switching chats, activity indicators, and abort/stop support exposed by the composer. Sessions last for the renderer lifetime; reconnect after reload is not supported.
+    - Renderer session registry: `src/renderer/src/features/chat/chat-session-registry.ts`
     - Renderer transport: `src/renderer/src/chat-transport.ts`
     - Electron delivery: `src/main/controllers/StreamingChatController.ts`
     - HTTP delivery: `src/main/http/ChatHttpController.ts`
