@@ -2,6 +2,6 @@
     "name": "core",
     "version": "1.0.0",
     "dependencies": {
-        "@opencode-ai/models": "^0.0.119"
+        "@opencode-ai/models": "^0.0.120"
     }
 }

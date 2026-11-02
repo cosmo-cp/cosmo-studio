@@ -269,7 +269,7 @@ export function useProviderPageState() {
     return {
         providers,
         isLoadingProviders,
-        providersError,
+        providersError: providersError ? getBackendErrorMessage(providersError) : null,
         models,
         isOpen,
         isSubmitting,

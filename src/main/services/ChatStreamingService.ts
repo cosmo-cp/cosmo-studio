@@ -5,6 +5,7 @@ import {
     smoothStream,
     stepCountIs,
     streamText,
+    toUIMessageStream,
     type ToolSet,
     type UIMessageChunk,
 } from 'ai';
@@ -129,7 +130,8 @@ export class ChatStreamingService {
             },
         });
 
-        return result.toUIMessageStream({
+        return toUIMessageStream({
+            stream: result.stream,
             sendReasoning: true,
             sendSources: true,
             messageMetadata: () => {

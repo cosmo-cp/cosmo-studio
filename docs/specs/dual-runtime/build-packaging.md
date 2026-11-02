@@ -5,6 +5,7 @@
 Accepted for v1. Electron packaging remains the existing shareable desktop app path. HTTP packaging produces a distributable Node service under `.vite/http`.
 
 Electron installs also run `scripts/patch-electron-forge-plugin-vite.mjs` in root `postinstall` so Forge's preload build stays compatible with the current Vite version.
+Forge emits the Electron preload at `.vite/preload/index.cjs`, which the main process loads for each window.
 
 ## Commands
 

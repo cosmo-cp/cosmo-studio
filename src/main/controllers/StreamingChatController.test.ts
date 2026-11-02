@@ -26,6 +26,9 @@ const ai = vi.hoisted(() => {
             return `step:${count}`;
         }),
         streamText: vi.fn(),
+        toUIMessageStream: vi.fn(({ stream }: { stream: () => AsyncIterable<unknown> }) => {
+            return stream();
+        }),
         RetryError: {
             isInstance: vi.fn(() => {
                 return false;
@@ -54,6 +57,7 @@ vi.mock('ai', () => {
         smoothStream: ai.smoothStream,
         stepCountIs: ai.stepCountIs,
         streamText: ai.streamText,
+        toUIMessageStream: ai.toUIMessageStream,
         RetryError: ai.RetryError,
     };
 });
@@ -263,7 +267,7 @@ describe('StreamingChatController', () => {
         ai.convertToModelMessages.mockResolvedValue([{ role: 'user', content: 'hi' }]);
         ai.streamText.mockImplementation((options: StreamTextMockOptions) => {
             return {
-                toUIMessageStream: async function* () {
+                stream: async function* () {
                     yield { chunk: 1 };
                     yield { chunk: 2 };
                     await options.onFinish?.({ text: 'assistant', reasoningText: 'reasoning' });
@@ -341,7 +345,7 @@ describe('StreamingChatController', () => {
         ai.streamText.mockImplementation((options: StreamTextMockOptions) => {
             void options.onFinish?.({ text: '', reasoningText: '' });
             return {
-                toUIMessageStream: () => {
+                stream: () => {
                     return createAsyncIterable<unknown>([]);
                 },
             };
@@ -418,7 +422,7 @@ describe('StreamingChatController', () => {
 
         ai.streamText.mockImplementation(() => {
             return {
-                toUIMessageStream: () => {
+                stream: () => {
                     return createAsyncIterable<unknown>([]);
                 },
             };
@@ -456,7 +460,7 @@ describe('StreamingChatController', () => {
 
         ai.streamText.mockImplementation(() => {
             return {
-                toUIMessageStream: () => {
+                stream: () => {
                     return createAsyncIterable<unknown>([]);
                 },
             };
@@ -495,7 +499,7 @@ describe('StreamingChatController', () => {
         ai.streamText.mockImplementation((options: StreamTextMockOptions) => {
             capturedOptions = options;
             return {
-                toUIMessageStream: () => {
+                stream: () => {
                     return createAsyncIterable<unknown>([]);
                 },
             };
@@ -555,7 +559,7 @@ describe('StreamingChatController', () => {
                 void options.onAbort?.({ steps: [] });
             });
             return {
-                toUIMessageStream: () => {
+                stream: () => {
                     return createAsyncIterable([{ chunk: 1 }]);
                 },
             };
