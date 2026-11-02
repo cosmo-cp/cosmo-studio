@@ -86,6 +86,7 @@
     "dependencies": {
         "@ai-sdk/anthropic": "^4.0.92",
         "@ai-sdk/cohere": "^4.0.72",
+        "@ai-sdk/fireworks": "^3.0.85",
         "@ai-sdk/google": "^4.0.108",
         "@ai-sdk/huggingface": "^2.0.81",
         "@ai-sdk/mcp": "^2.0.87",
