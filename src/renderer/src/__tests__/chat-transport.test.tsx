@@ -39,20 +39,12 @@ const setWindowApi = (streaming: StreamingApiMock, chat: ChatApiMock = createCha
 describe('IpcChatTransport', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
+        vi.spyOn(crypto, 'randomUUID').mockReturnValue('00000000-0000-4000-8000-000000000000');
     });
 
-    it('removes listeners when reconnect stream is canceled', async () => {
-        const streaming = createStreamingApiMock();
-        setWindowApi(streaming);
-
+    it('does not advertise unsupported reconnection', async () => {
         const transport = new IpcChatTransport();
-        const stream = await transport.reconnectToStream({ chatId: 'chat-1' });
-        expect(stream).not.toBeNull();
-
-        await stream!.getReader().cancel();
-
-        expect(streaming.removeListeners).toHaveBeenCalledWith('chat-stream-chat-1');
-        expect(streaming.abortMessage).not.toHaveBeenCalled();
+        await expect(transport.reconnectToStream()).resolves.toBeNull();
     });
 
     it('removes listeners without aborting when send stream is canceled', async () => {
@@ -72,14 +64,16 @@ describe('IpcChatTransport', () => {
         expect(streaming.sendMessage).toHaveBeenCalledWith(
             expect.objectContaining({
                 chatId: 'chat-2',
-                streamChannel: 'chat-stream-chat-2',
+                streamChannel: 'chat-stream-chat-2-00000000-0000-4000-8000-000000000000',
                 modelIdentifier: 'openai:gpt-4o',
             }),
         );
 
         await stream.getReader().cancel();
 
-        expect(streaming.removeListeners).toHaveBeenCalledWith('chat-stream-chat-2');
+        expect(streaming.removeListeners).toHaveBeenCalledWith(
+            'chat-stream-chat-2-00000000-0000-4000-8000-000000000000',
+        );
         expect(streaming.abortMessage).not.toHaveBeenCalled();
     });
 
@@ -101,7 +95,9 @@ describe('IpcChatTransport', () => {
         });
 
         await expect(stream.getReader().read()).rejects.toThrow('send failed');
-        expect(streaming.removeListeners).toHaveBeenCalledWith('chat-stream-chat-3');
+        expect(streaming.removeListeners).toHaveBeenCalledWith(
+            'chat-stream-chat-3-00000000-0000-4000-8000-000000000000',
+        );
     });
 
     it('aborts streaming when the abort signal fires', async () => {
@@ -121,8 +117,12 @@ describe('IpcChatTransport', () => {
 
         controller.abort();
 
-        expect(streaming.abortMessage).toHaveBeenCalledWith({ streamChannel: 'chat-stream-chat-5' });
-        expect(streaming.removeListeners).toHaveBeenCalledWith('chat-stream-chat-5');
+        expect(streaming.abortMessage).toHaveBeenCalledWith({
+            streamChannel: 'chat-stream-chat-5-00000000-0000-4000-8000-000000000000',
+        });
+        expect(streaming.removeListeners).toHaveBeenCalledWith(
+            'chat-stream-chat-5-00000000-0000-4000-8000-000000000000',
+        );
     });
     it('fails early when model metadata is missing', async () => {
         const streaming = createStreamingApiMock();

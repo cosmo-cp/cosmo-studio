@@ -4,6 +4,8 @@ import { CORETYPES } from 'core/types/types';
 import { inject, injectable } from 'inversify';
 import { z } from 'zod';
 import { IpcController, IpcHandler } from '../ipc/Decorators';
+import { ChatStreamingService } from '../services/ChatStreamingService';
+import { TYPES } from '../types';
 import { Controller } from './Controller';
 
 const personaIdentifierSchema = z
@@ -36,7 +38,10 @@ const agentIdentifierSchema = z
 @injectable()
 @IpcController('chat')
 export class ChatController implements Controller {
-    constructor(@inject(CORETYPES.ChatService) private chatService: ChatService) {}
+    constructor(
+        @inject(CORETYPES.ChatService) private chatService: ChatService,
+        @inject(TYPES.ChatStreamingService) private chatStreamingService: ChatStreamingService,
+    ) {}
 
     @IpcHandler('getAllChats', z.tuple([z.string().nullable()]))
     public async getAllChats(searchQuery: string | null): Promise<Chat[]> {
@@ -60,7 +65,9 @@ export class ChatController implements Controller {
 
     @IpcHandler('deleteChat', z.tuple([z.string().min(1)]))
     public async deleteChat(id: string): Promise<void> {
-        return this.chatService.deleteChat(id);
+        return this.chatStreamingService.runs.deleteChat(id, () => {
+            return this.chatService.deleteChat(id);
+        });
     }
 
     @IpcHandler('updatePinnedStatusForChat', z.tuple([z.string().min(1), z.boolean()]))

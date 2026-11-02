@@ -1,7 +1,7 @@
+import { coreContainer } from 'core/inversify.config';
 import type { SecretStore } from 'core/platform/SecretStore';
 import { CORETYPES } from 'core/types/types';
 import { Container } from 'inversify';
-import { coreContainer } from 'core/inversify.config';
 import { AcpAgentController } from './controllers/AcpAgentController';
 import { ChatController } from './controllers/ChatController';
 import { CommandController } from './controllers/CommandController';

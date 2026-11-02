@@ -1,3 +1,4 @@
+import { ChatRunRegistry } from '../services/ChatRunRegistry';
 import 'reflect-metadata';
 import type { ChatService } from 'core/services/ChatService';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -81,7 +82,9 @@ describe('IpcHandlerRegistry', () => {
         const service = {
             updateSelectedAgentForChat: vi.fn().mockResolvedValue(undefined),
         } as unknown as ChatService;
-        const registry = new IpcHandlerRegistry([new ChatController(service)]);
+        const registry = new IpcHandlerRegistry([
+            new ChatController(service, { runs: new ChatRunRegistry() } as never),
+        ]);
         registry.registerIpcHandlers();
         const listener = ipcMain.handle.mock.calls.find(([channel]) => {
             return channel === 'chat:updateSelectedAgentForChat';

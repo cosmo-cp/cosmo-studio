@@ -12,6 +12,7 @@ This file applies to changes under `src/renderer/`.
 - In HTTP dev, the UI is served by `next dev` on `http://localhost:3000` and talks to Nest on `http://127.0.0.1:4000/api`.
 - `NEXT_PUBLIC_COSMO_BACKEND=electron|http` selects the runtime adapter at build/dev time.
 - `NEXT_PUBLIC_COSMO_API_BASE` defaults to `/api` for HTTP builds.
+- Electron packaging uses `next build --webpack` so production renderer builds also work when localhost port binding is restricted.
 
 ## Development constraints (important)
 
@@ -96,8 +97,9 @@ Apply the highest-impact rules first:
     - `src/renderer/src/features/web-search/web-search-store.ts` owns the frontend-only Parallel web-search session config.
 - For streaming chat:
     - Renderer uses `@ai-sdk/react` and `createChatTransport()` (`src/renderer/src/chat-transport.ts`).
-    - Electron builds use `IpcChatTransport`; ensure stream channels are stable (`chat-stream-${chatId}`) and all listeners are cleaned up.
+    - Electron builds use `IpcChatTransport`; use a unique `chat-stream-${chatId}-${generationId}` channel for each request and clean up all listeners.
     - HTTP builds use AI SDK `DefaultChatTransport` against `POST /api/chat`.
+    - `ChatSessionProvider` owns chat sessions across page navigation; selected-chat components subscribe to the existing session and must not overwrite active messages with fetched history.
 
 ## Testing expectations (renderer)
 

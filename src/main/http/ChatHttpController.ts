@@ -32,7 +32,11 @@ export class ChatHttpController {
     private readonly chatService = httpContainer.get<ChatService>(CORETYPES.ChatService);
 
     @Post()
-    public async sendMessage(@Body() body: unknown, @Req() request: Request, @Res() response: Response): Promise<void> {
+    public async sendMessage(
+        @Body() body: unknown,
+        @Req() _request: Request,
+        @Res() response: Response,
+    ): Promise<void> {
         const parsed = chatRequestSchema.parse(body);
         const chat = await this.chatService.getChatById(parsed.id);
         const runtime = parsed.metadata?.runtime ?? chat?.selectedRuntime ?? 'model';
@@ -47,9 +51,16 @@ export class ChatHttpController {
             return;
         }
 
-        const abortController = new AbortController();
-        request.on('close', () => {
-            return abortController.abort();
+        const abortController = this.chatStreamingService.runs.start(parsed.id);
+        if (!abortController) {
+            response.status(409).json({ error: 'A response is already running for this chat' });
+            return;
+        }
+        const cleanup = () => {
+            return this.chatStreamingService.runs.finish(parsed.id, abortController);
+        };
+        response.once('close', () => {
+            if (!response.writableFinished) abortController.abort();
         });
 
         const args: ChatSendMessageArgs = {
@@ -64,12 +75,16 @@ export class ChatHttpController {
             agentCwd: parsed.metadata?.agentCwd ?? null,
         };
 
-        const stream = await this.chatStreamingService.createMessageStream(args, abortController.signal);
-        pipeUIMessageStreamToResponse({
-            response: response,
-            status: 200,
-            stream: stream,
-        });
+        try {
+            const stream = await this.chatStreamingService.createMessageStream(args, abortController.signal);
+            await pipeUIMessageStreamToResponse({
+                response: response,
+                status: 200,
+                stream: stream,
+            });
+        } finally {
+            cleanup();
+        }
     }
 
     @Get(':chatId/stream')

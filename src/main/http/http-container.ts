@@ -1,8 +1,8 @@
+import { coreContainer } from 'core/inversify.config';
 import { NodeSecretStore } from 'core/platform/NodeSecretStore';
 import type { SecretStore } from 'core/platform/SecretStore';
 import { CORETYPES } from 'core/types/types';
 import { Container } from 'inversify';
-import { coreContainer } from 'core/inversify.config';
 import { Controller } from '../controllers/Controller';
 import { AcpAgentRuntimeService } from '../services/AcpAgentRuntimeService';
 import { ChatStreamingService } from '../services/ChatStreamingService';

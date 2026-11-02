@@ -11,6 +11,7 @@ import {
 } from 'ai';
 import type { ChatSendMessageArgs } from 'core/dto';
 import { getCoreLogger } from 'core/platform/CoreLogger';
+import { ChatService } from 'core/services/ChatService';
 import { McpClientManager } from 'core/services/McpClientManager';
 import { MessageService } from 'core/services/MessageService';
 import { ModelProviderService } from 'core/services/ModelProviderService';
@@ -20,6 +21,7 @@ import { CORETYPES } from 'core/types/types';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../types';
 import { AcpAgentRuntimeService } from './AcpAgentRuntimeService';
+import { ChatRunRegistry } from './ChatRunRegistry';
 import { createExaWebSearchTool } from './ExaWebSearchTool';
 
 interface ChatStreamConfig {
@@ -31,6 +33,8 @@ interface ChatStreamConfig {
 
 @injectable()
 export class ChatStreamingService {
+    public readonly runs = new ChatRunRegistry();
+
     constructor(
         @inject(CORETYPES.ModelProviderService)
         private readonly modelProviderService: ModelProviderService,
@@ -44,6 +48,8 @@ export class ChatStreamingService {
         private readonly webSearchConfigService: WebSearchConfigService,
         @inject(TYPES.AcpAgentRuntimeService)
         private readonly acpAgentRuntimeService: AcpAgentRuntimeService,
+        @inject(CORETYPES.ChatService)
+        private readonly chatService: ChatService,
     ) {}
 
     // Build the model response stream once so Electron IPC and HTTP can deliver it differently.
@@ -51,6 +57,9 @@ export class ChatStreamingService {
         args: ChatSendMessageArgs,
         abortSignal: AbortSignal,
     ): Promise<ReadableStream<UIMessageChunk>> {
+        const existingChat = await this.chatService.getChatById(args.chatId);
+        if (!existingChat) throw new Error('Chat does not exist');
+        abortSignal.throwIfAborted();
         const runtime = args.runtime ?? 'model';
         if (runtime === 'model' && !args.modelIdentifier) {
             throw new Error('modelIdentifier is required but was not provided');
@@ -75,6 +84,7 @@ export class ChatStreamingService {
         })?.text;
         const persistedModelIdentifier = runtime === 'agent' ? `agent:${args.agentId}` : args.modelIdentifier;
 
+        abortSignal.throwIfAborted();
         await this.messageService.createMessage({
             chatId: args.chatId,
             role: lastUserMsg.role,
@@ -85,7 +95,7 @@ export class ChatStreamingService {
 
         const streamConfig =
             runtime === 'agent'
-                ? await this.buildAcpAgentStreamConfig(args.agentId!, args.agentCwd)
+                ? await this.buildAcpAgentStreamConfig(args.agentId!, args.agentCwd, args.chatId)
                 : await this.buildModelStreamConfig(args.modelIdentifier!);
 
         const result = streamText({
@@ -97,9 +107,12 @@ export class ChatStreamingService {
             stopWhen: streamConfig.hasTools ? stepCountIs(5) : undefined,
             abortSignal: abortSignal,
             experimental_transform: smoothStream({ delayInMs: 30 }),
-            onFinish: (result) => {
+            onAbort: () => {
                 streamConfig.cleanup?.();
-                void this.messageService.createMessage({
+            },
+            onFinish: async (result) => {
+                streamConfig.cleanup?.();
+                await this.messageService.createMessage({
                     chatId: args.chatId,
                     role: 'assistant',
                     text: result.text ?? null,
@@ -147,8 +160,12 @@ export class ChatStreamingService {
         };
     }
 
-    private async buildAcpAgentStreamConfig(agentId: string, cwd?: string | null): Promise<ChatStreamConfig> {
-        const provider = await this.acpAgentRuntimeService.createProvider(agentId, cwd);
+    private async buildAcpAgentStreamConfig(
+        agentId: string,
+        cwd: string | null | undefined,
+        chatId: string,
+    ): Promise<ChatStreamConfig> {
+        const provider = await this.acpAgentRuntimeService.createProvider(agentId, cwd, chatId);
         provider.languageModel();
         const tools = (provider.tools ?? {}) as ToolSet;
         return {

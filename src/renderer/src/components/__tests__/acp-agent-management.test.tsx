@@ -37,7 +37,7 @@ const registry: AcpRegistryView = {
             id: 'binary-only',
             name: 'Binary Only',
             version: '1.0.0',
-            description: 'Requires manual setup',
+            description: 'Binary distribution',
             distribution: {
                 binary: {
                     'darwin-aarch64': {
@@ -258,6 +258,68 @@ describe('AcpAgentManagement', () => {
                 enabled: true,
             });
         });
-        expect(within(registryScrollArea).getByText('Binary Only').closest('tr')).toHaveTextContent(/manual/i);
+        const binaryRow = within(registryScrollArea).getByText('Binary Only').closest('tr') as HTMLElement;
+        const binaryInstall = within(binaryRow).getByRole('button', { name: /install/i });
+        await waitFor(() => expect(binaryInstall).toBeEnabled());
+        await user.click(binaryInstall);
+        await waitFor(() =>
+            expect(installFromRegistry).toHaveBeenCalledWith({ registryId: 'binary-only', enabled: true }),
+        );
+    });
+
+    it.each(['npx', 'uvx', 'binary'])('uninstalls an installed %s registry agent', async (distribution) => {
+        const user = userEvent.setup();
+        const entry = {
+            id: 'registry-agent',
+            name: 'Registry Agent',
+            version: '1',
+            distribution: { [distribution]: {} },
+        };
+        let agents = [buildInstalledAgent(entry.id)];
+        const remove = vi.fn(async () => {
+            agents = [];
+        });
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => agents,
+                        getRegistry: async () => ({ version: 'v1', fetchedAt: now, agents: [entry] }),
+                        delete: remove,
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+        await user.click(screen.getByRole('button', { name: /registry/i }));
+        const row = (await screen.findByText('Registry Agent')).closest('tr') as HTMLElement;
+        await user.click(within(row).getByRole('button', { name: /uninstall/i }));
+        await waitFor(() => expect(remove).toHaveBeenCalledWith('agent-1'));
+        await waitFor(() => expect(within(row).getByRole('button', { name: /^install$/i })).toBeEnabled());
+    });
+
+    it('shows a readable error when registry data fails validation', async () => {
+        const user = userEvent.setup();
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => [],
+                        getRegistry: async () => ({
+                            version: '',
+                            fetchedAt: null,
+                            agents: [],
+                            error: 'The registry data is invalid.',
+                        }),
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+
+        await user.click(screen.getByRole('button', { name: /registry/i }));
+        expect(await screen.findByText('The registry data is invalid.')).toBeInTheDocument();
     });
 });
