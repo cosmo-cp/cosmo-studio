@@ -58,6 +58,7 @@ If logic can be **pure domain logic** (no Electron objects), it should live in `
 ## Packaging/build notes
 
 - Main is bundled by Vite (`vite.main.config.mts`) through Electron Forge’s Vite plugin (`forge.config.ts`).
+- Forge emits the preload as `.vite/preload/index.cjs`; the BrowserWindow preload path must match it.
 - Root `postinstall` runs `scripts/patch-electron-forge-plugin-vite.mjs` to keep Forge's preload build compatible with the current Vite version.
 - PGlite is treated as external (not bundled); Forge hooks copy `@electric-sql/*` into the packaged app.
 - Renderer assets come from `src/renderer/out/` and are copied into the package via `src/NextPlugin.ts`.

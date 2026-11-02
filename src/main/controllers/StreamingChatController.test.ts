@@ -26,6 +26,9 @@ const ai = vi.hoisted(() => {
             return `step:${count}`;
         }),
         streamText: vi.fn(),
+        toUIMessageStream: vi.fn(({ stream }: { stream: () => AsyncIterable<unknown> }) => {
+            return stream();
+        }),
         RetryError: {
             isInstance: vi.fn(() => {
                 return false;
@@ -54,6 +57,7 @@ vi.mock('ai', () => {
         smoothStream: ai.smoothStream,
         stepCountIs: ai.stepCountIs,
         streamText: ai.streamText,
+        toUIMessageStream: ai.toUIMessageStream,
         RetryError: ai.RetryError,
     };
 });
@@ -174,6 +178,30 @@ describe('StreamingChatController', () => {
         ai.RetryError.isInstance.mockReturnValue(false);
     });
 
+    it('delivers chunks from a readable UI message stream', async () => {
+        const chunk = { type: 'text-delta', id: 'text-1', delta: 'Hello' };
+        const service = {
+            createMessageStream: vi.fn().mockResolvedValue(
+                new ReadableStream({
+                    start: function (controller) {
+                        controller.enqueue(chunk);
+                        controller.close();
+                    },
+                }),
+            ),
+        } as unknown as ChatStreamingService;
+        const controller = new StreamingChatController(service);
+        const webContents = { isDestroyed: vi.fn().mockReturnValue(false), send: vi.fn() };
+
+        await controller.sendMessage(
+            { chatId: 'chat-id', streamChannel: 'chan', messages: [] },
+            createIpcEvent(webContents),
+        );
+
+        expect(webContents.send).toHaveBeenCalledWith('chan-data', chunk);
+        expect(webContents.send).toHaveBeenCalledWith('chan-end');
+    });
+
     it('aborts an active stream and logs the action', () => {
         const { controller } = createControllerDependencies();
         const abortController = new AbortController();
@@ -202,7 +230,7 @@ describe('StreamingChatController', () => {
         ai.convertToModelMessages.mockResolvedValue([{ role: 'user', content: 'hi' }]);
         ai.streamText.mockImplementation((options: StreamTextMockOptions) => {
             return {
-                toUIMessageStream: async function* () {
+                stream: async function* () {
                     yield { chunk: 1 };
                     yield { chunk: 2 };
                     await options.onFinish?.({ text: 'assistant', reasoningText: 'reasoning' });
@@ -280,7 +308,7 @@ describe('StreamingChatController', () => {
         ai.streamText.mockImplementation((options: StreamTextMockOptions) => {
             void options.onFinish?.({ text: '', reasoningText: '' });
             return {
-                toUIMessageStream: () => {
+                stream: () => {
                     return createAsyncIterable<unknown>([]);
                 },
             };
@@ -357,7 +385,7 @@ describe('StreamingChatController', () => {
 
         ai.streamText.mockImplementation(() => {
             return {
-                toUIMessageStream: () => {
+                stream: () => {
                     return createAsyncIterable<unknown>([]);
                 },
             };
@@ -395,7 +423,7 @@ describe('StreamingChatController', () => {
 
         ai.streamText.mockImplementation(() => {
             return {
-                toUIMessageStream: () => {
+                stream: () => {
                     return createAsyncIterable<unknown>([]);
                 },
             };
@@ -434,7 +462,7 @@ describe('StreamingChatController', () => {
         ai.streamText.mockImplementation((options: StreamTextMockOptions) => {
             capturedOptions = options;
             return {
-                toUIMessageStream: () => {
+                stream: () => {
                     return createAsyncIterable<unknown>([]);
                 },
             };
@@ -494,7 +522,7 @@ describe('StreamingChatController', () => {
                 void options.onAbort?.({ steps: [] });
             });
             return {
-                toUIMessageStream: () => {
+                stream: () => {
                     return createAsyncIterable([{ chunk: 1 }]);
                 },
             };

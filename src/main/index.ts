@@ -96,7 +96,7 @@ export class Main {
             webPreferences: {
                 contextIsolation: true,
                 nodeIntegration: false,
-                preload: path.join(__dirname, '../preload/index.js'),
+                preload: path.join(__dirname, '../preload/index.cjs'),
             },
         });
         this.mainWindow.webContents.reloadIgnoringCache();
