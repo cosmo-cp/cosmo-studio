@@ -10,6 +10,7 @@ import {
     useTestAcpAgentMutation,
     useToggleAcpAgentEnabledMutation,
 } from '@/features/acp-agents/acp-agents-api';
+import { getBackendErrorMessage } from '@/lib/store/backend-hooks';
 import { AcpAgentInstallStatusEnum, AcpAgentSourceEnum } from 'core/database/schema/acpAgentSchema';
 import type { AcpAgentCreateInput, AcpAgentUpdateInput, AcpAgentView, AcpRegistryAgent } from 'core/dto';
 import { useMemo, useState, type FormEvent } from 'react';
@@ -82,7 +83,7 @@ export function getDistributionLabel(agent: AcpRegistryAgent): string {
 
 export function isInstallable(agent: AcpRegistryAgent): boolean {
     const distribution = agent.distribution ?? {};
-    return Boolean(distribution.npx || distribution.uvx);
+    return Boolean(distribution.npx || distribution.uvx || distribution.binary);
 }
 
 export function useAcpAgentPageState() {
@@ -96,7 +97,7 @@ export function useAcpAgentPageState() {
     const {
         data: registry,
         isLoading: isRegistryLoading,
-        error: registryError,
+        error: registryQueryError,
     } = useGetAcpRegistryQuery(undefined, {
         skip: !registryDialogOpen,
     });
@@ -107,8 +108,8 @@ export function useAcpAgentPageState() {
     const [installAcpAgentFromRegistry] = useInstallAcpAgentFromRegistryMutation();
     const [refreshAcpRegistry] = useRefreshAcpRegistryMutation();
 
-    const installedRegistryIds = useMemo(
-        () => new Set(agents.map((agent) => agent.registryId).filter(Boolean)),
+    const installedRegistryAgents = useMemo(
+        () => new Map(agents.filter((agent) => agent.registryId).map((agent) => [agent.registryId, agent])),
         [agents],
     );
     const visibleRegistryAgents = useMemo(() => {
@@ -245,6 +246,15 @@ export function useAcpAgentPageState() {
         await deleteAcpAgent(agentId);
     };
 
+    const uninstallRegistryAgent = async (registryId: string, agentId: string) => {
+        setInstallingRegistryId(registryId);
+        try {
+            await deleteAcpAgent(agentId);
+        } finally {
+            setInstallingRegistryId(null);
+        }
+    };
+
     const refreshRegistry = async () => {
         await refreshAcpRegistry();
     };
@@ -263,8 +273,12 @@ export function useAcpAgentPageState() {
         installingRegistryId,
         registry,
         isRegistryLoading,
-        registryError,
-        installedRegistryIds,
+        registryError:
+            registry?.error ??
+            (registryQueryError
+                ? getBackendErrorMessage(registryQueryError, 'Unable to load the ACP registry.')
+                : null),
+        installedRegistryAgents,
         visibleRegistryAgents,
         setRegistryDialogOpen,
         createCustomAgent,
@@ -274,6 +288,7 @@ export function useAcpAgentPageState() {
         toggleAgent,
         testAgent,
         installRegistryAgent,
+        uninstallRegistryAgent,
         deleteAgent,
         refreshRegistry,
     };

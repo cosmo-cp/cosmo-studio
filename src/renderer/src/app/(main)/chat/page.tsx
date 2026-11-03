@@ -12,6 +12,8 @@ import { JSX } from 'react';
 function MainChatPage(): JSX.Element {
     const {
         selectedChat,
+        chatReady,
+        isChatRunning,
         chatHistory,
         messages,
         status,
@@ -52,7 +54,11 @@ function MainChatPage(): JSX.Element {
                 onSearch={searchChatHistory}
                 renderPreview={(chat) => ({
                     className: 'items-center',
-                    footerTrailing: chat.pinned ? (
+                    footerTrailing: isChatRunning(chat.id) ? (
+                        <span className="text-xs text-muted-foreground" role="status">
+                            Running
+                        </span>
+                    ) : chat.pinned ? (
                         <Pin className="h-3 w-3 shrink-0 text-muted-foreground" fill="black" />
                     ) : null,
                     headerTrailing: formatHistoryTimestamp(chat.lastMessageAt),
@@ -70,7 +76,7 @@ function MainChatPage(): JSX.Element {
                 title="Chat"
             />
             <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                {selectedChat ? (
+                {selectedChat && chatReady ? (
                     <ChatConversationPane
                         chat={selectedChat}
                         status={status}
@@ -96,6 +102,10 @@ function MainChatPage(): JSX.Element {
                         hideAgentControls={false}
                         hideWebSearchControls
                     />
+                ) : selectedChat ? (
+                    <div className="p-4 text-sm text-muted-foreground" role="status">
+                        Loading chat…
+                    </div>
                 ) : (
                     <PageEmptyState
                         icon={MessageCirclePlus}

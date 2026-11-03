@@ -1,3 +1,6 @@
+import { execFile } from 'node:child_process';
+import { rm } from 'node:fs/promises';
+import { promisify } from 'node:util';
 import { inject, injectable } from 'inversify';
 import { z } from 'zod';
 import { AcpAgentInstallStatusEnum, AcpAgentSourceEnum } from '../database/schema/acpAgentSchema';
@@ -5,9 +8,13 @@ import type { AcpAgentCreateInput, AcpRegistryAgent, AcpRegistryInstallInput, Ac
 import { AcpAgentRepository } from '../repositories/AcpAgentRepository';
 import { CORETYPES } from '../types/types';
 import { AcpAgentService } from './AcpAgentService';
+import { installAcpBinary } from './AcpBinaryInstaller';
+import { ensureAcpNodeRuntime, nodeRuntimeEnv } from './AcpNodeRuntime';
 
 const REGISTRY_CACHE_ID = 'latest';
 const REGISTRY_URL = 'https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json';
+const INVALID_REGISTRY_MESSAGE = 'The ACP registry contains invalid data. Please try refreshing later.';
+const execFileAsync = promisify(execFile);
 
 const registryAgentSchema = z
     .object({
@@ -22,14 +29,14 @@ const registryAgentSchema = z
         icon: z.string().optional(),
         distribution: z.record(z.string(), z.unknown()),
     })
-    .passthrough();
+    .loose();
 
 const registrySchema = z
     .object({
         version: z.string().min(1),
         agents: z.array(registryAgentSchema),
     })
-    .passthrough();
+    .loose();
 
 @injectable()
 export class AcpRegistryService {
@@ -49,7 +56,11 @@ export class AcpRegistryService {
         if (!response.ok) {
             throw new Error(`Failed to fetch ACP registry: ${response.status}`);
         }
-        const parsed = registrySchema.parse(await response.json());
+        const result = registrySchema.safeParse(await response.json());
+        if (!result.success) {
+            return { version: '', fetchedAt: null, agents: [], error: INVALID_REGISTRY_MESSAGE };
+        }
+        const parsed = result.data;
         const cache = await this.repository.upsertRegistryCache({
             id: REGISTRY_CACHE_ID,
             version: parsed.version,
@@ -70,27 +81,81 @@ export class AcpRegistryService {
         if (!cache) {
             return this.refresh();
         }
-        const parsed = registrySchema.parse(cache.data);
+        const result = registrySchema.safeParse(cache.data);
+        if (!result.success) {
+            return { version: cache.version, fetchedAt: cache.fetchedAt, agents: [], error: INVALID_REGISTRY_MESSAGE };
+        }
         return {
             version: cache.version,
             fetchedAt: cache.fetchedAt,
-            agents: parsed.agents,
+            agents: result.data.agents,
         };
     }
 
+    // Prepare the package before marking the agent as installed.
     public async installFromRegistry(input: AcpRegistryInstallInput) {
         const registry = await this.getCachedOrRefresh();
+        if (registry.error) {
+            throw new Error(registry.error);
+        }
         const agent = registry.agents.find((item) => {
             return item.id === input.registryId;
         });
         if (!agent) {
             throw new Error(`ACP registry agent ${input.registryId} not found.`);
         }
+        if (
+            !this.hasObject(agent.distribution.npx) &&
+            !this.hasObject(agent.distribution.uvx) &&
+            this.hasObject(agent.distribution.binary)
+        ) {
+            const binary = await installAcpBinary(agent.distribution.binary);
+            try {
+                return await this.acpAgentService.create({
+                    name: agent.name,
+                    description: agent.description ?? null,
+                    source: AcpAgentSourceEnum.REGISTRY,
+                    registryId: agent.id,
+                    version: agent.version,
+                    command: binary.command,
+                    args: binary.args,
+                    env: binary.env,
+                    defaultCwd: input.defaultCwd ?? null,
+                    authMethodId: input.authMethodId ?? null,
+                    enabled: input.enabled ?? true,
+                    installStatus: AcpAgentInstallStatusEnum.INSTALLED,
+                    mcpServerIds: input.mcpServerIds ?? [],
+                    metadata: agent as unknown as Record<string, unknown>,
+                });
+            } catch (error) {
+                await rm(binary.directory, { recursive: true, force: true });
+                throw error;
+            }
+        }
         const createInput = this.buildCreateInput(agent, input);
+        await this.installPackage(createInput);
         return this.acpAgentService.create(createInput);
     }
 
-    private buildCreateInput(agent: AcpRegistryAgent, input: AcpRegistryInstallInput): AcpAgentCreateInput {
+    // Populate the runner's package cache without starting the agent itself.
+    private async installPackage(input: AcpAgentCreateInput & { args: string[] }): Promise<void> {
+        const packageName = input.command === 'npx' ? input.args[1] : input.args[0];
+        if (input.command === 'npx') {
+            const runtime = await ensureAcpNodeRuntime();
+            await execFileAsync(
+                runtime.node,
+                [runtime.npx, '--yes', `--package=${packageName}`, '--', runtime.node, '-e', ''],
+                { env: { ...process.env, ...nodeRuntimeEnv(runtime) } },
+            );
+            return;
+        }
+        await execFileAsync('uvx', [`--from=${packageName}`, 'python', '-c', 'pass']);
+    }
+
+    private buildCreateInput(
+        agent: AcpRegistryAgent,
+        input: AcpRegistryInstallInput,
+    ): AcpAgentCreateInput & { args: string[] } {
         const distribution = agent.distribution;
 
         if (this.hasObject(distribution.npx)) {
@@ -139,7 +204,7 @@ export class AcpRegistryService {
             };
         }
 
-        throw new Error('This registry agent only provides binary distributions. Add it as a custom agent for v1.');
+        throw new Error('This registry agent has no supported distribution.');
     }
 
     private hasObject(value: unknown): value is Record<string, unknown> {

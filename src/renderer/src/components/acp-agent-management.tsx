@@ -20,7 +20,7 @@ import {
     isInstallable,
     useAcpAgentPageState,
 } from '@/features/acp-agents/use-acp-agent-page-state';
-import { CheckCircle2, Download, Pencil, Plus, RefreshCw, TestTube2, Trash2, XCircle } from 'lucide-react';
+import { Download, Pencil, Plus, RefreshCw, TestTube2, Trash2, XCircle } from 'lucide-react';
 
 export function AcpAgentManagement() {
     const {
@@ -35,7 +35,7 @@ export function AcpAgentManagement() {
         installingRegistryId,
         isRegistryLoading,
         registryError,
-        installedRegistryIds,
+        installedRegistryAgents,
         visibleRegistryAgents,
         setRegistryDialogOpen,
         editAgent,
@@ -44,6 +44,7 @@ export function AcpAgentManagement() {
         toggleAgent,
         testAgent,
         installRegistryAgent,
+        uninstallRegistryAgent,
         deleteAgent,
         refreshRegistry,
     } = useAcpAgentPageState();
@@ -348,7 +349,7 @@ export function AcpAgentManagement() {
                                             </TableRow>
                                         ) : null}
                                         {visibleRegistryAgents.map((agent) => {
-                                            const installed = installedRegistryIds.has(agent.id);
+                                            const installed = installedRegistryAgents.get(agent.id);
                                             const installable = isInstallable(agent);
                                             const installing = installingRegistryId === agent.id;
                                             return (
@@ -369,10 +370,16 @@ export function AcpAgentManagement() {
                                                     <TableCell>{agent.version}</TableCell>
                                                     <TableCell className="text-right">
                                                         {installed ? (
-                                                            <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
-                                                                <CheckCircle2 className="size-4 text-emerald-600" />
-                                                                Installed
-                                                            </div>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                disabled={installingRegistryId !== null}
+                                                                onClick={() =>
+                                                                    void uninstallRegistryAgent(agent.id, installed.id)
+                                                                }
+                                                            >
+                                                                {installing ? 'Uninstalling' : 'Uninstall'}
+                                                            </Button>
                                                         ) : installable ? (
                                                             <Button
                                                                 size="sm"

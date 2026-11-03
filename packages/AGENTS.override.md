@@ -4,6 +4,7 @@ This file applies to changes under `packages/`.
 
 ## Packages in this repo
 
+- `packages/cosmo-acp` (package name: `cosmo-acp`) is the workspace reserved for Cosmo's Agent Client Protocol implementation using the AI SDK.
 - `packages/core` (package name: `core`) is the shared domain + data layer:
     - DTOs: `packages/core/dto.ts`
     - DB manager + migrations runner: `packages/core/database/*`

@@ -1,0 +1,8 @@
+{
+    "name": "cosmo-acp",
+    "version": "0.0.0",
+    "private": true,
+    "dependencies": {
+        "@agentclientprotocol/sdk": "^0.14.1"
+    }
+}
