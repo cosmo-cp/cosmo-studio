@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import * as tar from 'tar';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,6 +12,8 @@ describe('installAcpBinary', () => {
     beforeEach(async () => {
         home = await mkdtemp(path.join(tmpdir(), 'acp-binary-test-'));
         vi.stubEnv('HOME', home);
+        vi.stubEnv('USERPROFILE', home);
+        expect(homedir()).toBe(home);
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('binary contents')));
     });
     afterEach(async () => {

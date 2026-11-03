@@ -1,5 +1,5 @@
 import { mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AcpAgentInstallStatusEnum, AcpAgentSourceEnum } from '../database/schema/acpAgentSchema';
@@ -75,6 +75,8 @@ describe('AcpAgentService', () => {
     it('removes the binary installation when deleting a registry agent', async () => {
         const home = await mkdtemp(path.join(tmpdir(), 'acp-agent-delete-'));
         vi.stubEnv('HOME', home);
+        vi.stubEnv('USERPROFILE', home);
+        expect(homedir()).toBe(home);
         try {
             const directory = path.join(home, '.cosmo-studio', 'acp-agents', 'agent-abcdef', 'contents');
             await mkdir(directory, { recursive: true });
