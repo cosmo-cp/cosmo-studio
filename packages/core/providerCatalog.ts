@@ -6,6 +6,8 @@ export type ProviderCatalogEntry = {
     description: string;
     modelsSource: 'models-dev' | 'ollama' | 'lmstudio' | 'voyage' | 'none';
     modelsDevKey?: string;
+    /** Hides this provider from the add-provider picker without disabling existing configurations. */
+    hidden?: boolean;
 };
 
 export const ProviderCatalog: ProviderCatalogEntry[] = [
@@ -113,13 +115,14 @@ export const ProviderCatalog: ProviderCatalogEntry[] = [
         modelsSource: 'models-dev',
         modelsDevKey: 'fireworks-ai',
     },
-    /*{
+    {
         type: ModelProviderTypeEnum.VOYAGE,
         name: 'Voyage AI',
         description: 'State-of-the-art embedding and reranking models by Voyage AI.',
         modelsSource: 'voyage',
         modelsDevKey: 'voyage',
-    },*/
+        hidden: true
+    },
     {
         type: ModelProviderTypeEnum.CUSTOM,
         name: 'Custom',
