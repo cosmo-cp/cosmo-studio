@@ -64,7 +64,7 @@ export class AcpAgentService {
         }
         return {
             ...agent,
-            env: this.decryptEnv(agent.env as Record<string, string>),
+            env: await this.decryptEnv(agent.env as Record<string, string>),
         };
     }
 
@@ -79,7 +79,7 @@ export class AcpAgentService {
                 throw new Error('This registry agent is already installed.');
             }
         }
-        const created = await this.repository.create(this.normalizeInput(input));
+        const created = await this.repository.create(await this.normalizeInput(input));
         return this.toView(created);
     }
 
@@ -88,7 +88,7 @@ export class AcpAgentService {
         if (!existing) {
             throw new Error(`ACP agent with ID ${id} not found.`);
         }
-        const normalized = this.normalizeInput(
+        const normalized = await this.normalizeInput(
             {
                 ...existing,
                 ...updates,
@@ -117,10 +117,10 @@ export class AcpAgentService {
         return this.update(id, { enabled: false });
     }
 
-    private normalizeInput(
+    private async normalizeInput(
         input: AcpAgentCreateInput,
         options: { envIsEncrypted?: boolean } = {},
-    ): AcpAgentCreateInput {
+    ): Promise<AcpAgentCreateInput> {
         const name = normalizeRequired(input.name, 'Name');
         const command = normalizeRequired(input.command, 'Command');
         const env =
@@ -136,7 +136,7 @@ export class AcpAgentService {
             registryId: input.registryId?.trim() || null,
             version: input.version?.trim() || null,
             args: normalizeStringList(input.args, 'Args'),
-            env: options.envIsEncrypted ? env : this.encryptEnv(env),
+            env: options.envIsEncrypted ? env : await this.encryptEnv(env),
             defaultCwd: input.defaultCwd?.trim() || null,
             authMethodId: input.authMethodId?.trim() || null,
             enabled: input.enabled ?? true,
@@ -156,23 +156,25 @@ export class AcpAgentService {
         };
     }
 
-    private encryptEnv(env: Record<string, string>): Record<string, string> {
-        return Object.fromEntries(
+    private async encryptEnv(env: Record<string, string>): Promise<Record<string, string>> {
+        const encryptedEntries = await Promise.all(
             Object.entries(env)
                 .filter(([key]) => {
                     return key.trim().length > 0;
                 })
-                .map(([key, value]) => {
-                    return [key.trim(), this.secretStore.encrypt(String(value ?? ''))];
+                .map(async ([key, value]) => {
+                    return [key.trim(), await this.secretStore.encrypt(String(value ?? ''))] as const;
                 }),
         );
+        return Object.fromEntries(encryptedEntries);
     }
 
-    private decryptEnv(env: Record<string, string>): Record<string, string> {
-        return Object.fromEntries(
-            Object.entries(env ?? {}).map(([key, value]) => {
-                return [key, this.secretStore.decrypt(value)];
+    private async decryptEnv(env: Record<string, string>): Promise<Record<string, string>> {
+        const decryptedEntries = await Promise.all(
+            Object.entries(env ?? {}).map(async ([key, value]) => {
+                return [key, await this.secretStore.decrypt(value)] as const;
             }),
         );
+        return Object.fromEntries(decryptedEntries);
     }
 }

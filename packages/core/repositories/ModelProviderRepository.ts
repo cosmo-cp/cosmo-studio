@@ -82,7 +82,7 @@ export class ModelProviderRepository {
         // Encrypt the key before hitting the database
         const encryptedData: ModelProviderInsert = {
             ...newProvider,
-            apiKey: this.encryptApiKey(newProvider.apiKey),
+            apiKey: await this.encryptApiKey(newProvider.apiKey),
         };
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -136,7 +136,7 @@ export class ModelProviderRepository {
 
         // If apiKey is being updated, always encrypt it before persistence.
         if (updateObject.apiKey !== undefined) {
-            updateObject.apiKey = this.encryptApiKey(updateObject.apiKey);
+            updateObject.apiKey = await this.encryptApiKey(updateObject.apiKey);
         }
 
         return this.db.transaction(async (tx) => {
@@ -182,7 +182,7 @@ export class ModelProviderRepository {
         return this.db.select().from(model).where(eq(model.providerId, provider.id));
     }
 
-    private encryptApiKey = (apiKey: string): string => {
+    private encryptApiKey = async (apiKey: string): Promise<string> => {
         return this.secretStore.encrypt(apiKey);
     };
 }

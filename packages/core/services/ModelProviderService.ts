@@ -171,7 +171,7 @@ export class ModelProviderService {
 
     public async getProviders(input: { withApiKey: boolean }): Promise<ModelProviderLite[]> {
         const providers = await this.repository.findAll({ withApiKey: input.withApiKey });
-        return providers.map(this.mapToModelProvider);
+        return Promise.all(providers.map(this.mapToModelProvider));
     }
 
     public async getProvidersWithModels(): Promise<ProviderWithModels[]> {
@@ -243,19 +243,19 @@ export class ModelProviderService {
     }
 
     /** Maps a DB record (encrypted key) to the application model (decrypted key). */
-    private mapToModelProvider = (dbRecord: ModelProviderLite): ModelProviderLite =>
+    private mapToModelProvider = async (dbRecord: ModelProviderLite): Promise<ModelProviderLite> =>
         // Note: You must handle the timestamp conversion here if needed,
         // as we dropped Zod's automatic date coercion.
         {
             return {
                 ...dbRecord,
-                apiKey: this.decryptApiKey(dbRecord.apiKey),
+                apiKey: await this.decryptApiKey(dbRecord.apiKey),
                 createdAt: new Date(dbRecord.createdAt),
                 updatedAt: dbRecord.updatedAt ? new Date(dbRecord.updatedAt) : null,
             };
         };
 
-    private decryptApiKey = (encryptedKey?: string): string => {
+    private decryptApiKey = async (encryptedKey?: string): Promise<string> => {
         if (!encryptedKey) {
             return '';
         }

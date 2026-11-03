@@ -33,7 +33,7 @@ export class Main {
             },
         ]);
         app.whenReady().then(async () => {
-            if (!safeStorage.isEncryptionAvailable()) {
+            if (!(await safeStorage.isAsyncEncryptionAvailable())) {
                 logger.warn("safeStorage encryption unavailable. API keys won't be encrypted.");
             }
             this.protocolInitialization();

@@ -1,9 +1,11 @@
 import { injectable } from 'inversify';
 
+export type MaybePromise<T> = T | Promise<T>;
+
 export interface SecretStore {
-    isEncryptionAvailable(): boolean;
-    encrypt(value: string): string;
-    decrypt(value: string): string;
+    isEncryptionAvailable(): MaybePromise<boolean>;
+    encrypt(value: string): MaybePromise<string>;
+    decrypt(value: string): MaybePromise<string>;
 }
 
 @injectable()

@@ -41,7 +41,7 @@ export class WebSearchConfigRepository {
     public async create(input: WebSearchConfigCreateInput): Promise<Omit<WebSearchConfig, 'apiKey'>> {
         const encryptedInput: WebSearchConfigInsert = {
             ...input,
-            apiKey: this.encryptApiKey(input.apiKey),
+            apiKey: await this.encryptApiKey(input.apiKey),
         };
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -64,7 +64,7 @@ export class WebSearchConfigRepository {
         };
 
         if (updates.apiKey !== undefined) {
-            encryptedUpdates.apiKey = this.encryptApiKey(updates.apiKey);
+            encryptedUpdates.apiKey = await this.encryptApiKey(updates.apiKey);
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -82,7 +82,7 @@ export class WebSearchConfigRepository {
         await this.db.delete(webSearchConfig).where(eq(webSearchConfig.type, type));
     }
 
-    private encryptApiKey(apiKey: string): string {
+    private async encryptApiKey(apiKey: string): Promise<string> {
         return this.secretStore.encrypt(apiKey);
     }
 }

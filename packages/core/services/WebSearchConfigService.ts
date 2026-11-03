@@ -79,7 +79,7 @@ export class WebSearchConfigService {
 
         return {
             ...config,
-            apiKey: this.decryptApiKey(config.apiKey),
+            apiKey: await this.decryptApiKey(config.apiKey),
             createdAt: new Date(config.createdAt),
             updatedAt: config.updatedAt ? new Date(config.updatedAt) : null,
         };
@@ -94,7 +94,7 @@ export class WebSearchConfigService {
         return config;
     }
 
-    private decryptApiKey(encryptedKey: string): string {
+    private async decryptApiKey(encryptedKey: string): Promise<string> {
         return this.secretStore.decrypt(encryptedKey);
     }
 }
