@@ -113,13 +113,13 @@ export const ProviderCatalog: ProviderCatalogEntry[] = [
         modelsSource: 'models-dev',
         modelsDevKey: 'fireworks-ai',
     },
-    {
+    /*{
         type: ModelProviderTypeEnum.VOYAGE,
         name: 'Voyage AI',
         description: 'State-of-the-art embedding and reranking models by Voyage AI.',
         modelsSource: 'voyage',
         modelsDevKey: 'voyage',
-    },
+    },*/
     {
         type: ModelProviderTypeEnum.CUSTOM,
         name: 'Custom',

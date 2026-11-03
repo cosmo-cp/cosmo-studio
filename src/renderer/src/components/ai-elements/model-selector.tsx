@@ -128,8 +128,6 @@ export type ModelSelectorLogoProps = Omit<ComponentProps<'img'>, 'src' | 'alt'> 
         | 'anthropic'
         | 'aihubmix'
         | 'fireworks-ai'
-        | 'fireworks'
-        | 'voyage'
         | 'modelscope'
         | 'llama'
         | 'scaleway'
