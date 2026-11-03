@@ -85,6 +85,7 @@
     },
     "dependencies": {
         "@ai-sdk/anthropic": "^4.0.92",
+        "@ai-sdk/baseten": "^2.1.62",
         "@ai-sdk/cohere": "^4.0.72",
         "@ai-sdk/fireworks": "^3.0.85",
         "@ai-sdk/google": "^4.0.108",

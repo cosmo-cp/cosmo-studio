@@ -1,3 +1,4 @@
+import { createBaseten } from '@ai-sdk/baseten';
 import { createFireworks } from '@ai-sdk/fireworks';
 import { createTogetherAI } from '@ai-sdk/togetherai';
 import { createVoyage } from '@ai-sdk/voyage';
@@ -39,6 +40,14 @@ vi.mock('@ai-sdk/fireworks', () => {
     return {
         createFireworks: vi.fn(() => {
             return 'fireworks-provider';
+        }),
+    };
+});
+
+vi.mock('@ai-sdk/baseten', () => {
+    return {
+        createBaseten: vi.fn(() => {
+            return 'baseten-provider';
         }),
     };
 });
@@ -292,6 +301,48 @@ describe('ModelProviderService', () => {
             apiKey: 'decrypted-key',
             baseURL: 'https://api.fireworks.ai/inference/v1',
         });
+    });
+
+    it('creates baseten provider using remote options', async () => {
+        const encryptedKey = Buffer.from('baseten-secret').toString('base64');
+        repository.findAll = vi.fn().mockResolvedValue([
+            {
+                id: 'baseten-id',
+                name: 'Baseten',
+                apiKey: encryptedKey,
+                apiUrl: '',
+                type: ModelProviderTypeEnum.BASETEN,
+                createdAt: '2024-01-01T00:00:00Z',
+                updatedAt: null,
+            },
+        ]);
+        new ModelProviderService(repository, secretStore);
+        await new Promise((resolve) => {
+            return setTimeout(resolve, 10);
+        });
+
+        expect(createBaseten).toHaveBeenCalledWith({
+            apiKey: 'decrypted-key',
+        });
+    });
+
+    it('loads Baseten models from the bundled models.dev snapshot', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+        const service = new ModelProviderService(repository, secretStore);
+
+        const result = await service.getModelsForProviderUsingModelsDotDev({
+            name: 'Baseten',
+            apiKey: 'test-key',
+            type: ModelProviderTypeEnum.BASETEN,
+            apiUrl: '',
+        });
+
+        expect(result.length).toBeGreaterThan(0);
+        expect(
+            result.some((model) => {
+                return model.modelId.includes('/');
+            }),
+        ).toBe(true);
     });
 
     it('creates voyage provider using remote options', async () => {

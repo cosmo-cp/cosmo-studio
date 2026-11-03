@@ -1,12 +1,12 @@
 'use client';
 
-import { Loader } from '@/components/ai-elements/loader';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import ProviderIcon from '@/components/provider-icon';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Spinner as Loader } from '@/components/ui/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProviderPageState } from '@/features/providers/use-provider-page-state';
 import { ModelProviderTypeEnum } from 'core/database/schema/modelProviderSchema';

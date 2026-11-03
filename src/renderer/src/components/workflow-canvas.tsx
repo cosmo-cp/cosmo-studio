@@ -1,12 +1,12 @@
 'use client';
 
-import { Canvas } from '@/components/ai-elements/canvas';
-import { Controls } from '@/components/ai-elements/controls';
-import { Node as CanvasNodeCard } from '@/components/ai-elements/node';
-import { Panel } from '@/components/ai-elements/panel';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Canvas } from '@/components/workflow/canvas';
+import { Controls } from '@/components/workflow/controls';
+import { Node as CanvasNodeCard } from '@/components/workflow/node';
+import { Panel } from '@/components/workflow/panel';
 import type { WorkflowListItem } from '@/features/workflows/workflow-list-item';
 import { cn } from '@/lib/utils';
 import type { Connection, Edge, Node, NodeProps, OnNodesChange, ReactFlowInstance, XYPosition } from '@xyflow/react';

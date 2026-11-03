@@ -1,4 +1,5 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createBaseten } from '@ai-sdk/baseten';
 // import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { createCohere } from '@ai-sdk/cohere';
 import { createDeepSeek } from '@ai-sdk/deepseek';
@@ -107,6 +108,9 @@ export class ModelProviderService {
             },
             [ModelProviderTypeEnum.FIREWORKS]: (provider) => {
                 return createFireworks(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.BASETEN]: (provider) => {
+                return createBaseten(this.createRemoteOptions(provider));
             },
             [ModelProviderTypeEnum.VOYAGE]: (provider) => {
                 return createVoyage(this.createRemoteOptions(provider));

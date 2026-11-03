@@ -32,6 +32,7 @@ This document maps `package.json` dependencies to their official documentation (
 | `@ai-sdk/anthropic`          | Anthropic provider for AI SDK                           | https://sdk.vercel.ai/providers/anthropic                                    |
 | `@ai-sdk/openai`             | OpenAI provider for AI SDK                              | https://sdk.vercel.ai/providers/openai                                       |
 | `@ai-sdk/google`             | Google provider for AI SDK                              | https://sdk.vercel.ai/providers/google                                       |
+| `@ai-sdk/baseten`            | Baseten provider for AI SDK                             | https://ai-sdk.dev/providers/ai-sdk-providers/baseten                        |
 | `@ai-sdk/provider`           | Provider interfaces/types                               | https://sdk.vercel.ai/docs/ai-sdk-core/providers                             |
 | `@mcpc-tech/acp-ai-provider` | ACP agents as AI SDK language models                    | https://ai-sdk.dev/providers/community-providers/acp                         |
 | `ai-sdk-ollama`              | Ollama provider (community)                             | https://www.npmjs.com/package/ai-sdk-ollama                                  |

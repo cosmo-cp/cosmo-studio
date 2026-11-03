@@ -2,7 +2,8 @@ import React from 'react';
 
 export const CosmoIcon = ({ size = 16 }: { size?: number }) => {
     return (
-        <svg height={size} strokeLinejoin="round" viewBox="0 0 500 368" width={size} style={{ color: 'currentcolor' }}>
+        <svg height={size} strokeLinejoin="round" viewBox="0 0 500 368" width={size}
+             style={{ color: 'currentcolor', height: `${size}px`, width: `${size}px` }}>
             <path
                 fillRule="evenodd"
                 clipRule="evenodd"

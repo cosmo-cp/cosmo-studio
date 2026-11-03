@@ -1,15 +1,13 @@
-import { Loader } from '@/components/ai-elements/loader';
-import {
-    Message,
-    MessageAction,
-    MessageActions,
-    MessageContent,
-    MessageResponse,
-} from '@/components/ai-elements/message';
-import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-elements/reasoning';
-import { Source, Sources, SourcesContent, SourcesTrigger } from '@/components/ai-elements/sources';
+import { MessageResponse } from '@/components/chat/message-response';
+import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/chat/reasoning';
+import { Source, Sources, SourcesContent, SourcesTrigger } from '@/components/chat/sources';
 import { PreviewAttachment } from '@/components/preview-attachment';
 import ProviderIcon from '@/components/provider-icon';
+import { Bubble, BubbleContent } from '@/components/ui/bubble';
+import { Button } from '@/components/ui/button';
+import { Message, MessageContent, MessageFooter } from '@/components/ui/message';
+import { Spinner as Loader } from '@/components/ui/spinner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useGetProvidersQuery } from '@/features/providers/providers-api';
 import { cn } from '@/lib/utils';
 import type { UseChatHelpers } from '@ai-sdk/react';
@@ -27,14 +25,14 @@ import {
     ConfirmationRejected,
     ConfirmationRequest,
     ConfirmationTitle,
-} from './ai-elements/confirmation';
+} from './chat/confirmation';
 import {
     Conversation,
     ConversationContent,
     ConversationEmptyState,
     ConversationScrollButton,
-} from './ai-elements/conversation';
-import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from './ai-elements/tool';
+} from './chat/conversation';
+import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from './chat/tool';
 
 const MODEL_NAME_COLORS = [
     'text-emerald-600 dark:text-emerald-400',
@@ -284,9 +282,27 @@ const MessageItem = memo(
                         ? highlightText(part.text, searchQuery, message.id, i, matchStartIndexMap)
                         : null;
                     return (
-                        <Message key={`${message.id}-${i}`} from={message.role} id={`message-${message.id}-part-${i}`}>
+                        <Message
+                            key={`${message.id}-${i}`}
+                            align={message.role === 'user' ? 'end' : 'start'}
+                            id={`message-${message.id}-part-${i}`}
+                        >
                             <MessageContent>
-                                {highlighted ? (
+                                {message.role === 'user' ? (
+                                    <Bubble align="end" variant="muted">
+                                        <BubbleContent>
+                                            {highlighted ? (
+                                                <div
+                                                    key={searchQuery}
+                                                    className="prose dark:prose-invert prose-sm max-w-none"
+                                                    dangerouslySetInnerHTML={{ __html: highlighted }}
+                                                />
+                                            ) : (
+                                                <MessageResponse>{part.text}</MessageResponse>
+                                            )}
+                                        </BubbleContent>
+                                    </Bubble>
+                                ) : highlighted ? (
                                     <div
                                         key={searchQuery}
                                         className="size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose dark:prose-invert prose-sm max-w-none"
@@ -297,11 +313,23 @@ const MessageItem = memo(
                                 )}
                             </MessageContent>
                             {message.role === 'assistant' && (
-                                <MessageActions>
-                                    <MessageAction onClick={() => handleCopy(part.text)} label="Copy">
-                                        <CopyIcon className="size-3" />
-                                    </MessageAction>
-                                </MessageActions>
+                                <MessageFooter>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon-sm"
+                                                    aria-label="Copy"
+                                                    onClick={() => handleCopy(part.text)}
+                                                >
+                                                    <CopyIcon className="size-3" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Copy</TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </MessageFooter>
                             )}
                         </Message>
                     );

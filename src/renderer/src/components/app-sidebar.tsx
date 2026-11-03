@@ -57,7 +57,7 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <Link href={getHomeHref(pathname)} prefetch={false}>
-                                <div className="flex items-start justify-center">
+                                <div className="flex items-start justify-center w-12 h-12">
                                     <CosmoIcon size={48} />
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">

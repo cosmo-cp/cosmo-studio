@@ -5,13 +5,7 @@ const eslintConfig = [
     ...nextCoreWebVitals,
     ...nextTypeScript,
     {
-        ignores: [
-            'coverage/**',
-            'src/components/ai-elements/**',
-            'src/components/ui/**',
-            'src/renderer/components/ai-elements/**',
-            'src/renderer/components/ui/**',
-        ],
+        ignores: ['coverage/**', 'src/components/ui/**', 'src/renderer/components/ui/**'],
     },
 ];
 

@@ -11,7 +11,7 @@ import {
     ModelSelectorLogo,
     ModelSelectorName,
     ModelSelectorTrigger,
-} from '@/components/ai-elements/model-selector';
+} from '@/components/chat/model-selector';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -36,7 +36,7 @@ import { CheckIcon } from 'lucide-react';
 import type { FocusEvent, KeyboardEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Attachment, AttachmentPreview, AttachmentRemove, Attachments } from './ai-elements/attachments';
+import { Attachment, AttachmentPreview, AttachmentRemove, Attachments } from './chat/attachments';
 import {
     PromptInput,
     PromptInputActionAddAttachments,
@@ -58,7 +58,7 @@ import {
     PromptInputTools,
     usePromptInputAttachments,
     type PromptInputMessage,
-} from './ai-elements/prompt-input';
+} from './chat/prompt-input';
 
 const PERSONA_NONE_VALUE = '__persona_none__';
 const AGENT_NONE_VALUE = '__agent_none__';
