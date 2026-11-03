@@ -258,6 +258,10 @@ export function useProviderPageState() {
     };
 
     const filteredProviders = ProviderCatalog.filter((provider) => {
+        if (provider.hidden) {
+            return false;
+        }
+
         if (!providerSearch.trim()) {
             return true;
         }

@@ -86,6 +86,7 @@
     "dependencies": {
         "@ai-sdk/anthropic": "^4.0.92",
         "@ai-sdk/cohere": "^4.0.72",
+        "@ai-sdk/fireworks": "^3.0.85",
         "@ai-sdk/google": "^4.0.108",
         "@ai-sdk/huggingface": "^2.0.81",
         "@ai-sdk/mcp": "^2.0.87",
@@ -94,6 +95,8 @@
         "@ai-sdk/openai-compatible": "^3.0.81",
         "@ai-sdk/perplexity": "^5.0.23",
         "@ai-sdk/provider": "^4.0.34",
+        "@ai-sdk/togetherai": "^3.0.83",
+        "@ai-sdk/voyage": "^2.0.72",
         "@electric-sql/pglite": "^0.5.13",
         "@mcpc-tech/acp-ai-provider": "^0.3.9",
         "@nestjs/common": "^12.3.2",

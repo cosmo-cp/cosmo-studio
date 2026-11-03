@@ -2,6 +2,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 // import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { createCohere } from '@ai-sdk/cohere';
 import { createDeepSeek } from '@ai-sdk/deepseek';
+import { createFireworks } from '@ai-sdk/fireworks';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createGroq } from '@ai-sdk/groq';
 import { createHuggingFace } from '@ai-sdk/huggingface';
@@ -11,6 +12,8 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createPerplexity } from '@ai-sdk/perplexity';
 import { ProviderV4 } from '@ai-sdk/provider';
+import { createTogetherAI } from '@ai-sdk/togetherai';
+import { createVoyage } from '@ai-sdk/voyage';
 import { createXai } from '@ai-sdk/xai';
 import { Models } from '@opencode-ai/models';
 import { providers as snapshotProviders } from '@opencode-ai/models/snapshot';
@@ -98,6 +101,15 @@ export class ModelProviderService {
             },
             [ModelProviderTypeEnum.HUGGINGFACE]: (provider) => {
                 return createHuggingFace(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.TOGETHERAI]: (provider) => {
+                return createTogetherAI(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.FIREWORKS]: (provider) => {
+                return createFireworks(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.VOYAGE]: (provider) => {
+                return createVoyage(this.createRemoteOptions(provider));
             },
             [ModelProviderTypeEnum.CUSTOM]: (provider) => {
                 return createOpenAI({
@@ -352,6 +364,161 @@ export class ModelProviderService {
         );
     }
 
+    private getModelsFromVoyage(): NewModel[] {
+        const voyageModels: Array<{ id: string; name: string; description: string; contextWindow: number }> = [
+            {
+                id: 'voyage-4-large',
+                name: 'voyage-4-large',
+                description: 'Voyage AI high-performance general-purpose embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-4',
+                name: 'voyage-4',
+                description: 'Voyage AI flagship general-purpose embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-4-lite',
+                name: 'voyage-4-lite',
+                description: 'Voyage AI lightweight, fast embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-4-nano',
+                name: 'voyage-4-nano',
+                description: 'Voyage AI ultra-compact, low-latency embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-code-3.5',
+                name: 'voyage-code-3.5',
+                description: 'Voyage AI state-of-the-art code and software reasoning embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-code-3',
+                name: 'voyage-code-3',
+                description: 'Voyage AI code retrieval and search embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-3-large',
+                name: 'voyage-3-large',
+                description: 'Voyage AI large context general-purpose embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-3.5',
+                name: 'voyage-3.5',
+                description: 'Voyage AI general-purpose embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-3.5-lite',
+                name: 'voyage-3.5-lite',
+                description: 'Voyage AI optimized general-purpose embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-3',
+                name: 'voyage-3',
+                description: 'Voyage AI general embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-3-lite',
+                name: 'voyage-3-lite',
+                description: 'Voyage AI lightweight embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-finance-2',
+                name: 'voyage-finance-2',
+                description: 'Voyage AI domain-specific financial embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-multilingual-2',
+                name: 'voyage-multilingual-2',
+                description: 'Voyage AI multilingual embedding model',
+                contextWindow: 32000,
+            },
+            {
+                id: 'voyage-law-2',
+                name: 'voyage-law-2',
+                description: 'Voyage AI legal domain-specific embedding model',
+                contextWindow: 16000,
+            },
+            {
+                id: 'voyage-code-2',
+                name: 'voyage-code-2',
+                description: 'Voyage AI code search and retrieval embedding model',
+                contextWindow: 16000,
+            },
+            {
+                id: 'voyage-2',
+                name: 'voyage-2',
+                description: 'Voyage AI general embedding model (v2)',
+                contextWindow: 4000,
+            },
+            {
+                id: 'rerank-2.5',
+                name: 'rerank-2.5',
+                description: 'Voyage AI state-of-the-art document and search reranking model',
+                contextWindow: 16000,
+            },
+            {
+                id: 'rerank-2.5-lite',
+                name: 'rerank-2.5-lite',
+                description: 'Voyage AI fast, cost-efficient reranking model',
+                contextWindow: 16000,
+            },
+            {
+                id: 'rerank-2',
+                name: 'rerank-2',
+                description: 'Voyage AI general-purpose document reranking model',
+                contextWindow: 16000,
+            },
+            {
+                id: 'rerank-2-lite',
+                name: 'rerank-2-lite',
+                description: 'Voyage AI lightweight document reranking model',
+                contextWindow: 16000,
+            },
+            {
+                id: 'rerank-1',
+                name: 'rerank-1',
+                description: 'Voyage AI document reranking model',
+                contextWindow: 8000,
+            },
+            {
+                id: 'rerank-lite-1',
+                name: 'rerank-lite-1',
+                description: 'Voyage AI lightweight document reranking model',
+                contextWindow: 8000,
+            },
+        ];
+
+        return voyageModels.map((m) => {
+            return {
+                name: m.name,
+                modelId: m.id,
+                description: m.description,
+                reasoning: false,
+                releaseDate: new Date('2025-01-01'),
+                lastUpdatedByProvider: new Date('2025-01-01'),
+                attachment: false,
+                toolCall: false,
+                inputModalities: [ModelModalityEnum.TEXT],
+                outputModalities: [ModelModalityEnum.TEXT],
+                status: ModelStatusEnum.NOT_DEFINED,
+                contextWindow: m.contextWindow,
+                maxOutputWindow: ModelProviderService.DEFAULT_MAX_OUTPUT_WINDOW,
+            };
+        });
+    }
+
     public async getModelsForProviderUsingModelsDotDev(provider: ModelProviderCreateInput): Promise<NewModel[]> {
         const result: NewModel[] = [];
         const catalogEntry = ProviderCatalogByType[provider.type];
@@ -366,6 +533,10 @@ export class ModelProviderService {
 
         if (catalogEntry.modelsSource === 'lmstudio') {
             return this.getModelsFromLMStudio(provider);
+        }
+
+        if (catalogEntry.modelsSource === 'voyage') {
+            return this.getModelsFromVoyage();
         }
 
         if (catalogEntry.modelsSource === 'none') {
