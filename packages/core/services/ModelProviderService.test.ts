@@ -1,3 +1,4 @@
+import { createBaseten } from '@ai-sdk/baseten';
 import { createFireworks } from '@ai-sdk/fireworks';
 import { createTogetherAI } from '@ai-sdk/togetherai';
 import { createVoyage } from '@ai-sdk/voyage';
@@ -31,6 +32,14 @@ vi.mock('@ai-sdk/anthropic', () => {
     return {
         createAnthropic: vi.fn(() => {
             return 'anthropic-provider';
+        }),
+    };
+});
+
+vi.mock('@ai-sdk/baseten', () => {
+    return {
+        createBaseten: vi.fn(() => {
+            return 'baseten-provider';
         }),
     };
 });
@@ -336,6 +345,48 @@ describe('ModelProviderService', () => {
         expect(
             result.some((m) => {
                 return m.modelId === 'rerank-2.5';
+            }),
+        ).toBe(true);
+    });
+
+    it('creates baseten provider using remote options', async () => {
+        const encryptedKey = Buffer.from('baseten-secret').toString('base64');
+        repository.findAll = vi.fn().mockResolvedValue([
+            {
+                id: 'baseten-id',
+                name: 'Baseten',
+                apiKey: encryptedKey,
+                apiUrl: 'https://inference.baseten.co/v1',
+                type: ModelProviderTypeEnum.BASETEN,
+                createdAt: '2024-01-01T00:00:00Z',
+                updatedAt: null,
+            },
+        ]);
+        new ModelProviderService(repository, secretStore);
+        await new Promise((resolve) => {
+            return setTimeout(resolve, 10);
+        });
+
+        expect(createBaseten).toHaveBeenCalledWith({
+            apiKey: 'decrypted-key',
+            baseURL: 'https://inference.baseten.co/v1',
+        });
+    });
+
+    it('returns models for baseten provider from snapshot fallback', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+        const service = new ModelProviderService(repository, secretStore);
+        const result = await service.getModelsForProviderUsingModelsDotDev({
+            name: 'Baseten',
+            apiKey: 'test-key',
+            type: ModelProviderTypeEnum.BASETEN,
+            apiUrl: '',
+        });
+
+        expect(result.length).toBeGreaterThan(0);
+        expect(
+            result.some((m) => {
+                return m.modelId.includes('DeepSeek');
             }),
         ).toBe(true);
     });
