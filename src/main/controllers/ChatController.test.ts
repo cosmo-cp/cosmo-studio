@@ -3,6 +3,7 @@ import type { ChatService } from 'core/services/ChatService';
 import { describe, expect, it, vi } from 'vitest';
 import type { z } from 'zod';
 import { IPC_ARGS_SCHEMA_METADATA_KEY } from '../ipc/Decorators';
+import { ChatRunRegistry } from '../services/ChatRunRegistry';
 import { ChatController } from './ChatController';
 
 describe('ChatController', () => {
@@ -24,7 +25,7 @@ describe('ChatController', () => {
             updateSelectedChat: vi.fn().mockResolvedValue(undefined),
         } as unknown as ChatService;
 
-        const controller = new ChatController(service);
+        const controller = new ChatController(service, { runs: new ChatRunRegistry() } as never);
 
         await expect(controller.getAllChats('q')).resolves.toEqual(chats);
         expect(service.getAllChats).toHaveBeenCalledWith('q');
@@ -65,12 +66,26 @@ describe('ChatController', () => {
         expect(service.updateSelectedChat).toHaveBeenCalledWith('c');
     });
 
+    it('waits for the streaming run to stop before deleting the conversation', async () => {
+        const runs = new ChatRunRegistry();
+        const run = runs.start('c')!;
+        const service = { deleteChat: vi.fn().mockResolvedValue(undefined) } as unknown as ChatService;
+        const controller = new ChatController(service, { runs: runs } as never);
+        const deletion = controller.deleteChat('c');
+        expect(run.signal.aborted).toBe(true);
+        expect(service.deleteChat).not.toHaveBeenCalled();
+        expect(runs.start('c')).toBeNull();
+        runs.finish('c', run);
+        await deletion;
+        expect(service.deleteChat).toHaveBeenCalledWith('c');
+    });
+
     it('normalizes empty selected persona id to null', async () => {
         const service = {
             updateSelectedPersonaForChat: vi.fn().mockResolvedValue(undefined),
         } as unknown as ChatService;
 
-        const controller = new ChatController(service);
+        const controller = new ChatController(service, { runs: new ChatRunRegistry() } as never);
         await controller.updateSelectedPersonaForChat('c', { selectedPersonaId: '' });
 
         expect(service.updateSelectedPersonaForChat).toHaveBeenCalledWith('c', {
@@ -89,7 +104,7 @@ describe('ChatController', () => {
         const service = {
             updateSelectedAgentForChat: vi.fn().mockResolvedValue(undefined),
         } as unknown as ChatService;
-        const controller = new ChatController(service);
+        const controller = new ChatController(service, { runs: new ChatRunRegistry() } as never);
         const schemas = Reflect.getMetadata(IPC_ARGS_SCHEMA_METADATA_KEY, ChatController) as Record<string, z.ZodTuple>;
 
         for (const selectedRuntime of ['model', 'agent'] as const) {
@@ -118,7 +133,7 @@ describe('ChatController', () => {
         const service = {
             updateSelectedAgentForChat: vi.fn().mockResolvedValue(undefined),
         } as unknown as ChatService;
-        const controller = new ChatController(service);
+        const controller = new ChatController(service, { runs: new ChatRunRegistry() } as never);
         await controller.updateSelectedAgentForChat('c', {} as AgentIdentifier);
 
         expect(service.updateSelectedAgentForChat).toHaveBeenCalledWith('c', {
@@ -137,7 +152,7 @@ describe('ChatController', () => {
         const service = {
             updateSelectedAgentForChat: vi.fn(),
         } as unknown as ChatService;
-        const controller = new ChatController(service);
+        const controller = new ChatController(service, { runs: new ChatRunRegistry() } as never);
         const schemas = Reflect.getMetadata(IPC_ARGS_SCHEMA_METADATA_KEY, ChatController) as Record<string, z.ZodTuple>;
 
         expect(() => {

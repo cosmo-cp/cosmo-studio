@@ -1,24 +1,22 @@
 'use client';
 
-import { createChatTransport } from '@/chat-transport';
 import {
     useCreateChatMutation,
     useDeleteChatMutation,
-    useGetChatMessagesQuery,
     useGetChatsQuery,
     useSelectChatMutation,
     useTogglePinnedChatMutation,
-    useUpdateChatMutation,
     useUpdateSelectedAgentMutation,
     useUpdateSelectedModelMutation,
     useUpdateSelectedPersonaMutation,
 } from '@/features/chat/chat-api';
+import { useChatSessions } from '@/features/chat/chat-session-provider';
 import { useAppStore } from '@/lib/store/hooks';
 import { WEB_SEARCH_NONE_OPTION_ID } from '@/lib/web-search-options';
-import { useChat } from '@ai-sdk/react';
-import { lastAssistantMessageIsCompleteWithApprovalResponses, UIMessage } from 'ai';
+import { Chat as ActiveChat, useChat } from '@ai-sdk/react';
+import type { UIMessage } from 'ai';
 import type { Chat } from 'core/dto';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -72,7 +70,10 @@ export function useChatPageState() {
         })),
     );
 
-    const transport = useMemo(() => createChatTransport(), []);
+    const sessions = useChatSessions();
+    useSyncExternalStore(sessions.subscribe, sessions.snapshot, sessions.snapshot);
+    const [session, setSession] = useState<ActiveChat<UIMessage> | null>(null);
+    const fallback = useMemo(() => new ActiveChat<UIMessage>({ id: 'unselected' }), []);
     const { data: chatHistory = [], mutate: mutateChatHistory } = useGetChatsQuery(searchHistoryQuery);
     const chatHistoryIds = useMemo(() => chatHistory.map((chat) => chat.id), [chatHistory]);
     const chatHistoryIdsKey = useMemo(() => chatHistoryIds.join('\0'), [chatHistoryIds]);
@@ -84,12 +85,10 @@ export function useChatPageState() {
             null,
         [chatHistory, selectedChatId],
     );
-    const { data: chatMessages } = useGetChatMessagesQuery(selectedChat?.id);
     const [createChat] = useCreateChatMutation();
     const [selectChat] = useSelectChatMutation();
     const [deleteChat] = useDeleteChatMutation();
     const [togglePinnedChat] = useTogglePinnedChatMutation();
-    const [updateChat] = useUpdateChatMutation();
     const [updateSelectedModel] = useUpdateSelectedModelMutation();
     const [updateSelectedAgent] = useUpdateSelectedAgentMutation();
     const [updateSelectedPersona] = useUpdateSelectedPersonaMutation();
@@ -119,45 +118,26 @@ export function useChatPageState() {
         [mutateChatHistory],
     );
 
-    const { messages, sendMessage, status, setMessages, addToolApprovalResponse, stop } = useChat<UIMessage>({
-        id: selectedChat?.id,
-        transport,
-        sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
-        onFinish: ({ message }) => {
-            if (!selectedChat) {
-                return;
-            }
-
-            const textPart = message.parts?.find((part) => part.type === 'text') as
-                { type: 'text'; text: string } | undefined;
-            const updates: Partial<Chat> = {
-                lastMessage: textPart?.text ? textPart.text.slice(0, 200) : selectedChat.lastMessage,
-                lastMessageAt: new Date(),
-            };
-
-            const userMessages = messages.filter((chatMessage) => chatMessage.role === 'user');
-            if (userMessages.length === 1) {
-                const userTextPart = userMessages[0].parts?.find((part) => part.type === 'text') as
-                    { type: 'text'; text: string } | undefined;
-                if (userTextPart?.text) {
-                    updates.title = userTextPart.text.slice(0, 50);
-                }
-            }
-
-            syncChatQuery(selectedChat.id, updates);
-            void updateChat({
-                chatId: selectedChat.id,
-                updates: {
-                    title: updates.title ?? selectedChat.title,
-                    lastMessage: updates.lastMessage ?? selectedChat.lastMessage,
-                },
-            });
-        },
-        onError: (error) => {
-            toast.error('Failed to stream data', {
-                description: error.message,
-            });
-        },
+    const selectedId = selectedChat?.id;
+    useEffect(() => {
+        let current = true;
+        if (selectedId) {
+            void sessions
+                .acquire(selectedId)
+                .then((chat) => {
+                    if (current) setSession(chat);
+                })
+                .catch((error) => {
+                    if (current) toast.error('Failed to load chat', { description: String(error) });
+                });
+        }
+        return () => {
+            current = false;
+        };
+    }, [selectedId, sessions]);
+    const activeSession = session?.id === selectedId ? session : null;
+    const { messages, sendMessage, status, addToolApprovalResponse, stop } = useChat<UIMessage>({
+        chat: activeSession ?? fallback,
     });
 
     useEffect(() => {
@@ -169,15 +149,6 @@ export function useChatPageState() {
             setSelectedChatId(selectedChat?.id ?? null);
         }
     }, [selectedChat?.id, selectedChatId, setSelectedChatId]);
-
-    useEffect(() => {
-        if (!selectedChat) {
-            setMessages([]);
-            return;
-        }
-
-        setMessages(chatMessages ?? []);
-    }, [chatMessages, selectedChat, setMessages]);
 
     const createNewChat = useCallback(async () => {
         await createChat({ title: 'New Chat' });
@@ -201,13 +172,12 @@ export function useChatPageState() {
 
     const deleteChatById = useCallback(
         async (chat: Chat) => {
-            if (selectedChat?.id === chat.id) {
-                setSelectedChatId(null);
-            }
-
-            await deleteChat(chat.id);
+            if (sessions.isDeleting(chat.id)) return;
+            await sessions.beginDeletion(chat.id);
+            const result = await deleteChat(chat.id);
+            sessions.endDeletion(chat.id, 'data' in result);
         },
-        [deleteChat, selectedChat?.id, setSelectedChatId],
+        [deleteChat, sessions],
     );
 
     const togglePinnedState = useCallback(
@@ -346,6 +316,8 @@ export function useChatPageState() {
 
     return {
         selectedChat,
+        chatReady: !!activeSession && !sessions.isDeleting(selectedChat?.id ?? ''),
+        isChatRunning: (id: string) => sessions.isRunning(id),
         chatHistory,
         messages,
         status,

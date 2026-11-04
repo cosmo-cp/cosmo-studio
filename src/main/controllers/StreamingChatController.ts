@@ -15,6 +15,7 @@ const chatAbortArgsSchema = z.custom<ChatAbortArgs>();
 @IpcController('streamingChat')
 export class StreamingChatController implements Controller {
     private readonly activeStreams = new Map<string, AbortController>();
+    private readonly streamOwners = new Map<string, WebContents>();
 
     constructor(
         @inject(TYPES.ChatStreamingService)
@@ -24,8 +25,20 @@ export class StreamingChatController implements Controller {
     @IpcOn('sendMessage', z.tuple([chatSendMessageArgsSchema]))
     public async sendMessage(args: ChatSendMessageArgs, event: IpcMainEvent) {
         const webContents = event.sender as WebContents;
-        const controller = new AbortController();
+        if (this.activeStreams.has(args.streamChannel)) {
+            logger.warn('Rejected duplicate stream channel');
+            return;
+        }
+        const controller = this.chatStreamingService.runs.start(args.chatId);
+        if (!controller) {
+            if (!webContents.isDestroyed())
+                webContents.send(`${args.streamChannel}-error`, {
+                    message: 'A response is already running for this chat',
+                });
+            return;
+        }
         this.activeStreams.set(args.streamChannel, controller);
+        this.streamOwners.set(args.streamChannel, webContents);
 
         try {
             const stream = await this.chatStreamingService.createMessageStream(args, controller.signal);
@@ -37,26 +50,29 @@ export class StreamingChatController implements Controller {
                 }
                 webContents.send(`${args.streamChannel}-data`, chunk);
             }
-            this.activeStreams.delete(args.streamChannel);
             if (!webContents.isDestroyed()) {
                 webContents.send(`${args.streamChannel}-end`);
             }
         } catch (error) {
             logger.error('Failed to start streamText:', error);
             controller.abort();
-            this.activeStreams.delete(args.streamChannel);
             if (!webContents.isDestroyed()) {
                 webContents.send(`${args.streamChannel}-error`, error);
             }
+        } finally {
+            if (this.activeStreams.get(args.streamChannel) === controller) {
+                this.activeStreams.delete(args.streamChannel);
+                this.streamOwners.delete(args.streamChannel);
+            }
+            this.chatStreamingService.runs.finish(args.chatId, controller);
         }
     }
 
     @IpcOn('abortMessage', z.tuple([chatAbortArgsSchema]))
-    public abortMessage(args: ChatAbortArgs) {
+    public abortMessage(args: ChatAbortArgs, event: IpcMainEvent) {
         const controller = this.activeStreams.get(args.streamChannel);
-        if (controller) {
+        if (controller && !controller.signal.aborted && this.streamOwners.get(args.streamChannel) === event.sender) {
             controller.abort();
-            this.activeStreams.delete(args.streamChannel);
             logger.info(`Aborted stream for channel: ${args.streamChannel}`);
         }
     }

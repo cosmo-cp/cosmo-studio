@@ -1,8 +1,10 @@
 import { inject, injectable } from 'inversify';
+import { AcpAgentSourceEnum } from '../database/schema/acpAgentSchema';
 import type { AcpAgent, AcpAgentCreateInput, AcpAgentRuntimeConfig, AcpAgentUpdateInput, AcpAgentView } from '../dto';
 import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
 import { AcpAgentRepository } from '../repositories/AcpAgentRepository';
 import { CORETYPES } from '../types/types';
+import { uninstallAcpBinary } from './AcpBinaryInstaller';
 
 const normalizeRequired = (value: string | null | undefined, field: string): string => {
     if (!value || value.trim().length === 0) {
@@ -98,8 +100,13 @@ export class AcpAgentService {
         return this.toView(updated);
     }
 
+    // Remove app-owned binaries before deleting their registry record.
     public async delete(id: string): Promise<void> {
-        return this.repository.delete(id);
+        const agent = await this.repository.getById(id);
+        if (agent?.source === AcpAgentSourceEnum.REGISTRY) {
+            await uninstallAcpBinary(agent.command);
+        }
+        await this.repository.delete(id);
     }
 
     public async enable(id: string): Promise<AcpAgentView> {

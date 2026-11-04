@@ -1,3 +1,6 @@
+import { createFireworks } from '@ai-sdk/fireworks';
+import { createTogetherAI } from '@ai-sdk/togetherai';
+import { createVoyage } from '@ai-sdk/voyage';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModelProviderTypeEnum } from '../database/schema/modelProviderSchema';
 import type { ModelProviderCreateInput } from '../dto';
@@ -32,6 +35,14 @@ vi.mock('@ai-sdk/anthropic', () => {
     };
 });
 
+vi.mock('@ai-sdk/fireworks', () => {
+    return {
+        createFireworks: vi.fn(() => {
+            return 'fireworks-provider';
+        }),
+    };
+});
+
 vi.mock('@ai-sdk/google', () => {
     return {
         createGoogleGenerativeAI: vi.fn(() => {
@@ -44,6 +55,22 @@ vi.mock('@ai-sdk/openai', () => {
     return {
         createOpenAI: vi.fn(() => {
             return 'openai-provider';
+        }),
+    };
+});
+
+vi.mock('@ai-sdk/togetherai', () => {
+    return {
+        createTogetherAI: vi.fn(() => {
+            return 'togetherai-provider';
+        }),
+    };
+});
+
+vi.mock('@ai-sdk/voyage', () => {
+    return {
+        createVoyage: vi.fn(() => {
+            return 'voyage-provider';
         }),
     };
 });
@@ -217,5 +244,99 @@ describe('ModelProviderService', () => {
 
         await expect(service.deleteProvider('provider-id')).rejects.toThrow('delete failed');
         expect(logger.error).toHaveBeenCalledWith('Failed to delete provider', error);
+    });
+
+    it('creates togetherai provider using remote options', async () => {
+        const encryptedKey = Buffer.from('together-secret').toString('base64');
+        repository.findAll = vi.fn().mockResolvedValue([
+            {
+                id: 'together-id',
+                name: 'Together AI',
+                apiKey: encryptedKey,
+                apiUrl: 'https://api.together.xyz/v1',
+                type: ModelProviderTypeEnum.TOGETHERAI,
+                createdAt: '2024-01-01T00:00:00Z',
+                updatedAt: null,
+            },
+        ]);
+        new ModelProviderService(repository, secretStore);
+        await new Promise((resolve) => {
+            return setTimeout(resolve, 10);
+        });
+
+        expect(createTogetherAI).toHaveBeenCalledWith({
+            apiKey: 'decrypted-key',
+            baseURL: 'https://api.together.xyz/v1',
+        });
+    });
+
+    it('creates fireworks provider using remote options', async () => {
+        const encryptedKey = Buffer.from('fireworks-secret').toString('base64');
+        repository.findAll = vi.fn().mockResolvedValue([
+            {
+                id: 'fireworks-id',
+                name: 'Fireworks AI',
+                apiKey: encryptedKey,
+                apiUrl: 'https://api.fireworks.ai/inference/v1',
+                type: ModelProviderTypeEnum.FIREWORKS,
+                createdAt: '2024-01-01T00:00:00Z',
+                updatedAt: null,
+            },
+        ]);
+        new ModelProviderService(repository, secretStore);
+        await new Promise((resolve) => {
+            return setTimeout(resolve, 10);
+        });
+
+        expect(createFireworks).toHaveBeenCalledWith({
+            apiKey: 'decrypted-key',
+            baseURL: 'https://api.fireworks.ai/inference/v1',
+        });
+    });
+
+    it('creates voyage provider using remote options', async () => {
+        const encryptedKey = Buffer.from('voyage-secret').toString('base64');
+        repository.findAll = vi.fn().mockResolvedValue([
+            {
+                id: 'voyage-id',
+                name: 'Voyage AI',
+                apiKey: encryptedKey,
+                apiUrl: 'https://api.voyageai.com/v1',
+                type: ModelProviderTypeEnum.VOYAGE,
+                createdAt: '2024-01-01T00:00:00Z',
+                updatedAt: null,
+            },
+        ]);
+        new ModelProviderService(repository, secretStore);
+        await new Promise((resolve) => {
+            return setTimeout(resolve, 10);
+        });
+
+        expect(createVoyage).toHaveBeenCalledWith({
+            apiKey: 'decrypted-key',
+            baseURL: 'https://api.voyageai.com/v1',
+        });
+    });
+
+    it('returns voyage models for voyage provider', async () => {
+        const service = new ModelProviderService(repository, secretStore);
+        const result = await service.getModelsForProviderUsingModelsDotDev({
+            name: 'Voyage AI',
+            apiKey: 'test-key',
+            type: ModelProviderTypeEnum.VOYAGE,
+            apiUrl: '',
+        });
+
+        expect(result.length).toBeGreaterThan(0);
+        expect(
+            result.some((m) => {
+                return m.modelId === 'voyage-4';
+            }),
+        ).toBe(true);
+        expect(
+            result.some((m) => {
+                return m.modelId === 'rerank-2.5';
+            }),
+        ).toBe(true);
     });
 });

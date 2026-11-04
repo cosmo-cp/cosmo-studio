@@ -258,6 +258,10 @@ export function useProviderPageState() {
     };
 
     const filteredProviders = ProviderCatalog.filter((provider) => {
+        if (provider.hidden) {
+            return false;
+        }
+
         if (!providerSearch.trim()) {
             return true;
         }
@@ -269,7 +273,7 @@ export function useProviderPageState() {
     return {
         providers,
         isLoadingProviders,
-        providersError,
+        providersError: providersError ? getBackendErrorMessage(providersError) : null,
         models,
         isOpen,
         isSubmitting,

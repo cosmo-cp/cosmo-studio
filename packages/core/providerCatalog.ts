@@ -4,8 +4,10 @@ export type ProviderCatalogEntry = {
     type: ModelProviderTypeEnum;
     name: string;
     description: string;
-    modelsSource: 'models-dev' | 'ollama' | 'lmstudio' | 'none';
+    modelsSource: 'models-dev' | 'ollama' | 'lmstudio' | 'voyage' | 'none';
     modelsDevKey?: string;
+    /** Hides this provider from the add-provider picker without disabling existing configurations. */
+    hidden?: boolean;
 };
 
 export const ProviderCatalog: ProviderCatalogEntry[] = [
@@ -98,6 +100,28 @@ export const ProviderCatalog: ProviderCatalogEntry[] = [
         description: 'Access thousands of open-source models via HuggingFace.',
         modelsSource: 'models-dev',
         modelsDevKey: 'huggingface',
+    },
+    {
+        type: ModelProviderTypeEnum.TOGETHERAI,
+        name: 'Together AI',
+        description: 'Fast, cost-effective inference for open-source AI models.',
+        modelsSource: 'models-dev',
+        modelsDevKey: 'togetherai',
+    },
+    {
+        type: ModelProviderTypeEnum.FIREWORKS,
+        name: 'Fireworks AI',
+        description: 'Production-grade inference for generative AI models.',
+        modelsSource: 'models-dev',
+        modelsDevKey: 'fireworks-ai',
+    },
+    {
+        type: ModelProviderTypeEnum.VOYAGE,
+        name: 'Voyage AI',
+        description: 'State-of-the-art embedding and reranking models by Voyage AI.',
+        modelsSource: 'voyage',
+        modelsDevKey: 'voyage',
+        hidden: true
     },
     {
         type: ModelProviderTypeEnum.CUSTOM,

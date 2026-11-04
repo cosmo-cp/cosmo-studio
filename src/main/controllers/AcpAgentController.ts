@@ -21,7 +21,7 @@ const acpAgentCreateSchema = z
     .object({
         name: z.string().min(1),
         description: z.string().optional().nullable(),
-        source: z.nativeEnum(AcpAgentSourceEnum).default(AcpAgentSourceEnum.CUSTOM),
+        source: z.enum(AcpAgentSourceEnum).default(AcpAgentSourceEnum.CUSTOM),
         registryId: z.string().optional().nullable(),
         version: z.string().optional().nullable(),
         command: z.string().min(1),
@@ -30,7 +30,7 @@ const acpAgentCreateSchema = z
         defaultCwd: z.string().optional().nullable(),
         authMethodId: z.string().optional().nullable(),
         enabled: z.boolean().default(true),
-        installStatus: z.nativeEnum(AcpAgentInstallStatusEnum).default(AcpAgentInstallStatusEnum.INSTALLED),
+        installStatus: z.enum(AcpAgentInstallStatusEnum).default(AcpAgentInstallStatusEnum.INSTALLED),
         mcpServerIds: z.array(z.string()).default([]),
         metadata: z.record(z.string(), z.unknown()).default({}),
     })
@@ -77,6 +77,7 @@ export class AcpAgentController implements Controller {
 
     @IpcHandler('delete', z.tuple([z.string().min(1)]))
     public async delete(id: string): Promise<void> {
+        this.acpAgentRuntimeService.stopAgent(id);
         return this.acpAgentService.delete(id);
     }
 

@@ -4,46 +4,9 @@ import { ChatRequestOptions, ChatTransport, DefaultChatTransport, UIMessage, UIM
 // Note: The browser's native ReadableStream is used, no import needed.
 
 export class IpcChatTransport implements ChatTransport<UIMessage> {
-    reconnectToStream(
-        options: {
-            chatId: string;
-        } & ChatRequestOptions,
-    ): Promise<ReadableStream<UIMessageChunk> | null> {
-        const chatId = options.chatId;
-        const streamChannel = `chat-stream-${chatId}`;
-        let cleanup = () => {
-            window.api.streaming.removeListeners(streamChannel);
-        };
-
-        const stream = new ReadableStream<UIMessageChunk>({
-            start(controller) {
-                const onData = (chunk: unknown) => {
-                    controller.enqueue(chunk as UIMessageChunk);
-                };
-                const onEnd = () => {
-                    cleanup();
-                    controller.close();
-                };
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const onError = (err: any) => {
-                    cleanup();
-                    const msg = err?.error?.message || err?.message || err || 'Stream Error';
-                    controller.error(new Error(msg));
-                };
-
-                cleanup = () => {
-                    window.api.streaming.removeListeners(streamChannel);
-                };
-
-                window.api.streaming.onData(`${streamChannel}`, onData);
-                window.api.streaming.onEnd(`${streamChannel}`, onEnd);
-                window.api.streaming.onError(`${streamChannel}`, onError);
-            },
-            cancel() {
-                cleanup();
-            },
-        });
-        return Promise.resolve(stream);
+    // Electron does not replay a stream after the renderer disconnects.
+    reconnectToStream(): Promise<null> {
+        return Promise.resolve(null);
     }
 
     async sendMessages(
@@ -56,7 +19,7 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
         } & ChatRequestOptions,
     ): Promise<ReadableStream<UIMessageChunk>> {
         const chatId = options.chatId;
-        const streamChannel = `chat-stream-${chatId}`;
+        const streamChannel = `chat-stream-${chatId}-${crypto.randomUUID()}`;
         let cleanup = () => {
             window.api.streaming.removeListeners(streamChannel);
         };

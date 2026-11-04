@@ -1,5 +1,6 @@
 'use client';
 
+import { ChatSessionProvider } from '@/features/chat/chat-session-provider';
 import { resolveAppDataSource } from '@/lib/store/app-data-source';
 import type { AppDataSource } from '@/lib/store/app-data-source';
 import { createAppStore, type AppStore } from '@/lib/store/store';
@@ -27,7 +28,7 @@ export function StoreProvider({
                     revalidateOnFocus: false,
                 }}
             >
-                {children}
+                <ChatSessionProvider>{children}</ChatSessionProvider>
             </SWRConfig>
         </StoreContext.Provider>
     );

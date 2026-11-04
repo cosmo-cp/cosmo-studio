@@ -34,9 +34,13 @@ export function useGetAcpRegistryQuery(
 export function useRefreshAcpRegistryMutation() {
     return useBackendMutation({
         errorMessage: 'Failed to refresh ACP registry',
-        run: (appDataSource, _arg: void) => {
+        run: async (appDataSource, _arg: void) => {
             void _arg;
-            return appDataSource.acpAgent.refreshRegistry();
+            const registry = await appDataSource.acpAgent.refreshRegistry();
+            if (registry.error) {
+                throw new Error(registry.error);
+            }
+            return registry;
         },
         revalidate: async (_arg, _result, { revalidateKeys }) => {
             await revalidateAcpAgentData(revalidateKeys, true);
