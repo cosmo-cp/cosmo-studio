@@ -17,6 +17,7 @@ import { IpcHandlerRegistry } from './ipc';
 import { ElectronSecretStore } from './platform/ElectronSecretStore';
 import { AcpAgentRuntimeService } from './services/AcpAgentRuntimeService';
 import { ChatStreamingService } from './services/ChatStreamingService';
+import { TaskExecutionService } from './services/TaskExecutionService';
 import { WorkflowExecutionService } from './services/WorkflowExecutionService';
 import { WorkflowRunStreamingService } from './services/WorkflowRunStreamingService';
 import { TYPES } from './types';
@@ -36,6 +37,7 @@ container
     .bind<WorkflowExecutionService>(TYPES.WorkflowExecutionService)
     .to(WorkflowExecutionService)
     .inSingletonScope();
+container.bind<TaskExecutionService>(TYPES.TaskExecutionService).to(TaskExecutionService).inSingletonScope();
 
 // Bind controllers
 container.bind<Controller>(TYPES.Controller).to(ChatController).inSingletonScope();
