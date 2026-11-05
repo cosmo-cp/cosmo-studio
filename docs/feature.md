@@ -127,6 +127,22 @@ Use this file as the quick feature index. For implementation details, follow the
 - Current renderer run drawer stages a local execution-thread response while the backend workflow runner is connected to the UI.
     - UI: `src/renderer/src/components/workflow-workspace.tsx`
 
+## AI Tasks
+
+- Asynchronous background execution of coding and development assignments using Vercel AI SDK models or autonomous ACP coding agents with workspace directory isolation.
+    - Specification: `docs/designs/ai-tasks.md`
+    - UI: `src/renderer/src/app/(main)/tasks/page.tsx`, `src/renderer/src/features/tasks/components/tasks-view.tsx`, `src/renderer/src/features/tasks/components/task-list.tsx`, `src/renderer/src/features/tasks/components/task-detail.tsx`, `src/renderer/src/features/tasks/components/task-link-card.tsx`, `src/renderer/src/features/tasks/components/task-comments.tsx`, `src/renderer/src/features/tasks/components/create-task-dialog.tsx`, `src/renderer/src/features/tasks/components/link-task-dialog.tsx`
+    - Renderer orchestration: `src/renderer/src/features/tasks/use-task-page-state.ts`
+    - Renderer data flow: `src/renderer/src/features/tasks/tasks-api.ts`
+    - Schema/services: `packages/core/database/schema/taskSchema.ts`, `packages/core/services/TaskService.ts`, `packages/core/services/TaskCommentService.ts`
+    - Execution engine: `src/main/services/TaskExecutionService.ts`
+    - IPC & RPC controller: `src/main/controllers/TaskController.ts`, `src/preload/contracts/task.ts`, `src/preload/api/task.ts`, `src/preload/http-api/task.ts`
+- Linear 1:1 execution linking ($A \rightarrow B$) allows pipeline sequencing: when an upstream task finishes successfully, it triggers the linked downstream task, prepending an XML-wrapped summary of upstream context into instructions.
+- Fail-fast active workspace mutex prevents concurrent runs from corrupting the same project directory; canonicalized with `fs.realpathSync` to guard symlink aliases.
+- Soft-close permanent retention policy preserves task execution records and outcome audits without hard deletion (`status = 'closed'`).
+- Crash recovery reconciles interrupted tasks on application startup, resetting stranded `in_progress` tasks to `failed` and adding a system audit trail comment.
+- Automatic secret scrubbing strips Bearer tokens and API keys from comment audit trails before persistence.
+
 ## Runtime And Platform Features
 
 - Dual runtime: packaged Electron desktop app and local HTTP service share the same renderer, controllers, core package, generated RPC manifest, and chat stream service.
@@ -149,8 +165,8 @@ Use this file as the quick feature index. For implementation details, follow the
 - The renderer uses a single bounded Zustand store for shared UI state and SWR-backed feature hooks for backend request/response flows.
     - Store/provider: `src/renderer/src/lib/store/store.ts`, `src/renderer/src/app/store-provider.tsx`
     - Shared backend hook layer: `src/renderer/src/lib/store/app-data-source.ts`, `src/renderer/src/lib/store/backend-hooks.ts`
-    - Feature request/response modules: `src/renderer/src/features/chat/chat-api.ts`, `src/renderer/src/features/providers/providers-api.ts`, `src/renderer/src/features/personas/personas-api.ts`, `src/renderer/src/features/commands/commands-api.ts`, `src/renderer/src/features/mcp-servers/mcp-servers-api.ts`, `src/renderer/src/features/web-search/web-search-api.ts`, `src/renderer/src/features/acp-agents/acp-agents-api.ts`, `src/renderer/src/features/workflows/workflows-api.ts`
-    - Feature orchestration hooks: `src/renderer/src/features/chat/use-chat-page-state.ts`, `src/renderer/src/features/providers/use-provider-page-state.ts`, `src/renderer/src/features/personas/use-persona-page-state.ts`, `src/renderer/src/features/commands/use-command-management-state.ts`, `src/renderer/src/features/mcp-servers/use-mcp-server-page-state.ts`, `src/renderer/src/features/web-search/use-web-search-page-state.ts`, `src/renderer/src/features/acp-agents/use-acp-agent-page-state.ts`, `src/renderer/src/features/workflows/use-workflow-page-state.ts`, `src/renderer/src/features/settings/use-settings-page-state.ts`
+    - Feature request/response modules: `src/renderer/src/features/chat/chat-api.ts`, `src/renderer/src/features/providers/providers-api.ts`, `src/renderer/src/features/personas/personas-api.ts`, `src/renderer/src/features/commands/commands-api.ts`, `src/renderer/src/features/mcp-servers/mcp-servers-api.ts`, `src/renderer/src/features/web-search/web-search-api.ts`, `src/renderer/src/features/acp-agents/acp-agents-api.ts`, `src/renderer/src/features/workflows/workflows-api.ts`, `src/renderer/src/features/tasks/tasks-api.ts`
+    - Feature orchestration hooks: `src/renderer/src/features/chat/use-chat-page-state.ts`, `src/renderer/src/features/providers/use-provider-page-state.ts`, `src/renderer/src/features/personas/use-persona-page-state.ts`, `src/renderer/src/features/commands/use-command-management-state.ts`, `src/renderer/src/features/mcp-servers/use-mcp-server-page-state.ts`, `src/renderer/src/features/web-search/use-web-search-page-state.ts`, `src/renderer/src/features/acp-agents/use-acp-agent-page-state.ts`, `src/renderer/src/features/workflows/use-workflow-page-state.ts`, `src/renderer/src/features/tasks/use-task-page-state.ts`, `src/renderer/src/features/settings/use-settings-page-state.ts`
     - Renderer-only slices: `src/renderer/src/features/chat/chat-store.ts`, `src/renderer/src/features/web-search/web-search-store.ts`, `src/renderer/src/lib/store/ui-feedback-store.ts`
 - Light/dark theme support and a shared Tailwind/shadcn/Radix UI system.
     - Theme/UI docs: `docs/RENDERER_DESIGN.md`

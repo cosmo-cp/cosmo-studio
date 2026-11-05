@@ -40,6 +40,7 @@ describe('AppSidebar', () => {
         renderSidebar('/workflow');
 
         expect(screen.getByRole('link', { name: /chat/i })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /tasks/i })).toBeInTheDocument();
         expect(screen.queryByRole('link', { name: /workflow/i })).not.toBeInTheDocument();
         expect(screen.queryByRole('link', { name: /persona/i })).not.toBeInTheDocument();
         expect(screen.queryByRole('link', { name: /command/i })).not.toBeInTheDocument();

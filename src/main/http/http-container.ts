@@ -6,6 +6,7 @@ import { Container } from 'inversify';
 import { Controller } from '../controllers/Controller';
 import { AcpAgentRuntimeService } from '../services/AcpAgentRuntimeService';
 import { ChatStreamingService } from '../services/ChatStreamingService';
+import { TaskExecutionService } from '../services/TaskExecutionService';
 import { WorkflowExecutionService } from '../services/WorkflowExecutionService';
 import { WorkflowRunStreamingService } from '../services/WorkflowRunStreamingService';
 import { TYPES } from '../types';
@@ -25,6 +26,7 @@ httpContainer
     .bind<WorkflowRunStreamingService>(TYPES.WorkflowRunStreamingService)
     .to(WorkflowRunStreamingService)
     .inSingletonScope();
+httpContainer.bind<TaskExecutionService>(TYPES.TaskExecutionService).to(TaskExecutionService).inSingletonScope();
 
 for (const controller of rpcControllerConstructors) {
     httpContainer.bind<Controller>(TYPES.Controller).to(controller).inSingletonScope();

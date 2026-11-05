@@ -10,6 +10,7 @@ type AppDataSourceOverrides = {
     mcpServer?: Partial<AppDataSource['mcpServer']>;
     acpAgent?: Partial<AppDataSource['acpAgent']>;
     workflow?: Partial<AppDataSource['workflow']>;
+    task?: Partial<AppDataSource['task']>;
     streaming?: Partial<AppDataSource['streaming']>;
 };
 
@@ -181,6 +182,33 @@ export function createMockAppDataSource(overrides: AppDataSourceOverrides = {}):
             runCancel: async () => undefined,
             runGet: async () => undefined,
             ...overrides.workflow,
+        },
+        task: {
+            list: async () => [],
+            get: async () => undefined,
+            create: async () => {
+                throw new Error('task.create not mocked');
+            },
+            update: async () => {
+                throw new Error('task.update not mocked');
+            },
+            close: async () => {
+                throw new Error('task.close not mocked');
+            },
+            overrideStatus: async () => {
+                throw new Error('task.overrideStatus not mocked');
+            },
+            link: async () => undefined,
+            unlink: async () => undefined,
+            execute: async () => {
+                throw new Error('task.execute not mocked');
+            },
+            cancel: async () => undefined,
+            listComments: async () => [],
+            createComment: async () => {
+                throw new Error('task.createComment not mocked');
+            },
+            ...overrides.task,
         },
         streaming: {
             sendMessage: () => undefined,

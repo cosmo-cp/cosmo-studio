@@ -12,7 +12,7 @@ This document maps `package.json` dependencies to their official documentation (
 | `update-electron-app`        | Auto-updates (Electron Public Update Service)           | https://github.com/electron/update-electron-app#readme                       |
 | `electron-squirrel-startup`  | Windows Squirrel startup handling                       | https://www.npmjs.com/package/electron-squirrel-startup                      |
 | `dotenv`                     | Loading environment variables in main                   | https://github.com/motdotla/dotenv#readme                                    |
-| `extract-zip`                | Extracting ACP ZIP distributions                        | https://github.com/mafintosh/extract-zip#readme                              |
+| `adm-zip`                    | Extracting ACP ZIP distributions                        | https://github.com/cthackers/adm-zip#readme                                  |
 | `tar`                        | Extracting ACP tar distributions                        | https://github.com/isaacs/node-tar#readme                                    |
 | `unbzip2-stream`             | Decompressing ACP bzip2 tar distributions               | https://github.com/regular/unbzip2-stream#readme                             |
 | `reflect-metadata`           | Decorators + metadata (DI + IPC decorators)             | https://rbuckton.github.io/reflect-metadata/                                 |

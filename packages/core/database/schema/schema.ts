@@ -7,3 +7,4 @@ export * from './webSearchConfigSchema';
 export * from './acpAgentSchema';
 
 export * from './workflowSchema';
+export * from './taskSchema';

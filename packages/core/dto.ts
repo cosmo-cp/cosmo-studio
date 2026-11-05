@@ -10,6 +10,8 @@ import {
     model,
     modelProvider,
     persona,
+    task,
+    taskComment,
     webSearchConfig,
     workflow,
     workflowRun,
@@ -236,3 +238,25 @@ export interface WorkflowRunStreamStartArgs {
 export interface WorkflowRunStreamAbortArgs {
     streamChannel: string;
 }
+
+// Task entity DTOs
+export type Task = InferSelectModel<typeof task>;
+export type TaskInsert = InferInsertModel<typeof task>;
+export type TaskCreateInput = Omit<TaskInsert, 'id' | 'createdAt' | 'updatedAt' | 'closedAt' | 'nextTaskId'>;
+export type TaskUpdateInput = Partial<Omit<TaskInsert, 'id' | 'createdAt' | 'updatedAt'>>;
+
+export interface TaskWithLinks extends Task {
+    nextTask?: Task | null;
+    previousTask?: Task | null;
+}
+
+export interface TaskListFilter {
+    status?: Task['status'];
+    includeClosed?: boolean;
+}
+
+// TaskComment entity DTOs
+export type TaskComment = InferSelectModel<typeof taskComment>;
+export type TaskCommentInsert = InferInsertModel<typeof taskComment>;
+export type TaskCommentCreateInput = Omit<TaskCommentInsert, 'id' | 'createdAt'>;
+export type TaskCommentInput = Omit<TaskCommentCreateInput, 'taskId'>;
