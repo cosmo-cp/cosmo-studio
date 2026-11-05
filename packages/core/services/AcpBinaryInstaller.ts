@@ -4,7 +4,7 @@ import { chmod, lstat, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'nod
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
-import extractZip from 'extract-zip';
+import AdmZip from 'adm-zip';
 import * as tar from 'tar';
 import { z } from 'zod';
 
@@ -83,14 +83,13 @@ export async function installAcpBinary(distributions: Record<string, unknown>) {
         await mkdir(contents);
         await writeFile(archive, bytes);
         if (name.endsWith('.zip')) {
-            await extractZip(archive, {
-                dir: contents,
-                onEntry: (entry) => {
-                    if (!safePath(entry.fileName) || ((entry.externalFileAttributes >>> 16) & 0o170000) === 0o120000) {
-                        throw new Error('Unsafe ACP archive entry.');
-                    }
-                },
-            });
+            const zip = new AdmZip(archive);
+            for (const entry of zip.getEntries()) {
+                if (!safePath(entry.entryName) || ((entry.header.attr >>> 16) & 0o170000) === 0o120000) {
+                    throw new Error('Unsafe ACP archive entry.');
+                }
+            }
+            zip.extractAllTo(contents, true);
         } else if (/\.(tar\.gz|tgz|tar\.bz2|tbz2)$/.test(name)) {
             const extractor = tar.x({
                 cwd: contents,
