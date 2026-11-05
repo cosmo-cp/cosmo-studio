@@ -1,4 +1,5 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createAssemblyAI } from '@ai-sdk/assemblyai';
 import { createBaseten } from '@ai-sdk/baseten';
 // import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { createCohere } from '@ai-sdk/cohere';
@@ -114,6 +115,9 @@ export class ModelProviderService {
             },
             [ModelProviderTypeEnum.BASETEN]: (provider) => {
                 return createBaseten(this.createRemoteOptions(provider));
+            },
+            [ModelProviderTypeEnum.ASSEMBLYAI]: (provider) => {
+                return createAssemblyAI(this.createRemoteOptions(provider));
             },
             [ModelProviderTypeEnum.CUSTOM]: (provider) => {
                 return createOpenAI({
@@ -523,6 +527,60 @@ export class ModelProviderService {
         });
     }
 
+    private getModelsFromAssemblyAI(): NewModel[] {
+        const assemblyaiModels: Array<{ id: string; name: string; description: string; contextWindow: number }> = [
+            {
+                id: 'universal-3-5-pro',
+                name: 'universal-3-5-pro',
+                description:
+                    'AssemblyAI flagship Speech-to-Text model with native code-switching and prompting support',
+                contextWindow: ModelProviderService.DEFAULT_CONTEXT_WINDOW,
+            },
+            {
+                id: 'universal-3-pro',
+                name: 'universal-3-pro',
+                description: 'AssemblyAI high-accuracy speech-to-text model',
+                contextWindow: ModelProviderService.DEFAULT_CONTEXT_WINDOW,
+            },
+            {
+                id: 'universal-2',
+                name: 'universal-2',
+                description: 'AssemblyAI foundational speech-to-text model supporting 99+ languages',
+                contextWindow: ModelProviderService.DEFAULT_CONTEXT_WINDOW,
+            },
+            {
+                id: 'nano',
+                name: 'nano',
+                description: 'AssemblyAI fast, lightweight, cost-efficient speech-to-text model',
+                contextWindow: ModelProviderService.DEFAULT_CONTEXT_WINDOW,
+            },
+            {
+                id: 'best',
+                name: 'best',
+                description: 'AssemblyAI tier-based speech model (maps to best available transcription model)',
+                contextWindow: ModelProviderService.DEFAULT_CONTEXT_WINDOW,
+            },
+        ];
+
+        return assemblyaiModels.map((m) => {
+            return {
+                name: m.name,
+                modelId: m.id,
+                description: m.description,
+                reasoning: false,
+                releaseDate: new Date('2025-01-01'),
+                lastUpdatedByProvider: new Date('2025-01-01'),
+                attachment: true,
+                toolCall: false,
+                inputModalities: [ModelModalityEnum.AUDIO],
+                outputModalities: [ModelModalityEnum.TEXT],
+                status: ModelStatusEnum.NOT_DEFINED,
+                contextWindow: m.contextWindow,
+                maxOutputWindow: ModelProviderService.DEFAULT_MAX_OUTPUT_WINDOW,
+            };
+        });
+    }
+
     public async getModelsForProviderUsingModelsDotDev(provider: ModelProviderCreateInput): Promise<NewModel[]> {
         const result: NewModel[] = [];
         const catalogEntry = ProviderCatalogByType[provider.type];
@@ -541,6 +599,10 @@ export class ModelProviderService {
 
         if (catalogEntry.modelsSource === 'voyage') {
             return this.getModelsFromVoyage();
+        }
+
+        if (catalogEntry.modelsSource === 'assemblyai') {
+            return this.getModelsFromAssemblyAI();
         }
 
         if (catalogEntry.modelsSource === 'none') {

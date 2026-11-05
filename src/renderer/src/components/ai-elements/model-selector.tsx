@@ -101,6 +101,7 @@ export type ModelSelectorLogoProps = Omit<ComponentProps<'img'>, 'src' | 'alt'> 
         | 'togetherai'
         | 'azure'
         | 'baseten'
+        | 'assemblyai'
         | 'huggingface'
         | 'opencode'
         | 'fastrouter'

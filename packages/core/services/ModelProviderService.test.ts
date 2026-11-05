@@ -1,3 +1,4 @@
+import { createAssemblyAI } from '@ai-sdk/assemblyai';
 import { createBaseten } from '@ai-sdk/baseten';
 import { createFireworks } from '@ai-sdk/fireworks';
 import { createTogetherAI } from '@ai-sdk/togetherai';
@@ -32,6 +33,14 @@ vi.mock('@ai-sdk/anthropic', () => {
     return {
         createAnthropic: vi.fn(() => {
             return 'anthropic-provider';
+        }),
+    };
+});
+
+vi.mock('@ai-sdk/assemblyai', () => {
+    return {
+        createAssemblyAI: vi.fn(() => {
+            return 'assemblyai-provider';
         }),
     };
 });
@@ -387,6 +396,52 @@ describe('ModelProviderService', () => {
         expect(
             result.some((m) => {
                 return m.modelId.includes('DeepSeek');
+            }),
+        ).toBe(true);
+    });
+
+    it('creates assemblyai provider using remote options', async () => {
+        const encryptedKey = Buffer.from('assemblyai-secret').toString('base64');
+        repository.findAll = vi.fn().mockResolvedValue([
+            {
+                id: 'assemblyai-id',
+                name: 'AssemblyAI',
+                apiKey: encryptedKey,
+                apiUrl: 'https://api.assemblyai.com',
+                type: ModelProviderTypeEnum.ASSEMBLYAI,
+                createdAt: '2024-01-01T00:00:00Z',
+                updatedAt: null,
+            },
+        ]);
+        new ModelProviderService(repository, secretStore);
+        await new Promise((resolve) => {
+            return setTimeout(resolve, 10);
+        });
+
+        expect(createAssemblyAI).toHaveBeenCalledWith({
+            apiKey: 'decrypted-key',
+            baseURL: 'https://api.assemblyai.com',
+        });
+    });
+
+    it('returns assemblyai models for assemblyai provider', async () => {
+        const service = new ModelProviderService(repository, secretStore);
+        const result = await service.getModelsForProviderUsingModelsDotDev({
+            name: 'AssemblyAI',
+            apiKey: 'test-key',
+            type: ModelProviderTypeEnum.ASSEMBLYAI,
+            apiUrl: '',
+        });
+
+        expect(result.length).toBeGreaterThan(0);
+        expect(
+            result.some((m) => {
+                return m.modelId === 'universal-3-5-pro';
+            }),
+        ).toBe(true);
+        expect(
+            result.some((m) => {
+                return m.modelId === 'universal-2';
             }),
         ).toBe(true);
     });

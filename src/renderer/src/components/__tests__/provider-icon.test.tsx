@@ -30,4 +30,13 @@ describe('ProviderIcon', () => {
 
         expect(screen.getByRole('img', { name: 'voyage icon' })).toHaveAttribute('src', '/providers/voyage.svg');
     });
+
+    it('renders assemblyai icon correctly', () => {
+        render(<ProviderIcon type={ModelProviderTypeEnum.ASSEMBLYAI} />);
+
+        expect(screen.getByRole('img', { name: 'assemblyai icon' })).toHaveAttribute(
+            'src',
+            '/providers/assemblyai.svg',
+        );
+    });
 });
