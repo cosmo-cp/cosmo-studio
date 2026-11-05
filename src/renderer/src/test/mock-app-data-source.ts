@@ -18,7 +18,21 @@ export function createMockAppDataSource(overrides: AppDataSourceOverrides = {}):
         chat: {
             getAllChats: async () => [],
             getChatById: async () => undefined,
-            createChat: async () => undefined,
+            createChat: async (newChat) => ({
+                id: 'mock-chat-id',
+                title: newChat.title ?? 'New Chat',
+                createdAt: new Date(),
+                pinned: false,
+                pinnedAt: null,
+                selectedProvider: null,
+                selectedModelId: null,
+                selectedRuntime: 'model',
+                selectedAgentId: null,
+                selectedPersonaId: null,
+                selected: true,
+                lastMessage: null,
+                lastMessageAt: null,
+            }),
             updateChat: async () => {
                 throw new Error('chat.updateChat not mocked');
             },

@@ -1,4 +1,22 @@
-import { Bot, Cable, CircleUserRound, Command, Globe, PlugZap, type LucideIcon } from 'lucide-react';
+import {
+    BarChart3,
+    Bot,
+    Box,
+    Cable,
+    CircleUserRound,
+    Command,
+    CreditCard,
+    Folder,
+    Globe,
+    PlugZap,
+    Settings2,
+    Share2,
+    Shield,
+    Users,
+    Wrench,
+    Zap,
+    type LucideIcon,
+} from 'lucide-react';
 
 export type SettingsSectionSlug = 'provider' | 'persona' | 'command' | 'mcp-server' | 'web-search' | 'agents';
 
@@ -50,6 +68,30 @@ export const settingsSections: readonly SettingsSection[] = [
     },
 ] as const;
 
+export interface NavSettingsSection {
+    slug: string;
+    title: string;
+    icon: LucideIcon;
+    href: string;
+}
+
+export const workspaceSettingsSections: readonly NavSettingsSection[] = [
+    { slug: 'general', title: 'General', icon: Settings2, href: '/settings/general' },
+    { slug: 'provider', title: 'Providers', icon: Box, href: '/settings/provider' },
+    { slug: 'agents', title: 'Agents', icon: Zap, href: '/settings/agents' },
+    { slug: 'command', title: 'Tools', icon: Wrench, href: '/settings/command' },
+    { slug: 'mcp-server', title: 'MCP Servers', icon: Share2, href: '/settings/mcp-server' },
+    { slug: 'persona', title: 'Persona', icon: CircleUserRound, href: '/settings/persona' },
+] as const;
+
+export const organizationSettingsSections: readonly NavSettingsSection[] = [
+    { slug: 'usage-cost', title: 'Usage & Cost', icon: BarChart3, href: '/settings/usage-cost' },
+    { slug: 'projects', title: 'Projects', icon: Folder, href: '/settings/projects' },
+    { slug: 'guardrails', title: 'Guardrails', icon: Shield, href: '/settings/guardrails' },
+    { slug: 'team', title: 'Team', icon: Users, href: '/settings/team' },
+    { slug: 'billing', title: 'Billing', icon: CreditCard, href: '/settings/billing' },
+] as const;
+
 export function getVisibleSettingsSections(): readonly SettingsSection[] {
     return settingsSections.filter((section) => !section.hidden);
 }
@@ -89,8 +131,9 @@ export function getSettingsItemHref(slug: SettingsSectionSlug): string {
     return getSettingsLandingHref(slug);
 }
 
-export function isSettingsItemActive(pathname: string, slug: SettingsSectionSlug): boolean {
-    const itemPathname = getSettingsLandingHref(slug);
-
-    return pathname === itemPathname || (pathname === '/settings' && slug === getDefaultSettingsSection().slug);
+export function isSettingsItemActive(pathname: string, slug: string): boolean {
+    if (slug === 'provider') {
+        return pathname === '/settings/provider' || pathname === '/settings';
+    }
+    return pathname === `/settings/${slug}` || pathname.startsWith(`/settings/${slug}/`);
 }

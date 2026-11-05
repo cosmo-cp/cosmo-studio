@@ -22,7 +22,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { ChatStatus, FileUIPart, SourceDocumentUIPart } from 'ai';
-import { CornerDownLeftIcon, ImageIcon, PlusIcon, SquareIcon } from 'lucide-react';
+import { ImageIcon, PlusIcon, SendHorizontal, SquareIcon } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import type {
     ChangeEvent,
@@ -939,7 +939,7 @@ export const PromptInputSubmit = ({
 }: PromptInputSubmitProps) => {
     const isGenerating = status === 'submitted' || status === 'streaming';
 
-    let Icon = <CornerDownLeftIcon className="size-4" />;
+    let Icon = <SendHorizontal className="size-4" />;
 
     if (status === 'submitted') {
         Icon = <Spinner />;
@@ -962,7 +962,10 @@ export const PromptInputSubmit = ({
     return (
         <InputGroupButton
             aria-label={isGenerating ? 'Stop' : 'Submit'}
-            className={cn(className)}
+            className={cn(
+                'size-8 rounded-lg bg-[#0B6E99] hover:bg-[#095B7E] text-white flex items-center justify-center p-0 transition-colors shadow-xs',
+                className,
+            )}
             onClick={handleClick}
             size={size}
             type={isGenerating && onStop ? 'button' : 'submit'}

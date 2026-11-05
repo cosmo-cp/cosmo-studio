@@ -10,7 +10,7 @@
     ],
     "scripts": {
         "postinstall": "node scripts/patch-electron-forge-plugin-vite.mjs",
-        "generate-api": "ts-node -r tsconfig-paths/register scripts/generate-api.ts && npm run prettier",
+        "generate-api": "ts-node -T -r tsconfig-paths/register scripts/generate-api.ts && npm run prettier",
         "download-provider-logos": "ts-node scripts/download-provider-logos.ts",
         "next:dev": "cd src/renderer && npm run dev",
         "dev": "npm run dev:electron",

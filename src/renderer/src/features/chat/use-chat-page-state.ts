@@ -74,7 +74,15 @@ export function useChatPageState() {
     useSyncExternalStore(sessions.subscribe, sessions.snapshot, sessions.snapshot);
     const [session, setSession] = useState<ActiveChat<UIMessage> | null>(null);
     const fallback = useMemo(() => new ActiveChat<UIMessage>({ id: 'unselected' }), []);
-    const { data: chatHistory = [], mutate: mutateChatHistory } = useGetChatsQuery(searchHistoryQuery);
+    const { data: rawChatHistory = [], mutate: mutateChatHistory } = useGetChatsQuery(searchHistoryQuery);
+    const chatHistory = useMemo(() => {
+        const seen = new Set<string>();
+        return rawChatHistory.filter((chat) => {
+            if (seen.has(chat.id)) return false;
+            seen.add(chat.id);
+            return true;
+        });
+    }, [rawChatHistory]);
     const chatHistoryIds = useMemo(() => chatHistory.map((chat) => chat.id), [chatHistory]);
     const chatHistoryIdsKey = useMemo(() => chatHistoryIds.join('\0'), [chatHistoryIds]);
     const selectedChat = useMemo(
@@ -151,8 +159,22 @@ export function useChatPageState() {
     }, [selectedChat?.id, selectedChatId, setSelectedChatId]);
 
     const createNewChat = useCallback(async () => {
-        await createChat({ title: 'New Chat' });
-    }, [createChat]);
+        if (searchHistoryQuery) {
+            setChatHistorySearchQuery(null);
+        }
+        const result = await createChat({ title: 'New Chat' });
+        if ('data' in result && result.data) {
+            const newChat = result.data;
+            setSelectedChatId(newChat.id);
+            void mutateChatHistory(
+                (currentChats = []) => [
+                    newChat,
+                    ...currentChats.filter((c) => c.id !== newChat.id).map((c) => ({ ...c, selected: false })),
+                ],
+                { revalidate: false },
+            );
+        }
+    }, [createChat, mutateChatHistory, searchHistoryQuery, setChatHistorySearchQuery, setSelectedChatId]);
 
     const searchChatHistory = useCallback(
         (nextSearchQuery: string) => {
@@ -173,11 +195,38 @@ export function useChatPageState() {
     const deleteChatById = useCallback(
         async (chat: Chat) => {
             if (sessions.isDeleting(chat.id)) return;
+            const isDeletingSelected = selectedChat?.id === chat.id;
+            const currentIndex = chatHistory.findIndex((c) => c.id === chat.id);
+            const remainingChats = chatHistory.filter((c) => c.id !== chat.id);
+            const nextChat =
+                remainingChats.length > 0
+                    ? remainingChats[Math.min(Math.max(0, currentIndex), remainingChats.length - 1)]
+                    : null;
+
+            if (isDeletingSelected) {
+                setSelectedChatId(nextChat?.id ?? null);
+            }
+            void mutateChatHistory(
+                remainingChats.map((c) => ({
+                    ...c,
+                    selected: isDeletingSelected
+                        ? nextChat
+                            ? c.id === nextChat.id
+                            : false
+                        : c.id === selectedChat?.id,
+                })),
+                { revalidate: false },
+            );
+
             await sessions.beginDeletion(chat.id);
             const result = await deleteChat(chat.id);
             sessions.endDeletion(chat.id, 'data' in result);
+
+            if ('data' in result && isDeletingSelected && nextChat) {
+                await selectChat(nextChat.id);
+            }
         },
-        [deleteChat, sessions],
+        [chatHistory, deleteChat, mutateChatHistory, selectChat, selectedChat?.id, sessions, setSelectedChatId],
     );
 
     const togglePinnedState = useCallback(

@@ -1,5 +1,6 @@
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { getDefaultSettingsHref } from '@/lib/settings-navigation';
 import { render, screen } from '@testing-library/react';
 import { usePathname } from 'next/navigation';
@@ -29,68 +30,40 @@ function renderSidebar(pathname: string) {
     mockedUsePathname.mockReturnValue(pathname);
 
     return render(
-        <SidebarProvider>
-            <AppSidebar />
-        </SidebarProvider>,
+        <TooltipProvider>
+            <SidebarProvider>
+                <AppSidebar />
+            </SidebarProvider>
+        </TooltipProvider>,
     );
 }
 
 describe('AppSidebar', () => {
-    it('shows the main navigation outside of settings', () => {
-        renderSidebar('/workflow');
+    it('shows the primary navigation and workspace info', () => {
+        renderSidebar('/chat');
 
         expect(screen.getByRole('link', { name: /chat/i })).toBeInTheDocument();
-        expect(screen.queryByRole('link', { name: /workflow/i })).not.toBeInTheDocument();
-        expect(screen.queryByRole('link', { name: /persona/i })).not.toBeInTheDocument();
-        expect(screen.queryByRole('link', { name: /command/i })).not.toBeInTheDocument();
-        expect(screen.queryByRole('link', { name: /mcp servers/i })).not.toBeInTheDocument();
-        expect(screen.queryByRole('link', { name: /provider/i })).not.toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /agents/i })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /tools/i })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /projects/i })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /knowledge/i })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /usage/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /settings/i })).toHaveAttribute('href', getDefaultSettingsHref());
-        expect(screen.queryByRole('link', { name: /back/i })).not.toBeInTheDocument();
+        expect(screen.getByText('Cosmo Workspace')).toBeInTheDocument();
+        expect(screen.getByText('Professional')).toBeInTheDocument();
     });
 
-    it('shows the settings submenu on the settings landing page', () => {
-        renderSidebar('/settings');
-
-        const backLink = screen.getByRole('link', { name: /back/i });
-
-        expect(backLink.closest('[data-sidebar="footer"]')).not.toBeNull();
-        expect(screen.getByRole('link', { name: /back/i })).toHaveAttribute('href', '/chat');
-        expect(screen.queryByRole('link', { name: /chat/i })).not.toBeInTheDocument();
-    });
-
-    it('keeps the nested settings menu active on child settings pages', () => {
+    it('marks settings active on settings pages', () => {
         renderSidebar('/settings/provider');
 
-        const backLink = screen.getByRole('link', { name: /back/i });
-
-        expect(backLink.closest('[data-sidebar="footer"]')).not.toBeNull();
-        expect(backLink).toHaveAttribute('href', '/chat');
-        expect(screen.getByRole('link', { name: /provider/i })).toHaveAttribute('data-active', 'true');
-        expect(screen.queryByRole('link', { name: /web search/i })).not.toBeInTheDocument();
+        const settingsLink = screen.getByRole('link', { name: /settings/i });
+        expect(settingsLink).toHaveAttribute('data-active', 'true');
     });
 
-    it('marks agents active in the settings submenu', () => {
-        renderSidebar('/settings/agents');
+    it('marks chat active when on chat page', () => {
+        renderSidebar('/chat');
 
-        expect(screen.getByRole('link', { name: /agents/i })).toHaveAttribute('data-active', 'true');
-    });
-
-    it('marks persona active in the settings submenu', () => {
-        renderSidebar('/settings/persona');
-
-        expect(screen.getByRole('link', { name: /persona/i })).toHaveAttribute('data-active', 'true');
-    });
-
-    it('marks command active in the settings submenu', () => {
-        renderSidebar('/settings/command');
-
-        expect(screen.getByRole('link', { name: /command/i })).toHaveAttribute('data-active', 'true');
-    });
-
-    it('marks mcp servers active in the settings submenu', () => {
-        renderSidebar('/settings/mcp-server');
-
-        expect(screen.getByRole('link', { name: /mcp servers/i })).toHaveAttribute('data-active', 'true');
+        const chatLink = screen.getByRole('link', { name: /chat/i });
+        expect(chatLink).toHaveAttribute('data-active', 'true');
     });
 });

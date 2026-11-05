@@ -6,7 +6,6 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type React from 'react';
 import { Toaster } from 'sonner';
 
-
 // Reuse the primary app chrome so route states like 404 stay inside the normal shell.
 export function AppShell({
     children,

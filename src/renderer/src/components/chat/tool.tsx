@@ -1,11 +1,20 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { CodeBlock, CodeBlockContent } from '@/components/ui/code-block';
+import { Button } from '@/components/ui/button';
+import { CodeBlock, CodeBlockActions, CodeBlockContent, CodeBlockCopyButton } from '@/components/ui/code-block';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import type { DynamicToolUIPart, ToolUIPart } from 'ai';
-import { CheckCircleIcon, ChevronDownIcon, CircleIcon, ClockIcon, WrenchIcon, XCircleIcon } from 'lucide-react';
+import {
+    CheckCircleIcon,
+    ChevronDownIcon,
+    CircleIcon,
+    ClockIcon,
+    Maximize2,
+    WrenchIcon,
+    XCircleIcon,
+} from 'lucide-react';
 import type { ComponentProps, ReactNode } from 'react';
 import { isValidElement } from 'react';
 
@@ -90,16 +99,33 @@ export type ToolInputProps = ComponentProps<'div'> & {
     input: ToolPart['input'];
 };
 
-export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
-    <div className={cn('space-y-2 overflow-hidden break-words', className)} {...props}>
-        <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Parameters</h4>
-        <div className="rounded-md bg-muted/50">
-            <CodeBlock>
-                <CodeBlockContent>{JSON.stringify(input, null, 2)}</CodeBlockContent>
-            </CodeBlock>
+export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
+    const jsonStr = typeof input === 'string' ? input : JSON.stringify(input, null, 2);
+
+    return (
+        <div className={cn('space-y-2 overflow-hidden break-words', className)} {...props}>
+            <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Parameters</h4>
+            <div className="rounded-xl border bg-muted/30 overflow-hidden relative">
+                <CodeBlock>
+                    <CodeBlockActions className="opacity-100 top-2 end-2">
+                        <CodeBlockCopyButton value={jsonStr} />
+                        <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label="Maximize"
+                            className="hover:bg-foreground/5 dark:hover:bg-foreground/10"
+                        >
+                            <Maximize2 className="size-3.5 text-muted-foreground" />
+                        </Button>
+                    </CodeBlockActions>
+                    <CodeBlockContent lineNumbers wrap className="text-xs font-mono py-3">
+                        {jsonStr}
+                    </CodeBlockContent>
+                </CodeBlock>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 export type ToolOutputProps = ComponentProps<'div'> & {
     output: ToolPart['output'];
@@ -111,21 +137,12 @@ export const ToolOutput = ({ className, output, errorText, ...props }: ToolOutpu
         return null;
     }
 
-    let Output = <div>{output as ReactNode}</div>;
-
-    if (typeof output === 'object' && !isValidElement(output)) {
-        Output = (
-            <CodeBlock>
-                <CodeBlockContent>{JSON.stringify(output, null, 2)}</CodeBlockContent>
-            </CodeBlock>
-        );
-    } else if (typeof output === 'string') {
-        Output = (
-            <CodeBlock>
-                <CodeBlockContent>{output}</CodeBlockContent>
-            </CodeBlock>
-        );
-    }
+    const outputStr =
+        typeof output === 'object' && !isValidElement(output)
+            ? JSON.stringify(output, null, 2)
+            : typeof output === 'string'
+              ? output
+              : '';
 
     return (
         <div className={cn('space-y-2', className)} {...props}>
@@ -134,12 +151,33 @@ export const ToolOutput = ({ className, output, errorText, ...props }: ToolOutpu
             </h4>
             <div
                 className={cn(
-                    'overflow-hidden break-words rounded-md text-xs [&_table]:w-full [&_pre]:whitespace-pre-wrap [&_pre]:break-words',
-                    errorText ? 'bg-destructive/10 text-destructive' : 'bg-muted/50 text-foreground',
+                    'overflow-hidden break-words rounded-xl border text-xs',
+                    errorText
+                        ? 'bg-destructive/10 text-destructive border-destructive/20'
+                        : 'bg-muted/30 text-foreground',
                 )}
             >
-                {errorText && <div>{errorText}</div>}
-                {Output}
+                {errorText && <div className="p-3 text-destructive font-mono text-xs">{errorText}</div>}
+                {outputStr ? (
+                    <CodeBlock>
+                        <CodeBlockActions className="opacity-100 top-2 end-2">
+                            <CodeBlockCopyButton value={outputStr} />
+                            <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                aria-label="Maximize"
+                                className="hover:bg-foreground/5 dark:hover:bg-foreground/10"
+                            >
+                                <Maximize2 className="size-3.5 text-muted-foreground" />
+                            </Button>
+                        </CodeBlockActions>
+                        <CodeBlockContent lineNumbers wrap className="text-xs font-mono py-3">
+                            {outputStr}
+                        </CodeBlockContent>
+                    </CodeBlock>
+                ) : output ? (
+                    <div className="p-3">{String(output)}</div>
+                ) : null}
             </div>
         </div>
     );

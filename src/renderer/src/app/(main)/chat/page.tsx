@@ -6,8 +6,8 @@ import { PageEmptyState } from '@/components/page-empty-state';
 import { Button } from '@/components/ui/button';
 import { useChatPageState } from '@/features/chat/use-chat-page-state';
 import { formatHistoryTimestamp } from '@/lib/utils';
-import { MessageCirclePlus, Pin } from 'lucide-react';
-import { JSX } from 'react';
+import { MessageCirclePlus, Pin, Plus } from 'lucide-react';
+import { JSX, useCallback } from 'react';
 
 function MainChatPage(): JSX.Element {
     const {
@@ -40,15 +40,32 @@ function MainChatPage(): JSX.Element {
         changeWebSearchOption,
     } = useChatPageState();
 
+    const getItemGroup = useCallback((chat: (typeof chatHistory)[number]) => {
+        const timestamp = chat.lastMessageAt || chat.createdAt;
+        if (!timestamp) return 'Earlier';
+        const date = new Date(timestamp);
+        const now = new Date();
+        if (date.toDateString() === now.toDateString()) {
+            return 'Today';
+        }
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday';
+        }
+        return 'Earlier';
+    }, []);
+
     return (
         <div className="flex-1 min-h-0 flex rounded-b-lg border-t-0 overflow-hidden bg-background">
             <HistoryPanel
                 action={{
                     ariaLabel: 'New Chat',
-                    icon: MessageCirclePlus,
+                    icon: Plus,
                     label: 'New Chat',
                     onClick: createNewChat,
                 }}
+                getItemGroup={getItemGroup}
                 getItemKey={(chat) => chat.id}
                 items={chatHistory}
                 onSearch={searchChatHistory}
@@ -72,7 +89,7 @@ function MainChatPage(): JSX.Element {
                     title: <h3 className="max-w-[160px] truncate font-medium lg:max-w-[180px]">{chat.title}</h3>,
                 })}
                 searchAriaLabel="Search chats"
-                searchPlaceholder="Search history..."
+                searchPlaceholder="Search conversations..."
                 title="Chat"
             />
             <div className="flex-1 min-h-0 flex flex-col overflow-hidden">

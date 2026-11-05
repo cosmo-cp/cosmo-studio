@@ -24,7 +24,7 @@ export class ChatRepository {
             .select()
             .from(chat)
             .where(and(...conditions))
-            .orderBy(desc(chat.pinned), desc(chat.pinnedAt), desc(chat.lastMessageAt));
+            .orderBy(desc(chat.pinned), desc(chat.pinnedAt), desc(chat.lastMessageAt), desc(chat.createdAt));
     }
 
     public async getById(id: string): Promise<ChatWithMessages | undefined> {
@@ -45,16 +45,21 @@ export class ChatRepository {
         return toUiMessages(messages);
     }
 
-    public async create(newChat: NewChat): Promise<void> {
-        await this.db.transaction(async (tx) => {
+    public async create(newChat: NewChat): Promise<Chat> {
+        return await this.db.transaction(async (tx) => {
             // 1. Set all rows to unselected
             await tx.update(chat).set({ selected: false });
 
-            await tx.insert(chat).values({
-                createdAt: new Date(),
-                title: newChat.title,
-                selected: true,
-            });
+            const [createdChat] = await tx
+                .insert(chat)
+                .values({
+                    ...newChat,
+                    createdAt: new Date(),
+                    title: newChat.title,
+                    selected: true,
+                })
+                .returning();
+            return createdChat;
         });
     }
 
@@ -64,7 +69,24 @@ export class ChatRepository {
     }
 
     public async delete(id: string): Promise<void> {
-        await this.db.delete(chat).where(eq(chat.id, id));
+        await this.db.transaction(async (tx) => {
+            const [chatToDelete] = await tx
+                .select({ selected: chat.selected })
+                .from(chat)
+                .where(eq(chat.id, id))
+                .limit(1);
+            await tx.delete(chat).where(eq(chat.id, id));
+            if (chatToDelete?.selected) {
+                const remaining = await tx
+                    .select({ id: chat.id })
+                    .from(chat)
+                    .orderBy(desc(chat.pinned), desc(chat.pinnedAt), desc(chat.lastMessageAt), desc(chat.createdAt))
+                    .limit(1);
+                if (remaining.length > 0) {
+                    await tx.update(chat).set({ selected: true }).where(eq(chat.id, remaining[0].id));
+                }
+            }
+        });
     }
 
     public async updatePinnedStatus(id: string, pinned: boolean): Promise<void> {
