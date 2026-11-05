@@ -21,7 +21,7 @@ import {
     isSettingsItemActive,
     isSettingsPath,
 } from '@/lib/settings-navigation';
-import { ChevronLeft, ChevronRight, MessageCircle, SettingsIcon, Workflow } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MessageCircle, SettingsIcon, SquareCheck, Workflow } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -31,6 +31,13 @@ const menuItems = [
         href: '/chat',
         pathname: '/chat',
         icon: MessageCircle,
+        hidden: false,
+    },
+    {
+        title: 'Tasks',
+        href: '/tasks',
+        pathname: '/tasks',
+        icon: SquareCheck,
         hidden: false,
     },
     {

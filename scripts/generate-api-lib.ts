@@ -82,6 +82,14 @@ const PRELOAD_TYPE_IMPORTS = [
     { name: 'AcpAgentTestResult', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'WorkflowRunStreamStartArgs', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'WorkflowRunStreamAbortArgs', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'Task', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'TaskWithLinks', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'TaskListFilter', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'TaskCreateInput', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'TaskUpdateInput', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'TaskComment', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'TaskCommentCreateInput', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'TaskCommentInput', source: PRELOAD_CORE_DTO_IMPORT },
     {
         name: 'WebSearchProviderTypeEnum',
         source: PRELOAD_WEB_SEARCH_SCHEMA_IMPORT,
@@ -137,7 +145,7 @@ function getMethodSignature(
         const typedParams = paramParts.join(', ');
         const argNames = paramParts
             .map((param) => {
-                return param.split(':')[0].trim();
+                return param.split(':')[0].trim().replace(/\?$/, '');
             })
             .filter(Boolean)
             .join(', ');

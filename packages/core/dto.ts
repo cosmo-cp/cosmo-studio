@@ -259,3 +259,4 @@ export interface TaskListFilter {
 export type TaskComment = InferSelectModel<typeof taskComment>;
 export type TaskCommentInsert = InferInsertModel<typeof taskComment>;
 export type TaskCommentCreateInput = Omit<TaskCommentInsert, 'id' | 'createdAt'>;
+export type TaskCommentInput = Omit<TaskCommentCreateInput, 'taskId'>;

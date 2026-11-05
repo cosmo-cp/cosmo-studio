@@ -11,6 +11,7 @@ import { MessageController } from './controllers/MessageController';
 import { ModelProviderController } from './controllers/ModelProviderController';
 import { PersonaController } from './controllers/PersonaController';
 import { StreamingChatController } from './controllers/StreamingChatController';
+import { TaskController } from './controllers/TaskController';
 import { WebSearchController } from './controllers/WebSearchController';
 import { WorkflowController } from './controllers/WorkflowController';
 import { IpcHandlerRegistry } from './ipc';
@@ -50,5 +51,6 @@ container.bind<Controller>(TYPES.Controller).to(McpServerController).inSingleton
 container.bind<Controller>(TYPES.Controller).to(WebSearchController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(WorkflowController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(AcpAgentController).inSingletonScope();
+container.bind<Controller>(TYPES.Controller).to(TaskController).inSingletonScope();
 
 export default container;

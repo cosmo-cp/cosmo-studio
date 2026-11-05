@@ -5,6 +5,7 @@ import { McpServerController } from '../controllers/McpServerController';
 import { MessageController } from '../controllers/MessageController';
 import { ModelProviderController } from '../controllers/ModelProviderController';
 import { PersonaController } from '../controllers/PersonaController';
+import { TaskController } from '../controllers/TaskController';
 import { WebSearchController } from '../controllers/WebSearchController';
 import { WorkflowController } from '../controllers/WorkflowController';
 
@@ -18,4 +19,5 @@ export const rpcControllerConstructors = [
     WebSearchController,
     WorkflowController,
     AcpAgentController,
+    TaskController,
 ] as const;

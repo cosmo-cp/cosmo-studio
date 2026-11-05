@@ -48,6 +48,7 @@ describe('preload index', () => {
             'webSearch',
             'workflow',
             'acpAgent',
+            'task',
             'streaming',
         ]);
         expect(rpcApi).not.toHaveProperty('ipcRenderer');

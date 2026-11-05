@@ -121,6 +121,7 @@ export const ProviderCatalog: ProviderCatalogEntry[] = [
         description: 'State-of-the-art embedding and reranking models by Voyage AI.',
         modelsSource: 'voyage',
         modelsDevKey: 'voyage',
+        hidden: true,
     },
     {
         type: ModelProviderTypeEnum.BASETEN,
