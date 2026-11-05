@@ -88,7 +88,11 @@ export class ChatController implements Controller {
     // Normalize cleared selections before either runtime persists the agent identifier.
     @IpcHandler('updateSelectedAgentForChat', z.tuple([z.string().min(1), agentIdentifierSchema]))
     public async updateSelectedAgentForChat(id: string, agentIdentifier: AgentIdentifier): Promise<void> {
-        const parsedAgentIdentifier = agentIdentifierSchema.parse(agentIdentifier);
+        const parsed = agentIdentifierSchema.parse(agentIdentifier);
+        const parsedAgentIdentifier: AgentIdentifier = {
+            selectedAgentId: parsed.selectedAgentId ?? null,
+            selectedRuntime: parsed.selectedRuntime ?? 'agent',
+        };
         return this.chatService.updateSelectedAgentForChat(id, parsedAgentIdentifier);
     }
 

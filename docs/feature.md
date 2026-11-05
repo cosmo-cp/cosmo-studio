@@ -27,7 +27,7 @@ Use this file as the quick feature index. For implementation details, follow the
 
 ## Model Providers And Models
 
-- Provider management for OpenAI, Anthropic, Google, xAI, Groq, Mistral, DeepSeek, Ollama, Moonshot, Perplexity, Cohere, LM Studio, HuggingFace, Together AI, Fireworks AI, Voyage AI, and custom OpenAI-compatible endpoints.
+- Provider management for OpenAI, Anthropic, Google, xAI, Groq, Mistral, DeepSeek, Ollama, Moonshot, Perplexity, Cohere, LM Studio, HuggingFace, Together AI, Fireworks AI, Voyage AI, Baseten, and custom OpenAI-compatible endpoints.
     - Catalog: `packages/core/providerCatalog.ts`
     - Service: `packages/core/services/ModelProviderService.ts`
     - UI/orchestration: `src/renderer/src/components/provider-management.tsx`, `src/renderer/src/features/providers/use-provider-page-state.ts`
