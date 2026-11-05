@@ -312,12 +312,15 @@ export class TaskExecutionService {
             this.activeAbortControllers.delete(currentTask.id);
             lockReleased = true;
 
-            // Sequential chain handoff if task succeeded
-            if (verdictStatus === 'done' && currentTask.nextTaskId) {
-                const nextTask = await this.taskService.getById(currentTask.nextTaskId);
-                if (nextTask && nextTask.status === 'not_started') {
-                    logger.info(`Advancing pipeline: triggering downstream task ${nextTask.id}`);
-                    await this.execute(nextTask.id);
+            // Sequential chain handoff if task succeeded - refresh task record to capture any links added mid-flight
+            if (verdictStatus === 'done') {
+                const latestTask = await this.taskService.getById(currentTask.id);
+                if (latestTask?.nextTaskId) {
+                    const nextTask = await this.taskService.getById(latestTask.nextTaskId);
+                    if (nextTask && nextTask.status === 'not_started') {
+                        logger.info(`Advancing pipeline: triggering downstream task ${nextTask.id}`);
+                        await this.execute(nextTask.id);
+                    }
                 }
             }
         } catch (error) {

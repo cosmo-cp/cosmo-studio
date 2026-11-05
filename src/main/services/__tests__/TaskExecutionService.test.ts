@@ -517,6 +517,56 @@ describe('TaskExecutionService', () => {
             // Verify task B was triggered
             expect(mockTaskService.updateStatus).toHaveBeenCalledWith('task-chain-B', 'in_progress');
         });
+
+        it('advances sequential chain when follow-up task is linked mid-flight while task is in_progress', async () => {
+            const taskA: Task = {
+                ...sampleTask,
+                id: 'task-midflight-A',
+                workspacePath: tempWorkspaceDir,
+                nextTaskId: null, // Initially not linked
+            };
+            const taskB: Task = {
+                ...sampleTask,
+                id: 'task-midflight-B',
+                workspacePath: tempWorkspaceDir,
+                nextTaskId: null,
+                status: 'not_started',
+            };
+
+            let queryCount = 0;
+            mockTaskService.getById.mockImplementation(async (id: string) => {
+                if (id === 'task-midflight-A') {
+                    queryCount++;
+                    // First call is on execute(); subsequent call at completion reflects mid-flight link
+                    if (queryCount > 1) {
+                        return { ...taskA, nextTaskId: 'task-midflight-B' };
+                    }
+                    return taskA;
+                }
+                if (id === 'task-midflight-B') return taskB;
+                return undefined;
+            });
+            mockTaskService.updateStatus.mockImplementation(async (id, status) => {
+                if (id === 'task-midflight-A') return { ...taskA, status: status };
+                if (id === 'task-midflight-B') return { ...taskB, status: status };
+                return sampleTask;
+            });
+            mockTaskService.getWithLinks.mockResolvedValue({
+                ...taskA,
+                nextTask: null,
+                previousTask: null,
+            });
+
+            ai.generateText.mockResolvedValue({ text: 'Success' });
+
+            await service.execute(taskA.id);
+            await new Promise((resolve) => {
+                return setTimeout(resolve, 100);
+            });
+
+            expect(mockTaskService.updateStatus).toHaveBeenCalledWith('task-midflight-A', 'done');
+            expect(mockTaskService.updateStatus).toHaveBeenCalledWith('task-midflight-B', 'in_progress');
+        });
     });
 
     describe('cancel', () => {

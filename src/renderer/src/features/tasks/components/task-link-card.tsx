@@ -81,7 +81,7 @@ export function TaskLinkCard({
                                 size="sm"
                                 variant="ghost"
                                 onClick={onUnlinkTask}
-                                disabled={isUnlinking || task.status === 'in_progress'}
+                                disabled={isUnlinking}
                                 className="text-xs h-8 text-destructive hover:bg-destructive/10"
                                 title="Unlink follow-up task"
                             >
@@ -97,7 +97,7 @@ export function TaskLinkCard({
                         size="sm"
                         variant="outline"
                         onClick={onOpenLinkDialog}
-                        disabled={task.status === 'closed' || task.status === 'in_progress'}
+                        disabled={task.status === 'closed'}
                         className="gap-1.5 text-xs h-8"
                     >
                         <Plus className="size-3.5" />

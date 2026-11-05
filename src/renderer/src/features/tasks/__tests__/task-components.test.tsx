@@ -297,6 +297,39 @@ describe('TaskLinkCard', () => {
         fireEvent.click(screen.getByRole('button', { name: /link next task/i }));
         expect(onOpenLinkDialog).toHaveBeenCalled();
     });
+
+    it('allows linking and unlinking even when task is in_progress', () => {
+        const onOpenLinkDialog = vi.fn();
+        const onUnlinkTask = vi.fn();
+
+        const { rerender } = render(
+            <TaskLinkCard
+                task={{ ...mockTaskB, nextTask: null, previousTask: null }}
+                onSelectTask={vi.fn()}
+                onOpenLinkDialog={onOpenLinkDialog}
+                onUnlinkTask={onUnlinkTask}
+            />,
+        );
+
+        const linkBtn = screen.getByRole('button', { name: /link next task/i });
+        expect(linkBtn).not.toBeDisabled();
+        fireEvent.click(linkBtn);
+        expect(onOpenLinkDialog).toHaveBeenCalled();
+
+        rerender(
+            <TaskLinkCard
+                task={{ ...mockTaskB, nextTask: mockTaskA, previousTask: null }}
+                onSelectTask={vi.fn()}
+                onOpenLinkDialog={onOpenLinkDialog}
+                onUnlinkTask={onUnlinkTask}
+            />,
+        );
+
+        const unlinkBtn = screen.getByTitle('Unlink follow-up task');
+        expect(unlinkBtn).not.toBeDisabled();
+        fireEvent.click(unlinkBtn);
+        expect(onUnlinkTask).toHaveBeenCalled();
+    });
 });
 
 describe('TaskComments', () => {
