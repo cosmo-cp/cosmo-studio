@@ -162,18 +162,19 @@ export function CreateTaskDialog({
                                     allowNone={true}
                                 />
                                 <div className="relative">
-                                    <FolderGit2 className="absolute left-2.5 top-2.5 size-4 text-muted-foreground pointer-events-none" />
-                                    <Input
-                                        id="task-workspace"
-                                        placeholder="/Users/username/projects/my-app"
-                                        value={workspacePath}
+                                <FolderGit2 className="absolute left-2.5 top-2.5 size-4 text-muted-foreground pointer-events-none" />
+                                <Input
+                                    id="task-workspace"
+                                    placeholder="/Users/username/projects/my-app"
+                                    value={workspacePath}
                                         onChange={handleWorkspacePathChange}
-                                        required
-                                        className="text-xs h-9 pl-8 bg-background font-mono"
-                                        data-testid="task-workspace-input"
-                                    />
-                                </div>
+                                    onChange={(e) => setWorkspacePath(e.target.value)}
+                                    required
+                                    className="text-xs h-9 pl-8 bg-background font-mono"
+                                    data-testid="task-workspace-input"
+                                />
                             </div>
+                        </div>
                         </div>
 
                         {/* Runtime Mode Selector */}

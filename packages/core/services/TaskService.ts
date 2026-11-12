@@ -100,8 +100,12 @@ export class TaskService {
             throw new Error('Cannot change workspace path while task is actively running. Cancel the task first.');
         }
 
+        const sanitized: TaskUpdateInput = { ...updates };
         if (updates.title !== undefined) {
             sanitized.title = normalizeRequired(updates.title, 'Title');
+        }
+        if (updates.workspacePath !== undefined) {
+            sanitized.workspacePath = normalizeRequired(updates.workspacePath, 'Workspace path');
         }
 
         return this.taskRepository.update(id, sanitized);
