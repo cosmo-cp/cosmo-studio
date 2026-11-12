@@ -9,6 +9,7 @@ import {
     useUpdateSelectedAgentMutation,
     useUpdateSelectedModelMutation,
     useUpdateSelectedPersonaMutation,
+    useUpdateSelectedWorkspaceMutation,
 } from '@/features/chat/chat-api';
 import { useChatSessions } from '@/features/chat/chat-session-provider';
 import { useAppStore } from '@/lib/store/hooks';
@@ -92,6 +93,7 @@ export function useChatPageState() {
     const [updateSelectedModel] = useUpdateSelectedModelMutation();
     const [updateSelectedAgent] = useUpdateSelectedAgentMutation();
     const [updateSelectedPersona] = useUpdateSelectedPersonaMutation();
+    const [updateSelectedWorkspace] = useUpdateSelectedWorkspaceMutation();
 
     const syncChatQuery = useCallback(
         (chatId: string, updates: Partial<Chat>) => {
@@ -310,6 +312,28 @@ export function useChatPageState() {
         [selectedChat, setSelectedWebSearchOption],
     );
 
+    const changeSelectedWorkspace = useCallback(
+        (workspaceId: string | null) => {
+            if (!selectedChat) {
+                return;
+            }
+
+            syncChatQuery(selectedChat.id, {
+                workspaceId,
+            });
+
+            void updateSelectedWorkspace({
+                chatId: selectedChat.id,
+                workspaceId,
+            });
+        },
+        [selectedChat, syncChatQuery, updateSelectedWorkspace],
+    );
+
+    const selectedWorkspaceId = selectedChat?.workspaceId ?? null;
+    const isChatActive = selectedChat ? sessions.isRunning(selectedChat.id) : false;
+    const isWorkspaceLocked = isChatActive || status === 'submitted' || status === 'streaming';
+
     const selectedWebSearchOptionId = selectedChat
         ? (selectedWebSearchOptionByChatId[selectedChat.id] ?? WEB_SEARCH_NONE_OPTION_ID)
         : WEB_SEARCH_NONE_OPTION_ID;
@@ -325,6 +349,8 @@ export function useChatPageState() {
         currentMatchIndex,
         totalMatches,
         selectedWebSearchOptionId,
+        selectedWorkspaceId,
+        isWorkspaceLocked,
         addToolApprovalResponse,
         sendMessage,
         stop,
@@ -342,5 +368,6 @@ export function useChatPageState() {
         changeSelectedAgent,
         changeSelectedPersona,
         changeWebSearchOption,
+        changeSelectedWorkspace,
     };
 }

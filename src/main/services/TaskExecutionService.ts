@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import { generateText, stepCountIs, tool, type ToolSet } from 'ai';
 import type { Task } from 'core/dto';
@@ -7,54 +7,25 @@ import { McpClientManager } from 'core/services/McpClientManager';
 import { ModelProviderService } from 'core/services/ModelProviderService';
 import { TaskCommentService } from 'core/services/TaskCommentService';
 import { TaskService } from 'core/services/TaskService';
+import { WorkspaceService } from 'core/services/WorkspaceService';
 import { CORETYPES } from 'core/types/types';
+import { isProtectedRoot } from 'core/utils/pathSecurity';
 import log from 'electron-log/main';
 import { inject, injectable } from 'inversify';
 import { z } from 'zod';
 import { TYPES } from '../types';
 import { AcpAgentRuntimeService } from './AcpAgentRuntimeService';
+import { WorkspaceBusyError, WorkspaceExecutionLockService } from './WorkspaceExecutionLockService';
 
 const logger = log.scope('tasks');
 
 const MAX_UPSTREAM_CONTEXT_CHARS = 8000; // ~2,000 tokens per Section 4.9
 
-// Check if workspace target points to forbidden OS root or credential directories.
-const isProtectedRoot = (canonicalPath: string): boolean => {
-    // Forbid root directory directly
-    if (canonicalPath === path.resolve('/')) {
-        return true;
-    }
-
-    const homedir = os.homedir();
-    const forbiddenDirs = ['/etc', '/System', '/Windows', path.join(homedir, '.ssh'), path.join(homedir, '.aws')];
-
-    for (const raw of forbiddenDirs) {
-        if (!fs.existsSync(raw)) {
-            continue;
-        }
-        let resolved = raw;
-        try {
-            resolved = fs.realpathSync(raw);
-        } catch {
-            resolved = path.resolve(raw);
-        }
-        if (canonicalPath === resolved) {
-            return true;
-        }
-        const prefix = resolved.endsWith(path.sep) ? resolved : `${resolved}${path.sep}`;
-        if (canonicalPath.startsWith(prefix)) {
-            return true;
-        }
-    }
-
-    return false;
-};
-
 @injectable()
 export class TaskExecutionService {
-    // Canonical workspace path -> active taskId
-    private readonly activeWorkspaces = new Map<string, string>();
-    private readonly activeAbortControllers = new Map<string, AbortController>();
+    // Canonical workspace path -> active { taskId, executionId }
+    private readonly activeWorkspaces = new Map<string, { taskId: string; executionId: string }>();
+    private readonly activeAbortControllers = new Map<string, { controller: AbortController; executionId: string }>();
 
     constructor(
         @inject(CORETYPES.TaskService)
@@ -67,10 +38,19 @@ export class TaskExecutionService {
         private readonly mcpClientManager: McpClientManager,
         @inject(TYPES.AcpAgentRuntimeService)
         private readonly acpAgentRuntimeService: AcpAgentRuntimeService,
+        @inject(TYPES.WorkspaceExecutionLockService)
+        private readonly workspaceLockService: WorkspaceExecutionLockService,
+        @inject(CORETYPES.WorkspaceService)
+        private readonly workspaceService: WorkspaceService,
     ) {}
 
     // Verify workspace existence, prevent forbidden root access, and acquire mutual exclusion.
-    public validateAndLockWorkspace(workspacePath: string, taskId: string): string {
+    public validateAndLockWorkspace(
+        workspacePath: string,
+        taskId: string,
+        executionId: string = crypto.randomUUID(),
+        abortSignal?: AbortSignal,
+    ): string {
         if (!fs.existsSync(workspacePath)) {
             throw new Error(`Workspace path does not exist: ${workspacePath}`);
         }
@@ -83,18 +63,39 @@ export class TaskExecutionService {
             );
         }
 
-        if (this.activeWorkspaces.has(canonicalPath)) {
-            const activeTaskId = this.activeWorkspaces.get(canonicalPath);
-            logger.warn('Workspace collision rejected:', {
-                taskId: taskId,
-                activeTaskId: activeTaskId,
-                canonicalPath: canonicalPath,
-            });
-            throw new Error(`Workspace is currently busy running Task ${activeTaskId}.`);
+        try {
+            this.workspaceLockService.acquireLease(canonicalPath, 'task', taskId, abortSignal);
+        } catch (err) {
+            if (err instanceof WorkspaceBusyError) {
+                logger.warn('Workspace collision rejected:', {
+                    taskId: taskId,
+                    activeOwner: err.ownerId,
+                    activeType: err.ownerType,
+                    canonicalPath: canonicalPath,
+                });
+                throw new Error(
+                    `Workspace is currently busy running ${err.ownerType === 'task' ? 'Task ' : 'Chat '}${err.ownerId}.`,
+                );
+            }
+            throw err;
         }
 
-        this.activeWorkspaces.set(canonicalPath, taskId);
+        this.activeWorkspaces.set(canonicalPath, { taskId: taskId, executionId: executionId });
         return canonicalPath;
+    }
+
+    // Safely release workspace lock and abort controller only if executionId matches.
+    private releaseLock(canonicalPath: string, taskId: string, executionId: string): void {
+        const activeLock = this.activeWorkspaces.get(canonicalPath);
+        if (activeLock && activeLock.executionId === executionId) {
+            this.workspaceLockService.releaseLease(canonicalPath, taskId);
+            this.activeWorkspaces.delete(canonicalPath);
+        }
+
+        const activeAbort = this.activeAbortControllers.get(taskId);
+        if (activeAbort && activeAbort.executionId === executionId) {
+            this.activeAbortControllers.delete(taskId);
+        }
     }
 
     // Inspect if a workspace directory is currently locked by a running task.
@@ -104,7 +105,7 @@ export class TaskExecutionService {
                 return false;
             }
             const canonicalPath = fs.realpathSync(path.resolve(workspacePath));
-            return this.activeWorkspaces.has(canonicalPath);
+            return this.workspaceLockService.isWorkspaceBusy(canonicalPath);
         } catch {
             return false;
         }
@@ -117,14 +118,29 @@ export class TaskExecutionService {
             throw new Error(`Task ${taskId} does not exist.`);
         }
 
-        const canonicalPath = this.validateAndLockWorkspace(targetTask.workspacePath, taskId);
+        let targetWorkspacePath = targetTask.workspacePath;
+        if (targetTask.workspaceId) {
+            const ws = await this.workspaceService.get(targetTask.workspaceId);
+            if (ws) {
+                targetWorkspacePath = ws.canonicalPath;
+            }
+        }
+
+        const executionId = crypto.randomUUID();
+        const abortController = new AbortController();
+        const canonicalPath = this.validateAndLockWorkspace(
+            targetWorkspacePath,
+            taskId,
+            executionId,
+            abortController.signal,
+        );
         const inProgressTask = await this.taskService.updateStatus(taskId, 'in_progress');
 
-        const abortController = new AbortController();
-        this.activeAbortControllers.set(taskId, abortController);
+        this.activeAbortControllers.set(taskId, { controller: abortController, executionId: executionId });
 
         logger.info('Starting task execution:', {
             taskId: targetTask.id,
+            executionId: executionId,
             workspacePath: canonicalPath,
             runtime: targetTask.runtime,
             provider: targetTask.provider,
@@ -132,22 +148,23 @@ export class TaskExecutionService {
         });
 
         // Fire asynchronous background execution without blocking the IPC response
-        void this.runTask(targetTask, canonicalPath, abortController.signal);
+        void this.runTask(targetTask, canonicalPath, executionId, abortController.signal);
 
         return inProgressTask;
     }
 
     // Cancel an actively running task execution, aborting the process and releasing the workspace.
     public async cancel(taskId: string): Promise<void> {
-        const controller = this.activeAbortControllers.get(taskId);
-        if (controller) {
-            controller.abort();
+        const active = this.activeAbortControllers.get(taskId);
+        if (active) {
+            active.controller.abort();
             this.activeAbortControllers.delete(taskId);
         }
 
-        // Immediately release workspace lock associated with this task
-        for (const [workspacePath, activeTaskId] of this.activeWorkspaces.entries()) {
-            if (activeTaskId === taskId) {
+        // Immediately release workspace lock associated with this task execution
+        for (const [workspacePath, lockInfo] of this.activeWorkspaces.entries()) {
+            if (lockInfo.taskId === taskId && (!active || lockInfo.executionId === active.executionId)) {
+                this.workspaceLockService.releaseLease(workspacePath, taskId);
                 this.activeWorkspaces.delete(workspacePath);
                 break;
             }
@@ -219,7 +236,12 @@ export class TaskExecutionService {
     }
 
     // Background execution worker executing tools, updating database, and triggering downstream tasks.
-    private async runTask(currentTask: Task, canonicalPath: string, signal: AbortSignal): Promise<void> {
+    private async runTask(
+        currentTask: Task,
+        canonicalPath: string,
+        executionId: string,
+        signal: AbortSignal,
+    ): Promise<void> {
         let taskVerdict: { summary: string; status: 'done' | 'failed' } | null = null;
         let lockReleased = false;
 
@@ -247,7 +269,7 @@ export class TaskExecutionService {
                 }
                 const provider = await this.acpAgentRuntimeService.createProvider(
                     currentTask.agentId,
-                    currentTask.workspacePath,
+                    canonicalPath,
                     currentTask.id,
                 );
 
@@ -308,8 +330,7 @@ export class TaskExecutionService {
             await this.taskService.updateStatus(currentTask.id, verdictStatus);
 
             // Workspace lock release MUST happen before downstream handoff
-            this.activeWorkspaces.delete(canonicalPath);
-            this.activeAbortControllers.delete(currentTask.id);
+            this.releaseLock(canonicalPath, currentTask.id, executionId);
             lockReleased = true;
 
             // Sequential chain handoff if task succeeded - refresh task record to capture any links added mid-flight
@@ -319,7 +340,26 @@ export class TaskExecutionService {
                     const nextTask = await this.taskService.getById(latestTask.nextTaskId);
                     if (nextTask && nextTask.status === 'not_started') {
                         logger.info(`Advancing pipeline: triggering downstream task ${nextTask.id}`);
-                        await this.execute(nextTask.id);
+                        try {
+                            await this.execute(nextTask.id);
+                        } catch (downstreamError) {
+                            logger.error(
+                                `Failed to trigger downstream task ${nextTask.id} from task ${currentTask.id}:`,
+                                downstreamError,
+                            );
+                            const downstreamMessage =
+                                downstreamError instanceof Error ? downstreamError.message : String(downstreamError);
+                            await this.taskCommentService.createComment({
+                                taskId: currentTask.id,
+                                authorType: 'system',
+                                authorLabel: 'Cosmo System',
+                                content: `Pipeline handoff to downstream task "${nextTask.title}" failed: ${downstreamMessage}`,
+                                metadata: {
+                                    downstreamTaskId: nextTask.id,
+                                    error: downstreamMessage,
+                                },
+                            });
+                        }
                     }
                 }
             }
@@ -346,8 +386,7 @@ export class TaskExecutionService {
             }
         } finally {
             if (!lockReleased) {
-                this.activeWorkspaces.delete(canonicalPath);
-                this.activeAbortControllers.delete(currentTask.id);
+                this.releaseLock(canonicalPath, currentTask.id, executionId);
             }
         }
     }

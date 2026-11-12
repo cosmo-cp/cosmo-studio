@@ -12,6 +12,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { WorkspaceSelector } from '@/components/workspace-selector';
+import { useGetWorkspacesQuery } from '@/features/workspaces/workspaces-api';
 import type { AcpAgentView, ProviderWithModels, TaskCreateInput } from 'core/dto';
 import { Bot, Cpu, FolderGit2 } from 'lucide-react';
 import React, { useState } from 'react';
@@ -33,12 +35,14 @@ export function CreateTaskDialog({
     providers,
     agents,
 }: CreateTaskDialogProps) {
+    const { data: workspaces = [] } = useGetWorkspacesQuery();
     const defaultProvider = providers[0]?.name ?? '';
-    const defaultModelId = providers[0]?.models?.[0]?.id ?? '';
+    const defaultModelId = providers[0]?.models?.[0]?.modelId ?? '';
     const defaultAgentId = agents[0]?.id ?? '';
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [workspaceId, setWorkspaceId] = useState<string | null>(null);
     const [workspacePath, setWorkspacePath] = useState('');
     const [runtime, setRuntime] = useState<'model' | 'agent'>('model');
     const [provider, setProvider] = useState<string>(defaultProvider);
@@ -47,22 +51,40 @@ export function CreateTaskDialog({
 
     const activeProvider = provider || defaultProvider;
     const selectedProviderObj = providers.find((p) => p.name === activeProvider);
-    const activeModelId = modelId || selectedProviderObj?.models?.[0]?.id || '';
+    const activeModelId = modelId || selectedProviderObj?.models?.[0]?.modelId || '';
     const activeAgentId = agentId || defaultAgentId;
 
     const handleProviderChange = (newProvider: string) => {
         setProvider(newProvider);
         const provObj = providers.find((p) => p.name === newProvider);
         if (provObj?.models && provObj.models.length > 0) {
-            setModelId(provObj.models[0].id);
+            setModelId(provObj.models[0].modelId);
         } else {
             setModelId('');
         }
     };
 
+    const handleWorkspaceSelect = (selectedId: string | null) => {
+        setWorkspaceId(selectedId);
+        if (selectedId) {
+            const ws = workspaces.find((w) => w.id === selectedId);
+            if (ws) {
+                setWorkspacePath(ws.canonicalPath);
+            }
+        }
+    };
+
+    const handleWorkspacePathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setWorkspacePath(val);
+        const matched = workspaces.find((w) => w.canonicalPath === val || w.rawPath === val);
+        setWorkspaceId(matched ? matched.id : null);
+    };
+
     const resetForm = () => {
         setTitle('');
         setDescription('');
+        setWorkspaceId(null);
         setWorkspacePath('');
         setRuntime('model');
         setProvider(defaultProvider);
@@ -87,6 +109,7 @@ export function CreateTaskDialog({
             title: title.trim(),
             description: description.trim(),
             workspacePath: workspacePath.trim(),
+            workspaceId: workspaceId || undefined,
             runtime,
             provider: runtime === 'model' ? activeProvider || null : null,
             modelId: runtime === 'model' ? activeModelId || null : null,
@@ -125,22 +148,31 @@ export function CreateTaskDialog({
                             />
                         </div>
 
-                        {/* Workspace Path */}
+                        {/* Target Workspace */}
                         <div className="space-y-1.5">
                             <label htmlFor="task-workspace" className="text-xs font-medium">
-                                Workspace Path (Absolute) <span className="text-destructive">*</span>
+                                Target Workspace <span className="text-destructive">*</span>
                             </label>
-                            <div className="relative">
-                                <FolderGit2 className="absolute left-2.5 top-2.5 size-4 text-muted-foreground pointer-events-none" />
-                                <Input
-                                    id="task-workspace"
-                                    placeholder="/Users/username/projects/my-app"
-                                    value={workspacePath}
-                                    onChange={(e) => setWorkspacePath(e.target.value)}
-                                    required
-                                    className="text-xs h-9 pl-8 bg-background font-mono"
-                                    data-testid="task-workspace-input"
+                            <div className="flex flex-col gap-2">
+                                <WorkspaceSelector
+                                    value={workspaceId}
+                                    onChange={handleWorkspaceSelect}
+                                    className="w-full justify-between h-9"
+                                    placeholder="Select registered workspace..."
+                                    allowNone={true}
                                 />
+                                <div className="relative">
+                                    <FolderGit2 className="absolute left-2.5 top-2.5 size-4 text-muted-foreground pointer-events-none" />
+                                    <Input
+                                        id="task-workspace"
+                                        placeholder="/Users/username/projects/my-app"
+                                        value={workspacePath}
+                                        onChange={handleWorkspacePathChange}
+                                        required
+                                        className="text-xs h-9 pl-8 bg-background font-mono"
+                                        data-testid="task-workspace-input"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -212,11 +244,17 @@ export function CreateTaskDialog({
                                             <SelectValue placeholder="Select Model" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {selectedProviderObj?.models?.map((m: { id: string; name: string }) => (
-                                                <SelectItem key={m.id} value={m.id} className="text-xs font-mono">
-                                                    {m.name || m.id}
-                                                </SelectItem>
-                                            )) || (
+                                            {selectedProviderObj?.models?.map(
+                                                (m: { id: string; name: string; modelId: string }) => (
+                                                    <SelectItem
+                                                        key={m.id}
+                                                        value={m.modelId}
+                                                        className="text-xs font-mono"
+                                                    >
+                                                        {m.name || m.modelId}
+                                                    </SelectItem>
+                                                ),
+                                            ) || (
                                                 <SelectItem value="default" className="text-xs">
                                                     Default
                                                 </SelectItem>

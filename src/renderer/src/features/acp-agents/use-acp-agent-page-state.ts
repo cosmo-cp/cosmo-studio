@@ -23,6 +23,7 @@ const emptyForm = {
     argsJson: '[]',
     envJson: '{}',
     defaultCwd: '',
+    defaultWorkspaceId: null as string | null,
     authMethodId: '',
 };
 
@@ -33,6 +34,7 @@ const emptyEditForm = {
     argsJson: '[]',
     envJson: '',
     defaultCwd: '',
+    defaultWorkspaceId: null as string | null,
     authMethodId: '',
 };
 
@@ -147,6 +149,7 @@ export function useAcpAgentPageState() {
             args,
             env,
             defaultCwd: form.defaultCwd.trim() || null,
+            defaultWorkspaceId: form.defaultWorkspaceId || null,
             authMethodId: form.authMethodId.trim() || null,
             enabled: true,
             installStatus: AcpAgentInstallStatusEnum.INSTALLED,
@@ -169,6 +172,7 @@ export function useAcpAgentPageState() {
             argsJson: JSON.stringify(agent.args, null, 2),
             envJson: '',
             defaultCwd: agent.defaultCwd ?? '',
+            defaultWorkspaceId: agent.defaultWorkspaceId ?? null,
             authMethodId: agent.authMethodId ?? '',
         });
     };
@@ -205,6 +209,7 @@ export function useAcpAgentPageState() {
             command: editForm.command.trim(),
             args,
             defaultCwd: editForm.defaultCwd.trim() || null,
+            defaultWorkspaceId: editForm.defaultWorkspaceId ?? null,
             authMethodId: editForm.authMethodId.trim() || null,
         };
         if (env !== undefined) {

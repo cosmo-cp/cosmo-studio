@@ -17,12 +17,14 @@ import { MessageService } from 'core/services/MessageService';
 import { ModelProviderService } from 'core/services/ModelProviderService';
 import { PersonaService } from 'core/services/PersonaService';
 import { WebSearchConfigService } from 'core/services/WebSearchConfigService';
+import { WorkspaceService } from 'core/services/WorkspaceService';
 import { CORETYPES } from 'core/types/types';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../types';
 import { AcpAgentRuntimeService } from './AcpAgentRuntimeService';
 import { ChatRunRegistry } from './ChatRunRegistry';
 import { createExaWebSearchTool } from './ExaWebSearchTool';
+import { WorkspaceExecutionLockService } from './WorkspaceExecutionLockService';
 
 interface ChatStreamConfig {
     model: unknown;
@@ -50,6 +52,10 @@ export class ChatStreamingService {
         private readonly acpAgentRuntimeService: AcpAgentRuntimeService,
         @inject(CORETYPES.ChatService)
         private readonly chatService: ChatService,
+        @inject(TYPES.WorkspaceExecutionLockService)
+        private readonly workspaceLockService: WorkspaceExecutionLockService,
+        @inject(CORETYPES.WorkspaceService)
+        private readonly workspaceService: WorkspaceService,
     ) {}
 
     // Build the model response stream once so Electron IPC and HTTP can deliver it differently.
@@ -93,9 +99,27 @@ export class ChatStreamingService {
             modelIdentifier: persistedModelIdentifier ?? null,
         });
 
+        let targetWorkspaceId = args.workspaceId ?? existingChat.workspaceId ?? null;
+        if (runtime === 'agent' && args.workspaceId && args.workspaceId !== existingChat.workspaceId) {
+            await this.chatService.updateSelectedWorkspaceForChat(args.chatId, args.workspaceId);
+            targetWorkspaceId = args.workspaceId;
+        } else if (runtime === 'agent' && !targetWorkspaceId && args.agentCwd) {
+            const ws = await this.workspaceService.getByCanonicalPath(args.agentCwd);
+            if (ws) {
+                targetWorkspaceId = ws.id;
+                await this.chatService.updateSelectedWorkspaceForChat(args.chatId, ws.id);
+            }
+        }
+
         const streamConfig =
             runtime === 'agent'
-                ? await this.buildAcpAgentStreamConfig(args.agentId!, args.agentCwd, args.chatId)
+                ? await this.buildAcpAgentStreamConfig(
+                      args.agentId!,
+                      args.agentCwd,
+                      targetWorkspaceId,
+                      args.chatId,
+                      abortSignal,
+                  )
                 : await this.buildModelStreamConfig(args.modelIdentifier!);
 
         const result = streamText({
@@ -163,18 +187,49 @@ export class ChatStreamingService {
     private async buildAcpAgentStreamConfig(
         agentId: string,
         cwd: string | null | undefined,
+        workspaceId: string | null | undefined,
         chatId: string,
+        abortSignal: AbortSignal,
     ): Promise<ChatStreamConfig> {
-        const provider = await this.acpAgentRuntimeService.createProvider(agentId, cwd, chatId);
+        let canonicalPath: string | null = null;
+
+        if (workspaceId) {
+            const ws = await this.workspaceService.get(workspaceId);
+            if (ws) {
+                canonicalPath = ws.canonicalPath;
+            }
+        } else if (cwd) {
+            canonicalPath = cwd;
+        }
+
+        if (canonicalPath) {
+            const reachability = await this.workspaceService.validateReachability(canonicalPath);
+            if (!reachability.reachable) {
+                throw new Error(reachability.error ?? `Workspace path is inaccessible: ${canonicalPath}`);
+            }
+            canonicalPath = reachability.canonicalPath!;
+            this.workspaceLockService.acquireLease(canonicalPath, 'chat', chatId, abortSignal);
+        }
+
+        const provider = await this.acpAgentRuntimeService.createProvider(agentId, canonicalPath, chatId);
         provider.languageModel();
         const tools = (provider.tools ?? {}) as ToolSet;
+
+        let cleanedUp = false;
+        const cleanup = () => {
+            if (cleanedUp) return;
+            cleanedUp = true;
+            if (canonicalPath) {
+                this.workspaceLockService.releaseLease(canonicalPath, chatId);
+            }
+            provider.cleanup();
+        };
+
         return {
             model: provider.languageModel(),
             tools: tools,
             hasTools: Object.keys(tools).length > 0,
-            cleanup: () => {
-                return provider.cleanup();
-            },
+            cleanup: cleanup,
         };
     }
 

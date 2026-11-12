@@ -10,6 +10,7 @@ import { streamingApi } from './api/streaming';
 import { taskApi as taskRpcApi } from './api/task';
 import { webSearchApi as webSearchRpcApi } from './api/webSearch';
 import { workflowApi as workflowRpcApi } from './api/workflow';
+import { workspaceApi as workspaceRpcApi } from './api/workspace';
 
 export const rpcApi: CosmoApi = {
     chat: chatRpcApi,
@@ -22,5 +23,6 @@ export const rpcApi: CosmoApi = {
     workflow: workflowRpcApi,
     acpAgent: acpAgentRpcApi,
     task: taskRpcApi,
+    workspace: workspaceRpcApi,
     streaming: streamingApi,
 };

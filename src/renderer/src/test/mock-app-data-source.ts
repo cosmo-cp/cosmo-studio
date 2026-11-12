@@ -11,6 +11,7 @@ type AppDataSourceOverrides = {
     acpAgent?: Partial<AppDataSource['acpAgent']>;
     workflow?: Partial<AppDataSource['workflow']>;
     task?: Partial<AppDataSource['task']>;
+    workspace?: Partial<AppDataSource['workspace']>;
     streaming?: Partial<AppDataSource['streaming']>;
 };
 
@@ -30,6 +31,7 @@ export function createMockAppDataSource(overrides: AppDataSourceOverrides = {}):
             updateSelectedModelForChat: async () => undefined,
             updateSelectedAgentForChat: async () => undefined,
             updateSelectedPersonaForChat: async () => undefined,
+            updateSelectedWorkspaceForChat: async () => undefined,
             ...overrides.chat,
         },
         message: {
@@ -209,6 +211,21 @@ export function createMockAppDataSource(overrides: AppDataSourceOverrides = {}):
                 throw new Error('task.createComment not mocked');
             },
             ...overrides.task,
+        },
+        workspace: {
+            list: async () => [],
+            get: async () => undefined,
+            create: async () => {
+                throw new Error('workspace.create not mocked');
+            },
+            update: async () => {
+                throw new Error('workspace.update not mocked');
+            },
+            delete: async () => false,
+            pickFolder: async () => null,
+            checkReachability: async () => ({ reachable: true }),
+            checkAllReachability: async () => ({}),
+            ...overrides.workspace,
         },
         streaming: {
             sendMessage: () => undefined,

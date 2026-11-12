@@ -59,4 +59,28 @@ describe('ChatHttpController run ownership', () => {
         await first;
         expect(service.runs.start('one')).not.toBeNull();
     });
+
+    it('translates WorkspaceBusyError to 409 Conflict', async () => {
+        const error = new Error('Workspace is currently in use by another session');
+        error.name = 'WorkspaceBusyError';
+        const service = {
+            runs: new ChatRunRegistry(),
+            createMessageStream: vi.fn().mockRejectedValue(error),
+        };
+        mocks.get.mockReturnValueOnce(service).mockReturnValueOnce({ getChatById: vi.fn().mockResolvedValue(null) });
+        const controller = new ChatHttpController();
+        const body = {
+            id: 'ws-chat',
+            messages: [],
+            metadata: {
+                modelId: 'provider:model',
+                workspaceId: 'ws-123',
+            },
+        };
+        const res = response();
+        await controller.sendMessage(body, {} as Request, res as unknown as Response);
+
+        expect(res.status).toHaveBeenCalledWith(409);
+        expect(res.json).toHaveBeenCalledWith({ error: error.message });
+    });
 });

@@ -8,6 +8,7 @@ import { PersonaController } from '../controllers/PersonaController';
 import { TaskController } from '../controllers/TaskController';
 import { WebSearchController } from '../controllers/WebSearchController';
 import { WorkflowController } from '../controllers/WorkflowController';
+import { WorkspaceController } from '../controllers/WorkspaceController';
 
 export const rpcControllerConstructors = [
     ChatController,
@@ -20,4 +21,5 @@ export const rpcControllerConstructors = [
     WorkflowController,
     AcpAgentController,
     TaskController,
+    WorkspaceController,
 ] as const;

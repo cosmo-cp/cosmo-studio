@@ -90,6 +90,10 @@ const PRELOAD_TYPE_IMPORTS = [
     { name: 'TaskComment', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'TaskCommentCreateInput', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'TaskCommentInput', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'Workspace', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'WorkspaceCreateInput', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'WorkspaceUpdateInput', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'WorkspaceReachabilityResult', source: PRELOAD_CORE_DTO_IMPORT },
     {
         name: 'WebSearchProviderTypeEnum',
         source: PRELOAD_WEB_SEARCH_SCHEMA_IMPORT,

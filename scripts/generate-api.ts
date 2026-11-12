@@ -12,6 +12,7 @@ import { StreamingChatController } from '../src/main/controllers/StreamingChatCo
 import { TaskController } from '../src/main/controllers/TaskController';
 import { WebSearchController } from '../src/main/controllers/WebSearchController';
 import { WorkflowController } from '../src/main/controllers/WorkflowController';
+import { WorkspaceController } from '../src/main/controllers/WorkspaceController';
 import { generateHttpRpcManifestContent, generatePreloadApiFiles, type ControllerSource } from './generate-api-lib';
 
 const httpManifestFilePath = path.resolve(__dirname, '../src/main/http/rpc-manifest.ts');
@@ -28,6 +29,7 @@ const controllers = [
     WorkflowController,
     AcpAgentController,
     TaskController,
+    WorkspaceController,
 ];
 
 const controllerPaths = {
@@ -42,6 +44,7 @@ const controllerPaths = {
     WorkflowController: path.resolve(__dirname, '../src/main/controllers/WorkflowController.ts'),
     AcpAgentController: path.resolve(__dirname, '../src/main/controllers/AcpAgentController.ts'),
     TaskController: path.resolve(__dirname, '../src/main/controllers/TaskController.ts'),
+    WorkspaceController: path.resolve(__dirname, '../src/main/controllers/WorkspaceController.ts'),
 };
 
 const controllerFileContents: { [key: string]: string } = {};

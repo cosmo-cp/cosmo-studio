@@ -47,6 +47,10 @@ export class ChatService {
         return this.chatRepository.updateSelectedPersonaForChatId(id, personaIdentifier);
     }
 
+    public async updateSelectedWorkspaceForChat(id: string, workspaceId: string | null): Promise<void> {
+        return this.chatRepository.updateSelectedWorkspaceForChatId(id, workspaceId);
+    }
+
     public async updateSelectedChat(id: string): Promise<void> {
         return this.chatRepository.updateSelectedChat(id);
     }

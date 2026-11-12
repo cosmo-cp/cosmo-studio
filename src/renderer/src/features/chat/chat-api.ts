@@ -119,3 +119,14 @@ export function useUpdateSelectedPersonaMutation() {
         },
     });
 }
+
+export function useUpdateSelectedWorkspaceMutation() {
+    return useBackendMutation({
+        errorMessage: 'Failed to update chat workspace',
+        run: (appDataSource, { chatId, workspaceId }: { chatId: string; workspaceId: string | null }) =>
+            appDataSource.chat.updateSelectedWorkspaceForChat(chatId, workspaceId),
+        revalidate: async (_arg, _result, { revalidateMatching }) => {
+            await revalidateChatHistory(revalidateMatching);
+        },
+    });
+}

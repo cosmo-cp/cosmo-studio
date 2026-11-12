@@ -3,6 +3,7 @@ import { Task, TaskCreateInput, TaskListFilter, TaskUpdateInput, TaskWithLinks }
 import { getCoreLogger } from '../platform/CoreLogger';
 import { TaskRepository } from '../repositories/TaskRepository';
 import { CORETYPES } from '../types/types';
+import { WorkspaceService } from './WorkspaceService';
 
 const MAX_TASK_CHAIN_DEPTH = 25;
 
@@ -19,6 +20,8 @@ export class TaskService {
     constructor(
         @inject(CORETYPES.TaskRepository)
         private taskRepository: TaskRepository,
+        @inject(CORETYPES.WorkspaceService)
+        private workspaceService: WorkspaceService,
     ) {}
 
     // Retrieve tasks filtered by execution state and archive status for list rendering.
@@ -39,7 +42,18 @@ export class TaskService {
     // Validate inputs and persist newly created tasks.
     public async create(input: TaskCreateInput): Promise<Task> {
         const title = normalizeRequired(input.title, 'Title');
-        const workspacePath = normalizeRequired(input.workspacePath, 'Workspace path');
+        let workspacePath = input.workspacePath ? input.workspacePath.trim() : '';
+        const workspaceId = input.workspaceId ?? null;
+
+        if (workspaceId) {
+            const ws = await this.workspaceService.get(workspaceId);
+            if (!ws) {
+                throw new Error(`Workspace ${workspaceId} does not exist.`);
+            }
+            workspacePath = ws.canonicalPath;
+        } else if (!workspacePath) {
+            throw new Error('Workspace path is required.');
+        }
 
         getCoreLogger().info(`Creating task "${title}" targeting workspace: ${workspacePath}`);
 
@@ -47,6 +61,7 @@ export class TaskService {
             ...input,
             title: title,
             workspacePath: workspacePath,
+            workspaceId: workspaceId,
             status: input.status ?? 'not_started',
             runtime: input.runtime ?? 'model',
         });
@@ -59,20 +74,34 @@ export class TaskService {
             throw new Error(`Task ${id} does not exist.`);
         }
 
+        const sanitized: TaskUpdateInput = { ...updates };
+
+        if (updates.workspaceId !== undefined) {
+            if (updates.workspaceId) {
+                const ws = await this.workspaceService.get(updates.workspaceId);
+                if (!ws) {
+                    throw new Error(`Workspace ${updates.workspaceId} does not exist.`);
+                }
+                sanitized.workspacePath = ws.canonicalPath;
+            } else {
+                sanitized.workspaceId = null;
+            }
+        }
+
+        if (updates.workspacePath !== undefined && !updates.workspaceId) {
+            sanitized.workspacePath = normalizeRequired(updates.workspacePath, 'Workspace path');
+        }
+
         if (
             existing.status === 'in_progress' &&
-            updates.workspacePath &&
-            updates.workspacePath !== existing.workspacePath
+            sanitized.workspacePath &&
+            sanitized.workspacePath !== existing.workspacePath
         ) {
             throw new Error('Cannot change workspace path while task is actively running. Cancel the task first.');
         }
 
-        const sanitized: TaskUpdateInput = { ...updates };
         if (updates.title !== undefined) {
             sanitized.title = normalizeRequired(updates.title, 'Title');
-        }
-        if (updates.workspacePath !== undefined) {
-            sanitized.workspacePath = normalizeRequired(updates.workspacePath, 'Workspace path');
         }
 
         return this.taskRepository.update(id, sanitized);
@@ -124,6 +153,13 @@ export class TaskService {
         }
         if (!targetTask) {
             throw new Error(`Target task ${targetTaskId} does not exist.`);
+        }
+
+        const existingPredecessor = await this.taskRepository.getPredecessor(targetTaskId);
+        if (existingPredecessor && existingPredecessor.id !== sourceTaskId) {
+            throw new Error(
+                `Target task ${targetTaskId} is already linked to predecessor task "${existingPredecessor.title}".`,
+            );
         }
 
         const visited = new Set<string>([sourceTaskId, targetTaskId]);

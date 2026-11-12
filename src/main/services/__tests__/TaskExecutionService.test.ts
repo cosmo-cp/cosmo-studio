@@ -6,9 +6,11 @@ import type { McpClientManager } from 'core/services/McpClientManager';
 import type { ModelProviderService } from 'core/services/ModelProviderService';
 import type { TaskCommentService } from 'core/services/TaskCommentService';
 import type { TaskService } from 'core/services/TaskService';
+import type { WorkspaceService } from 'core/services/WorkspaceService';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AcpAgentRuntimeService } from '../AcpAgentRuntimeService';
 import { TaskExecutionService } from '../TaskExecutionService';
+import { WorkspaceExecutionLockService } from '../WorkspaceExecutionLockService';
 
 const ai = vi.hoisted(() => {
     return {
@@ -51,6 +53,10 @@ describe('TaskExecutionService', () => {
     let mockModelProviderService: Record<keyof ModelProviderService, ReturnType<typeof vi.fn>>;
     let mockMcpClientManager: Record<keyof McpClientManager, ReturnType<typeof vi.fn>>;
     let mockAcpAgentRuntimeService: Record<keyof AcpAgentRuntimeService, ReturnType<typeof vi.fn>>;
+    let workspaceLockService: WorkspaceExecutionLockService;
+    let mockWorkspaceService: {
+        get: ReturnType<typeof vi.fn>;
+    };
 
     let tempWorkspaceDir: string;
 
@@ -60,6 +66,7 @@ describe('TaskExecutionService', () => {
         description: 'Implement core functionality',
         status: 'not_started',
         workspacePath: '',
+        workspaceId: null,
         runtime: 'model',
         provider: 'anthropic',
         modelId: 'claude-3-7-sonnet',
@@ -107,12 +114,19 @@ describe('TaskExecutionService', () => {
             createProvider: vi.fn(),
         } as unknown as Record<keyof AcpAgentRuntimeService, ReturnType<typeof vi.fn>>;
 
+        workspaceLockService = new WorkspaceExecutionLockService();
+        mockWorkspaceService = {
+            get: vi.fn().mockResolvedValue(undefined),
+        };
+
         service = new TaskExecutionService(
             mockTaskService as unknown as TaskService,
             mockTaskCommentService as unknown as TaskCommentService,
             mockModelProviderService as unknown as ModelProviderService,
             mockMcpClientManager as unknown as McpClientManager,
             mockAcpAgentRuntimeService as unknown as AcpAgentRuntimeService,
+            workspaceLockService,
+            mockWorkspaceService as unknown as WorkspaceService,
         );
     });
 
@@ -161,6 +175,23 @@ describe('TaskExecutionService', () => {
             expect(() => {
                 return service.validateAndLockWorkspace(tempWorkspaceDir, 'task-2');
             }).toThrow('Workspace is currently busy running Task task-1.');
+        });
+
+        it('preserves workspace lock when a stale execution attempts release with different executionId', () => {
+            const lockedCanonical = service.validateAndLockWorkspace(tempWorkspaceDir, 'task-1', 'token-1');
+            expect(service.isWorkspaceActive(tempWorkspaceDir)).toBe(true);
+
+            // Call releaseLock with a stale/different token
+            // @ts-expect-error accessing private method for unit verification
+            service.releaseLock(lockedCanonical, 'task-1', 'stale-token');
+
+            // Lock must still be held by token-1
+            expect(service.isWorkspaceActive(tempWorkspaceDir)).toBe(true);
+
+            // Call releaseLock with matching token
+            // @ts-expect-error accessing private method for unit verification
+            service.releaseLock(lockedCanonical, 'task-1', 'token-1');
+            expect(service.isWorkspaceActive(tempWorkspaceDir)).toBe(false);
         });
 
         it('returns false for isWorkspaceActive if path is non-existent or error thrown', () => {
@@ -259,6 +290,32 @@ describe('TaskExecutionService', () => {
             expect(service.isWorkspaceActive(tempWorkspaceDir)).toBe(false);
         });
 
+        it('resolves target directory from workspaceService when workspaceId is present', async () => {
+            const wsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cosmo-ws-id-test-'));
+            try {
+                mockWorkspaceService.get.mockResolvedValue({
+                    id: 'ws-test-id',
+                    canonicalPath: fs.realpathSync(wsDir),
+                });
+
+                const taskWithWs: Task = {
+                    ...sampleTask,
+                    id: 'task-with-ws',
+                    workspaceId: 'ws-test-id',
+                    workspacePath: '/fallback/path',
+                };
+                mockTaskService.getById.mockResolvedValue(taskWithWs);
+                mockTaskService.updateStatus.mockResolvedValue({ ...taskWithWs, status: 'in_progress' });
+                mockTaskService.getWithLinks.mockResolvedValue({ ...taskWithWs, nextTask: null, previousTask: null });
+                ai.generateText.mockResolvedValue({ text: 'Done' });
+
+                await service.execute(taskWithWs.id);
+                expect(mockWorkspaceService.get).toHaveBeenCalledWith('ws-test-id');
+            } finally {
+                fs.rmSync(wsDir, { recursive: true, force: true });
+            }
+        });
+
         it('defaults to done when model finishes without calling completeTask tool', async () => {
             const taskRecord: Task = {
                 ...sampleTask,
@@ -334,7 +391,7 @@ describe('TaskExecutionService', () => {
 
             expect(mockAcpAgentRuntimeService.createProvider).toHaveBeenCalledWith(
                 agentTask.agentId,
-                agentTask.workspacePath,
+                fs.realpathSync(agentTask.workspacePath),
                 agentTask.id,
             );
             expect(cleanupFn).toHaveBeenCalled();
@@ -566,6 +623,59 @@ describe('TaskExecutionService', () => {
 
             expect(mockTaskService.updateStatus).toHaveBeenCalledWith('task-midflight-A', 'done');
             expect(mockTaskService.updateStatus).toHaveBeenCalledWith('task-midflight-B', 'in_progress');
+        });
+
+        it('isolates downstream handoff failure so upstream task remains done', async () => {
+            const taskA: Task = {
+                ...sampleTask,
+                id: 'task-handoff-A',
+                workspacePath: tempWorkspaceDir,
+                nextTaskId: 'task-handoff-B',
+            };
+            const taskB: Task = {
+                ...sampleTask,
+                id: 'task-handoff-B',
+                title: 'Task Handoff B',
+                workspacePath: '/invalid/nonexistent/workspace/dir',
+                nextTaskId: null,
+                status: 'not_started',
+            };
+
+            mockTaskService.getById.mockImplementation(async (id: string) => {
+                if (id === 'task-handoff-A') return taskA;
+                if (id === 'task-handoff-B') return taskB;
+                return undefined;
+            });
+            mockTaskService.updateStatus.mockImplementation(async (id, status) => {
+                if (id === 'task-handoff-A') return { ...taskA, status: status };
+                if (id === 'task-handoff-B') return { ...taskB, status: status };
+                return sampleTask;
+            });
+            mockTaskService.getWithLinks.mockResolvedValue({
+                ...taskA,
+                nextTask: taskB,
+                previousTask: null,
+            });
+
+            ai.generateText.mockResolvedValue({ text: 'Task A succeeded completely.' });
+
+            await service.execute(taskA.id);
+            await new Promise((resolve) => {
+                return setTimeout(resolve, 100);
+            });
+
+            // Upstream task A should be marked done, NOT failed
+            expect(mockTaskService.updateStatus).toHaveBeenCalledWith('task-handoff-A', 'done');
+            expect(mockTaskService.updateStatus).not.toHaveBeenCalledWith('task-handoff-A', 'failed');
+
+            // System comment should be created on Task A detailing the handoff failure
+            expect(mockTaskCommentService.createComment).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    taskId: 'task-handoff-A',
+                    authorType: 'system',
+                    content: expect.stringContaining('Pipeline handoff to downstream task "Task Handoff B" failed:'),
+                }),
+            );
         });
     });
 

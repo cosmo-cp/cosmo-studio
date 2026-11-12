@@ -104,6 +104,11 @@ export class ChatController implements Controller {
         return this.chatService.updateSelectedPersonaForChat(id, parsedPersonaIdentifier);
     }
 
+    @IpcHandler('updateSelectedWorkspaceForChat', z.tuple([z.string().min(1), z.string().uuid().nullable()]))
+    public async updateSelectedWorkspaceForChat(id: string, workspaceId: string | null): Promise<void> {
+        return this.chatService.updateSelectedWorkspaceForChat(id, workspaceId);
+    }
+
     @IpcHandler('updateSelectedChat', z.tuple([z.string().min(1)]))
     public async updateSelectedChat(id: string): Promise<void> {
         return this.chatService.updateSelectedChat(id);

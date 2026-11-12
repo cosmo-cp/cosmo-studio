@@ -1,6 +1,6 @@
 import type { UIMessage } from 'ai';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { IpcChatTransport } from '../chat-transport';
+import { IpcChatTransport } from '@/chat-transport';
 
 type StreamingApiMock = {
     onData: ReturnType<typeof vi.fn>;
@@ -143,5 +143,33 @@ describe('IpcChatTransport', () => {
         expect(chat.getChatById).toHaveBeenCalledWith('chat-4');
         expect(streaming.sendMessage).not.toHaveBeenCalled();
         expect(streaming.removeListeners).not.toHaveBeenCalled();
+    });
+
+    it('forwards workspaceId in sendMessage when metadata contains workspaceId', async () => {
+        const streaming = createStreamingApiMock();
+        setWindowApi(streaming);
+
+        const transport = new IpcChatTransport();
+        await transport.sendMessages({
+            trigger: 'submit-message',
+            chatId: 'chat-ws',
+            messageId: undefined,
+            messages: [] as UIMessage[],
+            abortSignal: undefined,
+            metadata: {
+                runtime: 'agent',
+                agentId: 'agent-1',
+                workspaceId: 'ws-123',
+            },
+        });
+
+        expect(streaming.sendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                chatId: 'chat-ws',
+                runtime: 'agent',
+                agentId: 'agent-1',
+                workspaceId: 'ws-123',
+            }),
+        );
     });
 });

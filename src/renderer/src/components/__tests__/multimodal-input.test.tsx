@@ -35,6 +35,7 @@ function buildChat(overrides: Partial<Chat> = {}): Chat {
         selected: true,
         lastMessage: null,
         lastMessageAt: null,
+        workspaceId: null,
         ...overrides,
     };
 }
@@ -104,6 +105,7 @@ describe('MultimodalInput', () => {
             args: [],
             envKeys: [],
             defaultCwd: '/workspace',
+            defaultWorkspaceId: null,
             authMethodId: null,
             enabled: true,
             installStatus: AcpAgentInstallStatusEnum.INSTALLED,
@@ -152,7 +154,7 @@ describe('MultimodalInput', () => {
         await user.click(trigger);
         await user.click(await screen.findByRole('option', { name: 'None' }));
         expect(onAgentChange).toHaveBeenLastCalledWith(null, 'agent');
-        expect(screen.getByRole('textbox', { name: 'Agent workspace' })).toHaveValue('');
+        expect(screen.getByRole('button', { name: /agent workspace/i })).toHaveTextContent(/default workspace/i);
     });
 
     it('shows web search choices from the shared app data source and reports selection changes', async () => {
@@ -331,6 +333,7 @@ describe('MultimodalInput', () => {
                         runtime: 'model',
                         agentId: null,
                         agentCwd: null,
+                        workspaceId: null,
                         personaId: null,
                         webSearchOptionId: null,
                     },
@@ -394,6 +397,7 @@ describe('MultimodalInput', () => {
                         runtime: 'model',
                         agentId: null,
                         agentCwd: null,
+                        workspaceId: null,
                         personaId: null,
                         webSearchOptionId: null,
                     },
@@ -464,11 +468,163 @@ describe('MultimodalInput', () => {
                         runtime: 'model',
                         agentId: null,
                         agentCwd: null,
+                        workspaceId: null,
                         personaId: null,
                         webSearchOptionId: null,
                     },
                 },
             );
+        });
+    });
+
+    it('renders workspace selector and submits with workspaceId in agent mode', async () => {
+        const user = userEvent.setup();
+        const sendMessage = vi.fn(async () => undefined);
+        const agent: AcpAgentView = {
+            id: 'agent-1',
+            name: 'Workspace Agent',
+            description: null,
+            source: AcpAgentSourceEnum.CUSTOM,
+            registryId: null,
+            version: null,
+            command: 'test-agent',
+            args: [],
+            envKeys: [],
+            defaultCwd: null,
+            defaultWorkspaceId: 'ws-1',
+            authMethodId: null,
+            enabled: true,
+            installStatus: AcpAgentInstallStatusEnum.INSTALLED,
+            mcpServerIds: [],
+            metadata: {},
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        const mockWorkspace = {
+            id: 'ws-1',
+            name: 'Project Alpha',
+            canonicalPath: '/path/to/alpha',
+            rawPath: '/path/to/alpha',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        render(
+            <TooltipProvider>
+                <StoreProvider
+                    appDataSource={createMockAppDataSource({
+                        acpAgent: { getAll: async () => [agent] },
+                        workspace: { list: async () => [mockWorkspace] },
+                    })}
+                >
+                    <MultimodalInput
+                        chat={buildChat({ selectedRuntime: 'agent', selectedAgentId: agent.id })}
+                        hideWebSearchControls
+                        messages={[]}
+                        status="ready"
+                        sendMessage={sendMessage}
+                        selectedWorkspaceId="ws-1"
+                        isWorkspaceLocked={false}
+                        onModelChange={vi.fn()}
+                        onAgentChange={vi.fn()}
+                        onPersonaChange={vi.fn()}
+                        onWebSearchChange={vi.fn()}
+                        selectedWebSearchOptionId={WEB_SEARCH_NONE_OPTION_ID}
+                    />
+                </StoreProvider>
+            </TooltipProvider>,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: /agent workspace/i })).toHaveTextContent('Project Alpha');
+        });
+
+        await user.type(screen.getByRole('textbox'), 'Hello agent');
+        await user.click(screen.getByRole('button', { name: /submit/i }));
+
+        await waitFor(() => {
+            expect(sendMessage).toHaveBeenCalledWith(
+                {
+                    text: 'Hello agent',
+                    files: [],
+                },
+                {
+                    metadata: {
+                        modelId: undefined,
+                        runtime: 'agent',
+                        agentId: 'agent-1',
+                        agentCwd: null,
+                        workspaceId: 'ws-1',
+                        personaId: null,
+                        webSearchOptionId: null,
+                    },
+                },
+            );
+        });
+    });
+
+    it('renders workspace selector as locked when isWorkspaceLocked is true', async () => {
+        const agent: AcpAgentView = {
+            id: 'agent-1',
+            name: 'Locked Agent',
+            description: null,
+            source: AcpAgentSourceEnum.CUSTOM,
+            registryId: null,
+            version: null,
+            command: 'test-agent',
+            args: [],
+            envKeys: [],
+            defaultCwd: null,
+            defaultWorkspaceId: 'ws-1',
+            authMethodId: null,
+            enabled: true,
+            installStatus: AcpAgentInstallStatusEnum.INSTALLED,
+            mcpServerIds: [],
+            metadata: {},
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        const mockWorkspace = {
+            id: 'ws-1',
+            name: 'Project Locked',
+            canonicalPath: '/path/to/locked',
+            rawPath: '/path/to/locked',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        render(
+            <TooltipProvider>
+                <StoreProvider
+                    appDataSource={createMockAppDataSource({
+                        acpAgent: { getAll: async () => [agent] },
+                        workspace: { list: async () => [mockWorkspace] },
+                    })}
+                >
+                    <MultimodalInput
+                        chat={buildChat({ selectedRuntime: 'agent', selectedAgentId: agent.id, workspaceId: 'ws-1' })}
+                        hideWebSearchControls
+                        messages={[{ id: 'msg-1', role: 'user', content: 'test', parts: [] } as UIMessage]}
+                        status="ready"
+                        sendMessage={vi.fn(async () => undefined)}
+                        selectedWorkspaceId="ws-1"
+                        isWorkspaceLocked={true}
+                        onModelChange={vi.fn()}
+                        onAgentChange={vi.fn()}
+                        onPersonaChange={vi.fn()}
+                        onWebSearchChange={vi.fn()}
+                        selectedWebSearchOptionId={WEB_SEARCH_NONE_OPTION_ID}
+                    />
+                </StoreProvider>
+            </TooltipProvider>,
+        );
+
+        await waitFor(() => {
+            const button = screen.getByRole('button', { name: /agent workspace/i });
+            expect(button).toBeDisabled();
+            expect(screen.getByText('Locked')).toBeInTheDocument();
         });
     });
 });

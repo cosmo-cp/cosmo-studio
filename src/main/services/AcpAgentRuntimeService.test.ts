@@ -145,4 +145,39 @@ describe('ACP process leases', () => {
             }),
         );
     });
+
+    it('evicts idle and active providers matching a workspace path', async () => {
+        const agents = {
+            getRuntimeConfig: vi.fn().mockResolvedValue({
+                enabled: true,
+                name: 'agent',
+                command: 'npx',
+                args: [],
+                env: {},
+                defaultCwd: '/workspaces/proj-a',
+            }),
+        };
+        const service = new AcpAgentRuntimeService(agents as never, { getById: vi.fn() } as never);
+        const cleanup1 = vi.fn();
+        const cleanup2 = vi.fn();
+        let count = 0;
+        vi.spyOn(service as never, 'createProcessProvider').mockImplementation(() => {
+            count++;
+            return {
+                initSession: vi.fn().mockResolvedValue({}),
+                languageModel: vi.fn(),
+                cleanup: count === 1 ? cleanup1 : cleanup2,
+            } as never;
+        });
+
+        const p1 = await service.createProvider('agent-1', '/workspaces/proj-a', 'chat-1');
+        p1.cleanup(); // goes idle
+
+        await service.createProvider('agent-1', '/workspaces/proj-a/subfolder', 'chat-2'); // active
+
+        service.evictWorkspace('/workspaces/proj-a');
+
+        expect(cleanup1).toHaveBeenCalled();
+        expect(cleanup2).toHaveBeenCalled();
+    });
 });

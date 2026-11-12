@@ -8,6 +8,7 @@ const TYPES = {
     Controller: Symbol.for('Controller'),
     WorkflowExecutionService: Symbol.for('WorkflowExecutionService'),
     TaskExecutionService: Symbol.for('TaskExecutionService'),
+    WorkspaceExecutionLockService: Symbol.for('WorkspaceExecutionLockService'),
 };
 
 export { TYPES };

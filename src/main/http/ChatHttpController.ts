@@ -21,6 +21,7 @@ const chatRequestSchema = z
                 agentCwd: z.string().nullable().optional(),
                 personaId: z.string().nullable().optional(),
                 personaName: z.string().optional(),
+                workspaceId: z.string().nullable().optional(),
             })
             .optional(),
     })
@@ -73,6 +74,7 @@ export class ChatHttpController {
             runtime: runtime,
             agentId: agentId,
             agentCwd: parsed.metadata?.agentCwd ?? null,
+            workspaceId: parsed.metadata?.workspaceId ?? chat?.workspaceId ?? null,
         };
 
         try {
@@ -82,6 +84,21 @@ export class ChatHttpController {
                 status: 200,
                 stream: stream,
             });
+        } catch (error) {
+            if (!response.headersSent) {
+                const message = error instanceof Error ? error.message : String(error);
+                if (
+                    message.includes('busy') ||
+                    message.includes('Workspace') ||
+                    (error as { name?: string })?.name === 'WorkspaceBusyError'
+                ) {
+                    response.status(409).json({ error: message });
+                    return;
+                }
+                response.status(500).json({ error: message });
+                return;
+            }
+            throw error;
         } finally {
             cleanup();
         }

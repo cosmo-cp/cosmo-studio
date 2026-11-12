@@ -1,4 +1,6 @@
+import { relations } from 'drizzle-orm';
 import { boolean, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { workspace } from './workspaceSchema';
 
 export enum AcpAgentSourceEnum {
     REGISTRY = 'registry',
@@ -22,6 +24,14 @@ export const acpAgent = pgTable('AcpAgent', {
     args: jsonb('args').$type<string[]>().notNull().default([]),
     env: jsonb('env').$type<Record<string, string>>().notNull().default({}),
     defaultCwd: text('defaultCwd'),
+    defaultWorkspaceId: uuid('defaultWorkspaceId').references(
+        () => {
+            return workspace.id;
+        },
+        {
+            onDelete: 'set null',
+        },
+    ),
     authMethodId: text('authMethodId'),
     enabled: boolean('enabled').notNull().default(true),
     installStatus: text('installStatus')
@@ -40,4 +50,13 @@ export const acpRegistryCache = pgTable('AcpRegistryCache', {
     data: jsonb('data').notNull(),
     fetchedAt: timestamp('fetchedAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+export const acpAgentRelations = relations(acpAgent, ({ one }) => {
+    return {
+        defaultWorkspace: one(workspace, {
+            fields: [acpAgent.defaultWorkspaceId],
+            references: [workspace.id],
+        }),
+    };
 });

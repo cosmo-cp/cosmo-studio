@@ -89,13 +89,19 @@ export function useTaskPageState() {
         return null;
     }, [selectedTaskId, allTasks]);
 
-    // Available tasks for linking (cannot link to self or in-progress)
+    // Available tasks for linking (cannot link to self, closed tasks, or tasks already linked to another predecessor)
     const linkCandidates = useMemo(() => {
         if (!effectiveSelectedTaskId) {
             return [];
         }
+        const alreadyLinkedTargetIds = new Set(
+            allTasks
+                .filter((t) => t.id !== effectiveSelectedTaskId && Boolean(t.nextTaskId))
+                .map((t) => t.nextTaskId as string),
+        );
+
         return allTasks.filter((t) => {
-            return t.id !== effectiveSelectedTaskId && t.status !== 'closed';
+            return t.id !== effectiveSelectedTaskId && t.status !== 'closed' && !alreadyLinkedTargetIds.has(t.id);
         });
     }, [allTasks, effectiveSelectedTaskId]);
 

@@ -24,6 +24,7 @@ describe('AcpAgentService', () => {
         args: ['-y', 'agent'],
         env: { TOKEN: 'encrypted:secret' },
         defaultCwd: '/tmp',
+        defaultWorkspaceId: null,
         authMethodId: null,
         enabled: true,
         installStatus: AcpAgentInstallStatusEnum.INSTALLED,
@@ -175,5 +176,34 @@ describe('AcpAgentService', () => {
                 command: ' ',
             } as unknown as AcpAgentCreateInput),
         ).rejects.toThrow('Command is required.');
+    });
+
+    it('resolves defaultCwd from defaultWorkspaceId when workspaceRepository is provided', async () => {
+        const mockWsRepo = {
+            getById: vi.fn().mockResolvedValue({
+                id: 'ws-abc',
+                canonicalPath: '/canonical/ws/path',
+            }),
+            findByCanonicalPath: vi.fn(),
+        };
+
+        const service = new AcpAgentService(
+            repository,
+            secretStore,
+            mockWsRepo as unknown as import('../repositories/WorkspaceRepository').WorkspaceRepository,
+        );
+        await service.create({
+            name: 'New Agent With WS',
+            command: 'npx test',
+            defaultWorkspaceId: 'ws-abc',
+        });
+
+        expect(mockWsRepo.getById).toHaveBeenCalledWith('ws-abc');
+        expect(repository.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                defaultWorkspaceId: 'ws-abc',
+                defaultCwd: '/canonical/ws/path',
+            }),
+        );
     });
 });

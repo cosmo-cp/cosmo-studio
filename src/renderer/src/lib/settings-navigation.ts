@@ -1,6 +1,7 @@
-import { Bot, Cable, CircleUserRound, Command, Globe, PlugZap, type LucideIcon } from 'lucide-react';
+import { Bot, Cable, CircleUserRound, Command, FolderGit2, Globe, PlugZap, type LucideIcon } from 'lucide-react';
 
-export type SettingsSectionSlug = 'provider' | 'persona' | 'command' | 'mcp-server' | 'web-search' | 'agents';
+export type SettingsSectionSlug =
+    'provider' | 'persona' | 'command' | 'mcp-server' | 'web-search' | 'agents' | 'workspaces';
 
 type SettingsSection = {
     slug: SettingsSectionSlug;
@@ -47,6 +48,12 @@ export const settingsSections: readonly SettingsSection[] = [
         title: 'Agents',
         description: 'Manage local ACP agents and registry installs.',
         icon: Bot,
+    },
+    {
+        slug: 'workspaces',
+        title: 'Workspaces',
+        description: 'Manage registered project folders and default workspaces.',
+        icon: FolderGit2,
     },
 ] as const;
 

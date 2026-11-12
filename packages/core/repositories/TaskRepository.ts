@@ -39,6 +39,12 @@ export class TaskRepository {
         return result[0];
     }
 
+    // Find any predecessor task that currently points to the target task as its downstream nextTaskId.
+    public async getPredecessor(targetTaskId: string): Promise<Task | undefined> {
+        const [result] = await this.db.select().from(task).where(eq(task.nextTaskId, targetTaskId)).limit(1);
+        return result;
+    }
+
     // Support bidirectional pipeline inspection in UI link cards without join tables.
     public async getWithLinks(id: string): Promise<TaskWithLinks | undefined> {
         const currentTask = await this.getById(id);
@@ -51,7 +57,7 @@ export class TaskRepository {
             nextTask = (await this.getById(currentTask.nextTaskId)) ?? null;
         }
 
-        const [previousTaskResult] = await this.db.select().from(task).where(eq(task.nextTaskId, id)).limit(1);
+        const previousTaskResult = await this.getPredecessor(id);
 
         return {
             ...currentTask,

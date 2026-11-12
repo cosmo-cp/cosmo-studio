@@ -5,7 +5,7 @@ import type {
     ModelIdentifier,
     NewChat,
     PersonaIdentifier,
-} from '../../../packages/core/dto';
+} from 'core/dto';
 import { callRpc } from '../api/common';
 import type { ChatApi } from '../contracts/chat';
 
@@ -39,6 +39,9 @@ export const chatHttpApi: ChatApi = {
     },
     updateSelectedPersonaForChat: (id: string, personaIdentifier: PersonaIdentifier) => {
         return callRpc<void>('chat', 'updateSelectedPersonaForChat', [id, personaIdentifier]);
+    },
+    updateSelectedWorkspaceForChat: (id: string, workspaceId: string | null) => {
+        return callRpc<void>('chat', 'updateSelectedWorkspaceForChat', [id, workspaceId]);
     },
     updateSelectedChat: (id: string) => {
         return callRpc<void>('chat', 'updateSelectedChat', [id]);

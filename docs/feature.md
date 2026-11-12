@@ -143,6 +143,21 @@ Use this file as the quick feature index. For implementation details, follow the
 - Crash recovery reconciles interrupted tasks on application startup, resetting stranded `in_progress` tasks to `failed` and adding a system audit trail comment.
 - Automatic secret scrubbing strips Bearer tokens and API keys from comment audit trails before persistence.
 
+## Multi-Workspace Support
+
+- Decouples coding agents from hardcoded single directories; workspaces can be registered, switched between sessions, and shared across Chat and Tasks.
+    - Design: `docs/designs/multi-workspace.md`
+    - Reusable UI component: `src/renderer/src/components/workspace-selector.tsx`
+    - Renderer SWR hooks: `src/renderer/src/features/workspaces/workspaces-api.ts`
+    - Schema/service: `packages/core/database/schema/workspaceSchema.ts`, `packages/core/services/WorkspaceService.ts`, `packages/core/repositories/WorkspaceRepository.ts`
+    - Path security engine: `packages/core/utils/pathSecurity.ts`
+    - Platform folder pickers: `packages/core/platform/FolderPickerService.ts`, `src/main/services/ElectronFolderPickerService.ts`, `src/main/http/services/HttpFolderPickerService.ts`
+    - Controller: `src/main/controllers/WorkspaceController.ts`, `src/preload/contracts/workspace.ts`, `src/preload/api/workspace.ts`, `src/preload/http-api/workspace.ts`
+- Shared in-memory `WorkspaceExecutionLockService` prevents concurrent interactive chat turns and background task runs from colliding on the same directory tree (`isPathOverlapping`), with hierarchical parent/child detection.
+    - Concurrency lock: `src/main/services/WorkspaceExecutionLockService.ts`
+- Chat workspace locking ensures zero directory drift during active turns: `chat.workspaceId` is bound on the first turn touching a folder, disabling the workspace selector with a lock badge and explanatory tooltip until the next session.
+- Additive database evolution preserving `Task.workspacePath` as an immutable snapshot for permanent execution audit trails.
+
 ## Runtime And Platform Features
 
 - Dual runtime: packaged Electron desktop app and local HTTP service share the same renderer, controllers, core package, generated RPC manifest, and chat stream service.

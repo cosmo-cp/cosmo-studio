@@ -1,3 +1,4 @@
+import * as path from 'path';
 import type { LanguageModelV3 } from '@ai-sdk/provider';
 import type { ToolSet } from 'ai';
 import type {
@@ -13,6 +14,7 @@ import { ensureAcpNodeRuntime, nodeRuntimeEnv } from 'core/services/AcpNodeRunti
 import { McpServerService } from 'core/services/McpServerService';
 import { CORETYPES } from 'core/types/types';
 import { inject, injectable } from 'inversify';
+import { isPathOverlapping } from './WorkspaceExecutionLockService';
 
 interface ACPProvider {
     languageModel(modelId?: string, modeId?: string): LanguageModelV3;
@@ -52,6 +54,7 @@ export class AcpAgentRuntimeService {
     private readonly idleProviders = new Map<string, IdleProvider[]>();
     private readonly activeProviders = new Map<string, Set<ACPProvider>>();
     private readonly generations = new Map<string, number>();
+    private readonly providerCwds = new WeakMap<ACPProvider, string>();
     constructor(
         @inject(CORETYPES.AcpAgentService)
         private readonly acpAgentService: AcpAgentService,
@@ -102,6 +105,7 @@ export class AcpAgentRuntimeService {
             clearTimeout(entry.timer);
         }
         const provider = entry?.provider ?? this.createProcessProvider(settings);
+        this.providerCwds.set(provider, cwd);
         const active = this.activeProviders.get(agentId) ?? new Set<ACPProvider>();
         active.add(provider);
         this.activeProviders.set(agentId, active);
@@ -170,6 +174,46 @@ export class AcpAgentRuntimeService {
             for (const entry of entries) {
                 clearTimeout(entry.timer);
                 entry.provider.cleanup();
+            }
+        }
+    }
+
+    /**
+     * Terminates all idle and active ACP provider processes operating in or under
+     * the specified workspace canonical path.
+     */
+    public evictWorkspace(canonicalPath: string): void {
+        const normalized = path.resolve(canonicalPath);
+
+        // 1. Evict matching idle providers
+        for (const [key, entries] of this.idleProviders) {
+            try {
+                const parsed = JSON.parse(key);
+                const settings = parsed[2] as ACPProviderSettings | undefined;
+                const cwd = settings?.session?.cwd;
+                if (cwd && isPathOverlapping(normalized, cwd)) {
+                    this.idleProviders.delete(key);
+                    for (const entry of entries) {
+                        clearTimeout(entry.timer);
+                        entry.provider.cleanup();
+                    }
+                }
+            } catch {
+                // ignore parsing error
+            }
+        }
+
+        // 2. Evict matching active providers
+        for (const [agentId, activeSet] of this.activeProviders) {
+            for (const provider of activeSet) {
+                const cwd = this.providerCwds.get(provider);
+                if (cwd && isPathOverlapping(normalized, cwd)) {
+                    activeSet.delete(provider);
+                    provider.cleanup();
+                }
+            }
+            if (activeSet.size === 0) {
+                this.activeProviders.delete(agentId);
             }
         }
     }
