@@ -1,18 +1,16 @@
 import {
-    BarChart3,
     Bot,
     Box,
     Cable,
     CircleUserRound,
     Command,
-    CreditCard,
     Folder,
+    FolderGit2,
     Globe,
     PlugZap,
     Settings2,
     Share2,
     Shield,
-    Users,
     Wrench,
     Zap,
     type LucideIcon,
@@ -89,14 +87,8 @@ export const workspaceSettingsSections: readonly NavSettingsSection[] = [
     { slug: 'command', title: 'Tools', icon: Wrench, href: '/settings/command' },
     { slug: 'mcp-server', title: 'MCP Servers', icon: Share2, href: '/settings/mcp-server' },
     { slug: 'persona', title: 'Persona', icon: CircleUserRound, href: '/settings/persona' },
-] as const;
-
-export const organizationSettingsSections: readonly NavSettingsSection[] = [
-    { slug: 'usage-cost', title: 'Usage & Cost', icon: BarChart3, href: '/settings/usage-cost' },
     { slug: 'projects', title: 'Projects', icon: Folder, href: '/settings/projects' },
     { slug: 'guardrails', title: 'Guardrails', icon: Shield, href: '/settings/guardrails' },
-    { slug: 'team', title: 'Team', icon: Users, href: '/settings/team' },
-    { slug: 'billing', title: 'Billing', icon: CreditCard, href: '/settings/billing' },
 ] as const;
 
 export function getVisibleSettingsSections(): readonly SettingsSection[] {

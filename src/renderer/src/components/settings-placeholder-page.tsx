@@ -25,7 +25,7 @@ export function SettingsPlaceholderPage({ title, description, icon: Icon }: Sett
                     <div className="space-y-1">
                         <h3 className="font-semibold text-sm text-foreground">{title} Settings</h3>
                         <p className="text-xs text-muted-foreground max-w-sm">
-                            Configure your workspace and organization preferences for {title.toLowerCase()}.
+                            Configure your workspace preferences for {title.toLowerCase()}.
                         </p>
                     </div>
                 </div>

@@ -28,6 +28,7 @@ function buildChat(id: string, overrides: Partial<Chat> = {}): Chat {
         selected: false,
         lastMessage: null,
         lastMessageAt: null,
+        workspaceId: null,
         ...overrides,
     };
 }

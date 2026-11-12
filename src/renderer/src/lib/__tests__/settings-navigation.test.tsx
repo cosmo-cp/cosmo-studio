@@ -27,7 +27,16 @@ describe('settings navigation', () => {
 
     it('defines workspace settings sections without models', () => {
         const slugs = workspaceSettingsSections.map((section) => section.slug);
-        expect(slugs).toEqual(['general', 'provider', 'agents', 'command', 'mcp-server', 'persona']);
+        expect(slugs).toEqual([
+            'general',
+            'provider',
+            'agents',
+            'command',
+            'mcp-server',
+            'persona',
+            'projects',
+            'guardrails',
+        ]);
         expect(slugs).not.toContain('models');
     });
 });

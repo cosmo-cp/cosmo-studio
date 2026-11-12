@@ -29,12 +29,12 @@ function renderSidebar(pathname: string) {
 }
 
 describe('SettingsSecondarySidebar', () => {
-    it('renders both Workspace and Organization sections', () => {
+    it('renders the Workspace navigation without Organization section', () => {
         renderSidebar('/settings/provider');
 
         expect(screen.getByRole('heading', { level: 2, name: /settings/i })).toBeInTheDocument();
         expect(screen.getByText('Workspace')).toBeInTheDocument();
-        expect(screen.getByText('Organization')).toBeInTheDocument();
+        expect(screen.queryByText('Organization')).not.toBeInTheDocument();
 
         // Workspace items
         expect(screen.getByRole('link', { name: /general/i })).toBeInTheDocument();
@@ -44,13 +44,12 @@ describe('SettingsSecondarySidebar', () => {
         expect(screen.getByRole('link', { name: /tools/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /mcp servers/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /persona/i })).toBeInTheDocument();
-
-        // Organization items
-        expect(screen.getByRole('link', { name: /usage & cost/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /projects/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /guardrails/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /team/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /billing/i })).toBeInTheDocument();
+
+        // Removed organization items
+        expect(screen.queryByRole('link', { name: /team/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: /billing/i })).not.toBeInTheDocument();
     });
 
     it('marks providers active when on /settings/provider', () => {
@@ -72,5 +71,19 @@ describe('SettingsSecondarySidebar', () => {
 
         const personaLink = screen.getByRole('link', { name: /persona/i });
         expect(personaLink).toHaveAttribute('data-active', 'true');
+    });
+
+    it('marks projects active when on /settings/projects', () => {
+        renderSidebar('/settings/projects');
+
+        const projectsLink = screen.getByRole('link', { name: /projects/i });
+        expect(projectsLink).toHaveAttribute('data-active', 'true');
+    });
+
+    it('marks guardrails active when on /settings/guardrails', () => {
+        renderSidebar('/settings/guardrails');
+
+        const guardrailsLink = screen.getByRole('link', { name: /guardrails/i });
+        expect(guardrailsLink).toHaveAttribute('data-active', 'true');
     });
 });
