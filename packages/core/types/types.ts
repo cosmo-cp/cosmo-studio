@@ -12,6 +12,9 @@ const CORETYPES = {
     WebSearchConfigRepository: Symbol.for('WebSearchConfigRepository'),
     WorkflowRepository: Symbol.for('WorkflowRepository'),
     WorkflowRunRepository: Symbol.for('WorkflowRunRepository'),
+    TaskRepository: Symbol.for('TaskRepository'),
+    TaskCommentRepository: Symbol.for('TaskCommentRepository'),
+    WorkspaceRepository: Symbol.for('WorkspaceRepository'),
     // services
     ChatService: Symbol.for('ChatService'),
     MessageService: Symbol.for('MessageService'),
@@ -25,6 +28,10 @@ const CORETYPES = {
     WebSearchConfigService: Symbol.for('WebSearchConfigService'),
     WorkflowService: Symbol.for('WorkflowService'),
     WorkflowRunService: Symbol.for('WorkflowRunService'),
+    TaskService: Symbol.for('TaskService'),
+    TaskCommentService: Symbol.for('TaskCommentService'),
+    WorkspaceService: Symbol.for('WorkspaceService'),
+    FolderPickerService: Symbol.for('FolderPickerService'),
 };
 
 export { CORETYPES };

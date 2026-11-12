@@ -38,6 +38,9 @@ function MainChatPage(): JSX.Element {
         changeSelectedAgent,
         changeSelectedPersona,
         changeWebSearchOption,
+        selectedWorkspaceId,
+        isWorkspaceLocked,
+        changeSelectedWorkspace,
     } = useChatPageState();
 
     const getItemGroup = useCallback((chat: (typeof chatHistory)[number]) => {
@@ -116,6 +119,9 @@ function MainChatPage(): JSX.Element {
                         onAgentChange={(agentId, runtime) => changeSelectedAgent({ agentId, runtime })}
                         onPersonaChange={(personaId) => changeSelectedPersona({ personaId })}
                         onWebSearchChange={changeWebSearchOption}
+                        selectedWorkspaceId={selectedWorkspaceId}
+                        isWorkspaceLocked={isWorkspaceLocked}
+                        onWorkspaceChange={changeSelectedWorkspace}
                         hideAgentControls={false}
                         hideWebSearchControls
                     />

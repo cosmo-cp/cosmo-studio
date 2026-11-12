@@ -20,8 +20,8 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { WorkspaceSelector } from '@/components/workspace-selector';
 import { useGetAcpAgentsQuery } from '@/features/acp-agents/acp-agents-api';
 import { useExecuteCommandMutation } from '@/features/commands/commands-api';
 import { useGetPersonasQuery } from '@/features/personas/personas-api';
@@ -95,6 +95,9 @@ export function MultimodalInput({
     onPersonaChange,
     onWebSearchChange,
     selectedWebSearchOptionId,
+    selectedWorkspaceId,
+    isWorkspaceLocked = false,
+    onWorkspaceChange,
     stop,
 }: {
     chat: Chat;
@@ -110,6 +113,9 @@ export function MultimodalInput({
     onPersonaChange: (personaId: string | null) => void;
     onWebSearchChange: (optionId: string) => void;
     selectedWebSearchOptionId: string;
+    selectedWorkspaceId?: string | null;
+    isWorkspaceLocked?: boolean;
+    onWorkspaceChange?: (workspaceId: string | null) => void;
     stop?: UseChatHelpers<UIMessage>['stop'];
 }) {
     const parallelConfig = useAppStore((state) => state.parallelConfig);
@@ -121,6 +127,16 @@ export function MultimodalInput({
     const webSearchOptions = webSearchOptionsPayload?.options ?? [];
     const [input, setInput] = useState<string>('');
     const [agentCwd, setAgentCwd] = useState<string>('');
+    const [internalWorkspaceId, setInternalWorkspaceId] = useState<string | null>(null);
+    const activeWorkspaceId = selectedWorkspaceId !== undefined ? selectedWorkspaceId : internalWorkspaceId;
+
+    const handleWorkspaceChange = useCallback(
+        (workspaceId: string | null) => {
+            setInternalWorkspaceId(workspaceId);
+            onWorkspaceChange?.(workspaceId);
+        },
+        [onWorkspaceChange],
+    );
     const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
     const selectedRuntime = hideAgentControls ? 'model' : (chat.selectedRuntime ?? 'model');
     const selectedAgentId = hideAgentControls ? null : (chat.selectedAgentId ?? null);
@@ -186,6 +202,8 @@ export function MultimodalInput({
             }
 
             const activeAgent = agents.find((agent) => agent.id === resolvedAgentId);
+            const effectiveWorkspaceId =
+                activeWorkspaceId || chat.workspaceId || activeAgent?.defaultWorkspaceId || null;
             if (runtime === 'model' && !modelId) {
                 return;
             }
@@ -198,8 +216,8 @@ export function MultimodalInput({
                     toast.error(`${activeAgent.name} is disabled.`);
                     return;
                 }
-                if (!agentCwd.trim() && !activeAgent.defaultCwd) {
-                    toast.error(`${activeAgent.name} requires a workspace path.`);
+                if (!effectiveWorkspaceId && !agentCwd.trim() && !activeAgent.defaultCwd) {
+                    toast.error(`${activeAgent.name} requires a workspace.`);
                     return;
                 }
                 modelId = undefined;
@@ -216,6 +234,7 @@ export function MultimodalInput({
                         runtime,
                         agentId: runtime === 'agent' ? resolvedAgentId : null,
                         agentCwd: runtime === 'agent' ? agentCwd.trim() || activeAgent?.defaultCwd || null : null,
+                        workspaceId: runtime === 'agent' ? effectiveWorkspaceId : null,
                         personaId: chat.selectedPersonaId ?? null,
                         webSearchOptionId:
                             hideWebSearchControls || selectedWebSearchOptionId === WEB_SEARCH_NONE_OPTION_ID
@@ -225,7 +244,16 @@ export function MultimodalInput({
                 },
             )
                 .catch((error) => {
-                    toast.error(error.message);
+                    const message = error instanceof Error ? error.message : String(error);
+                    if (
+                        message.toLowerCase().includes('busy') ||
+                        message.toLowerCase().includes('workspace') ||
+                        message.includes('409')
+                    ) {
+                        toast.error(message || 'Workspace is currently busy in another task or session.');
+                    } else {
+                        toast.error(message);
+                    }
                 })
                 .finally(() => {
                     setInput('');
@@ -235,6 +263,8 @@ export function MultimodalInput({
             chat.selectedModelId,
             chat.selectedPersonaId,
             chat.selectedProvider,
+            chat.workspaceId,
+            activeWorkspaceId,
             agents,
             agentCwd,
             executeCommand,
@@ -289,6 +319,9 @@ export function MultimodalInput({
                 hideAgentControls={hideAgentControls}
                 hideWebSearchControls={hideWebSearchControls}
                 onWebSearchChange={onWebSearchChange}
+                activeWorkspaceId={activeWorkspaceId}
+                isWorkspaceLocked={isWorkspaceLocked}
+                onWorkspaceChange={handleWorkspaceChange}
                 stop={stop}
             />
         </PromptInputProvider>
@@ -320,6 +353,9 @@ function PromptInputContent({
     status,
     submitForm,
     webSearchOptions,
+    activeWorkspaceId,
+    isWorkspaceLocked,
+    onWorkspaceChange,
     stop,
 }: {
     chat: Chat;
@@ -340,6 +376,9 @@ function PromptInputContent({
     selectedAgentId: string | null;
     selectedPersonaId: string | null;
     selectedWebSearchOptionId: string;
+    activeWorkspaceId?: string | null;
+    isWorkspaceLocked?: boolean;
+    onWorkspaceChange?: (workspaceId: string | null) => void;
     setInput: (value: string) => void;
     setModelSelectorOpen: (value: boolean) => void;
     status: UseChatHelpers<UIMessage>['status'];
@@ -431,9 +470,12 @@ function PromptInputContent({
             onAgentChange(value === AGENT_NONE_VALUE ? null : value, 'agent');
             const nextAgent = agents.find((agent) => agent.id === value);
             onAgentCwdChange(nextAgent?.defaultCwd ?? '');
+            if (!isWorkspaceLocked) {
+                onWorkspaceChange?.(nextAgent?.defaultWorkspaceId ?? null);
+            }
             focusTextarea();
         },
-        [agents, focusTextarea, onAgentChange, onAgentCwdChange],
+        [agents, focusTextarea, isWorkspaceLocked, onAgentChange, onAgentCwdChange, onWorkspaceChange],
     );
 
     const handleTextareaFocus = useCallback((event: FocusEvent<HTMLTextAreaElement>) => {
@@ -591,12 +633,17 @@ function PromptInputContent({
                                     ))}
                                 </PromptInputSelectContent>
                             </PromptInputSelect>
-                            <Input
+                            <WorkspaceSelector
                                 aria-label="Agent workspace"
-                                className="h-8 w-48"
-                                onChange={(event) => onAgentCwdChange(event.target.value)}
-                                placeholder={selectedAgent?.defaultCwd || 'Workspace path'}
-                                value={agentCwd}
+                                className="h-8 max-w-48 text-xs"
+                                disabled={status === 'submitted' || status === 'streaming'}
+                                locked={isWorkspaceLocked}
+                                lockedReason="Workspace is locked while agent execution is in progress."
+                                onChange={onWorkspaceChange}
+                                placeholder={selectedAgent?.defaultCwd ? 'Default Workspace' : 'Select Workspace'}
+                                value={
+                                    activeWorkspaceId || chat.workspaceId || selectedAgent?.defaultWorkspaceId || null
+                                }
                             />
                         </>
                     )}
@@ -721,7 +768,11 @@ function PromptInputContent({
                             (selectedRuntime === 'agent' &&
                                 (!selectedAgentId ||
                                     !selectedAgent?.enabled ||
-                                    (!agentCwd.trim() && !selectedAgent.defaultCwd))) ||
+                                    (!activeWorkspaceId &&
+                                    !chat.workspaceId &&
+                                    !selectedAgent?.defaultWorkspaceId &&
+                                    !agentCwd.trim() &&
+                                    !selectedAgent.defaultCwd))) ||
                             (!input && status !== 'submitted' && status !== 'streaming')
                         }
                         status={status}

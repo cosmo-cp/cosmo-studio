@@ -10,11 +10,14 @@ import {
     model,
     modelProvider,
     persona,
+    task,
+    taskComment,
     webSearchConfig,
     workflow,
     workflowRun,
     workflowRunEvent,
     workflowVersion,
+    workspace,
 } from './database/schema/schema';
 
 type Optional<T, K extends keyof T> = Omit<T, K> & Pick<Partial<T>, K>;
@@ -102,6 +105,7 @@ export interface WebSearchConfigSaveInput {
 
 export type ChatWithMessages = Chat & {
     messages: UIMessage[];
+    workspace?: Workspace | null;
 };
 
 export interface ChatSendMessageArgs {
@@ -114,6 +118,7 @@ export interface ChatSendMessageArgs {
     runtime?: ChatRuntime;
     agentId?: string | null;
     agentCwd?: string | null;
+    workspaceId?: string | null;
 }
 
 export interface ChatAbortArgs {
@@ -184,6 +189,7 @@ export interface AcpRegistryView {
 export interface AcpRegistryInstallInput {
     registryId: string;
     defaultCwd?: string | null;
+    defaultWorkspaceId?: string | null;
     authMethodId?: string | null;
     enabled?: boolean;
     mcpServerIds?: string[];
@@ -235,4 +241,49 @@ export interface WorkflowRunStreamStartArgs {
 
 export interface WorkflowRunStreamAbortArgs {
     streamChannel: string;
+}
+
+// Task entity DTOs
+export type Task = InferSelectModel<typeof task>;
+export type TaskInsert = InferInsertModel<typeof task>;
+export type TaskCreateInput = Omit<TaskInsert, 'id' | 'createdAt' | 'updatedAt' | 'closedAt' | 'nextTaskId'>;
+export type TaskUpdateInput = Partial<Omit<TaskInsert, 'id' | 'createdAt' | 'updatedAt'>>;
+
+export interface TaskWithLinks extends Task {
+    nextTask?: Task | null;
+    previousTask?: Task | null;
+    workspace?: Workspace | null;
+}
+
+export interface TaskListFilter {
+    status?: Task['status'];
+    includeClosed?: boolean;
+}
+
+// TaskComment entity DTOs
+export type TaskComment = InferSelectModel<typeof taskComment>;
+export type TaskCommentInsert = InferInsertModel<typeof taskComment>;
+export type TaskCommentCreateInput = Omit<TaskCommentInsert, 'id' | 'createdAt'>;
+export type TaskCommentInput = Omit<TaskCommentCreateInput, 'taskId'>;
+
+// Workspace entity DTOs
+export type Workspace = InferSelectModel<typeof workspace>;
+export type WorkspaceInsert = InferInsertModel<typeof workspace>;
+export type WorkspaceCreateInput = {
+    name?: string;
+    path: string;
+};
+export type WorkspaceUpdateInput = {
+    name?: string;
+    path?: string;
+};
+export interface PathValidationResult {
+    isValid: boolean;
+    canonicalPath?: string;
+    error?: string;
+}
+export interface WorkspaceReachabilityResult {
+    reachable: boolean;
+    canonicalPath?: string;
+    error?: string;
 }

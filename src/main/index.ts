@@ -11,6 +11,7 @@ import { config } from 'dotenv';
 import { updateElectronApp, UpdateSourceType } from 'update-electron-app';
 import container from './inversify.config';
 import { logger } from './logger';
+import { TaskExecutionService } from './services/TaskExecutionService';
 import { TYPES } from './types';
 
 setCoreLogger(logger);
@@ -39,6 +40,8 @@ export class Main {
             this.protocolInitialization();
             await this.initializeDatabase();
             await this.initializeMcpClients();
+            const taskExecutionService = container.get<TaskExecutionService>(TYPES.TaskExecutionService);
+            await taskExecutionService.reconcileInterruptedTasks();
             const ipcHandlerRegistry = container.get<IpcHandlerRegistry>(TYPES.IpcHandlerRegistry);
             ipcHandlerRegistry.registerIpcHandlers();
             await this.createWindow();

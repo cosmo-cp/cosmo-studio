@@ -140,6 +140,15 @@ export class ChatRepository {
             .where(eq(chat.id, chatId));
     }
 
+    public async updateSelectedWorkspaceForChatId(chatId: string, workspaceId: string | null): Promise<void> {
+        await this.db
+            .update(chat)
+            .set({
+                workspaceId: workspaceId,
+            })
+            .where(eq(chat.id, chatId));
+    }
+
     public async updateSelectedChat(chatId: string): Promise<void> {
         await this.db.transaction(async (tx) => {
             // 1. Set all rows to false

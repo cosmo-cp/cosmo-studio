@@ -9,8 +9,10 @@ import { MessageController } from '../src/main/controllers/MessageController';
 import { ModelProviderController } from '../src/main/controllers/ModelProviderController';
 import { PersonaController } from '../src/main/controllers/PersonaController';
 import { StreamingChatController } from '../src/main/controllers/StreamingChatController';
+import { TaskController } from '../src/main/controllers/TaskController';
 import { WebSearchController } from '../src/main/controllers/WebSearchController';
 import { WorkflowController } from '../src/main/controllers/WorkflowController';
+import { WorkspaceController } from '../src/main/controllers/WorkspaceController';
 import { generateHttpRpcManifestContent, generatePreloadApiFiles, type ControllerSource } from './generate-api-lib';
 
 const httpManifestFilePath = path.resolve(__dirname, '../src/main/http/rpc-manifest.ts');
@@ -26,6 +28,8 @@ const controllers = [
     WebSearchController,
     WorkflowController,
     AcpAgentController,
+    TaskController,
+    WorkspaceController,
 ];
 
 const controllerPaths = {
@@ -39,6 +43,8 @@ const controllerPaths = {
     WebSearchController: path.resolve(__dirname, '../src/main/controllers/WebSearchController.ts'),
     WorkflowController: path.resolve(__dirname, '../src/main/controllers/WorkflowController.ts'),
     AcpAgentController: path.resolve(__dirname, '../src/main/controllers/AcpAgentController.ts'),
+    TaskController: path.resolve(__dirname, '../src/main/controllers/TaskController.ts'),
+    WorkspaceController: path.resolve(__dirname, '../src/main/controllers/WorkspaceController.ts'),
 };
 
 const controllerFileContents: { [key: string]: string } = {};

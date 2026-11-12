@@ -7,6 +7,8 @@ import { getCoreLogger } from 'core/platform/CoreLogger';
 import { McpClientManager } from 'core/services/McpClientManager';
 import { CORETYPES } from 'core/types/types';
 import { config } from 'dotenv';
+import { TaskExecutionService } from '../services/TaskExecutionService';
+import { TYPES } from '../types';
 import { AppModule } from './AppModule';
 import { httpContainer } from './http-container';
 
@@ -32,6 +34,9 @@ async function initializeMcpClients(): Promise<void> {
 async function bootstrap(): Promise<void> {
     await initializeDatabase();
     await initializeMcpClients();
+
+    const taskExecutionService = httpContainer.get<TaskExecutionService>(TYPES.TaskExecutionService);
+    await taskExecutionService.reconcileInterruptedTasks();
 
     const app = await NestFactory.create(AppModule);
     const host = process.env.COSMO_HTTP_HOST ?? '127.0.0.1';

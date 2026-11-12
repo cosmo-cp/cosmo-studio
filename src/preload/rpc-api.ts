@@ -7,8 +7,10 @@ import { messageApi as messageRpcApi } from './api/message';
 import { modelProviderApi as modelProviderRpcApi } from './api/modelProvider';
 import { personaApi as personaRpcApi } from './api/persona';
 import { streamingApi } from './api/streaming';
+import { taskApi as taskRpcApi } from './api/task';
 import { webSearchApi as webSearchRpcApi } from './api/webSearch';
 import { workflowApi as workflowRpcApi } from './api/workflow';
+import { workspaceApi as workspaceRpcApi } from './api/workspace';
 
 export const rpcApi: CosmoApi = {
     chat: chatRpcApi,
@@ -20,5 +22,7 @@ export const rpcApi: CosmoApi = {
     webSearch: webSearchRpcApi,
     workflow: workflowRpcApi,
     acpAgent: acpAgentRpcApi,
+    task: taskRpcApi,
+    workspace: workspaceRpcApi,
     streaming: streamingApi,
 };

@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { getDefaultSettingsHref, getHomeHref, isSettingsPath } from '@/lib/settings-navigation';
 import { cn } from '@/lib/utils';
-import { BarChart2, BookOpen, Bot, ChevronRight, Folder, MessageSquare, SettingsIcon, Wrench } from 'lucide-react';
+import { BarChart2, BookOpen, Bot, ChevronRight, Folder, MessageSquare, SettingsIcon, Wrench, SquareCheck } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -36,6 +36,13 @@ const primaryMenuItems = [
         href: '/settings/command',
         pathname: '/settings/command',
         icon: Wrench,
+    },
+    {
+        title: 'Tasks',
+        href: '/tasks',
+        pathname: '/tasks',
+        icon: SquareCheck,
+        hidden: false,
     },
     {
         title: 'Projects',

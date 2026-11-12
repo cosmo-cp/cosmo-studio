@@ -61,6 +61,7 @@ function buildInstalledAgent(registryId: string): AcpAgentView {
         command: 'npx',
         args: ['-y', '@openai/codex@0.14.0', '--acp'],
         defaultCwd: null,
+        defaultWorkspaceId: null,
         authMethodId: null,
         enabled: true,
         installStatus: AcpAgentInstallStatusEnum.INSTALLED,
@@ -216,6 +217,64 @@ describe('AcpAgentManagement', () => {
             );
         });
         expect(update.mock.calls[0][1]).not.toHaveProperty('env');
+    });
+
+    it('allows updating defaultWorkspaceId from registered workspaces', async () => {
+        const user = userEvent.setup();
+        const update = vi.fn(async (id: string, input: AcpAgentUpdateInput): Promise<AcpAgentView> => ({
+            ...buildAgentWithEnvKeys(),
+            ...input,
+            id,
+            updatedAt: new Date('2026-05-20T01:00:00.000Z'),
+        }));
+
+        const mockWs = {
+            id: 'ws-agent-default',
+            name: 'Agent Default WS',
+            canonicalPath: '/canonical/agent-ws',
+            rawPath: '/canonical/agent-ws',
+            createdAt: now,
+            updatedAt: now,
+        };
+
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => [buildAgentWithEnvKeys()],
+                        update,
+                    },
+                    workspace: {
+                        list: async () => [mockWs],
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+
+        await user.click(await screen.findByRole('button', { name: /edit codex cli/i }));
+        const dialog = await screen.findByRole('dialog');
+
+        await waitFor(() => {
+            expect(within(dialog).getByRole('button', { name: /select registered workspace/i })).toBeInTheDocument();
+        });
+
+        fireEvent.change(within(dialog).getByLabelText(/^workspace path$/i), {
+            target: { value: '/canonical/agent-ws' },
+        });
+
+        await user.click(within(dialog).getByRole('button', { name: /save changes/i }));
+
+        await waitFor(() => {
+            expect(update).toHaveBeenCalledWith(
+                'agent-1',
+                expect.objectContaining({
+                    defaultCwd: '/canonical/agent-ws',
+                    defaultWorkspaceId: 'ws-agent-default',
+                }),
+            );
+        });
     });
 
     it('opens the registry in a dialog and installs registry agents', async () => {

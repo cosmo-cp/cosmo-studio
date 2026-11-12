@@ -16,7 +16,8 @@
         "paths": {
             "@database/*": ["core/database/*"],
             "@opencode-ai/models": ["../node_modules/@opencode-ai/models/dist/index"],
-            "@opencode-ai/models/snapshot": ["../node_modules/@opencode-ai/models/dist/snapshot"]
+            "@opencode-ai/models/snapshot": ["../node_modules/@opencode-ai/models/dist/snapshot"],
+            "inversify": ["../node_modules/inversify/lib/index"]
         },
         "types": ["node"]
     }

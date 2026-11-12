@@ -1,4 +1,5 @@
 import { coreContainer } from 'core/inversify.config';
+import type { FolderPickerService } from 'core/platform/FolderPickerService';
 import type { SecretStore } from 'core/platform/SecretStore';
 import { CORETYPES } from 'core/types/types';
 import { Container } from 'inversify';
@@ -11,19 +12,28 @@ import { MessageController } from './controllers/MessageController';
 import { ModelProviderController } from './controllers/ModelProviderController';
 import { PersonaController } from './controllers/PersonaController';
 import { StreamingChatController } from './controllers/StreamingChatController';
+import { TaskController } from './controllers/TaskController';
 import { WebSearchController } from './controllers/WebSearchController';
 import { WorkflowController } from './controllers/WorkflowController';
+import { WorkspaceController } from './controllers/WorkspaceController';
 import { IpcHandlerRegistry } from './ipc';
 import { ElectronSecretStore } from './platform/ElectronSecretStore';
 import { AcpAgentRuntimeService } from './services/AcpAgentRuntimeService';
 import { ChatStreamingService } from './services/ChatStreamingService';
+import { ElectronFolderPickerService } from './services/ElectronFolderPickerService';
+import { TaskExecutionService } from './services/TaskExecutionService';
 import { WorkflowExecutionService } from './services/WorkflowExecutionService';
 import { WorkflowRunStreamingService } from './services/WorkflowRunStreamingService';
+import { WorkspaceExecutionLockService } from './services/WorkspaceExecutionLockService';
 import { TYPES } from './types';
 
 const container = new Container({ parent: coreContainer });
 
 coreContainer.rebind<SecretStore>(CORETYPES.SecretStore).to(ElectronSecretStore).inSingletonScope();
+coreContainer
+    .bind<FolderPickerService>(CORETYPES.FolderPickerService)
+    .to(ElectronFolderPickerService)
+    .inSingletonScope();
 
 container.bind<IpcHandlerRegistry>(TYPES.IpcHandlerRegistry).to(IpcHandlerRegistry).inSingletonScope();
 container.bind<ChatStreamingService>(TYPES.ChatStreamingService).to(ChatStreamingService).inSingletonScope();
@@ -35,6 +45,11 @@ container
 container
     .bind<WorkflowExecutionService>(TYPES.WorkflowExecutionService)
     .to(WorkflowExecutionService)
+    .inSingletonScope();
+container.bind<TaskExecutionService>(TYPES.TaskExecutionService).to(TaskExecutionService).inSingletonScope();
+container
+    .bind<WorkspaceExecutionLockService>(TYPES.WorkspaceExecutionLockService)
+    .to(WorkspaceExecutionLockService)
     .inSingletonScope();
 
 // Bind controllers
@@ -48,5 +63,7 @@ container.bind<Controller>(TYPES.Controller).to(McpServerController).inSingleton
 container.bind<Controller>(TYPES.Controller).to(WebSearchController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(WorkflowController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(AcpAgentController).inSingletonScope();
+container.bind<Controller>(TYPES.Controller).to(TaskController).inSingletonScope();
+container.bind<Controller>(TYPES.Controller).to(WorkspaceController).inSingletonScope();
 
 export default container;

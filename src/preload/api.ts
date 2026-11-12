@@ -6,8 +6,10 @@ import type { MessageApi } from './contracts/message';
 import type { ModelProviderApi } from './contracts/modelProvider';
 import type { PersonaApi } from './contracts/persona';
 import type { StreamingApi } from './contracts/streaming';
+import type { TaskApi } from './contracts/task';
 import type { WebSearchApi } from './contracts/webSearch';
 import type { WorkflowApi } from './contracts/workflow';
+import type { WorkspaceApi } from './contracts/workspace';
 import { acpAgentHttpApi } from './http-api/acpAgent';
 import { chatHttpApi } from './http-api/chat';
 import { commandHttpApi } from './http-api/command';
@@ -16,8 +18,10 @@ import { messageHttpApi } from './http-api/message';
 import { modelProviderHttpApi } from './http-api/modelProvider';
 import { personaHttpApi } from './http-api/persona';
 import { streamingHttpApi } from './http-api/streaming';
+import { taskHttpApi } from './http-api/task';
 import { webSearchHttpApi } from './http-api/webSearch';
 import { workflowHttpApi } from './http-api/workflow';
+import { workspaceHttpApi } from './http-api/workspace';
 
 export type { ChatApi } from './contracts/chat';
 export type { ModelProviderApi } from './contracts/modelProvider';
@@ -28,6 +32,8 @@ export type { McpServerApi } from './contracts/mcpServer';
 export type { WebSearchApi } from './contracts/webSearch';
 export type { WorkflowApi } from './contracts/workflow';
 export type { AcpAgentApi } from './contracts/acpAgent';
+export type { TaskApi } from './contracts/task';
+export type { WorkspaceApi } from './contracts/workspace';
 export type { StreamingApi } from './contracts/streaming';
 
 export interface CosmoApi {
@@ -40,6 +46,8 @@ export interface CosmoApi {
     webSearch: WebSearchApi;
     workflow: WorkflowApi;
     acpAgent: AcpAgentApi;
+    task: TaskApi;
+    workspace: WorkspaceApi;
     streaming: StreamingApi;
 }
 
@@ -53,5 +61,7 @@ export const httpApi: CosmoApi = {
     webSearch: webSearchHttpApi,
     workflow: workflowHttpApi,
     acpAgent: acpAgentHttpApi,
+    task: taskHttpApi,
+    workspace: workspaceHttpApi,
     streaming: streamingHttpApi,
 };

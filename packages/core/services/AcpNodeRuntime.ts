@@ -4,7 +4,7 @@ import { access, mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import extractZip from 'extract-zip';
+import AdmZip from 'adm-zip';
 import * as tar from 'tar';
 
 // Checksums published with the Node.js v24.21.0 release.
@@ -88,7 +88,7 @@ async function install(): Promise<NodeRuntime> {
             throw new Error('Node.js download checksum mismatch.');
         const archive = path.join(temporary, archiveName);
         await writeFile(archive, bytes);
-        if (windows) await extractZip(archive, { dir: temporary });
+        if (windows) new AdmZip(archive).extractAllTo(temporary, true);
         else await tar.x({ file: archive, cwd: temporary, strict: true });
         const extracted = path.join(temporary, archiveName.replace(/\.(zip|tar\.gz)$/, ''));
         if (!(await usable(paths(extracted))))

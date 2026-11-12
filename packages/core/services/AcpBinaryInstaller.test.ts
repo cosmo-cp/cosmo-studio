@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
+import AdmZip from 'adm-zip';
 import * as tar from 'tar';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installAcpBinary, uninstallAcpBinary } from './AcpBinaryInstaller';
@@ -78,5 +79,18 @@ describe('installAcpBinary', () => {
             [target]: { archive: `https://example.com/agent.${extension}`, cmd: './agent' },
         });
         expect(await readFile(installed.command, 'utf8')).toBe('binary');
+    });
+
+    it.each(['traversal', 'symlink'])('rejects a ZIP containing %s entries', async (kind) => {
+        const zip = new AdmZip();
+        const entry = zip.addFile(kind === 'traversal' ? 'xx/agent' : 'agent', Buffer.from('binary'));
+        if (kind === 'symlink') entry.header.attr = (0o120777 << 16) >>> 0;
+        let bytes = zip.toBuffer();
+        if (kind === 'traversal')
+            bytes = Buffer.from(bytes.toString('latin1').replaceAll('xx/agent', '../agent'), 'latin1');
+        vi.mocked(fetch).mockResolvedValue(new Response(bytes));
+        await expect(
+            installAcpBinary({ [target]: { archive: 'https://example.com/agent.zip', cmd: 'agent' } }),
+        ).rejects.toThrow('Unsafe ACP archive entry.');
     });
 });

@@ -5,7 +5,7 @@ import type {
     ModelIdentifier,
     NewChat,
     PersonaIdentifier,
-} from '../../../packages/core/dto';
+} from 'core/dto';
 
 export interface ChatApi {
     getAllChats(searchQuery: string | null): Promise<Chat[]>;
@@ -18,5 +18,6 @@ export interface ChatApi {
     updateSelectedModelForChat(id: string, modelIdentifier: ModelIdentifier): Promise<void>;
     updateSelectedAgentForChat(id: string, agentIdentifier: AgentIdentifier): Promise<void>;
     updateSelectedPersonaForChat(id: string, personaIdentifier: PersonaIdentifier): Promise<void>;
+    updateSelectedWorkspaceForChat(id: string, workspaceId: string | null): Promise<void>;
     updateSelectedChat(id: string): Promise<void>;
 }

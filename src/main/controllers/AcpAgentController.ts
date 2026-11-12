@@ -28,6 +28,7 @@ const acpAgentCreateSchema = z
         args: z.array(z.string()).default([]),
         env: z.record(z.string(), z.string()).default({}),
         defaultCwd: z.string().optional().nullable(),
+        defaultWorkspaceId: z.uuid().optional().nullable(),
         authMethodId: z.string().optional().nullable(),
         enabled: z.boolean().default(true),
         installStatus: z.enum(AcpAgentInstallStatusEnum).default(AcpAgentInstallStatusEnum.INSTALLED),
@@ -42,6 +43,7 @@ const registryInstallSchema = z
     .object({
         registryId: z.string().min(1),
         defaultCwd: z.string().optional().nullable(),
+        defaultWorkspaceId: z.uuid().optional().nullable(),
         authMethodId: z.string().optional().nullable(),
         enabled: z.boolean().optional(),
         mcpServerIds: z.array(z.string()).optional(),

@@ -43,6 +43,7 @@ describe('AppSidebar', () => {
         renderSidebar('/chat');
 
         expect(screen.getByRole('link', { name: /chat/i })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /tasks/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /agents/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /tools/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /projects/i })).toBeInTheDocument();

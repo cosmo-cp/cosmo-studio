@@ -15,6 +15,7 @@ describe('settings navigation', () => {
             'command',
             'mcp-server',
             'agents',
+            'workspaces',
         ]);
         expect(settingsSections.find((section) => section.slug === 'web-search')?.hidden).toBe(true);
     });

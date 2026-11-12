@@ -115,6 +115,9 @@ export class ModelProviderService {
             [ModelProviderTypeEnum.VOYAGE]: (provider) => {
                 return createVoyage(this.createRemoteOptions(provider));
             },
+            [ModelProviderTypeEnum.BASETEN]: (provider) => {
+                return createBaseten(this.createRemoteOptions(provider));
+            },
             [ModelProviderTypeEnum.CUSTOM]: (provider) => {
                 return createOpenAI({
                     name: provider.name,
