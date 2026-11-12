@@ -24,6 +24,7 @@ const mockTask: Task = {
     title: 'Test Task',
     description: 'Instructions',
     workspacePath: '/workspace/dir',
+    workspaceId: null,
     runtime: 'model',
     provider: 'openai',
     modelId: 'gpt-4o',

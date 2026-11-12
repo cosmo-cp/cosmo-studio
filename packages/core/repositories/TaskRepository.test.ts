@@ -112,6 +112,27 @@ describe('TaskRepository', () => {
         expect(closedList[0].id).toBe(task3.id);
     });
 
+    it('finds predecessor task pointing to a target task', async () => {
+        const taskA = await repository.create({
+            title: 'Task A',
+            description: 'First',
+            workspacePath: '/tmp/ws',
+        });
+        const taskB = await repository.create({
+            title: 'Task B',
+            description: 'Second',
+            workspacePath: '/tmp/ws',
+        });
+
+        expect(await repository.getPredecessor(taskB.id)).toBeUndefined();
+
+        await repository.update(taskA.id, { nextTaskId: taskB.id });
+
+        const pred = await repository.getPredecessor(taskB.id);
+        expect(pred).toBeDefined();
+        expect(pred?.id).toBe(taskA.id);
+    });
+
     it('resolves bidirectional links in getWithLinks', async () => {
         const taskA = await repository.create({
             title: 'Task A',

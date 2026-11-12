@@ -17,6 +17,7 @@ import {
     workflowRun,
     workflowRunEvent,
     workflowVersion,
+    workspace,
 } from './database/schema/schema';
 
 type Optional<T, K extends keyof T> = Omit<T, K> & Pick<Partial<T>, K>;
@@ -104,6 +105,7 @@ export interface WebSearchConfigSaveInput {
 
 export type ChatWithMessages = Chat & {
     messages: UIMessage[];
+    workspace?: Workspace | null;
 };
 
 export interface ChatSendMessageArgs {
@@ -116,6 +118,7 @@ export interface ChatSendMessageArgs {
     runtime?: ChatRuntime;
     agentId?: string | null;
     agentCwd?: string | null;
+    workspaceId?: string | null;
 }
 
 export interface ChatAbortArgs {
@@ -186,6 +189,7 @@ export interface AcpRegistryView {
 export interface AcpRegistryInstallInput {
     registryId: string;
     defaultCwd?: string | null;
+    defaultWorkspaceId?: string | null;
     authMethodId?: string | null;
     enabled?: boolean;
     mcpServerIds?: string[];
@@ -248,6 +252,7 @@ export type TaskUpdateInput = Partial<Omit<TaskInsert, 'id' | 'createdAt' | 'upd
 export interface TaskWithLinks extends Task {
     nextTask?: Task | null;
     previousTask?: Task | null;
+    workspace?: Workspace | null;
 }
 
 export interface TaskListFilter {
@@ -260,3 +265,25 @@ export type TaskComment = InferSelectModel<typeof taskComment>;
 export type TaskCommentInsert = InferInsertModel<typeof taskComment>;
 export type TaskCommentCreateInput = Omit<TaskCommentInsert, 'id' | 'createdAt'>;
 export type TaskCommentInput = Omit<TaskCommentCreateInput, 'taskId'>;
+
+// Workspace entity DTOs
+export type Workspace = InferSelectModel<typeof workspace>;
+export type WorkspaceInsert = InferInsertModel<typeof workspace>;
+export type WorkspaceCreateInput = {
+    name?: string;
+    path: string;
+};
+export type WorkspaceUpdateInput = {
+    name?: string;
+    path?: string;
+};
+export interface PathValidationResult {
+    isValid: boolean;
+    canonicalPath?: string;
+    error?: string;
+}
+export interface WorkspaceReachabilityResult {
+    reachable: boolean;
+    canonicalPath?: string;
+    error?: string;
+}

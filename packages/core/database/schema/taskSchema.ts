@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { index, jsonb, pgEnum, pgTable, text, timestamp, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { workspace } from './workspaceSchema';
 
 export const taskStatusEnum = pgEnum('task_status', [
     'not_started',
@@ -20,6 +21,12 @@ export const task = pgTable(
         description: text('description').notNull(),
         status: taskStatusEnum('status').notNull().default('not_started'),
         workspacePath: text('workspacePath').notNull(),
+        workspaceId: uuid('workspaceId').references(
+            (): AnyPgColumn => {
+                return workspace.id;
+            },
+            { onDelete: 'set null' },
+        ),
         runtime: text('runtime').$type<'model' | 'agent'>().notNull().default('model'),
         provider: text('provider'),
         modelId: text('modelId'),
@@ -38,6 +45,7 @@ export const task = pgTable(
         return {
             statusIdx: index('task_status_idx').on(table.status),
             workspaceIdx: index('task_workspace_path_idx').on(table.workspacePath),
+            workspaceIdIdx: index('task_workspace_id_idx').on(table.workspaceId),
             updatedAtIdx: index('task_updated_at_idx').on(table.updatedAt),
             nextTaskIdIdx: index('task_next_task_id_idx').on(table.nextTaskId),
         };
@@ -72,6 +80,10 @@ export const taskComment = pgTable(
 
 export const taskRelations = relations(task, ({ one, many }) => {
     return {
+        workspace: one(workspace, {
+            fields: [task.workspaceId],
+            references: [workspace.id],
+        }),
         nextTask: one(task, {
             fields: [task.nextTaskId],
             references: [task.id],

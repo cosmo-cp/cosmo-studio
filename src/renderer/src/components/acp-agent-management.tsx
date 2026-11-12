@@ -15,14 +15,17 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { WorkspaceSelector } from '@/components/workspace-selector';
 import {
     getDistributionLabel,
     isInstallable,
     useAcpAgentPageState,
 } from '@/features/acp-agents/use-acp-agent-page-state';
+import { useGetWorkspacesQuery } from '@/features/workspaces/workspaces-api';
 import { Download, Pencil, Plus, RefreshCw, TestTube2, Trash2, XCircle } from 'lucide-react';
 
 export function AcpAgentManagement() {
+    const { data: workspaces = [] } = useGetWorkspacesQuery();
     const {
         agents,
         agentsError,
@@ -116,7 +119,11 @@ export function AcpAgentManagement() {
                                             {[agent.command, ...agent.args].join(' ')}
                                         </TableCell>
                                         <TableCell className="max-w-55 truncate text-xs text-muted-foreground">
-                                            {agent.defaultCwd || 'Not set'}
+                                            {agent.defaultWorkspaceId
+                                                ? workspaces.find((w) => w.id === agent.defaultWorkspaceId)?.name ||
+                                                  agent.defaultCwd ||
+                                                  'Not set'
+                                                : agent.defaultCwd || 'Not set'}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Tooltip>
@@ -208,13 +215,38 @@ export function AcpAgentManagement() {
                                         <label className="text-sm font-medium" htmlFor="edit-agent-workspace">
                                             Workspace path
                                         </label>
-                                        <Input
-                                            id="edit-agent-workspace"
-                                            value={editForm.defaultCwd}
-                                            onChange={(event) =>
-                                                setEditForm({ ...editForm, defaultCwd: event.target.value })
-                                            }
-                                        />
+                                        <div className="flex flex-col gap-1.5">
+                                            <WorkspaceSelector
+                                                value={editForm.defaultWorkspaceId}
+                                                onChange={(wsId) => {
+                                                    const ws = workspaces.find((w) => w.id === wsId);
+                                                    setEditForm({
+                                                        ...editForm,
+                                                        defaultWorkspaceId: wsId,
+                                                        defaultCwd: ws ? ws.canonicalPath : '',
+                                                    });
+                                                }}
+                                                allowNone={true}
+                                                placeholder="Select registered workspace..."
+                                                className="w-full justify-between h-9 text-xs"
+                                            />
+                                            <Input
+                                                id="edit-agent-workspace"
+                                                placeholder="Optional custom workspace path"
+                                                value={editForm.defaultCwd}
+                                                onChange={(event) => {
+                                                    const val = event.target.value;
+                                                    const matched = workspaces.find(
+                                                        (w) => w.canonicalPath === val || w.rawPath === val,
+                                                    );
+                                                    setEditForm({
+                                                        ...editForm,
+                                                        defaultCwd: val,
+                                                        defaultWorkspaceId: matched ? matched.id : null,
+                                                    });
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium" htmlFor="edit-agent-auth">

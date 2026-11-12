@@ -33,6 +33,10 @@ Cosmo Studio is a dual-runtime app with a static-exported Next.js UI. It builds 
 - **ACP agents**: `packages/core/services/AcpAgentService.ts`, `packages/core/services/AcpRegistryService.ts`, `src/main/services/AcpAgentRuntimeService.ts`
     - Agent definitions and registry cache are shared domain data; process spawning and ACP provider sessions stay in main/HTTP runtime.
     - Renderer receives redacted agent views only; env values are never returned.
+- **Workspaces & Execution Concurrency**: `packages/core/services/WorkspaceService.ts`, `src/main/services/WorkspaceExecutionLockService.ts`
+    - Workspaces decouple coding agents from hardcoded paths; selectable across Chat and Tasks.
+    - `WorkspaceExecutionLockService` enforces mutual exclusion across interactive chat turns and background tasks using hierarchical path overlap checking (`isPathOverlapping`).
+    - Platform folder picking uses the injected `FolderPickerService` interface (`ElectronFolderPickerService` on desktop, `HttpFolderPickerService` in HTTP mode).
 - **Tooling/scripts**: `scripts/`
     - `scripts/generate-api.ts` generates the preload RPC modules, browser-safe HTTP API modules, and HTTP RPC manifest from main IPC controllers.
     - `scripts/patch-electron-forge-plugin-vite.mjs` patches Electron Forge's preload Vite config after install for the current Vite compatibility issue.
@@ -45,6 +49,8 @@ Cosmo Studio is a dual-runtime app with a static-exported Next.js UI. It builds 
 Internal docs live in `docs/` (keep them updated):
 
 - `docs/feature.md` - quick feature inventory and source map.
+- `docs/designs/multi-workspace.md`
+- `docs/designs/ai-tasks.md`
 - `docs/ARCHITECTURE.md`
 - `docs/IPC.md`
 - `docs/DATABASE.md`

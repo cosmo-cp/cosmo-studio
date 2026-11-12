@@ -2,10 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Task, TaskCreateInput } from '../../dto';
 import type { TaskRepository } from '../../repositories/TaskRepository';
 import { TaskService } from '../TaskService';
+import type { WorkspaceService } from '../WorkspaceService';
 
 describe('TaskService', () => {
     let service: TaskService;
     let mockRepo: Record<keyof TaskRepository, ReturnType<typeof vi.fn>>;
+    let mockWorkspaceService: {
+        get: ReturnType<typeof vi.fn>;
+    };
 
     const sampleTask: Task = {
         id: '11111111-1111-1111-1111-111111111111',
@@ -13,6 +17,7 @@ describe('TaskService', () => {
         description: 'Sample Description',
         status: 'not_started',
         workspacePath: '/path/to/workspace',
+        workspaceId: null,
         runtime: 'model',
         provider: 'anthropic',
         modelId: 'claude-3-7-sonnet',
@@ -28,13 +33,20 @@ describe('TaskService', () => {
             list: vi.fn(),
             getById: vi.fn(),
             getWithLinks: vi.fn(),
+            getPredecessor: vi.fn().mockResolvedValue(undefined),
             create: vi.fn(),
             update: vi.fn(),
             close: vi.fn(),
             updateStatus: vi.fn(),
             listByStatus: vi.fn(),
         };
-        service = new TaskService(mockRepo as unknown as TaskRepository);
+        mockWorkspaceService = {
+            get: vi.fn(),
+        };
+        service = new TaskService(
+            mockRepo as unknown as TaskRepository,
+            mockWorkspaceService as unknown as WorkspaceService,
+        );
     });
 
     describe('create', () => {
@@ -56,6 +68,7 @@ describe('TaskService', () => {
                 ...input,
                 title: 'New Task',
                 workspacePath: '/my/repo',
+                workspaceId: null,
                 status: 'not_started',
                 runtime: 'model',
             });
@@ -71,6 +84,45 @@ describe('TaskService', () => {
             await expect(service.create({ title: 'Title', description: 'desc', workspacePath: '' })).rejects.toThrow(
                 'Workspace path is required.',
             );
+        });
+
+        it('resolves workspacePath from workspaceService when workspaceId is provided', async () => {
+            mockWorkspaceService.get.mockResolvedValue({
+                id: 'ws-123',
+                canonicalPath: '/canonical/path',
+            });
+            mockRepo.create.mockResolvedValue({
+                ...sampleTask,
+                title: 'Task With WS',
+                workspaceId: 'ws-123',
+                workspacePath: '/canonical/path',
+            });
+
+            const created = await service.create({
+                title: 'Task With WS',
+                description: 'desc',
+                workspaceId: 'ws-123',
+            });
+
+            expect(created.title).toBe('Task With WS');
+            expect(mockWorkspaceService.get).toHaveBeenCalledWith('ws-123');
+            expect(mockRepo.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    workspaceId: 'ws-123',
+                    workspacePath: '/canonical/path',
+                }),
+            );
+        });
+
+        it('throws error when workspaceId does not exist', async () => {
+            mockWorkspaceService.get.mockResolvedValue(undefined);
+            await expect(
+                service.create({
+                    title: 'Task With Invalid WS',
+                    description: 'desc',
+                    workspaceId: 'ws-invalid',
+                }),
+            ).rejects.toThrow('Workspace ws-invalid does not exist.');
         });
     });
 
@@ -109,6 +161,49 @@ describe('TaskService', () => {
             const res = await service.update(sampleTask.id, { description: 'Updated while running' });
             expect(res.description).toBe('Updated while running');
             expect(mockRepo.update).toHaveBeenCalled();
+        });
+
+        it('updates task with workspaceId by resolving path', async () => {
+            mockRepo.getById.mockResolvedValue(sampleTask);
+            mockWorkspaceService.get.mockResolvedValue({
+                id: 'ws-456',
+                canonicalPath: '/new/canonical/path',
+            });
+            mockRepo.update.mockResolvedValue({
+                ...sampleTask,
+                workspaceId: 'ws-456',
+                workspacePath: '/new/canonical/path',
+            });
+
+            const res = await service.update(sampleTask.id, { workspaceId: 'ws-456' });
+            expect(mockWorkspaceService.get).toHaveBeenCalledWith('ws-456');
+            expect(mockRepo.update).toHaveBeenCalledWith(sampleTask.id, {
+                workspaceId: 'ws-456',
+                workspacePath: '/new/canonical/path',
+            });
+            expect(res.workspacePath).toBe('/new/canonical/path');
+        });
+
+        it('uses the resolved workspace path when both workspace fields are supplied', async () => {
+            mockRepo.getById.mockResolvedValue(sampleTask);
+            mockWorkspaceService.get.mockResolvedValue({ canonicalPath: '/canonical' });
+
+            await service.update(sampleTask.id, { workspaceId: 'ws-456', workspacePath: '/other' });
+
+            expect(mockRepo.update).toHaveBeenCalledWith(sampleTask.id, {
+                workspaceId: 'ws-456',
+                workspacePath: '/canonical',
+            });
+        });
+
+        it('rejects a resolved workspace change while running', async () => {
+            mockRepo.getById.mockResolvedValue({ ...sampleTask, status: 'in_progress' });
+            mockWorkspaceService.get.mockResolvedValue({ canonicalPath: '/canonical' });
+
+            await expect(
+                service.update(sampleTask.id, { workspaceId: 'ws-456', workspacePath: sampleTask.workspacePath }),
+            ).rejects.toThrow('Cannot change workspace path while task is actively running. Cancel the task first.');
+            expect(mockRepo.update).not.toHaveBeenCalled();
         });
 
         it('rejects empty title or workspacePath in update', async () => {
@@ -210,6 +305,39 @@ describe('TaskService', () => {
             await expect(service.linkTasks('source-id', 'target-id')).rejects.toThrow(
                 'Target task target-id does not exist.',
             );
+        });
+
+        it('throws if target task already has a different predecessor', async () => {
+            const taskA: Task = { ...sampleTask, id: 'task-A', nextTaskId: null };
+            const taskB: Task = { ...sampleTask, id: 'task-B', nextTaskId: null };
+            const taskExisting: Task = { ...sampleTask, id: 'task-existing', title: 'Existing Upstream' };
+
+            mockRepo.getById.mockImplementation(async (id: string) => {
+                if (id === 'task-A') return taskA;
+                if (id === 'task-B') return taskB;
+                return undefined;
+            });
+            mockRepo.getPredecessor.mockResolvedValue(taskExisting);
+
+            await expect(service.linkTasks('task-A', 'task-B')).rejects.toThrow(
+                'Target task task-B is already linked to predecessor task "Existing Upstream".',
+            );
+            expect(mockRepo.update).not.toHaveBeenCalled();
+        });
+
+        it('allows idempotent re-linking if target task predecessor is the source task itself', async () => {
+            const taskA: Task = { ...sampleTask, id: 'task-A', nextTaskId: 'task-B' };
+            const taskB: Task = { ...sampleTask, id: 'task-B', nextTaskId: null };
+
+            mockRepo.getById.mockImplementation(async (id: string) => {
+                if (id === 'task-A') return taskA;
+                if (id === 'task-B') return taskB;
+                return undefined;
+            });
+            mockRepo.getPredecessor.mockResolvedValue(taskA);
+
+            await service.linkTasks('task-A', 'task-B');
+            expect(mockRepo.update).toHaveBeenCalledWith('task-A', { nextTaskId: 'task-B' });
         });
 
         it('successfully links two tasks with no cycles', async () => {

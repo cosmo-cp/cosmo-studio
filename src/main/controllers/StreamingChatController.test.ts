@@ -8,6 +8,7 @@ import type { WebSearchConfigService } from 'core/services/WebSearchConfigServic
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AcpAgentRuntimeService } from '../services/AcpAgentRuntimeService';
 import { ChatStreamingService } from '../services/ChatStreamingService';
+import { WorkspaceExecutionLockService } from '../services/WorkspaceExecutionLockService';
 import { StreamingChatController } from './StreamingChatController';
 
 const logger = vi.hoisted(() => {
@@ -155,7 +156,15 @@ function createControllerDependencies(
         mcpClientManager,
         webSearchConfigService,
         acpAgentRuntimeService,
-        { getChatById: vi.fn().mockResolvedValue({ id: 'chat-id' }) } as never,
+        {
+            getChatById: vi.fn().mockResolvedValue({ id: 'chat-id' }),
+            updateSelectedWorkspaceForChat: vi.fn().mockResolvedValue(undefined),
+        } as never,
+        new WorkspaceExecutionLockService(),
+        {
+            get: vi.fn().mockResolvedValue({ id: 'ws-1', canonicalPath: '/tmp' }),
+            validateReachability: vi.fn().mockResolvedValue({ reachable: true, canonicalPath: '/tmp' }),
+        } as never,
     );
     const controller = new StreamingChatController(chatStreamingService);
 

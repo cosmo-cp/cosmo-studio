@@ -1,8 +1,9 @@
-import { inject, injectable } from 'inversify';
+import { inject, injectable, optional } from 'inversify';
 import { AcpAgentSourceEnum } from '../database/schema/acpAgentSchema';
 import type { AcpAgent, AcpAgentCreateInput, AcpAgentRuntimeConfig, AcpAgentUpdateInput, AcpAgentView } from '../dto';
 import { Base64SecretStore, type SecretStore } from '../platform/SecretStore';
 import { AcpAgentRepository } from '../repositories/AcpAgentRepository';
+import { WorkspaceRepository } from '../repositories/WorkspaceRepository';
 import { CORETYPES } from '../types/types';
 import { uninstallAcpBinary } from './AcpBinaryInstaller';
 
@@ -35,6 +36,9 @@ export class AcpAgentService {
         private readonly repository: AcpAgentRepository,
         @inject(CORETYPES.SecretStore)
         private readonly secretStore: SecretStore = new Base64SecretStore(),
+        @inject(CORETYPES.WorkspaceRepository)
+        @optional()
+        private readonly workspaceRepository?: WorkspaceRepository,
     ) {}
 
     // Lists agents without leaking encrypted environment values to the renderer.
@@ -79,7 +83,29 @@ export class AcpAgentService {
                 throw new Error('This registry agent is already installed.');
             }
         }
-        const created = await this.repository.create(this.normalizeInput(input));
+
+        let defaultCwd = input.defaultCwd?.trim() || null;
+        let defaultWorkspaceId = input.defaultWorkspaceId ?? null;
+
+        if (defaultWorkspaceId && this.workspaceRepository) {
+            const ws = await this.workspaceRepository.getById(defaultWorkspaceId);
+            if (ws) {
+                defaultCwd = ws.canonicalPath;
+            }
+        } else if (defaultCwd && this.workspaceRepository) {
+            const ws = await this.workspaceRepository.findByCanonicalPath(defaultCwd);
+            if (ws) {
+                defaultWorkspaceId = ws.id;
+            }
+        }
+
+        const created = await this.repository.create(
+            this.normalizeInput({
+                ...input,
+                defaultCwd: defaultCwd,
+                defaultWorkspaceId: defaultWorkspaceId,
+            }),
+        );
         return this.toView(created);
     }
 
@@ -88,10 +114,31 @@ export class AcpAgentService {
         if (!existing) {
             throw new Error(`ACP agent with ID ${id} not found.`);
         }
+
+        let defaultCwd = updates.defaultCwd !== undefined ? updates.defaultCwd?.trim() || null : existing.defaultCwd;
+        let defaultWorkspaceId =
+            updates.defaultWorkspaceId !== undefined
+                ? (updates.defaultWorkspaceId ?? null)
+                : existing.defaultWorkspaceId;
+
+        if (updates.defaultWorkspaceId !== undefined && updates.defaultWorkspaceId && this.workspaceRepository) {
+            const ws = await this.workspaceRepository.getById(updates.defaultWorkspaceId);
+            if (ws) {
+                defaultCwd = ws.canonicalPath;
+            }
+        } else if (updates.defaultCwd !== undefined && updates.defaultCwd && this.workspaceRepository) {
+            const ws = await this.workspaceRepository.findByCanonicalPath(updates.defaultCwd);
+            if (ws) {
+                defaultWorkspaceId = ws.id;
+            }
+        }
+
         const normalized = this.normalizeInput(
             {
                 ...existing,
                 ...updates,
+                defaultCwd: defaultCwd,
+                defaultWorkspaceId: defaultWorkspaceId,
                 env: updates.env ?? existing.env,
             } as AcpAgentCreateInput,
             { envIsEncrypted: updates.env === undefined },
@@ -138,6 +185,7 @@ export class AcpAgentService {
             args: normalizeStringList(input.args, 'Args'),
             env: options.envIsEncrypted ? env : this.encryptEnv(env),
             defaultCwd: input.defaultCwd?.trim() || null,
+            defaultWorkspaceId: input.defaultWorkspaceId ?? null,
             authMethodId: input.authMethodId?.trim() || null,
             enabled: input.enabled ?? true,
             mcpServerIds: normalizeStringList(input.mcpServerIds, 'MCP server IDs'),

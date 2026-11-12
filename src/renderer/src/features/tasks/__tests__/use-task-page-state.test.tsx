@@ -11,6 +11,7 @@ const mockTask1: Task = {
     title: 'Alpha Task',
     description: 'Alpha description',
     workspacePath: '/path/alpha',
+    workspaceId: null,
     runtime: 'model',
     provider: 'openai',
     modelId: 'gpt-4o',
@@ -27,6 +28,7 @@ const mockTask2: Task = {
     title: 'Beta Task',
     description: 'Beta description',
     workspacePath: '/path/beta',
+    workspaceId: null,
     runtime: 'agent',
     provider: null,
     modelId: null,
@@ -43,6 +45,7 @@ const mockTaskClosed: Task = {
     title: 'Closed Task',
     description: 'Closed description',
     workspacePath: '/path/closed',
+    workspaceId: null,
     runtime: 'model',
     provider: 'openai',
     modelId: 'gpt-4o',
@@ -204,5 +207,44 @@ describe('useTaskPageState', () => {
             authorLabel: 'User',
             content: 'Great progress!',
         });
+    });
+
+    it('filters linkCandidates to exclude self, closed tasks, and tasks already linked to another predecessor', async () => {
+        const taskA = { ...mockTask1, id: 'task-A', title: 'Task A', nextTaskId: 'task-C' };
+        const taskB = { ...mockTask1, id: 'task-B', title: 'Task B', nextTaskId: null };
+        const taskC = { ...mockTask1, id: 'task-C', title: 'Task C', nextTaskId: null }; // Already linked by taskA
+        const taskD = { ...mockTask1, id: 'task-D', title: 'Task D', nextTaskId: null }; // Available
+        const taskClosed = { ...mockTaskClosed, id: 'task-closed' }; // Closed
+
+        const wrapper = createWrapper({
+            task: {
+                list: vi.fn().mockResolvedValue([taskA, taskB, taskC, taskD, taskClosed]),
+                get: vi.fn().mockResolvedValue({ ...taskB, nextTask: null, previousTask: null }),
+                listComments: vi.fn().mockResolvedValue([]),
+            },
+        });
+
+        const { result } = renderHook(() => useTaskPageState(), { wrapper });
+
+        await waitFor(() => {
+            expect(result.current.allTasks).toHaveLength(5);
+        });
+
+        // When no task selected, linkCandidates is empty
+        expect(result.current.linkCandidates).toEqual([]);
+
+        // Select Task B
+        act(() => {
+            result.current.setSelectedTaskId('task-B');
+        });
+
+        // Should include taskA (it doesn't have an upstream predecessor) and taskD.
+        // Should exclude taskB (self), taskC (already pointed to by taskA.nextTaskId), and taskClosed (closed).
+        const candidateIds = result.current.linkCandidates.map((t) => t.id);
+        expect(candidateIds).toContain('task-A');
+        expect(candidateIds).toContain('task-D');
+        expect(candidateIds).not.toContain('task-B');
+        expect(candidateIds).not.toContain('task-C');
+        expect(candidateIds).not.toContain('task-closed');
     });
 });

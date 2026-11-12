@@ -32,6 +32,7 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
                   runtime?: 'model' | 'agent';
                   agentId?: string | null;
                   agentCwd?: string | null;
+                  workspaceId?: string | null;
               }
             | undefined;
         const runtime = metadata?.runtime ?? 'model';
@@ -106,6 +107,7 @@ export class IpcChatTransport implements ChatTransport<UIMessage> {
                         runtime,
                         agentId,
                         agentCwd: metadata?.agentCwd ?? null,
+                        workspaceId: metadata?.workspaceId ?? null,
                     });
                 } catch (error) {
                     cleanup();

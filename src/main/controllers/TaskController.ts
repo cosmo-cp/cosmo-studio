@@ -24,20 +24,32 @@ const taskListFilterSchema = z.object({
     includeClosed: z.boolean().optional(),
 });
 
-const taskCreateSchema = z.object({
-    title: z.string().min(1),
-    description: z.string().min(1),
-    workspacePath: z.string().min(1),
-    runtime: z.enum(['model', 'agent']).optional(),
-    provider: z.string().optional().nullable(),
-    modelId: z.string().optional().nullable(),
-    agentId: z.string().uuid().optional().nullable(),
-});
+const taskCreateSchema = z
+    .object({
+        title: z.string().min(1),
+        description: z.string().min(1),
+        workspacePath: z.string().optional(),
+        workspaceId: z.string().uuid().optional().nullable(),
+        runtime: z.enum(['model', 'agent']).optional(),
+        provider: z.string().optional().nullable(),
+        modelId: z.string().optional().nullable(),
+        agentId: z.string().uuid().optional().nullable(),
+    })
+    .refine(
+        (data) => {
+            return Boolean(data.workspaceId) || Boolean(data.workspacePath && data.workspacePath.trim().length > 0);
+        },
+        {
+            message: 'Either workspaceId or non-empty workspacePath must be provided',
+            path: ['workspacePath'],
+        },
+    );
 
 const taskUpdateSchema = z.object({
     title: z.string().min(1).optional(),
     description: z.string().optional(),
-    workspacePath: z.string().min(1).optional(),
+    workspacePath: z.string().optional(),
+    workspaceId: z.string().uuid().optional().nullable(),
     runtime: z.enum(['model', 'agent']).optional(),
     provider: z.string().optional().nullable(),
     modelId: z.string().optional().nullable(),

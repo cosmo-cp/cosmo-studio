@@ -20,6 +20,7 @@ const mockTaskA: Task = {
     title: 'Task Alpha',
     description: 'Implement alpha logic',
     workspacePath: '/path/to/project-a',
+    workspaceId: null,
     runtime: 'model',
     provider: 'openai',
     modelId: 'gpt-4o',
@@ -36,6 +37,7 @@ const mockTaskB: Task = {
     title: 'Task Beta',
     description: 'Implement beta logic',
     workspacePath: '/path/to/project-b',
+    workspaceId: null,
     runtime: 'agent',
     provider: null,
     modelId: null,
@@ -246,6 +248,7 @@ describe('TaskLinkCard', () => {
                 description: 'Upstream desc',
                 status: 'done',
                 workspacePath: '/w0',
+                workspaceId: null,
                 runtime: 'model',
                 provider: null,
                 modelId: null,
@@ -398,6 +401,7 @@ describe('CreateTaskDialog', () => {
         registryId: null,
         version: null,
         defaultCwd: null,
+        defaultWorkspaceId: null,
         authMethodId: null,
         enabled: true,
         args: [],
@@ -411,13 +415,15 @@ describe('CreateTaskDialog', () => {
     it('fills form and calls onSubmit', async () => {
         const onSubmit = vi.fn().mockResolvedValue(undefined);
         render(
-            <CreateTaskDialog
-                open={true}
-                onOpenChange={vi.fn()}
-                onSubmit={onSubmit}
-                providers={[mockProvider]}
-                agents={[mockAgent]}
-            />,
+            <StoreProvider appDataSource={createMockAppDataSource()}>
+                <CreateTaskDialog
+                    open={true}
+                    onOpenChange={vi.fn()}
+                    onSubmit={onSubmit}
+                    providers={[mockProvider]}
+                    agents={[mockAgent]}
+                />
+            </StoreProvider>,
         );
 
         fireEvent.change(screen.getByTestId('task-title-input'), {
@@ -440,6 +446,67 @@ describe('CreateTaskDialog', () => {
                 runtime: 'model',
             }),
         );
+    });
+
+    it('selects workspace from WorkspaceSelector and submits workspaceId', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        const mockWorkspace = {
+            id: 'ws-test-123',
+            name: 'Repo Workspace',
+            canonicalPath: '/canonical/repo',
+            rawPath: '/canonical/repo',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    workspace: {
+                        list: async () => [mockWorkspace],
+                    },
+                })}
+            >
+                <CreateTaskDialog
+                    open={true}
+                    onOpenChange={vi.fn()}
+                    onSubmit={onSubmit}
+                    providers={[mockProvider]}
+                    agents={[mockAgent]}
+                />
+            </StoreProvider>,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: /select registered workspace/i })).toBeInTheDocument();
+        });
+
+        fireEvent.change(screen.getByTestId('task-title-input'), {
+            target: { value: 'Workspace Task' },
+        });
+        fireEvent.change(screen.getByTestId('task-description-input'), {
+            target: { value: 'Do work in workspace' },
+        });
+
+        // Trigger workspace input matching after query resolves
+        await waitFor(() => {
+            fireEvent.change(screen.getByTestId('task-workspace-input'), {
+                target: { value: '/canonical/repo' },
+            });
+            expect(screen.getByTestId('task-workspace-input')).toHaveValue('/canonical/repo');
+        });
+
+        fireEvent.click(screen.getByTestId('submit-create-task'));
+
+        await waitFor(() => {
+            expect(onSubmit).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'Workspace Task',
+                    workspacePath: '/canonical/repo',
+                    workspaceId: 'ws-test-123',
+                }),
+            );
+        });
     });
 });
 

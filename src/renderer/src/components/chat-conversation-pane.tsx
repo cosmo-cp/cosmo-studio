@@ -31,6 +31,9 @@ interface ChatConversationPaneProps {
     onAgentChange: MultimodalInputProps['onAgentChange'];
     onPersonaChange: MultimodalInputProps['onPersonaChange'];
     onWebSearchChange: MultimodalInputProps['onWebSearchChange'];
+    selectedWorkspaceId?: MultimodalInputProps['selectedWorkspaceId'];
+    isWorkspaceLocked?: MultimodalInputProps['isWorkspaceLocked'];
+    onWorkspaceChange?: MultimodalInputProps['onWorkspaceChange'];
     hideAgentControls?: MultimodalInputProps['hideAgentControls'];
     hideWebSearchControls?: MultimodalInputProps['hideWebSearchControls'];
 }
@@ -58,6 +61,9 @@ export function ChatConversationPane({
     onAgentChange,
     onPersonaChange,
     onWebSearchChange,
+    selectedWorkspaceId,
+    isWorkspaceLocked,
+    onWorkspaceChange,
     hideAgentControls,
     hideWebSearchControls,
 }: ChatConversationPaneProps): JSX.Element {
@@ -99,6 +105,9 @@ export function ChatConversationPane({
                     onAgentChange={onAgentChange}
                     onPersonaChange={onPersonaChange}
                     onWebSearchChange={onWebSearchChange}
+                    selectedWorkspaceId={selectedWorkspaceId}
+                    isWorkspaceLocked={isWorkspaceLocked}
+                    onWorkspaceChange={onWorkspaceChange}
                     hideAgentControls={hideAgentControls}
                     hideWebSearchControls={hideWebSearchControls}
                     selectedWebSearchOptionId={selectedWebSearchOptionId}
