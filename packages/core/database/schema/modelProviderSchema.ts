@@ -21,6 +21,7 @@ export enum ModelProviderTypeEnum {
     FIREWORKS = 'fireworks',
     VOYAGE = 'voyage',
     BASETEN = 'baseten',
+    ASSEMBLYAI = 'assemblyai',
     CUSTOM = 'custom',
 }
 

@@ -4,7 +4,7 @@ export type ProviderCatalogEntry = {
     type: ModelProviderTypeEnum;
     name: string;
     description: string;
-    modelsSource: 'models-dev' | 'ollama' | 'lmstudio' | 'voyage' | 'none';
+    modelsSource: 'models-dev' | 'ollama' | 'lmstudio' | 'voyage' | 'assemblyai' | 'none';
     modelsDevKey?: string;
     /** Hides this provider from the add-provider picker without disabling existing configurations. */
     hidden?: boolean;
@@ -129,6 +129,13 @@ export const ProviderCatalog: ProviderCatalogEntry[] = [
         description: 'High-performance inference platform for open-source and custom AI models.',
         modelsSource: 'models-dev',
         modelsDevKey: 'baseten',
+    },
+    {
+        type: ModelProviderTypeEnum.ASSEMBLYAI,
+        name: 'AssemblyAI',
+        description: 'Industry-leading speech-to-text and Voice AI transcription models.',
+        modelsSource: 'assemblyai',
+        modelsDevKey: 'assemblyai',
     },
     {
         type: ModelProviderTypeEnum.CUSTOM,
