@@ -211,26 +211,30 @@ export class ChatStreamingService {
             this.workspaceLockService.acquireLease(canonicalPath, 'chat', chatId, abortSignal);
         }
 
-        const provider = await this.acpAgentRuntimeService.createProvider(agentId, canonicalPath, chatId);
-        provider.languageModel();
-        const tools = (provider.tools ?? {}) as ToolSet;
+        let provider: Awaited<ReturnType<AcpAgentRuntimeService['createProvider']>> | undefined;
+        try {
+            provider = await this.acpAgentRuntimeService.createProvider(agentId, canonicalPath, chatId);
+            const model = provider.languageModel();
+            const tools = (provider.tools ?? {}) as ToolSet;
+            const activeProvider = provider;
+            let cleanedUp = false;
+            const cleanup = () => {
+                if (cleanedUp) return;
+                cleanedUp = true;
+                if (canonicalPath) {
+                    this.workspaceLockService.releaseLease(canonicalPath, chatId);
+                }
+                activeProvider.cleanup();
+            };
 
-        let cleanedUp = false;
-        const cleanup = () => {
-            if (cleanedUp) return;
-            cleanedUp = true;
+            return { model: model, tools: tools, hasTools: Object.keys(tools).length > 0, cleanup: cleanup };
+        } catch (error) {
             if (canonicalPath) {
                 this.workspaceLockService.releaseLease(canonicalPath, chatId);
             }
-            provider.cleanup();
-        };
-
-        return {
-            model: provider.languageModel(),
-            tools: tools,
-            hasTools: Object.keys(tools).length > 0,
-            cleanup: cleanup,
-        };
+            provider?.cleanup();
+            throw error;
+        }
     }
 
     private async buildTools(): Promise<ToolSet> {

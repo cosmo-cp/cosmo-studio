@@ -53,10 +53,6 @@ export class WorkspaceExecutionLockService {
         // Check for hierarchical path overlap with existing leases
         for (const [existingPath, lease] of this.activeLeases.entries()) {
             if (isPathOverlapping(normalized, existingPath)) {
-                // If it's already leased by the SAME owner, allow re-entrancy
-                if (lease.ownerType === ownerType && lease.ownerId === ownerId) {
-                    return;
-                }
                 throw new WorkspaceBusyError(
                     normalized,
                     lease.ownerType,

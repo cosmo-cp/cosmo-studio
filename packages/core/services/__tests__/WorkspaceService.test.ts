@@ -232,6 +232,13 @@ describe('WorkspaceService', () => {
             expect(res.canonicalPath).toBe(canonical);
         });
 
+        it('resolves symlink aliases to the real directory', async () => {
+            const alias = path.join(tempDir, 'alias');
+            await fs.promises.symlink(tempDir, alias);
+            const res = await service.validateReachability(alias);
+            expect(res.canonicalPath).toBe(await fs.promises.realpath(tempDir));
+        });
+
         it('does not query getById when given a filesystem path', async () => {
             const canonical = await fs.promises.realpath(tempDir);
             mockRepo.getById.mockClear();

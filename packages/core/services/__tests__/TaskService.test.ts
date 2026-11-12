@@ -184,6 +184,28 @@ describe('TaskService', () => {
             expect(res.workspacePath).toBe('/new/canonical/path');
         });
 
+        it('uses the resolved workspace path when both workspace fields are supplied', async () => {
+            mockRepo.getById.mockResolvedValue(sampleTask);
+            mockWorkspaceService.get.mockResolvedValue({ canonicalPath: '/canonical' });
+
+            await service.update(sampleTask.id, { workspaceId: 'ws-456', workspacePath: '/other' });
+
+            expect(mockRepo.update).toHaveBeenCalledWith(sampleTask.id, {
+                workspaceId: 'ws-456',
+                workspacePath: '/canonical',
+            });
+        });
+
+        it('rejects a resolved workspace change while running', async () => {
+            mockRepo.getById.mockResolvedValue({ ...sampleTask, status: 'in_progress' });
+            mockWorkspaceService.get.mockResolvedValue({ canonicalPath: '/canonical' });
+
+            await expect(
+                service.update(sampleTask.id, { workspaceId: 'ws-456', workspacePath: sampleTask.workspacePath }),
+            ).rejects.toThrow('Cannot change workspace path while task is actively running. Cancel the task first.');
+            expect(mockRepo.update).not.toHaveBeenCalled();
+        });
+
         it('rejects empty title or workspacePath in update', async () => {
             mockRepo.getById.mockResolvedValue(sampleTask);
 

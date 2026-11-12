@@ -168,6 +168,30 @@ describe('ChatStreamingService workspace coordination', () => {
         expect(mockWorkspaceService.get).toHaveBeenCalledWith('ws-new');
     });
 
+    it.each(['provider', 'model'])('releases the lease when %s initialization fails', async (failure) => {
+        const cleanup = vi.fn();
+        mockAcpAgentRuntimeService.createProvider =
+            failure === 'provider'
+                ? vi.fn().mockRejectedValue(new Error('startup failed'))
+                : vi.fn().mockResolvedValue({
+                      languageModel: () => {
+                          throw new Error('startup failed');
+                      },
+                      cleanup: cleanup,
+                  });
+        const args: ChatSendMessageArgs = {
+            chatId: 'chat-1',
+            messages: [{ id: '1', role: 'user', parts: [{ type: 'text', text: 'hi' }] }],
+            streamChannel: 'stream-1',
+            runtime: 'agent',
+            agentId: 'agent-1',
+            workspaceId: 'ws-1',
+        };
+        await expect(service.createMessageStream(args, new AbortController().signal)).rejects.toThrow('startup failed');
+        expect(workspaceLockService.isWorkspaceBusy('/canonical/workspace/dir')).toBe(false);
+        expect(cleanup).toHaveBeenCalledTimes(failure === 'model' ? 1 : 0);
+    });
+
     it('rejects agent execution when workspace is busy', async () => {
         workspaceLockService.acquireLease('/canonical/workspace/dir', 'task', 'task-99');
 

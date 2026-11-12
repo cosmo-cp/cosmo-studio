@@ -43,14 +43,14 @@ describe('WorkspaceExecutionLockService', () => {
             expect(lockService.isWorkspaceBusy(wsPath)).toBe(false);
         });
 
-        it('allows re-entrant lease acquisition by the same owner', () => {
+        it('rejects duplicate lease acquisition by the same owner', () => {
             const lockService = new WorkspaceExecutionLockService();
             const wsPath = '/my/test/repo';
 
             lockService.acquireLease(wsPath, 'task', 'task-1');
             expect(() => {
                 lockService.acquireLease(wsPath, 'task', 'task-1');
-            }).not.toThrow();
+            }).toThrow(WorkspaceBusyError);
 
             lockService.releaseLease(wsPath, 'task-1');
             expect(lockService.isWorkspaceBusy(wsPath)).toBe(false);

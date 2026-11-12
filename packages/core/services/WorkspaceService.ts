@@ -151,7 +151,7 @@ export class WorkspaceService {
             }
             return {
                 reachable: true,
-                canonicalPath: canonicalPath,
+                canonicalPath: await fs.promises.realpath(canonicalPath),
             };
         } catch {
             return {
