@@ -167,8 +167,7 @@ export function CreateTaskDialog({
                                     id="task-workspace"
                                     placeholder="/Users/username/projects/my-app"
                                     value={workspacePath}
-                                        onChange={handleWorkspacePathChange}
-                                    onChange={(e) => setWorkspacePath(e.target.value)}
+                                    onChange={handleWorkspacePathChange}
                                     required
                                     className="text-xs h-9 pl-8 bg-background font-mono"
                                     data-testid="task-workspace-input"

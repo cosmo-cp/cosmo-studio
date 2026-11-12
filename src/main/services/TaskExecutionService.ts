@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import { generateText, stepCountIs, tool, type ToolSet } from 'ai';
 import type { Task } from 'core/dto';
@@ -21,38 +20,6 @@ import { WorkspaceBusyError, WorkspaceExecutionLockService } from './WorkspaceEx
 const logger = log.scope('tasks');
 
 const MAX_UPSTREAM_CONTEXT_CHARS = 8000; // ~2,000 tokens per Section 4.9
-
-// Check if workspace target points to forbidden OS root or credential directories.
-const isProtectedRoot = (canonicalPath: string): boolean => {
-    // Forbid root directory directly
-    if (canonicalPath === path.resolve('/')) {
-        return true;
-    }
-
-    const homedir = os.homedir();
-    const forbiddenDirs = ['/etc', '/System', '/Windows', path.join(homedir, '.ssh'), path.join(homedir, '.aws')];
-
-    for (const raw of forbiddenDirs) {
-        if (!fs.existsSync(raw)) {
-            continue;
-        }
-        let resolved = raw;
-        try {
-            resolved = fs.realpathSync(raw);
-        } catch {
-            resolved = path.resolve(raw);
-        }
-        if (canonicalPath === resolved) {
-            return true;
-        }
-        const prefix = resolved.endsWith(path.sep) ? resolved : `${resolved}${path.sep}`;
-        if (canonicalPath.startsWith(prefix)) {
-            return true;
-        }
-    }
-
-    return false;
-};
 
 @injectable()
 export class TaskExecutionService {
@@ -280,7 +247,7 @@ export class TaskExecutionService {
 
         const completeTaskTool = tool({
             description: 'Signal task completion or failure with a summary of the outcome.',
-            parameters: z.object({
+            inputSchema: z.object({
                 status: z.enum(['done', 'failed']).describe('Whether the task was completed successfully or failed.'),
                 summary: z
                     .string()
@@ -308,7 +275,6 @@ export class TaskExecutionService {
 
                 try {
                     const result = await generateText({
-                        // @ts-expect-error/type-does-not-exist
                         model: provider.languageModel(),
                         prompt: prompt,
                         tools: {
@@ -328,7 +294,6 @@ export class TaskExecutionService {
                 const mcpTools = await this.mcpClientManager.getAllTools();
 
                 const result = await generateText({
-                    // @ts-expect-error/type-does-not-exist
                     model: registry.languageModel(modelIdentifier as `${string}:${string}`),
                     prompt: prompt,
                     tools: {
