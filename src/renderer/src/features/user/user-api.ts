@@ -9,8 +9,8 @@ export const userKeys = {
 };
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
-    name: 'Gaurav',
-    initials: 'GA',
+    name: 'Guest',
+    initials: 'GU',
     photo: null,
     isConfigured: false,
 };
