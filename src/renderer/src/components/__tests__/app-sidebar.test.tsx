@@ -54,9 +54,9 @@ describe('AppSidebar', () => {
         expect(screen.getByRole('link', { name: /workflows/i }).closest('li')?.nextElementSibling).toContainElement(
             settingsLink,
         );
-        expect(screen.getByText('Gaurav')).toBeInTheDocument();
+        expect(screen.getByText('Guest')).toBeInTheDocument();
         expect(screen.queryByText('Plus')).not.toBeInTheDocument();
-        expect(screen.getByText('GA')).toBeInTheDocument();
+        expect(screen.getByText('GU')).toBeInTheDocument();
     });
 
     it('marks settings active on settings pages', () => {
