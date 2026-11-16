@@ -6,28 +6,14 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUpdateChatMutation } from '@/features/chat/chat-api';
 import type { Chat } from 'core/dto';
-import {
-    Check,
-    ChevronDown,
-    ChevronUp,
-    MoreVertical,
-    Pin,
-    PinOff,
-    Search,
-    Share2,
-    SquarePen,
-    Trash,
-    X,
-} from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, MoreVertical, Pin, PinOff, Search, SquarePen, Trash, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 
 export function ChatHeader({
     chat,
@@ -141,13 +127,6 @@ export function ChatHeader({
     const handleCancelTitle = () => {
         setTitleInput(chat.title);
         setIsEditingTitle(false);
-    };
-
-    const handleShare = () => {
-        if (typeof navigator !== 'undefined' && navigator.clipboard) {
-            navigator.clipboard.writeText(window.location.href);
-            toast.success('Conversation link copied to clipboard');
-        }
     };
 
     return (
@@ -267,24 +246,6 @@ export function ChatHeader({
             ) : (
                 <div className="flex items-center gap-1 ml-auto">
                     <TooltipProvider>
-                        {/* Share */}
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
-                                    onClick={handleShare}
-                                    aria-label="Share conversation"
-                                >
-                                    <Share2 className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Share conversation</p>
-                            </TooltipContent>
-                        </Tooltip>
-
                         {/* More menu */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -300,29 +261,28 @@ export function ChatHeader({
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => setIsSearchOpen(true)}>
                                     <Search className="mr-2 h-4 w-4" />
-                                    <span>Search in conversation</span>
+                                    <span>Search</span>
                                     <span className="ml-auto text-xs text-muted-foreground">⌘F</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={handlePinChat}>
                                     {chat.pinned ? (
                                         <>
                                             <PinOff className="mr-2 h-4 w-4" />
-                                            <span>Unpin conversation</span>
+                                            <span>Unpin</span>
                                         </>
                                     ) : (
                                         <>
                                             <Pin className="mr-2 h-4 w-4" />
-                                            <span>Pin conversation</span>
+                                            <span>Pin</span>
                                         </>
                                     )}
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     onClick={handleDeleteClick}
                                     className="text-destructive focus:text-destructive"
                                 >
                                     <Trash className="mr-2 h-4 w-4" />
-                                    <span>Delete conversation</span>
+                                    <span>Delete</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

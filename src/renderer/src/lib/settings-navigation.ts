@@ -8,7 +8,6 @@ import {
     FolderGit2,
     Globe,
     PlugZap,
-    Settings2,
     Share2,
     Shield,
     Wrench,
@@ -81,10 +80,10 @@ export interface NavSettingsSection {
 }
 
 export const workspaceSettingsSections: readonly NavSettingsSection[] = [
-    { slug: 'general', title: 'General', icon: Settings2, href: '/settings/general' },
     { slug: 'provider', title: 'Providers', icon: Box, href: '/settings/provider' },
+    { slug: 'workspaces', title: 'Workspaces', icon: FolderGit2, href: '/settings/workspaces' },
     { slug: 'agents', title: 'Agents', icon: Zap, href: '/settings/agents' },
-    { slug: 'command', title: 'Tools', icon: Wrench, href: '/settings/command' },
+    { slug: 'command', title: 'Commands', icon: Wrench, href: '/settings/command' },
     { slug: 'mcp-server', title: 'MCP Servers', icon: Share2, href: '/settings/mcp-server' },
     { slug: 'persona', title: 'Persona', icon: CircleUserRound, href: '/settings/persona' },
     { slug: 'projects', title: 'Projects', icon: Folder, href: '/settings/projects' },

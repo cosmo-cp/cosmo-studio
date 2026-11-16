@@ -12,6 +12,7 @@ type AppDataSourceOverrides = {
     workflow?: Partial<AppDataSource['workflow']>;
     task?: Partial<AppDataSource['task']>;
     workspace?: Partial<AppDataSource['workspace']>;
+    user?: Partial<AppDataSource['user']>;
     streaming?: Partial<AppDataSource['streaming']>;
 };
 
@@ -34,6 +35,7 @@ export function createMockAppDataSource(overrides: AppDataSourceOverrides = {}):
                 selected: true,
                 lastMessage: null,
                 lastMessageAt: null,
+                workspaceId: null,
             }),
             updateChat: async () => {
                 throw new Error('chat.updateChat not mocked');
@@ -240,6 +242,21 @@ export function createMockAppDataSource(overrides: AppDataSourceOverrides = {}):
             checkReachability: async () => ({ reachable: true }),
             checkAllReachability: async () => ({}),
             ...overrides.workspace,
+        },
+        user: {
+            getProfile: async () => ({
+                name: 'Gaurav',
+                initials: 'GA',
+                photo: null,
+                isConfigured: true,
+            }),
+            saveProfile: async (input) => ({
+                name: input.name,
+                initials: input.name.slice(0, 2).toUpperCase(),
+                photo: input.photo ?? null,
+                isConfigured: true,
+            }),
+            ...overrides.user,
         },
         streaming: {
             sendMessage: () => undefined,

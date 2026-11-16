@@ -44,14 +44,19 @@ describe('AppSidebar', () => {
 
         expect(screen.getByRole('link', { name: /chat/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /tasks/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /agents/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /tools/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /projects/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /knowledge/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /usage/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /settings/i })).toHaveAttribute('href', getDefaultSettingsHref());
-        expect(screen.getByText('Cosmo Workspace')).toBeInTheDocument();
-        expect(screen.getByText('Professional')).toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: /agents/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: /tools/i })).not.toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /workflows/i })).toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: /knowledge/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: /usage/i })).not.toBeInTheDocument();
+        const settingsLink = screen.getByRole('link', { name: /settings/i });
+        expect(settingsLink).toHaveAttribute('href', getDefaultSettingsHref());
+        expect(screen.getByRole('link', { name: /workflows/i }).closest('li')?.nextElementSibling).toContainElement(
+            settingsLink,
+        );
+        expect(screen.getByText('Gaurav')).toBeInTheDocument();
+        expect(screen.queryByText('Plus')).not.toBeInTheDocument();
+        expect(screen.getByText('GA')).toBeInTheDocument();
     });
 
     it('marks settings active on settings pages', () => {

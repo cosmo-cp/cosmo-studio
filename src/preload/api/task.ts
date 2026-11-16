@@ -5,7 +5,7 @@ import type {
     TaskCreateInput,
     TaskListFilter,
     TaskUpdateInput,
-} from 'core/dto';
+} from '../../../packages/core/dto';
 import type { TaskApi } from '../contracts/task';
 
 export const taskApi: TaskApi = {

@@ -1,21 +1,30 @@
 'use client';
 
 import { CosmoIcon } from '@/components/cosmo-icon';
+import { useUserProfileQuery } from '@/features/user/user-api';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function SplashPage() {
     const router = useRouter();
+    const { user, isLoading } = useUserProfileQuery();
 
     useEffect(() => {
         router.prefetch('/chat');
+        router.prefetch('/welcome');
+
+        if (isLoading) return;
 
         const timeout = setTimeout(() => {
-            router.push('/chat');
+            if (user?.isConfigured) {
+                router.push('/chat');
+            } else {
+                router.push('/welcome');
+            }
         }, 1000);
 
         return () => clearTimeout(timeout);
-    }, [router]);
+    }, [router, user?.isConfigured, isLoading]);
 
     return (
         <div className="h-screen flex items-center justify-center bg-background text-foreground">

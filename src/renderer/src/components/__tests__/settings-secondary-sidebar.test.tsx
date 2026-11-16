@@ -37,9 +37,10 @@ describe('SettingsSecondarySidebar', () => {
         expect(screen.queryByText('Organization')).not.toBeInTheDocument();
 
         // Workspace items
-        expect(screen.getByRole('link', { name: /general/i })).toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: /general/i })).not.toBeInTheDocument();
         expect(screen.getByRole('link', { name: /providers/i })).toBeInTheDocument();
         expect(screen.queryByRole('link', { name: /models/i })).not.toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /workspaces/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /agents/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /tools/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /mcp servers/i })).toBeInTheDocument();
@@ -57,6 +58,13 @@ describe('SettingsSecondarySidebar', () => {
 
         const providersLink = screen.getByRole('link', { name: /providers/i });
         expect(providersLink).toHaveAttribute('data-active', 'true');
+    });
+
+    it('marks workspaces active when on /settings/workspaces', () => {
+        renderSidebar('/settings/workspaces');
+
+        const workspacesLink = screen.getByRole('link', { name: /workspaces/i });
+        expect(workspacesLink).toHaveAttribute('data-active', 'true');
     });
 
     it('marks agents active when on /settings/agents', () => {

@@ -13,6 +13,7 @@ import { ModelProviderController } from './controllers/ModelProviderController';
 import { PersonaController } from './controllers/PersonaController';
 import { StreamingChatController } from './controllers/StreamingChatController';
 import { TaskController } from './controllers/TaskController';
+import { UserController } from './controllers/UserController';
 import { WebSearchController } from './controllers/WebSearchController';
 import { WorkflowController } from './controllers/WorkflowController';
 import { WorkspaceController } from './controllers/WorkspaceController';
@@ -65,5 +66,6 @@ container.bind<Controller>(TYPES.Controller).to(WorkflowController).inSingletonS
 container.bind<Controller>(TYPES.Controller).to(AcpAgentController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(TaskController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(WorkspaceController).inSingletonScope();
+container.bind<Controller>(TYPES.Controller).to(UserController).inSingletonScope();
 
 export default container;

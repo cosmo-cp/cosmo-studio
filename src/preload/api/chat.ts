@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import type { AgentIdentifier, ModelIdentifier, NewChat, PersonaIdentifier } from 'core/dto';
+import type { AgentIdentifier, ModelIdentifier, NewChat, PersonaIdentifier } from '../../../packages/core/dto';
 import type { ChatApi } from '../contracts/chat';
 
 export const chatApi: ChatApi = {

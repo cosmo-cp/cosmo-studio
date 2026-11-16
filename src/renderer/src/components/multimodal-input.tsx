@@ -731,6 +731,7 @@ function PromptInputContent({
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
+                                hidden={true}
                                 type="button"
                                 variant="ghost"
                                 size="icon"
@@ -748,6 +749,7 @@ function PromptInputContent({
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
+                                hidden={true}
                                 type="button"
                                 variant="ghost"
                                 size="icon"
@@ -769,10 +771,10 @@ function PromptInputContent({
                                 (!selectedAgentId ||
                                     !selectedAgent?.enabled ||
                                     (!activeWorkspaceId &&
-                                    !chat.workspaceId &&
-                                    !selectedAgent?.defaultWorkspaceId &&
-                                    !agentCwd.trim() &&
-                                    !selectedAgent.defaultCwd))) ||
+                                        !chat.workspaceId &&
+                                        !selectedAgent?.defaultWorkspaceId &&
+                                        !agentCwd.trim() &&
+                                        !selectedAgent.defaultCwd))) ||
                             (!input && status !== 'submitted' && status !== 'streaming')
                         }
                         status={status}

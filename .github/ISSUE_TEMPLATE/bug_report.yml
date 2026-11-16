@@ -1,0 +1,43 @@
+name: Bug report
+description: Report a problem with Cosmo Studio
+title: '[Bug]: '
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Please search existing issues first. Issues are public: remove API keys, private conversations, file paths, and other sensitive information from anything you share.
+    - type: input
+      id: version
+      attributes:
+          label: Cosmo Studio version
+      validations:
+          required: true
+    - type: input
+      id: os
+      attributes:
+          label: Operating system and version
+      validations:
+          required: true
+    - type: textarea
+      id: steps
+      attributes:
+          label: Steps to reproduce
+      validations:
+          required: true
+    - type: textarea
+      id: actual
+      attributes:
+          label: What happened?
+      validations:
+          required: true
+    - type: textarea
+      id: expected
+      attributes:
+          label: What did you expect?
+      validations:
+          required: true
+    - type: textarea
+      id: additional
+      attributes:
+          label: Additional details
+          description: Optionally include sanitized logs or screenshots.

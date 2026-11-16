@@ -6,7 +6,7 @@ import type {
     TaskListFilter,
     TaskUpdateInput,
     TaskWithLinks,
-} from 'core/dto';
+} from '../../../packages/core/dto';
 
 export interface TaskApi {
     list(filter?: TaskListFilter): Promise<Task[]>;
