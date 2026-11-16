@@ -2,7 +2,6 @@ import { StoreContext } from '@/app/store-provider';
 import { NavUser } from '@/components/nav-user';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { getDefaultSettingsHref } from '@/lib/settings-navigation';
 import { createAppStore } from '@/lib/store/store';
 import { createMockAppDataSource } from '@/test/mock-app-data-source';
 import { fireEvent, render, screen } from '@testing-library/react';
@@ -69,10 +68,8 @@ describe('NavUser', () => {
         await user.click(triggerButton);
 
         // Menu items should be visible
-        expect(await screen.findByText('Upgrade plan')).toBeInTheDocument();
-        expect(screen.getByText('Personalization')).toBeInTheDocument();
+        expect(await screen.findByText('Personalization')).toBeInTheDocument();
         expect(screen.getByText('Profile')).toBeInTheDocument();
-        expect(screen.getByText('Settings')).toBeInTheDocument();
         expect(screen.getByText('Help')).toBeInTheDocument();
 
         // Removed items must not be present
@@ -86,30 +83,6 @@ describe('NavUser', () => {
 
         const profileLink = screen.getByRole('menuitem', { name: /profile/i });
         expect(profileLink).toHaveAttribute('href', '/profile');
-
-        const settingsLink = screen.getByRole('menuitem', { name: /^settings/i });
-        expect(settingsLink).toHaveAttribute('href', getDefaultSettingsHref());
-    });
-
-    it('enqueues a toast when clicking Upgrade plan', async () => {
-        const user = userEvent.setup();
-        const store = createAppStore(createMockAppDataSource());
-        const enqueueSpy = vi.spyOn(store.getState(), 'enqueueToast');
-
-        renderNavUser(store);
-
-        const triggerButton = screen.getByRole('button', { name: /gaurav/i });
-        await user.click(triggerButton);
-
-        const upgradeItem = await screen.findByText('Upgrade plan');
-        await user.click(upgradeItem);
-
-        expect(enqueueSpy).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'success',
-                description: expect.stringContaining('All Cosmo features are currently unlocked'),
-            }),
-        );
     });
 
     it('renders all help submenu options and opens their links', async () => {

@@ -42,7 +42,7 @@ describe('SettingsSecondarySidebar', () => {
         expect(screen.queryByRole('link', { name: /models/i })).not.toBeInTheDocument();
         expect(screen.getByRole('link', { name: /workspaces/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /agents/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /tools/i })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /commands/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /mcp servers/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /persona/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /projects/i })).toBeInTheDocument();
