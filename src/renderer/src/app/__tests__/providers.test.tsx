@@ -1,3 +1,4 @@
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -44,5 +45,18 @@ describe('Providers', () => {
         expect(screen.getByTestId('store-provider')).toContainElement(screen.getByTestId('theme-provider'));
         expect(screen.getByTestId('theme-provider')).toContainElement(screen.getByTestId('ui-feedback-host'));
         expect(screen.getByTestId('theme-provider')).toContainElement(screen.getByTestId('child'));
+    });
+
+    it('provides tooltip context to application content', () => {
+        render(
+            <Providers>
+                <Tooltip>
+                    <TooltipTrigger>Chat action</TooltipTrigger>
+                    <TooltipContent>Action help</TooltipContent>
+                </Tooltip>
+            </Providers>,
+        );
+
+        expect(screen.getByRole('button', { name: 'Chat action' })).toBeInTheDocument();
     });
 });

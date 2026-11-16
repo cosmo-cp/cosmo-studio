@@ -3,6 +3,7 @@ import {
     getDefaultSettingsHref,
     getVisibleSettingsSections,
     settingsSections,
+    workspaceSettingsSections,
 } from '@/lib/settings-navigation';
 import { describe, expect, it } from 'vitest';
 
@@ -22,5 +23,21 @@ describe('settings navigation', () => {
     it('uses the first visible settings section as the default destination', () => {
         expect(getDefaultSettingsHref()).toBe('/settings/provider');
         expect(getDefaultSettingsChildHref()).toBe('/settings/provider');
+    });
+
+    it('defines workspace settings sections without models', () => {
+        const slugs = workspaceSettingsSections.map((section) => section.slug);
+        expect(slugs).toEqual([
+            'provider',
+            'workspaces',
+            'agents',
+            'command',
+            'mcp-server',
+            'persona',
+            'projects',
+            'guardrails',
+        ]);
+        expect(slugs).not.toContain('models');
+        expect(slugs).not.toContain('general');
     });
 });

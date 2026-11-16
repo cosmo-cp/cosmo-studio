@@ -1,5 +1,5 @@
+import { Spinner as Loader } from '@/components/ui/spinner';
 import Image from 'next/image';
-import { Loader } from './ai-elements/loader';
 import { CrossSmallIcon } from './icons';
 import { Button } from './ui/button';
 
@@ -40,7 +40,7 @@ export const PreviewAttachment = ({
 
             {isUploading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                    <Loader size={16} />
+                    <Loader />
                 </div>
             )}
 

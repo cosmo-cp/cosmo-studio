@@ -109,6 +109,9 @@ export class ModelProviderService {
             [ModelProviderTypeEnum.FIREWORKS]: (provider) => {
                 return createFireworks(this.createRemoteOptions(provider));
             },
+            [ModelProviderTypeEnum.BASETEN]: (provider) => {
+                return createBaseten(this.createRemoteOptions(provider));
+            },
             [ModelProviderTypeEnum.VOYAGE]: (provider) => {
                 return createVoyage(this.createRemoteOptions(provider));
             },

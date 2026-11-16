@@ -7,6 +7,7 @@ import type { ModelProviderApi } from './contracts/modelProvider';
 import type { PersonaApi } from './contracts/persona';
 import type { StreamingApi } from './contracts/streaming';
 import type { TaskApi } from './contracts/task';
+import type { UserApi } from './contracts/user';
 import type { WebSearchApi } from './contracts/webSearch';
 import type { WorkflowApi } from './contracts/workflow';
 import type { WorkspaceApi } from './contracts/workspace';
@@ -19,6 +20,7 @@ import { modelProviderHttpApi } from './http-api/modelProvider';
 import { personaHttpApi } from './http-api/persona';
 import { streamingHttpApi } from './http-api/streaming';
 import { taskHttpApi } from './http-api/task';
+import { userHttpApi } from './http-api/user';
 import { webSearchHttpApi } from './http-api/webSearch';
 import { workflowHttpApi } from './http-api/workflow';
 import { workspaceHttpApi } from './http-api/workspace';
@@ -34,6 +36,7 @@ export type { WorkflowApi } from './contracts/workflow';
 export type { AcpAgentApi } from './contracts/acpAgent';
 export type { TaskApi } from './contracts/task';
 export type { WorkspaceApi } from './contracts/workspace';
+export type { UserApi } from './contracts/user';
 export type { StreamingApi } from './contracts/streaming';
 
 export interface CosmoApi {
@@ -48,6 +51,7 @@ export interface CosmoApi {
     acpAgent: AcpAgentApi;
     task: TaskApi;
     workspace: WorkspaceApi;
+    user: UserApi;
     streaming: StreamingApi;
 }
 
@@ -63,5 +67,6 @@ export const httpApi: CosmoApi = {
     acpAgent: acpAgentHttpApi,
     task: taskHttpApi,
     workspace: workspaceHttpApi,
+    user: userHttpApi,
     streaming: streamingHttpApi,
 };

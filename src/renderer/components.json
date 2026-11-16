@@ -1,11 +1,11 @@
 {
     "$schema": "https://ui.shadcn.com/schema.json",
-    "style": "new-york",
+    "style": "radix-rhea",
     "rsc": false,
     "tsx": true,
     "tailwind": {
         "config": "",
-        "css": "src/styles/globals.css",
+        "css": "src/app/globals.css",
         "baseColor": "neutral",
         "cssVariables": true,
         "prefix": ""
@@ -17,8 +17,5 @@
         "ui": "@/components/ui",
         "lib": "@/lib",
         "hooks": "@/hooks"
-    },
-    "registries": {
-        "@ai-elements": "https://registry.ai-sdk.dev/{name}.json"
     }
 }

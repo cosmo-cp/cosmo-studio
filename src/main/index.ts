@@ -9,6 +9,7 @@ import { McpClientManager } from 'core/services/McpClientManager';
 import { CORETYPES } from 'core/types/types';
 import { config } from 'dotenv';
 import { updateElectronApp, UpdateSourceType } from 'update-electron-app';
+import { registerExternalWindowHandler } from './external-window-handler';
 import container from './inversify.config';
 import { logger } from './logger';
 import { TaskExecutionService } from './services/TaskExecutionService';
@@ -102,6 +103,7 @@ export class Main {
                 preload: path.join(__dirname, '../preload/index.cjs'),
             },
         });
+        registerExternalWindowHandler(this.mainWindow.webContents);
         this.mainWindow.webContents.reloadIgnoringCache();
         this.mainWindow.webContents.on('did-navigate', (event, url) => {
             console.log('Renderer navigated to:', url);

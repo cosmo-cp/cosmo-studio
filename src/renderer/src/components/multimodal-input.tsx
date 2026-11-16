@@ -11,7 +11,8 @@ import {
     ModelSelectorLogo,
     ModelSelectorName,
     ModelSelectorTrigger,
-} from '@/components/ai-elements/model-selector';
+} from '@/components/chat/model-selector';
+import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -30,21 +31,15 @@ import { useAppStore } from '@/lib/store/hooks';
 import { WEB_SEARCH_NONE_OPTION_ID, type WebSearchOption } from '@/lib/web-search-options';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';
-import { ModelModalityEnum } from 'core/database/schema/modelProviderSchema';
 import type { AcpAgentView, Chat, ProviderWithModels } from 'core/dto';
-import { CheckIcon } from 'lucide-react';
+import { BookOpen, CheckIcon, ChevronDown, ChevronUp, Paperclip, SlidersHorizontal, Zap } from 'lucide-react';
 import type { FocusEvent, KeyboardEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Attachment, AttachmentPreview, AttachmentRemove, Attachments } from './ai-elements/attachments';
+import { Attachment, AttachmentPreview, AttachmentRemove, Attachments } from './chat/attachments';
 import {
     PromptInput,
-    PromptInputActionAddAttachments,
-    PromptInputActionMenu,
-    PromptInputActionMenuContent,
-    PromptInputActionMenuTrigger,
     PromptInputBody,
-    PromptInputButton,
     PromptInputFooter,
     PromptInputHeader,
     PromptInputProvider,
@@ -58,7 +53,7 @@ import {
     PromptInputTools,
     usePromptInputAttachments,
     type PromptInputMessage,
-} from './ai-elements/prompt-input';
+} from './chat/prompt-input';
 
 const PERSONA_NONE_VALUE = '__persona_none__';
 const AGENT_NONE_VALUE = '__agent_none__';
@@ -154,17 +149,6 @@ export function MultimodalInput({
                       label: 'Disabled',
                   },
               ];
-
-    const selectedModelInfo = useMemo(() => {
-        if (providers.length === 0) return undefined;
-        if (chat.selectedProvider && chat.selectedModelId) {
-            const provider = providers.find((p) => p.name === chat.selectedProvider);
-            if (provider) {
-                return provider.models.find((m) => m.modelId === chat.selectedModelId);
-            }
-        }
-        return undefined;
-    }, [providers, chat.selectedProvider, chat.selectedModelId]);
 
     // Auto-select first available model if none selected.
     useEffect(() => {
@@ -323,7 +307,6 @@ export function MultimodalInput({
                 onAgentCwdChange={setAgentCwd}
                 personaOptions={personaOptions}
                 providers={providers}
-                selectedModelInfo={selectedModelInfo}
                 selectedRuntime={selectedRuntime}
                 selectedAgentId={selectedAgentId}
                 selectedPersonaId={chat.selectedPersonaId ?? null}
@@ -361,7 +344,6 @@ function PromptInputContent({
     onWebSearchChange,
     personaOptions,
     providers,
-    selectedModelInfo,
     selectedRuntime,
     selectedAgentId,
     selectedPersonaId,
@@ -390,7 +372,6 @@ function PromptInputContent({
     onWebSearchChange: (optionId: string) => void;
     personaOptions: { id: string; name: string }[];
     providers: ProviderWithModels[];
-    selectedModelInfo: { inputModalities: string[] } | undefined;
     selectedRuntime: 'model' | 'agent';
     selectedAgentId: string | null;
     selectedPersonaId: string | null;
@@ -550,67 +531,58 @@ function PromptInputContent({
             <PromptInputFooter>
                 <PromptInputTools>
                     {!hideAgentControls ? (
-                        <div className="flex h-8 items-center gap-0.5 rounded-md border bg-background p-0.5">
+                        <div className="flex h-8 items-center gap-0.5 rounded-lg border bg-muted/40 p-0.5">
                             <button
                                 aria-pressed={selectedRuntime === 'model'}
                                 className={
                                     selectedRuntime === 'model'
-                                        ? 'h-6 rounded-sm bg-secondary px-2 text-xs font-medium text-secondary-foreground'
-                                        : 'h-6 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground'
+                                        ? 'h-7 rounded-md bg-background px-2.5 text-xs font-medium text-foreground shadow-xs flex items-center gap-1 cursor-pointer transition-colors'
+                                        : 'h-7 rounded-md px-2.5 text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer transition-colors'
                                 }
-                                onClick={() => onAgentChange(null, 'model')}
+                                onClick={() => {
+                                    onAgentChange(null, 'model');
+                                    setModelSelectorOpen(true);
+                                }}
                                 type="button"
                             >
                                 Model
+                                {selectedRuntime === 'model' && modelSelectorOpen ? (
+                                    <ChevronUp className="h-3 w-3" />
+                                ) : (
+                                    <ChevronDown className="h-3 w-3" />
+                                )}
                             </button>
                             <button
                                 aria-pressed={selectedRuntime === 'agent'}
                                 className={
                                     selectedRuntime === 'agent'
-                                        ? 'h-6 rounded-sm bg-secondary px-2 text-xs font-medium text-secondary-foreground'
-                                        : 'h-6 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground'
+                                        ? 'h-7 rounded-md bg-background px-2.5 text-xs font-medium text-foreground shadow-xs flex items-center gap-1 cursor-pointer transition-colors'
+                                        : 'h-7 rounded-md px-2.5 text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer transition-colors'
                                 }
                                 onClick={() => onAgentChange(selectedAgentId, 'agent')}
                                 type="button"
                             >
+                                <Zap className="h-3 w-3 text-amber-500 fill-amber-500" />
                                 Agent
                             </button>
                         </div>
                     ) : null}
-                    <PromptInputActionMenu>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <span>
-                                    <PromptInputActionMenuTrigger
-                                        disabled={!selectedModelInfo?.inputModalities.includes(ModelModalityEnum.IMAGE)}
-                                    ></PromptInputActionMenuTrigger>
-                                </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                {selectedModelInfo?.inputModalities.includes(ModelModalityEnum.IMAGE) ? (
-                                    <p>Attach Images</p>
-                                ) : (
-                                    <p>Images not supported by selected Model</p>
-                                )}
-                            </TooltipContent>
-                        </Tooltip>
-                        <PromptInputActionMenuContent>
-                            <PromptInputActionAddAttachments />
-                        </PromptInputActionMenuContent>
-                    </PromptInputActionMenu>
                     {selectedRuntime === 'model' ? (
                         <ModelSelector onOpenChange={setModelSelectorOpen} open={modelSelectorOpen}>
                             <ModelSelectorTrigger asChild>
-                                <PromptInputButton className="w-max">
-                                    {chat.selectedModelId ? (
-                                        <ModelSelectorName>{chat.selectedModelId}</ModelSelectorName>
-                                    ) : (
-                                        'Select Model'
-                                    )}
-                                </PromptInputButton>
+                                <button
+                                    type="button"
+                                    className="flex h-8 items-center gap-1.5 rounded-lg border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-accent/60 cursor-pointer transition-colors shadow-2xs"
+                                >
+                                    <ModelSelectorLogo provider={chat.selectedProvider ?? 'google'} />
+                                    <ModelSelectorName className="max-w-[130px] truncate">
+                                        {chat.selectedModelId ?? 'Select Model'}
+                                    </ModelSelectorName>
+                                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                </button>
                             </ModelSelectorTrigger>
                             <ModelSelectorContent>
-                                <ModelSelectorInput placeholder="Search models" />
+                                <ModelSelectorInput placeholder="Search models..." />
                                 <ModelSelectorList>
                                     <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
                                     {providers.map((provider) => (
@@ -624,17 +596,12 @@ function PromptInputContent({
                                                     }}
                                                     value={m.modelId}
                                                 >
+                                                    <ModelSelectorLogo provider={provider.type.toString()} />
                                                     <ModelSelectorName>{m.name}</ModelSelectorName>
-                                                    <ModelSelectorLogo
-                                                        key={provider.type.toString()}
-                                                        provider={provider.type.toString()}
-                                                    />
                                                     {chat.selectedProvider === provider.name &&
                                                     chat.selectedModelId === m.modelId ? (
-                                                        <CheckIcon className="ml-auto size-4" />
-                                                    ) : (
-                                                        <div className="ml-auto size-4" />
-                                                    )}
+                                                        <CheckIcon className="ml-auto size-4 text-[#0B6E99]" />
+                                                    ) : null}
                                                 </ModelSelectorItem>
                                             ))}
                                         </ModelSelectorGroup>
@@ -740,22 +707,80 @@ function PromptInputContent({
                         </DropdownMenu>
                     ) : null}
                 </PromptInputTools>
-                <PromptInputSubmit
-                    disabled={
-                        (selectedRuntime === 'model' && !chat.selectedModelId) ||
-                        (selectedRuntime === 'agent' &&
-                            (!selectedAgentId ||
-                                !selectedAgent?.enabled ||
-                                (!activeWorkspaceId &&
-                                    !chat.workspaceId &&
-                                    !selectedAgent?.defaultWorkspaceId &&
-                                    !agentCwd.trim() &&
-                                    !selectedAgent.defaultCwd))) ||
-                        (!input && status !== 'submitted' && status !== 'streaming')
-                    }
-                    status={status}
-                    onStop={stop}
-                />
+
+                {/* Right actions toolbar */}
+                <div className="flex items-center gap-1 shrink-0 ml-auto">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer rounded-lg"
+                                onClick={() => attachments.openFileDialog()}
+                                aria-label="Add attachments"
+                            >
+                                <Paperclip className="h-4 w-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Attach file</p>
+                        </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                hidden={true}
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer rounded-lg"
+                                aria-label="Parameters"
+                            >
+                                <SlidersHorizontal className="h-4 w-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Parameters</p>
+                        </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                hidden={true}
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer rounded-lg"
+                                aria-label="Knowledge base"
+                            >
+                                <BookOpen className="h-4 w-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Knowledge base</p>
+                        </TooltipContent>
+                    </Tooltip>
+
+                    <PromptInputSubmit
+                        disabled={
+                            (selectedRuntime === 'model' && !chat.selectedModelId) ||
+                            (selectedRuntime === 'agent' &&
+                                (!selectedAgentId ||
+                                    !selectedAgent?.enabled ||
+                                    (!activeWorkspaceId &&
+                                        !chat.workspaceId &&
+                                        !selectedAgent?.defaultWorkspaceId &&
+                                        !agentCwd.trim() &&
+                                        !selectedAgent.defaultCwd))) ||
+                            (!input && status !== 'submitted' && status !== 'streaming')
+                        }
+                        status={status}
+                        onStop={stop}
+                    />
+                </div>
             </PromptInputFooter>
         </PromptInput>
     );

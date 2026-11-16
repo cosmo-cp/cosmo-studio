@@ -16,7 +16,7 @@ This file applies to changes under `src/renderer/`.
 
 ## Development constraints (important)
 
-- The files under the folders `src/renderer/src/components/ui` and `src/renderer/src/components/ai-elements` should never be changed. These files are downloaded using npm. If the files are changed then at the next version upgrade for these files will either have conflict or override content.
+- The files under the folders `src/renderer/src/components/ui` should never be changed. These files are downloaded using npm. If the files are changed then at the next version upgrade for these files will either have conflict or override content.
 
 ## Process boundary rules
 
@@ -38,7 +38,7 @@ This file applies to changes under `src/renderer/`.
 - Component primitives: shadcn/ui + Radix (`src/renderer/src/components/ui/*`).
 - Icons: `lucide-react`.
 - Themes: `next-themes` (`ThemeProvider` in `src/renderer/src/app/providers.tsx`).
-- App provider stack: `src/renderer/src/app/providers.tsx` composes `StoreProvider`, `ThemeProvider`, and `UiFeedbackHost`.
+- App provider stack: `src/renderer/src/app/providers.tsx` composes `StoreProvider`, `ThemeProvider`, `TooltipProvider`, and `UiFeedbackHost`.
 - Notifications: `sonner`.
 
 ## Renderer file placement
@@ -115,7 +115,6 @@ If a test harness is missing, add it as part of the change rather than skipping 
 
 Very Important, do not add any test for files in the following folders
 
-- `src/components/ai-elements`
 - `src/components/ui`
 
 ## How to add a new page + sidebar entry

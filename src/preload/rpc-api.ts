@@ -8,6 +8,7 @@ import { modelProviderApi as modelProviderRpcApi } from './api/modelProvider';
 import { personaApi as personaRpcApi } from './api/persona';
 import { streamingApi } from './api/streaming';
 import { taskApi as taskRpcApi } from './api/task';
+import { userApi as userRpcApi } from './api/user';
 import { webSearchApi as webSearchRpcApi } from './api/webSearch';
 import { workflowApi as workflowRpcApi } from './api/workflow';
 import { workspaceApi as workspaceRpcApi } from './api/workspace';
@@ -24,5 +25,6 @@ export const rpcApi: CosmoApi = {
     acpAgent: acpAgentRpcApi,
     task: taskRpcApi,
     workspace: workspaceRpcApi,
+    user: userRpcApi,
     streaming: streamingApi,
 };

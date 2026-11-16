@@ -1,8 +1,13 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { isProtectedRoot, validateAndCanonicalizePath } from '../pathSecurity';
+
+vi.mock('os', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('os')>();
+    return { ...actual, homedir: vi.fn(actual.homedir) };
+});
 
 describe('pathSecurity', () => {
     let tempDir: string;
@@ -98,16 +103,16 @@ describe('pathSecurity', () => {
         });
 
         it('supports tilde expansion', async () => {
-            // Test with a subdirectory in homedir if available, or mock
-            const projectDirInHome = path.join(os.homedir(), '.cosmo-test-dir-' + Date.now());
-            await fs.promises.mkdir(projectDirInHome, { recursive: true });
+            const projectDirInHome = path.join(tempDir, 'project');
+            await fs.promises.mkdir(projectDirInHome);
+            vi.mocked(os.homedir).mockReturnValue(tempDir);
             try {
                 const tildePath = '~/' + path.basename(projectDirInHome);
                 const res = await validateAndCanonicalizePath(tildePath);
                 expect(res.isValid).toBe(true);
                 expect(res.canonicalPath).toBe(await fs.promises.realpath(projectDirInHome));
             } finally {
-                await fs.promises.rm(projectDirInHome, { recursive: true, force: true });
+                vi.mocked(os.homedir).mockReset();
             }
         });
     });

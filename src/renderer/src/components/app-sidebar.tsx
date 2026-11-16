@@ -1,37 +1,30 @@
 'use client';
 
 import { CosmoIcon } from '@/components/cosmo-icon';
+import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
-    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import {
-    getDefaultSettingsHref,
-    getHomeHref,
-    getSettingsItemHref,
-    getVisibleSettingsSections,
-    isSettingsItemActive,
-    isSettingsPath,
-} from '@/lib/settings-navigation';
-import { ChevronLeft, ChevronRight, MessageCircle, SettingsIcon, SquareCheck, Workflow } from 'lucide-react';
+import { getDefaultSettingsHref, getHomeHref, isSettingsPath } from '@/lib/settings-navigation';
+import { cn } from '@/lib/utils';
+import { MessageSquare, SettingsIcon, SquareCheck, Workflow } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const menuItems = [
+const primaryMenuItems = [
     {
         title: 'Chat',
         href: '/chat',
         pathname: '/chat',
-        icon: MessageCircle,
-        hidden: false,
+        icon: MessageSquare,
     },
     {
         title: 'Tasks',
@@ -41,11 +34,10 @@ const menuItems = [
         hidden: false,
     },
     {
-        title: 'Workflow',
+        title: 'Workflows',
         href: '/workflow',
         pathname: '/workflow',
         icon: Workflow,
-        hidden: true,
     },
 ] as const;
 
@@ -64,89 +56,76 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <Link href={getHomeHref(pathname)} prefetch={false}>
-                                <div className="flex items-start justify-center">
-                                    <CosmoIcon size={48} />
+                                <div className="flex items-start justify-center w-10 h-10">
+                                    <CosmoIcon size={40} />
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-medium">Cosmo</span>
-                                    <span className="truncate text-xs">Studio</span>
+                                    <span className="truncate font-semibold text-foreground">Cosmo</span>
+                                    <span className="truncate text-xs text-muted-foreground">Studio</span>
                                 </div>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
+
             <SidebarContent>
                 <SidebarGroup>
-                    {inSettingsSection && <SidebarGroupLabel>Settings</SidebarGroupLabel>}
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {inSettingsSection ? (
-                                <>
-                                    {getVisibleSettingsSections().map((item) => (
-                                        <SidebarMenuItem key={item.slug}>
-                                            <SidebarMenuButton
-                                                asChild
-                                                isActive={isSettingsItemActive(pathname, item.slug)}
-                                            >
-                                                <Link href={getSettingsItemHref(item.slug)} prefetch={false}>
-                                                    <item.icon />
-                                                    <span>{item.title}</span>
-                                                </Link>
-                                            </SidebarMenuButton>
-                                        </SidebarMenuItem>
-                                    ))}
-                                </>
-                            ) : (
-                                menuItems
-                                    .filter((item) => !item.hidden)
-                                    .map((item) => (
-                                        <SidebarMenuItem key={item.title}>
-                                            <SidebarMenuButton
-                                                asChild
-                                                isActive={isMenuItemActive(pathname, item.pathname)}
-                                            >
-                                                <Link href={item.href} prefetch={false}>
-                                                    <item.icon />
-                                                    <span>{item.title}</span>
-                                                </Link>
-                                            </SidebarMenuButton>
-                                        </SidebarMenuItem>
-                                    ))
-                            )}
+                            {primaryMenuItems.map((item) => {
+                                const active = !inSettingsSection && isMenuItemActive(pathname, item.pathname);
+                                return (
+                                    <SidebarMenuItem key={item.title}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            isActive={active}
+                                            tooltip={item.title}
+                                            className={cn(
+                                                'gap-3 rounded-lg',
+                                                active &&
+                                                    'bg-blue-100/70 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold',
+                                            )}
+                                        >
+                                            <Link href={item.href} prefetch={false}>
+                                                <item.icon className="size-4 shrink-0" />
+                                                <span>{item.title}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                );
+                            })}
+                            {/* Settings Link */}
+                            <SidebarMenuItem>
+                                <SidebarMenuButton
+                                    asChild
+                                    isActive={inSettingsSection}
+                                    tooltip="Settings"
+                                    className={cn(
+                                        'gap-3 rounded-lg',
+                                        inSettingsSection &&
+                                            'bg-blue-100/70 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold',
+                                    )}
+                                >
+                                    <Link href={getDefaultSettingsHref()} prefetch={false}>
+                                        <SettingsIcon className="size-4 shrink-0" />
+                                        <span className="flex-1">Settings</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
-            {!inSettingsSection && (
-                <SidebarFooter>
-                    <SidebarMenu>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton asChild>
-                                <Link href={getDefaultSettingsHref()} prefetch={false}>
-                                    <SettingsIcon />
-                                    <span className="flex-1">Settings</span>
-                                    <ChevronRight className="ml-auto" />
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    </SidebarMenu>
-                </SidebarFooter>
-            )}
-            {inSettingsSection && (
-                <SidebarFooter>
-                    <SidebarMenu>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton asChild>
-                                <Link href={getHomeHref(pathname)} prefetch={false}>
-                                    <ChevronLeft />
-                                    <span>Back</span>
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    </SidebarMenu>
-                </SidebarFooter>
-            )}
+
+            <SidebarFooter>
+                <SidebarMenu>
+                    {/* User Profile Menu */}
+                    <SidebarMenuItem>
+                        <NavUser />
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarFooter>
         </Sidebar>
     );
 }

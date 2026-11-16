@@ -11,6 +11,7 @@ import { ModelProviderRepository } from './repositories/ModelProviderRepository'
 import { PersonaRepository } from './repositories/PersonaRepository';
 import { TaskCommentRepository } from './repositories/TaskCommentRepository';
 import { TaskRepository } from './repositories/TaskRepository';
+import { UserProfileRepository } from './repositories/UserProfileRepository';
 import { WebSearchConfigRepository } from './repositories/WebSearchConfigRepository';
 import { WorkflowRepository } from './repositories/WorkflowRepository';
 import { WorkflowRunRepository } from './repositories/WorkflowRunRepository';
@@ -26,6 +27,7 @@ import { ModelProviderService } from './services/ModelProviderService';
 import { PersonaService } from './services/PersonaService';
 import { TaskCommentService } from './services/TaskCommentService';
 import { TaskService } from './services/TaskService';
+import { UserProfileService } from './services/UserProfileService';
 import { WebSearchConfigService } from './services/WebSearchConfigService';
 import { WorkflowRunService } from './services/WorkflowRunService';
 import { WorkflowService } from './services/WorkflowService';
@@ -58,6 +60,7 @@ coreContainer.bind<WorkflowRunRepository>(CORETYPES.WorkflowRunRepository).to(Wo
 coreContainer.bind<TaskRepository>(CORETYPES.TaskRepository).to(TaskRepository).inSingletonScope();
 coreContainer.bind<TaskCommentRepository>(CORETYPES.TaskCommentRepository).to(TaskCommentRepository).inSingletonScope();
 coreContainer.bind<WorkspaceRepository>(CORETYPES.WorkspaceRepository).to(WorkspaceRepository).inSingletonScope();
+coreContainer.bind<UserProfileRepository>(CORETYPES.UserProfileRepository).to(UserProfileRepository).inSingletonScope();
 
 // Services
 coreContainer.bind<ChatService>(CORETYPES.ChatService).to(ChatService).inSingletonScope();
@@ -78,5 +81,6 @@ coreContainer.bind<WorkflowRunService>(CORETYPES.WorkflowRunService).to(Workflow
 coreContainer.bind<TaskService>(CORETYPES.TaskService).to(TaskService).inSingletonScope();
 coreContainer.bind<TaskCommentService>(CORETYPES.TaskCommentService).to(TaskCommentService).inSingletonScope();
 coreContainer.bind<WorkspaceService>(CORETYPES.WorkspaceService).to(WorkspaceService).inSingletonScope();
+coreContainer.bind<UserProfileService>(CORETYPES.UserProfileService).to(UserProfileService).inSingletonScope();
 
 export { coreContainer };

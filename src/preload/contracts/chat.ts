@@ -5,12 +5,12 @@ import type {
     ModelIdentifier,
     NewChat,
     PersonaIdentifier,
-} from 'core/dto';
+} from '../../../packages/core/dto';
 
 export interface ChatApi {
     getAllChats(searchQuery: string | null): Promise<Chat[]>;
     getChatById(id: string): Promise<ChatWithMessages | undefined>;
-    createChat(newChat: NewChat): Promise<void>;
+    createChat(newChat: NewChat): Promise<Chat>;
     updateChat(id: string, updates: Partial<NewChat>): Promise<Chat>;
     deleteChat(id: string): Promise<void>;
     updatePinnedStatusForChat(id: string, pinned: boolean): Promise<void>;

@@ -54,7 +54,7 @@ export class ChatController implements Controller {
     }
 
     @IpcHandler('createChat', z.tuple([newChatSchema]))
-    public async createChat(newChat: NewChat): Promise<void> {
+    public async createChat(newChat: NewChat): Promise<Chat> {
         return this.chatService.createChat(newChat);
     }
 

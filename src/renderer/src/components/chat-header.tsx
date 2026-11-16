@@ -2,10 +2,17 @@
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useUpdateChatMutation } from '@/features/chat/chat-api';
 import type { Chat } from 'core/dto';
-import { ChevronDown, ChevronUp, Pin, PinOff, Search, Trash, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, MoreVertical, Pin, PinOff, Search, SquarePen, Trash, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 export function ChatHeader({
@@ -32,7 +39,23 @@ export function ChatHeader({
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [titleInput, setTitleInput] = useState(chat.title);
+    const [updateChat] = useUpdateChatMutation();
     const inputRef = useRef<HTMLInputElement>(null);
+    const titleInputRef = useRef<HTMLInputElement>(null);
+
+    const handleStartEditing = () => {
+        setTitleInput(chat.title);
+        setIsEditingTitle(true);
+    };
+
+    useEffect(() => {
+        if (isEditingTitle) {
+            titleInputRef.current?.focus();
+            titleInputRef.current?.select();
+        }
+    }, [isEditingTitle]);
 
     // Ctrl+F / Cmd+F to open search
     useEffect(() => {
@@ -93,11 +116,83 @@ export function ChatHeader({
         onPinChat(chat);
     };
 
+    const handleSaveTitle = async () => {
+        const trimmed = titleInput.trim();
+        if (trimmed && trimmed !== chat.title) {
+            await updateChat({ chatId: chat.id, updates: { title: trimmed } });
+        }
+        setIsEditingTitle(false);
+    };
+
+    const handleCancelTitle = () => {
+        setTitleInput(chat.title);
+        setIsEditingTitle(false);
+    };
+
     return (
-        <div className="flex items-center justify-end h-full flex-row w-full">
+        <div className="flex items-center justify-between h-full flex-row w-full gap-4">
+            {/* Left side: Chat title & edit */}
+            <div className="flex items-center gap-2 min-w-0 max-w-[60%]">
+                {isEditingTitle ? (
+                    <div className="flex items-center gap-1.5">
+                        <Input
+                            ref={titleInputRef}
+                            value={titleInput}
+                            onChange={(e) => setTitleInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveTitle();
+                                if (e.key === 'Escape') handleCancelTitle();
+                            }}
+                            className="h-8 text-sm font-semibold max-w-xs"
+                        />
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-emerald-600 hover:text-emerald-700"
+                            onClick={handleSaveTitle}
+                            aria-label="Save title"
+                        >
+                            <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            onClick={handleCancelTitle}
+                            aria-label="Cancel editing"
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <h1 className="text-base font-semibold truncate text-foreground">{chat.title}</h1>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
+                                        onClick={handleStartEditing}
+                                        aria-label="Rename conversation"
+                                    >
+                                        <SquarePen className="h-3.5 w-3.5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Rename conversation</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
+                )}
+            </div>
+
+            {/* Right side - Search bar or actions */}
             {isSearchOpen ? (
-                <div className="flex items-center gap-2 flex-1 mr-2 animate-in fade-in slide-in-from-right-5 duration-200">
-                    <div className="relative flex-1 max-w-md ml-auto flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1 max-w-md ml-auto animate-in fade-in slide-in-from-right-5 duration-200">
+                    <div className="relative flex-1 flex items-center gap-2">
                         <Input
                             ref={inputRef}
                             placeholder="Search in conversation..."
@@ -149,51 +244,48 @@ export function ChatHeader({
                     </div>
                 </div>
             ) : (
-                /* Right side - Action buttons */
                 <div className="flex items-center gap-1 ml-auto">
                     <TooltipProvider>
-                        {/* Pin */}
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="cursor-pointer" onClick={handlePinChat}>
-                                    {chat.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>{chat.pinned ? <p>Un-Pin Chat</p> : <p>Pin Chat</p>}</TooltipContent>
-                        </Tooltip>
-                        {/* Search */}
-                        <Tooltip>
-                            <TooltipTrigger asChild>
+                        {/* More menu */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="cursor-pointer"
-                                    onClick={() => setIsSearchOpen(true)}
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
+                                    aria-label="More options"
                                 >
-                                    <Search className="h-4 w-4" />
+                                    <MoreVertical className="h-4 w-4" />
                                 </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Search in conversation</p>
-                            </TooltipContent>
-                        </Tooltip>
-
-                        {/* Info */}
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setIsSearchOpen(true)}>
+                                    <Search className="mr-2 h-4 w-4" />
+                                    <span>Search</span>
+                                    <span className="ml-auto text-xs text-muted-foreground">⌘F</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handlePinChat}>
+                                    {chat.pinned ? (
+                                        <>
+                                            <PinOff className="mr-2 h-4 w-4" />
+                                            <span>Unpin</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Pin className="mr-2 h-4 w-4" />
+                                            <span>Pin</span>
+                                        </>
+                                    )}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
                                     onClick={handleDeleteClick}
-                                    className="cursor-pointer"
+                                    className="text-destructive focus:text-destructive"
                                 >
-                                    <Trash className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Delete</p>
-                            </TooltipContent>
-                        </Tooltip>
+                                    <Trash className="mr-2 h-4 w-4" />
+                                    <span>Delete</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </TooltipProvider>
                 </div>
             )}

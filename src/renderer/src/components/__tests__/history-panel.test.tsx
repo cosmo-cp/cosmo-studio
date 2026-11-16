@@ -86,4 +86,36 @@ describe('HistoryPanel', () => {
 
         expect(onSelect).toHaveBeenCalledTimes(1);
     });
+
+    it('deduplicates items with duplicate keys', () => {
+        render(
+            <HistoryPanel
+                action={{
+                    ariaLabel: 'Create item',
+                    icon: Plus,
+                    label: 'Create item',
+                    onClick: vi.fn(),
+                }}
+                getItemGroup={() => 'Today'}
+                getItemKey={(item) => item.id}
+                items={[
+                    { id: 'dup-1', label: 'Item A' },
+                    { id: 'dup-1', label: 'Item A duplicate' },
+                ]}
+                onSearch={vi.fn()}
+                renderPreview={(item) => ({
+                    onSelect: vi.fn(),
+                    selected: false,
+                    summary: <p>Summary</p>,
+                    title: <span>{item.label}</span>,
+                })}
+                searchAriaLabel="Search items"
+                searchPlaceholder="Search items..."
+                title="Items"
+            />,
+        );
+
+        expect(screen.getByText('Item A')).toBeInTheDocument();
+        expect(screen.queryByText('Item A duplicate')).not.toBeInTheDocument();
+    });
 });

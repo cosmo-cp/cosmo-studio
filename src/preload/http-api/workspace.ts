@@ -3,7 +3,7 @@ import type {
     WorkspaceCreateInput,
     WorkspaceReachabilityResult,
     WorkspaceUpdateInput,
-} from 'core/dto';
+} from '../../../packages/core/dto';
 import { callRpc } from '../api/common';
 import type { WorkspaceApi } from '../contracts/workspace';
 

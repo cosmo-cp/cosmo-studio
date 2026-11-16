@@ -1,6 +1,6 @@
+import { IpcChatTransport } from '@/chat-transport';
 import type { UIMessage } from 'ai';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { IpcChatTransport } from '@/chat-transport';
 
 type StreamingApiMock = {
     onData: ReturnType<typeof vi.fn>;
