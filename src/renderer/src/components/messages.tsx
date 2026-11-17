@@ -1,38 +1,112 @@
-import { MessageResponse } from '@/components/chat/message-response';
-import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/chat/reasoning';
-import { Source, Sources, SourcesContent, SourcesTrigger } from '@/components/chat/sources';
 import { PreviewAttachment } from '@/components/preview-attachment';
 import ProviderIcon from '@/components/provider-icon';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import { Button } from '@/components/ui/button';
+import { CodeBlock, CodeBlockActions, CodeBlockContent, CodeBlockCopyButton } from '@/components/ui/code-block';
+import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item';
 import { Message, MessageContent, MessageFooter } from '@/components/ui/message';
+import {
+    MessageScroller,
+    MessageScrollerButton,
+    MessageScrollerContent,
+    MessageScrollerItem,
+    MessageScrollerProvider,
+    MessageScrollerViewport,
+} from '@/components/ui/message-scroller';
 import { Spinner as Loader } from '@/components/ui/spinner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+    Trace,
+    TraceCollapsible,
+    TraceCollapsibleContent,
+    TraceCollapsibleTrigger,
+    TraceIcon,
+    TraceLine,
+    TraceTitle,
+} from '@/components/ui/trace';
 import { useGetProvidersQuery } from '@/features/providers/providers-api';
 import { cn } from '@/lib/utils';
 import type { UseChatHelpers } from '@ai-sdk/react';
+import { cjk } from '@streamdown/cjk';
+import { code } from '@streamdown/code';
+import { math } from '@streamdown/math';
+import { mermaid } from '@streamdown/mermaid';
 import { DynamicToolUIPart, UIMessage } from 'ai';
 import type { ProviderWithModels } from 'core/dto';
 import equal from 'fast-deep-equal';
-import { CopyIcon, MessageSquare } from 'lucide-react';
+import { BrainIcon, CopyIcon, GlobeIcon, MessageSquare, WrenchIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
-import {
-    Confirmation,
-    ConfirmationAccepted,
-    ConfirmationAction,
-    ConfirmationActions,
-    ConfirmationRejected,
-    ConfirmationRequest,
-    ConfirmationTitle,
-} from './chat/confirmation';
-import {
-    Conversation,
-    ConversationContent,
-    ConversationEmptyState,
-    ConversationScrollButton,
-} from './chat/conversation';
-import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from './chat/tool';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Streamdown } from 'streamdown';
+
+const streamdownPlugins = { cjk, code, math, mermaid };
+
+// Keep streaming reasoning visible until it has finished, then allow the reader to reopen it.
+function ReasoningTrace({ text, isStreaming }: { text: string; isStreaming: boolean }) {
+    const [open, setOpen] = useState(isStreaming);
+    const [duration, setDuration] = useState<number>();
+    const started = useRef<number | null>(null);
+    const hasStreamed = useRef(isStreaming);
+    useEffect(() => {
+        if (isStreaming) {
+            hasStreamed.current = true;
+            started.current ??= Date.now();
+            const timer = setTimeout(() => setOpen(true), 0);
+            return () => clearTimeout(timer);
+        }
+        if (started.current !== null) {
+            const elapsed = Math.ceil((Date.now() - started.current) / 1000);
+            setTimeout(() => setDuration(elapsed), 0);
+            started.current = null;
+        }
+        if (hasStreamed.current) {
+            const timer = setTimeout(() => setOpen(false), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [isStreaming]);
+    return (
+        <Trace className="not-prose mb-4 w-full">
+            <TraceCollapsible open={open} onOpenChange={setOpen}>
+                <TraceCollapsibleTrigger>
+                    <TraceLine status={isStreaming ? 'running' : undefined}>
+                        <TraceIcon>
+                            <BrainIcon />
+                        </TraceIcon>
+                        <TraceTitle>
+                            {isStreaming
+                                ? 'Thinking...'
+                                : duration === undefined
+                                  ? 'Thought for a few seconds'
+                                  : `Thought for ${duration} seconds`}
+                        </TraceTitle>
+                    </TraceLine>
+                </TraceCollapsibleTrigger>
+                <TraceCollapsibleContent className="mt-4 text-sm text-muted-foreground">
+                    <Streamdown plugins={streamdownPlugins}>{text}</Streamdown>
+                </TraceCollapsibleContent>
+            </TraceCollapsible>
+        </Trace>
+    );
+}
+
+// Present structured tool input and output with a copy action.
+function ToolData({ label, value, error = false }: { label: string; value: unknown; error?: boolean }) {
+    if (value === undefined || value === null || value === '') return null;
+    const content = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+    return (
+        <div className="space-y-2 overflow-hidden break-words">
+            <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</h4>
+            <CodeBlock variant={error ? 'destructive' : 'default'}>
+                <CodeBlockActions className="opacity-100">
+                    <CodeBlockCopyButton value={content} />
+                </CodeBlockActions>
+                <CodeBlockContent lineNumbers wrap className="py-3 font-mono text-xs">
+                    {content}
+                </CodeBlockContent>
+            </CodeBlock>
+        </div>
+    );
+}
 
 const MODEL_NAME_COLORS = [
     'text-emerald-600 dark:text-emerald-400',
@@ -176,32 +250,63 @@ const ToolPartRenderer = memo(function ToolPartRenderer({
         });
     }, [addToolApprovalResponse, approval]);
 
+    const labels: Record<DynamicToolUIPart['state'], string> = {
+        'approval-requested': 'Awaiting Approval',
+        'approval-responded': 'Responded',
+        'input-available': 'Running',
+        'input-streaming': 'Pending',
+        'output-available': 'Completed',
+        'output-denied': 'Denied',
+        'output-error': 'Error',
+    };
+    const responded = state === 'approval-responded' || state === 'output-denied' || state === 'output-available';
     return (
-        <Tool key={`${messageId}-${partIndex}`} defaultOpen={true}>
-            <ToolHeader title={toolName} type={part.type as `tool-${string}`} state={state} />
-            <ToolContent>
-                {!!part.input && <ToolInput input={part.input} />}
-                {hasOutput ? (
-                    <ToolOutput output={part.output} errorText={isError ? part.errorText : undefined} />
-                ) : (
-                    approval && (
-                        <Confirmation approval={approval} state={state}>
-                            <ConfirmationTitle>This tool requires your approval to run.</ConfirmationTitle>
-                            <ConfirmationRequest>
-                                <ConfirmationActions>
-                                    <ConfirmationAction variant="outline" onClick={handleDeny}>
-                                        Deny
-                                    </ConfirmationAction>
-                                    <ConfirmationAction onClick={handleAllow}>Allow</ConfirmationAction>
-                                </ConfirmationActions>
-                            </ConfirmationRequest>
-                            <ConfirmationAccepted>Tool execution approved.</ConfirmationAccepted>
-                            <ConfirmationRejected>Tool call was denied.</ConfirmationRejected>
-                        </Confirmation>
-                    )
-                )}
-            </ToolContent>
-        </Tool>
+        <Trace key={`${messageId}-${partIndex}`} className="not-prose mb-4">
+            <TraceCollapsible defaultOpen>
+                <TraceCollapsibleTrigger>
+                    <TraceLine status={isError ? 'error' : state === 'input-available' ? 'running' : undefined}>
+                        <TraceIcon>
+                            <WrenchIcon />
+                        </TraceIcon>
+                        <TraceTitle>
+                            {toolName} · {labels[state]}
+                        </TraceTitle>
+                    </TraceLine>
+                </TraceCollapsibleTrigger>
+                <TraceCollapsibleContent className="space-y-4">
+                    {!!part.input && <ToolData label="Parameters" value={part.input} />}
+                    {hasOutput ? (
+                        <ToolData
+                            label={isError ? 'Error' : 'Result'}
+                            value={isError ? part.errorText : part.output}
+                            error={isError}
+                        />
+                    ) : (
+                        approval &&
+                        state !== 'input-streaming' &&
+                        state !== 'input-available' && (
+                            <Item variant="outline" size="sm">
+                                <ItemContent>
+                                    <ItemTitle>This tool requires your approval to run.</ItemTitle>
+                                    {responded &&
+                                        (approval.approved ? 'Tool execution approved.' : 'Tool call was denied.')}
+                                </ItemContent>
+                                {state === 'approval-requested' && (
+                                    <ItemActions>
+                                        <Button type="button" size="sm" variant="outline" onClick={handleDeny}>
+                                            Deny
+                                        </Button>
+                                        <Button type="button" size="sm" onClick={handleAllow}>
+                                            Allow
+                                        </Button>
+                                    </ItemActions>
+                                )}
+                            </Item>
+                        )
+                    )}
+                </TraceCollapsibleContent>
+            </TraceCollapsible>
+        </Trace>
     );
 });
 
@@ -298,7 +403,12 @@ const MessageItem = memo(
                                                     dangerouslySetInnerHTML={{ __html: highlighted }}
                                                 />
                                             ) : (
-                                                <MessageResponse>{part.text}</MessageResponse>
+                                                <Streamdown
+                                                    plugins={streamdownPlugins}
+                                                    className="size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                                                >
+                                                    {part.text}
+                                                </Streamdown>
                                             )}
                                         </BubbleContent>
                                     </Bubble>
@@ -309,7 +419,12 @@ const MessageItem = memo(
                                         dangerouslySetInnerHTML={{ __html: highlighted }}
                                     />
                                 ) : (
-                                    <MessageResponse>{part.text}</MessageResponse>
+                                    <Streamdown
+                                        plugins={streamdownPlugins}
+                                        className="size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                                    >
+                                        {part.text}
+                                    </Streamdown>
                                 )}
                             </MessageContent>
                             {message.role === 'assistant' && (
@@ -372,28 +487,47 @@ const MessageItem = memo(
                             {assistantName}
                             {reasoningParts.length > 0 &&
                                 reasoningParts.map((part, i) => (
-                                    <Reasoning
+                                    <ReasoningTrace
                                         key={`${message.id}-reasoning-${i}`}
-                                        className="w-full"
                                         isStreaming={isReasoningStreaming}
-                                    >
-                                        <ReasoningTrigger />
-                                        <ReasoningContent>{part.text}</ReasoningContent>
-                                    </Reasoning>
+                                        text={part.text}
+                                    />
                                 ))}
                             {sourcesParts.length > 0 && (
-                                <Sources>
-                                    <SourcesTrigger count={sourcesParts.length} />
-                                    {sourcesParts.map((part, idx) => (
-                                        <SourcesContent key={`${message.id}-source-${idx}`}>
-                                            <Source
-                                                key={`${message.id}-source-${idx}`}
-                                                href={part.url}
-                                                title={part.url}
-                                            />
-                                        </SourcesContent>
-                                    ))}
-                                </Sources>
+                                <Trace className="not-prose mb-4">
+                                    <TraceCollapsible>
+                                        <TraceCollapsibleTrigger>
+                                            <TraceLine>
+                                                <TraceIcon>
+                                                    <GlobeIcon />
+                                                </TraceIcon>
+                                                <TraceTitle>Used {sourcesParts.length} sources</TraceTitle>
+                                            </TraceLine>
+                                        </TraceCollapsibleTrigger>
+                                        <TraceCollapsibleContent>
+                                            <Trace>
+                                                {sourcesParts.map((part, idx) => (
+                                                    <a
+                                                        key={`${message.id}-source-${idx}`}
+                                                        href={part.url}
+                                                        rel="noreferrer"
+                                                        target="_blank"
+                                                    >
+                                                        <TraceLine>
+                                                            <TraceIcon>
+                                                                <GlobeIcon />
+                                                            </TraceIcon>
+                                                            <TraceTitle>
+                                                                {part.url}
+                                                                <span className="sr-only"> (opens in a new tab)</span>
+                                                            </TraceTitle>
+                                                        </TraceLine>
+                                                    </a>
+                                                ))}
+                                            </Trace>
+                                        </TraceCollapsibleContent>
+                                    </TraceCollapsible>
+                                </Trace>
                             )}
                             {renderedParts}
                             {isLoading && <Loader className="mt-2 self-start" />}
@@ -573,44 +707,59 @@ function PureMessages({
     }, [currentMatchIndex, matches]);
 
     return (
-        <Conversation className="h-full min-h-0">
-            <ConversationContent scrollClassName="overflow-y-auto">
-                {messages.length === 0 ? (
-                    <ConversationEmptyState
-                        icon={<MessageSquare className="size-12" />}
-                        title="Start a conversation"
-                        description="Type a message below to begin chatting"
-                    />
-                ) : (
-                    messages.map((message, index) => {
-                        const isAssistant = message.role === 'assistant';
-                        const modelInfo = isAssistant ? modelInfoByMessageId.get(message.id) : undefined;
-                        const modelColorClass = modelInfo ? modelColorMap.get(modelInfo.identifier) : undefined;
+        <MessageScrollerProvider autoScroll>
+            <MessageScroller className="relative h-full min-h-0 flex-1 overflow-y-hidden">
+                <MessageScrollerViewport className="overflow-y-auto">
+                    <MessageScrollerContent className="flex flex-col gap-8 p-4">
+                        {messages.length === 0 ? (
+                            <div className="flex size-full flex-col items-center justify-center gap-3 p-8 text-center">
+                                <div className="text-muted-foreground">
+                                    <MessageSquare className="size-12" />
+                                </div>
+                                <div className="space-y-1">
+                                    <h3 className="text-sm font-medium">Start a conversation</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        Type a message below to begin chatting
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            messages.map((message, index) => {
+                                const isAssistant = message.role === 'assistant';
+                                const modelInfo = isAssistant ? modelInfoByMessageId.get(message.id) : undefined;
+                                const modelColorClass = modelInfo ? modelColorMap.get(modelInfo.identifier) : undefined;
 
-                        return (
-                            <MessageItem
-                                key={message.id}
-                                message={message}
-                                isLastMessage={index === messages.length - 1}
-                                status={status}
-                                searchQuery={searchQuery}
-                                matchStartIndexMap={matchStartIndexMap}
-                                modelInfo={modelInfo}
-                                modelColorClass={modelColorClass}
-                                resolvedTheme={resolvedTheme}
-                                addToolApprovalResponse={addToolApprovalResponse}
-                            />
-                        );
-                    })
-                )}
-                {status === 'submitted' && messages[messages.length - 1]?.role !== 'assistant' && (
-                    <div className="self-start">
-                        <Loader />
-                    </div>
-                )}
-            </ConversationContent>
-            <ConversationScrollButton />
-        </Conversation>
+                                return (
+                                    <MessageScrollerItem
+                                        key={message.id}
+                                        messageId={message.id}
+                                        scrollAnchor={message.role === 'user'}
+                                    >
+                                        <MessageItem
+                                            message={message}
+                                            isLastMessage={index === messages.length - 1}
+                                            status={status}
+                                            searchQuery={searchQuery}
+                                            matchStartIndexMap={matchStartIndexMap}
+                                            modelInfo={modelInfo}
+                                            modelColorClass={modelColorClass}
+                                            resolvedTheme={resolvedTheme}
+                                            addToolApprovalResponse={addToolApprovalResponse}
+                                        />
+                                    </MessageScrollerItem>
+                                );
+                            })
+                        )}
+                        {status === 'submitted' && messages[messages.length - 1]?.role !== 'assistant' && (
+                            <div className="self-start">
+                                <Loader />
+                            </div>
+                        )}
+                    </MessageScrollerContent>
+                </MessageScrollerViewport>
+                <MessageScrollerButton />
+            </MessageScroller>
+        </MessageScrollerProvider>
     );
 }
 

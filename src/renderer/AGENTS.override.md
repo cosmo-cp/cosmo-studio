@@ -36,6 +36,7 @@ This file applies to changes under `src/renderer/`.
 
 - Styling: Tailwind CSS v4 + CSS variables in `src/renderer/src/app/globals.css`.
 - Component primitives: shadcn/ui + Radix (`src/renderer/src/components/ui/*`).
+- Chat patterns compose the shadcn primitives directly where practical. Workflow canvases use React Flow with shadcn components; shadcn does not provide workflow canvas primitives.
 - Icons: `lucide-react`.
 - Themes: `next-themes` (`ThemeProvider` in `src/renderer/src/app/providers.tsx`).
 - App provider stack: `src/renderer/src/app/providers.tsx` composes `StoreProvider`, `ThemeProvider`, `TooltipProvider`, and `UiFeedbackHost`.
