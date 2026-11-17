@@ -303,3 +303,8 @@ export interface UserProfileSaveInput {
     name: string;
     photo?: string | null;
 }
+
+export interface ExperimentalFlags {
+    tasks: boolean;
+    workflow: boolean;
+}

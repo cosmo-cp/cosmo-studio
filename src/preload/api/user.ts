@@ -9,4 +9,10 @@ export const userApi: UserApi = {
     saveProfile: (input: UserProfileSaveInput) => {
         return ipcRenderer.invoke('user:saveProfile', input);
     },
+    evaluateExperimentalFlags: () => {
+        return ipcRenderer.invoke('user:evaluateExperimentalFlags');
+    },
+    saveExperimentalFlag: (key: 'tasks' | 'workflow', enabled: boolean) => {
+        return ipcRenderer.invoke('user:saveExperimentalFlag', key, enabled);
+    },
 };

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { DatabaseManager } from '../database/DatabaseManager';
-import { userProfile } from '../database/schema/schema';
+import { experimentalFlag, userProfile } from '../database/schema/schema';
 import { createTestDb, type TestDb } from '../test-utils/testDb';
 import { UserProfileRepository } from './UserProfileRepository';
 
@@ -24,6 +24,20 @@ describe('UserProfileRepository', () => {
 
     beforeEach(async () => {
         await testDb.db.delete(userProfile);
+        await testDb.db.delete(experimentalFlag);
+    });
+
+    it('persists independent flag choices and updates existing choices', async () => {
+        expect(await repository.getExperimentalFlags()).toEqual({});
+        await repository.saveExperimentalFlag('tasks', false);
+        await repository.saveExperimentalFlag('workflow', true);
+        await repository.saveExperimentalFlag('tasks', true);
+        const reopenedRepository = new UserProfileRepository({
+            getInstance: () => {
+                return testDb.db;
+            },
+        } as unknown as DatabaseManager);
+        expect(await reopenedRepository.getExperimentalFlags()).toEqual({ tasks: true, workflow: true });
     });
 
     it('returns undefined when no profile is saved', async () => {
