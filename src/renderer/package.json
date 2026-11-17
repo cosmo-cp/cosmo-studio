@@ -75,7 +75,6 @@
         "tailwind-merge": "^3.7.0",
         "tailwindcss": "4.3.3",
         "tokenlens": "^1.3.1",
-        "use-stick-to-bottom": "^1.1.6",
         "usehooks-ts": "3.1.1",
         "vaul": "^1.1.2",
         "zustand": "^5.0.16"

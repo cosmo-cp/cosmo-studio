@@ -24,6 +24,7 @@ This document captures UI/UX conventions so new features match the existing Cosm
 
 - Tailwind CSS v4, tokens defined in `src/renderer/src/app/globals.css` (neutral base, light/dark).
 - shadcn/ui component primitives + Radix for accessibility.
+- Chat scrolling uses shadcn's Message Scroller. The workflow canvas uses React Flow directly with shadcn Card and Button components; shadcn does not provide a workflow canvas.
 - Icons via `lucide-react`.
 - Theme switching via `next-themes`.
 - Renderer-wide shared state lives in a single bounded Zustand store at the app root.

@@ -101,7 +101,6 @@ This document maps `package.json` dependencies to their official documentation (
 | `@xyflow/react`            | Flow/graph UI                                   | https://reactflow.dev/                                                      |
 | `react-mentions`           | @mention UI                                     | https://github.com/signavio/react-mentions#readme                           |
 | `usehooks-ts`              | React hooks utilities                           | https://usehooks-ts.com/                                                    |
-| `use-stick-to-bottom`      | “Stick to bottom” scrolling helper              | https://www.npmjs.com/package/use-stick-to-bottom                           |
 | `streamdown`               | Streaming markdown utilities (if used)          | https://www.npmjs.com/package/streamdown                                    |
 | `tokenlens`                | Token counting/analysis (if used)               | https://www.npmjs.com/package/tokenlens                                     |
 | `geist`                    | Geist font/package                              | https://geist.vercel.app/                                                   |

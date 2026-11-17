@@ -91,6 +91,54 @@ describe('MultimodalInput', () => {
         HTMLElement.prototype.scrollIntoView = vi.fn();
     });
 
+    it('sends an attached file as a data URL when Enter is pressed', async () => {
+        const user = userEvent.setup();
+        const sendMessage = vi.fn(async () => undefined);
+        vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:attachment');
+        const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+        const fetchMock = vi
+            .spyOn(globalThis, 'fetch')
+            .mockResolvedValue({ blob: async () => new Blob(['hello'], { type: 'text/plain' }) } as Response);
+        render(
+            <TooltipProvider>
+                <StoreProvider
+                    appDataSource={createMockAppDataSource({
+                        modelProvider: { getProvidersWithModels: async () => [buildProvider()] },
+                    })}
+                >
+                    <MultimodalInput
+                        chat={buildChat()}
+                        messages={[]}
+                        status="ready"
+                        sendMessage={sendMessage}
+                        onModelChange={vi.fn()}
+                        onAgentChange={vi.fn()}
+                        onPersonaChange={vi.fn()}
+                        onWebSearchChange={vi.fn()}
+                        selectedWebSearchOptionId={WEB_SEARCH_NONE_OPTION_ID}
+                    />
+                </StoreProvider>
+            </TooltipProvider>,
+        );
+        await user.upload(
+            screen.getByLabelText('Upload files'),
+            new File(['hello'], 'hello.txt', { type: 'text/plain' }),
+        );
+        expect(screen.getByText('hello.txt')).toBeInTheDocument();
+        await user.type(screen.getByRole('textbox'), 'Read this{Enter}');
+        await waitFor(() =>
+            expect(sendMessage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    text: 'Read this',
+                    files: [expect.objectContaining({ filename: 'hello.txt', url: 'data:text/plain;base64,aGVsbG8=' })],
+                }),
+                expect.anything(),
+            ),
+        );
+        await waitFor(() => expect(revoke).toHaveBeenCalledWith('blob:attachment'));
+        fetchMock.mockRestore();
+    });
+
     it('ignores empty agent form events while preserving selection and explicit None changes', async () => {
         const user = userEvent.setup();
         const onAgentChange = vi.fn();
