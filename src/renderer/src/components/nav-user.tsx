@@ -15,21 +15,18 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import { useUserProfileQuery } from '@/features/user/user-api';
-import { getDefaultSettingsHref } from '@/lib/settings-navigation';
 import {
     Bug,
-    ChevronRight,
     CircleArrowDown,
     CircleHelp,
     CircleUser,
     FilePenLine,
     FileText,
+    FlaskConical,
     Keyboard,
     LifeBuoy,
-    Settings,
     ShieldCheck,
     Smile,
-    Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useContext, useEffect, useState } from 'react';
@@ -102,25 +99,6 @@ export function NavUser() {
                     sideOffset={8}
                     className="w-68 min-w-64 rounded-2xl p-1.5 shadow-xl border border-border/60 bg-popover text-popover-foreground"
                 >
-                    {/* User Profile Card */}
-                    <DropdownMenuItem asChild className="flex items-center gap-3 p-2 rounded-xl cursor-pointer">
-                        <Link href="/profile" prefetch={false}>
-                            <div className="size-8 rounded-full bg-amber-600 text-white flex items-center justify-center font-semibold text-xs shrink-0 shadow-xs overflow-hidden">
-                                {user?.photo ? (
-                                    /* eslint-disable-next-line @next/next/no-img-element */
-                                    <img src={user.photo} alt={displayName} className="size-full object-cover" />
-                                ) : (
-                                    displayInitials
-                                )}
-                            </div>
-                            <div className="grid flex-1 text-left leading-tight">
-                                <span className="truncate font-semibold text-sm text-foreground">{displayName}</span>
-                            </div>
-                        </Link>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuSeparator className="my-1.5" />
-
                     {/* Personalization */}
                     <DropdownMenuItem
                         asChild
@@ -129,6 +107,16 @@ export function NavUser() {
                         <Link href="/personalization/general" prefetch={false}>
                             <Smile className="size-4 shrink-0" />
                             <span>Personalization</span>
+                        </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                        asChild
+                        className="flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer text-sm font-medium"
+                    >
+                        <Link href="/experimental" prefetch={false}>
+                            <FlaskConical className="size-4 shrink-0" />
+                            <span>Experimental</span>
                         </Link>
                     </DropdownMenuItem>
 

@@ -158,6 +158,11 @@ Use this file as the quick feature index. For implementation details, follow the
 - Chat workspace locking ensures zero directory drift during active turns: `chat.workspaceId` is bound on the first turn touching a folder, disabling the workspace selector with a lock badge and explanatory tooltip until the next session.
 - Additive database evolution preserving `Task.workspacePath` as an immutable snapshot for permanent execution audit trails.
 
+## Experimental Features
+
+- The user menu opens Experimental controls for Tasks and Workflow. Choices are stored in the runtime's database, default to enabled, and control sidebar visibility and direct page access. The Flags SDK evaluates these choices in bulk using a database adapter; SDK React metadata exposes the evaluated values.
+    - UI and state: `src/renderer/src/app/(main)/experimental/page.tsx`, `src/renderer/src/features/experimental/flags.ts`
+
 ## Runtime And Platform Features
 
 - Dual runtime: packaged Electron desktop app and local HTTP service share the same renderer, controllers, core package, generated RPC manifest, and chat stream service.

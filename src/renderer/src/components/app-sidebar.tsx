@@ -13,6 +13,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useExperimentalFlag } from '@/features/experimental/flags';
 import { getDefaultSettingsHref, getHomeHref, isSettingsPath } from '@/lib/settings-navigation';
 import { cn } from '@/lib/utils';
 import { MessageSquare, SettingsIcon, SquareCheck, Workflow } from 'lucide-react';
@@ -47,6 +48,8 @@ function isMenuItemActive(currentPathname: string, targetPathname: string): bool
 
 export function AppSidebar() {
     const pathname = usePathname();
+    const tasksEnabled = useExperimentalFlag('tasks');
+    const workflowEnabled = useExperimentalFlag('workflow');
     const inSettingsSection = isSettingsPath(pathname);
 
     return (
@@ -73,28 +76,34 @@ export function AppSidebar() {
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {primaryMenuItems.map((item) => {
-                                const active = !inSettingsSection && isMenuItemActive(pathname, item.pathname);
-                                return (
-                                    <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton
-                                            asChild
-                                            isActive={active}
-                                            tooltip={item.title}
-                                            className={cn(
-                                                'gap-3 rounded-lg',
-                                                active &&
-                                                    'bg-blue-100/70 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold',
-                                            )}
-                                        >
-                                            <Link href={item.href} prefetch={false}>
-                                                <item.icon className="size-4 shrink-0" />
-                                                <span>{item.title}</span>
-                                            </Link>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                );
-                            })}
+                            {primaryMenuItems
+                                .filter(
+                                    (item) =>
+                                        (item.title !== 'Tasks' || tasksEnabled) &&
+                                        (item.title !== 'Workflows' || workflowEnabled),
+                                )
+                                .map((item) => {
+                                    const active = !inSettingsSection && isMenuItemActive(pathname, item.pathname);
+                                    return (
+                                        <SidebarMenuItem key={item.title}>
+                                            <SidebarMenuButton
+                                                asChild
+                                                isActive={active}
+                                                tooltip={item.title}
+                                                className={cn(
+                                                    'gap-3 rounded-lg',
+                                                    active &&
+                                                        'bg-blue-100/70 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold',
+                                                )}
+                                            >
+                                                <Link href={item.href} prefetch={false}>
+                                                    <item.icon className="size-4 shrink-0" />
+                                                    <span>{item.title}</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    );
+                                })}
                             {/* Settings Link */}
                             <SidebarMenuItem>
                                 <SidebarMenuButton

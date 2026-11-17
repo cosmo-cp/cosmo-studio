@@ -1,5 +1,6 @@
 import type { UserProfileService } from 'core/services/UserProfileService';
 import { describe, expect, it, vi } from 'vitest';
+import { IPC_ARGS_SCHEMA_METADATA_KEY } from '../../ipc/Decorators';
 import { UserController } from '../UserController';
 
 describe('UserController', () => {
@@ -53,5 +54,19 @@ describe('UserController', () => {
             photo: 'data:image/png;base64,456',
             isConfigured: true,
         });
+    });
+    it('validates and saves experimental choices', async () => {
+        const schemas = Reflect.getMetadata(IPC_ARGS_SCHEMA_METADATA_KEY, UserController);
+        expect(schemas.saveExperimentalFlag.safeParse(['tasks', false]).success).toBe(true);
+        expect(schemas.saveExperimentalFlag.safeParse(['unknown', false]).success).toBe(false);
+        expect(schemas.saveExperimentalFlag.safeParse(['tasks', 'false']).success).toBe(false);
+        const service = {
+            getExperimentalFlags: vi.fn().mockResolvedValue({ tasks: false }),
+            saveExperimentalFlag: vi.fn(),
+        } as unknown as UserProfileService;
+        const controller = new UserController(service);
+        await controller.saveExperimentalFlag('tasks', false);
+        expect(service.saveExperimentalFlag).toHaveBeenCalledWith('tasks', false);
+        await expect(controller.evaluateExperimentalFlags()).resolves.toEqual({ tasks: false, workflow: false });
     });
 });

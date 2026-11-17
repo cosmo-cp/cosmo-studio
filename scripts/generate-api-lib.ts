@@ -94,6 +94,7 @@ const PRELOAD_TYPE_IMPORTS = [
     { name: 'WorkspaceCreateInput', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'WorkspaceUpdateInput', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'WorkspaceReachabilityResult', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'ExperimentalFlags', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'UserProfile', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'UserProfileSaveInput', source: PRELOAD_CORE_DTO_IMPORT },
     {

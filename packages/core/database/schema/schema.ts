@@ -10,3 +10,4 @@ export * from './workflowSchema';
 export * from './taskSchema';
 export * from './workspaceSchema';
 export * from './userProfileSchema';
+export * from './experimentalFlagSchema';

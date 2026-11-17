@@ -244,6 +244,8 @@ export function createMockAppDataSource(overrides: AppDataSourceOverrides = {}):
             ...overrides.workspace,
         },
         user: {
+            evaluateExperimentalFlags: async () => ({ tasks: true, workflow: true }),
+            saveExperimentalFlag: async () => {},
             getProfile: async () => ({
                 name: 'Gaurav',
                 initials: 'GA',

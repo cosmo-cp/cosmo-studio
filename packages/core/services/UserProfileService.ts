@@ -12,6 +12,16 @@ export class UserProfileService {
         private readonly userProfileRepository: UserProfileRepository,
     ) {}
 
+    /** Retrieves persisted choices for the flags adapter. */
+    public async getExperimentalFlags(): Promise<Record<string, boolean>> {
+        return this.userProfileRepository.getExperimentalFlags();
+    }
+
+    /** Persists a single experimental feature choice. */
+    public async saveExperimentalFlag(key: string, enabled: boolean): Promise<void> {
+        await this.userProfileRepository.saveExperimentalFlag(key, enabled);
+    }
+
     /**
      * Resolves the current user profile from the database, or suggests detected OS name if unconfigured.
      */

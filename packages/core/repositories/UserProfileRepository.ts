@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { inject, injectable } from 'inversify';
 import { DatabaseManager } from '../database/DatabaseManager';
-import { userProfile } from '../database/schema/schema';
+import { experimentalFlag, userProfile } from '../database/schema/schema';
 import type { UserProfileRecord } from '../dto';
 import { CORETYPES } from '../types/types';
 
@@ -11,6 +11,27 @@ export class UserProfileRepository {
 
     constructor(@inject(CORETYPES.DatabaseManager) databaseManager: DatabaseManager) {
         this.db = databaseManager.getInstance();
+    }
+
+    /** Reads all saved experimental choices for a single bulk evaluation. */
+    public async getExperimentalFlags(): Promise<Record<string, boolean>> {
+        const rows = await this.db.select().from(experimentalFlag);
+        return Object.fromEntries(
+            rows.map((row) => {
+                return [row.key, row.enabled];
+            }),
+        );
+    }
+
+    /** Saves one choice atomically without overwriting other flags. */
+    public async saveExperimentalFlag(key: string, enabled: boolean): Promise<void> {
+        await this.db
+            .insert(experimentalFlag)
+            .values({ key: key, enabled: enabled })
+            .onConflictDoUpdate({
+                target: experimentalFlag.key,
+                set: { enabled: enabled },
+            });
     }
 
     /**

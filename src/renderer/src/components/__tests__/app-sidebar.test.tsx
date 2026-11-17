@@ -7,6 +7,8 @@ import { usePathname } from 'next/navigation';
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/features/experimental/flags', () => ({ useExperimentalFlag: () => true }));
+
 vi.mock('next/link', () => ({
     default: ({ children, href, ...props }: ComponentProps<'a'> & { href: string; prefetch?: boolean }) => {
         const { prefetch, ...anchorProps } = props;
