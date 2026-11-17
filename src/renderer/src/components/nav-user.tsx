@@ -1,6 +1,5 @@
 'use client';
 
-import { StoreContext } from '@/app/store-provider';
 import { KeyboardShortcutsDialog } from '@/components/keyboard-shortcuts-dialog';
 import {
     DropdownMenu,
@@ -29,7 +28,7 @@ import {
     Smile,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * User navigation component rendered at the bottom of the sidebar.
@@ -38,7 +37,6 @@ import { useContext, useEffect, useState } from 'react';
 export function NavUser() {
     const { isMobile } = useSidebar();
     const { user } = useUserProfileQuery();
-    const store = useContext(StoreContext);
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
     useEffect(() => {
@@ -55,15 +53,6 @@ export function NavUser() {
 
     const displayName = user?.name?.trim() ? user.name : 'Gaurav';
     const displayInitials = user?.initials?.trim() ? user.initials : displayName.slice(0, 2).toUpperCase() || 'GA';
-
-    const handleUpgradePlan = () => {
-        if (store) {
-            store.getState().enqueueToast({
-                type: 'success',
-                description: 'All Cosmo features are currently unlocked.',
-            });
-        }
-    };
 
     const openExternalUrl = (url: string) => {
         if (typeof window !== 'undefined') {
