@@ -19,7 +19,7 @@ describe('PersonaService', () => {
         service = new PersonaService(repository);
     });
 
-    it('trims required fields on create', async () => {
+    it('trims required fields on create and applies defaults', async () => {
         const created = { id: 'p', name: 'Name', details: 'Details' } as unknown as Persona;
         (repository.create as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(created);
 
@@ -30,13 +30,19 @@ describe('PersonaService', () => {
             ...input,
             name: 'Name',
             details: 'Details',
+            systemPrompt: 'Details',
+            skills: [],
+            toolAccessMode: 'all',
+            allowedMcpServers: [],
+            allowedTools: [],
+            webSearchEnabled: true,
         });
         expect(result).toBe(created);
     });
 
     it.each([
         ['name is empty', { name: '   ', details: 'x' }, 'Name is required.'],
-        ['details is empty', { name: 'x', details: '   ' }, 'Details is required.'],
+        ['details is empty', { name: 'x', details: '   ' }, 'Details or system prompt is required.'],
     ])('rejects create when %s', async (_label, input, message) => {
         await expect(service.create(input as unknown as NewPersona)).rejects.toThrow(message);
         expect(repository.create).not.toHaveBeenCalled();
@@ -47,7 +53,7 @@ describe('PersonaService', () => {
         (repository.update as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(updated);
 
         await service.update('p', { details: '  New details  ' } as Partial<NewPersona>);
-        expect(repository.update).toHaveBeenCalledWith('p', { details: 'New details' });
+        expect(repository.update).toHaveBeenCalledWith('p', { details: 'New details', systemPrompt: 'New details' });
 
         await service.update('p', { name: '  New name  ' } as Partial<NewPersona>);
         expect(repository.update).toHaveBeenCalledWith('p', { name: 'New name' });
@@ -56,7 +62,7 @@ describe('PersonaService', () => {
     it('rejects update when provided required fields are empty', async () => {
         await expect(service.update('p', { name: '   ' } as Partial<NewPersona>)).rejects.toThrow('Name is required.');
         await expect(service.update('p', { details: '' } as Partial<NewPersona>)).rejects.toThrow(
-            'Details is required.',
+            'Details or system prompt is required.',
         );
         expect(repository.update).not.toHaveBeenCalled();
     });

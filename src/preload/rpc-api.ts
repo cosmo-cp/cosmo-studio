@@ -6,6 +6,7 @@ import { mcpServerApi as mcpServerRpcApi } from './api/mcpServer';
 import { messageApi as messageRpcApi } from './api/message';
 import { modelProviderApi as modelProviderRpcApi } from './api/modelProvider';
 import { personaApi as personaRpcApi } from './api/persona';
+import { skillApi as skillRpcApi } from './api/skill';
 import { streamingApi } from './api/streaming';
 import { taskApi as taskRpcApi } from './api/task';
 import { userApi as userRpcApi } from './api/user';
@@ -18,6 +19,7 @@ export const rpcApi: CosmoApi = {
     modelProvider: modelProviderRpcApi,
     message: messageRpcApi,
     persona: personaRpcApi,
+    skill: skillRpcApi,
     command: commandRpcApi,
     mcpServer: mcpServerRpcApi,
     webSearch: webSearchRpcApi,

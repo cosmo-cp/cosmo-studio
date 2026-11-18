@@ -29,11 +29,19 @@ export class PersonaService {
 
     public async create(data: NewPersona): Promise<Persona> {
         const name = normalizeRequired(data.name, 'Name');
-        const details = normalizeRequired(data.details, 'Details');
+        const rawPrompt = data.systemPrompt ?? data.details;
+        const prompt = normalizeRequired(rawPrompt, 'Details or system prompt');
+
         return this.personaRepository.create({
             ...data,
             name: name,
-            details: details,
+            details: prompt,
+            systemPrompt: prompt,
+            skills: data.skills ?? [],
+            toolAccessMode: data.toolAccessMode ?? 'all',
+            allowedMcpServers: data.allowedMcpServers ?? [],
+            allowedTools: data.allowedTools ?? [],
+            webSearchEnabled: data.webSearchEnabled ?? true,
         });
     }
 
@@ -46,8 +54,11 @@ export class PersonaService {
             normalizedUpdates.name = normalizeRequired(updates.name, 'Name');
         }
 
-        if (updates.details !== undefined) {
-            normalizedUpdates.details = normalizeRequired(updates.details, 'Details');
+        if (updates.systemPrompt !== undefined || updates.details !== undefined) {
+            const rawPrompt = updates.systemPrompt ?? updates.details;
+            const prompt = normalizeRequired(rawPrompt, 'Details or system prompt');
+            normalizedUpdates.details = prompt;
+            normalizedUpdates.systemPrompt = prompt;
         }
 
         return this.personaRepository.update(id, normalizedUpdates);

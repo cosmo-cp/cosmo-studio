@@ -67,4 +67,37 @@ describe('PersonaRepository', () => {
         const remaining = await testDb.db.select().from(persona).where(eq(persona.id, created.id));
         expect(remaining).toEqual([]);
     });
+
+    it('creates and retrieves a rich persona with intelligence, skills, and tool permissions', async () => {
+        const rich = await repository.create({
+            name: 'Architect',
+            role: 'Enterprise Architect',
+            description: 'Designs enterprise grade systems',
+            details: 'Follow standard architecture playbooks.',
+            systemPrompt: 'Follow standard architecture playbooks.',
+            modelIdentifier: 'anthropic:claude-3-7-sonnet',
+            temperature: 0.7,
+            reasoningEffort: 'high',
+            skills: ['egm-bootstrap', 'run-workflow'],
+            toolAccessMode: 'custom',
+            allowedMcpServers: ['github', 'filesystem'],
+            allowedTools: ['read_file', 'write_file'],
+            webSearchEnabled: true,
+        } as unknown as NewPersona);
+
+        expect(rich.id).toBeDefined();
+        expect(rich.name).toBe('Architect');
+        expect(rich.role).toBe('Enterprise Architect');
+        expect(rich.skills).toEqual(['egm-bootstrap', 'run-workflow']);
+        expect(rich.toolAccessMode).toBe('custom');
+        expect(rich.allowedMcpServers).toEqual(['github', 'filesystem']);
+        expect(rich.allowedTools).toEqual(['read_file', 'write_file']);
+        expect(rich.webSearchEnabled).toBe(true);
+        expect(rich.temperature).toBeCloseTo(0.7);
+
+        const fetched = await repository.getById(rich.id);
+        expect(fetched).toBeDefined();
+        expect(fetched?.role).toBe('Enterprise Architect');
+        expect(fetched?.skills).toEqual(['egm-bootstrap', 'run-workflow']);
+    });
 });

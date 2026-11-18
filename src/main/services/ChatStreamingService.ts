@@ -74,7 +74,10 @@ export class ChatStreamingService {
             throw new Error('agentId is required but was not provided');
         }
 
-        const modelMessages: ModelMessage[] = await convertToModelMessages(args.messages);
+        // Interrupted tool calls have no result and cannot be sent as model history.
+        const modelMessages: ModelMessage[] = await convertToModelMessages(args.messages, {
+            ignoreIncompleteToolCalls: true,
+        });
         const persona = args.personaId
             ? await this.personaService.getById(args.personaId)
             : args.personaName

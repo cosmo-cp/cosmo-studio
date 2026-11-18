@@ -133,6 +133,7 @@ describe('ChatStreamingService workspace coordination', () => {
         const abortController = new AbortController();
         await service.createMessageStream(args, abortController.signal);
 
+        expect(ai.convertToModelMessages).toHaveBeenCalledWith(args.messages, { ignoreIncompleteToolCalls: true });
         expect(mockChatService.updateSelectedWorkspaceForChat).toHaveBeenCalledWith('chat-1', 'ws-1');
         expect(mockWorkspaceService.get).toHaveBeenCalledWith('ws-1');
         expect(mockWorkspaceService.validateReachability).toHaveBeenCalledWith('/canonical/workspace/dir');

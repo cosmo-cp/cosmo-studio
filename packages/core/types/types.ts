@@ -34,6 +34,7 @@ const CORETYPES = {
     WorkspaceService: Symbol.for('WorkspaceService'),
     UserProfileService: Symbol.for('UserProfileService'),
     FolderPickerService: Symbol.for('FolderPickerService'),
+    SkillService: Symbol.for('SkillService'),
 };
 
 export { CORETYPES };

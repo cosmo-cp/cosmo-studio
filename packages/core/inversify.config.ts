@@ -25,6 +25,7 @@ import { McpServerService } from './services/McpServerService';
 import { MessageService } from './services/MessageService';
 import { ModelProviderService } from './services/ModelProviderService';
 import { PersonaService } from './services/PersonaService';
+import { SkillService } from './services/SkillService';
 import { TaskCommentService } from './services/TaskCommentService';
 import { TaskService } from './services/TaskService';
 import { UserProfileService } from './services/UserProfileService';
@@ -82,5 +83,6 @@ coreContainer.bind<TaskService>(CORETYPES.TaskService).to(TaskService).inSinglet
 coreContainer.bind<TaskCommentService>(CORETYPES.TaskCommentService).to(TaskCommentService).inSingletonScope();
 coreContainer.bind<WorkspaceService>(CORETYPES.WorkspaceService).to(WorkspaceService).inSingletonScope();
 coreContainer.bind<UserProfileService>(CORETYPES.UserProfileService).to(UserProfileService).inSingletonScope();
+coreContainer.bind<SkillService>(CORETYPES.SkillService).to(SkillService).inSingletonScope();
 
 export { coreContainer };

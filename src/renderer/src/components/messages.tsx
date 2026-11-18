@@ -234,6 +234,13 @@ const ToolPartRenderer = memo(function ToolPartRenderer({
     const toolName = part.toolName;
     const hasOutput = state === 'output-available' || state === 'output-error';
     const isError = state === 'output-error';
+    const isFinished = hasOutput || state === 'output-denied';
+    const [open, setOpen] = useState(!isFinished);
+    const [wasFinished, setWasFinished] = useState(isFinished);
+    if (isFinished !== wasFinished) {
+        setWasFinished(isFinished);
+        if (isFinished) setOpen(false);
+    }
 
     const handleDeny = useCallback(() => {
         addToolApprovalResponse?.({
@@ -262,7 +269,7 @@ const ToolPartRenderer = memo(function ToolPartRenderer({
     const responded = state === 'approval-responded' || state === 'output-denied' || state === 'output-available';
     return (
         <Trace key={`${messageId}-${partIndex}`} className="not-prose mb-4">
-            <TraceCollapsible defaultOpen>
+            <TraceCollapsible open={open} onOpenChange={setOpen}>
                 <TraceCollapsibleTrigger>
                     <TraceLine status={isError ? 'error' : state === 'input-available' ? 'running' : undefined}>
                         <TraceIcon>
@@ -730,11 +737,7 @@ function PureMessages({
                                 const modelColorClass = modelInfo ? modelColorMap.get(modelInfo.identifier) : undefined;
 
                                 return (
-                                    <MessageScrollerItem
-                                        key={message.id}
-                                        messageId={message.id}
-                                        scrollAnchor={message.role === 'user'}
-                                    >
+                                    <MessageScrollerItem key={message.id} messageId={message.id}>
                                         <MessageItem
                                             message={message}
                                             isLastMessage={index === messages.length - 1}
