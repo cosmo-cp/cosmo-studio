@@ -45,7 +45,9 @@ describe('ChatService', () => {
         (repository.update as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(updated);
 
         const newChat: NewChat = { title: 'Hello' } as NewChat;
-        await service.createChat(newChat);
+        const created: Chat = { id: 'created', title: 'Hello' } as Chat;
+        (repository.create as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(created);
+        await expect(service.createChat(newChat)).resolves.toEqual(created);
         expect(repository.create).toHaveBeenCalledWith(newChat);
 
         await expect(service.updateChat('a', { title: 'Updated' } as Partial<NewChat>)).resolves.toEqual(updated);

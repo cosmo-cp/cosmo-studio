@@ -19,7 +19,7 @@ Use this file as the quick feature index. For implementation details, follow the
     - HTTP delivery: `src/main/http/ChatHttpController.ts`
     - Shared stream assembly: `src/main/services/ChatStreamingService.ts`
 - Rich message rendering with Markdown/GFM, assistant copy actions, reasoning panels, source links, file previews, tool call panels, and tool approval/denial responses.
-    - UI: `src/renderer/src/components/messages.tsx`, `src/renderer/src/components/markdown.tsx`, `src/renderer/src/components/preview-attachment.tsx`, `src/renderer/src/components/ai-elements/tool.tsx`, `src/renderer/src/components/ai-elements/confirmation.tsx`
+    - UI: `src/renderer/src/components/messages.tsx`, `src/renderer/src/components/markdown.tsx`, `src/renderer/src/components/preview-attachment.tsx`
 - ACP agent requests use isolated subprocess leases; idle sessions are retained per conversation and stopped after five minutes. Concurrent requests use separate processes.
 - Per-chat selected model, selected persona, selected runtime (`model` or `agent`), selected ACP agent, and renderer-side selected web-search option.
     - State: `src/renderer/src/features/chat/chat-store.ts`
@@ -27,7 +27,7 @@ Use this file as the quick feature index. For implementation details, follow the
 
 ## Model Providers And Models
 
-- Provider management for OpenAI, Anthropic, Google, xAI, Groq, Mistral, DeepSeek, Ollama, Moonshot, Perplexity, Cohere, LM Studio, HuggingFace, Together AI, Fireworks AI, Voyage AI, Baseten, and custom OpenAI-compatible endpoints.
+- Provider management for OpenAI, Anthropic, Google, xAI, Groq, Mistral, DeepSeek, Ollama, Moonshot, Perplexity, Cohere, LM Studio, HuggingFace, Together AI, Fireworks AI, Baseten, Voyage AI, Baseten, and custom OpenAI-compatible endpoints.
     - Catalog: `packages/core/providerCatalog.ts`
     - Service: `packages/core/services/ModelProviderService.ts`
     - UI/orchestration: `src/renderer/src/components/provider-management.tsx`, `src/renderer/src/features/providers/use-provider-page-state.ts`
@@ -157,6 +157,11 @@ Use this file as the quick feature index. For implementation details, follow the
     - Concurrency lock: `src/main/services/WorkspaceExecutionLockService.ts`
 - Chat workspace locking ensures zero directory drift during active turns: `chat.workspaceId` is bound on the first turn touching a folder, disabling the workspace selector with a lock badge and explanatory tooltip until the next session.
 - Additive database evolution preserving `Task.workspacePath` as an immutable snapshot for permanent execution audit trails.
+
+## Experimental Features
+
+- The user menu opens Experimental controls for Tasks and Workflow. Choices are stored in the runtime's database, default to enabled, and control sidebar visibility and direct page access. The Flags SDK evaluates these choices in bulk using a database adapter; SDK React metadata exposes the evaluated values.
+    - UI and state: `src/renderer/src/app/(main)/experimental/page.tsx`, `src/renderer/src/features/experimental/flags.ts`
 
 ## Runtime And Platform Features
 

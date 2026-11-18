@@ -17,7 +17,7 @@ export const chatHttpApi: ChatApi = {
         return callRpc<ChatWithMessages | undefined>('chat', 'getChatById', [id]);
     },
     createChat: (newChat: NewChat) => {
-        return callRpc<void>('chat', 'createChat', [newChat]);
+        return callRpc<Chat>('chat', 'createChat', [newChat]);
     },
     updateChat: (id: string, updates: Partial<NewChat>) => {
         return callRpc<Chat>('chat', 'updateChat', [id, updates]);

@@ -3,7 +3,7 @@ import type {
     WorkspaceCreateInput,
     WorkspaceReachabilityResult,
     WorkspaceUpdateInput,
-} from 'core/dto';
+} from '../../../packages/core/dto';
 
 export interface WorkspaceApi {
     list(): Promise<Workspace[]>;

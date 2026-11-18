@@ -39,7 +39,9 @@ describe('ChatRepository', () => {
 
         vi.useFakeTimers();
         vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
-        await repository.create({ title: 'New' } as unknown as NewChat);
+        const created = await repository.create({ title: 'New' } as unknown as NewChat);
+        expect(created.title).toBe('New');
+        expect(created.selected).toBe(true);
 
         const rows = await testDb.db.select().from(chat);
         const selected = rows.filter((c) => {
@@ -196,5 +198,21 @@ describe('ChatRepository', () => {
         await repository.delete(id);
         const remaining = await testDb.db.select().from(chat).where(eq(chat.id, id));
         expect(remaining).toEqual([]);
+    });
+
+    it('deleting a selected chat marks the top remaining chat as selected', async () => {
+        const id1 = '00000000-0000-0000-0000-00000000d051';
+        const id2 = '00000000-0000-0000-0000-00000000d052';
+        await testDb.db.insert(chat).values([
+            { id: id1, title: 'Chat 1', selected: true, createdAt: new Date('2024-01-01T00:00:10Z') },
+            { id: id2, title: 'Chat 2', selected: false, createdAt: new Date('2024-01-01T00:00:20Z') },
+        ]);
+
+        await repository.delete(id1);
+
+        const rows = await testDb.db.select().from(chat);
+        expect(rows).toHaveLength(1);
+        expect(rows[0].id).toBe(id2);
+        expect(rows[0].selected).toBe(true);
     });
 });

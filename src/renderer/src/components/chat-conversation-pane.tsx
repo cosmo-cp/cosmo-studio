@@ -68,7 +68,7 @@ export function ChatConversationPane({
     hideWebSearchControls,
 }: ChatConversationPaneProps): JSX.Element {
     return (
-        <>
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <div className="flex items-center h-16 px-4 border-b bg-background shrink-0">
                 <div className="flex-1">
                     <ChatHeader
@@ -114,6 +114,6 @@ export function ChatConversationPane({
                     stop={stop}
                 />
             </div>
-        </>
+        </div>
     );
 }

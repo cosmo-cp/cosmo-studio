@@ -16,13 +16,15 @@ export function AppShell({
         <SidebarProvider
             style={
                 {
+                    '--sidebar-width': '11rem',
                     '--sidebar-width-icon': '3rem',
                     '--header-height': 'calc(var(--spacing) * 14)',
+                    '--total-height': '18px',
                 } as React.CSSProperties
             }
         >
             <AppSidebar />
-            <SidebarInset className="h-[calc(100svh-var(--header-height))] max-h-[calc(100svh-var(--header-height))] overflow-hidden">
+            <SidebarInset className="h-[calc(100svh-var(--total-height))] max-h-[calc(100svh-var(--total-height))] overflow-hidden">
                 <SiteHeader />
                 <div className="@container/main flex min-h-0 w-full flex-1 flex-col overflow-hidden">{children}</div>
             </SidebarInset>

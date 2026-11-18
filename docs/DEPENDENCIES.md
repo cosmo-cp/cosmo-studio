@@ -32,6 +32,7 @@ This document maps `package.json` dependencies to their official documentation (
 | `@ai-sdk/anthropic`          | Anthropic provider for AI SDK                           | https://sdk.vercel.ai/providers/anthropic                                    |
 | `@ai-sdk/openai`             | OpenAI provider for AI SDK                              | https://sdk.vercel.ai/providers/openai                                       |
 | `@ai-sdk/google`             | Google provider for AI SDK                              | https://sdk.vercel.ai/providers/google                                       |
+| `@ai-sdk/baseten`            | Baseten provider for AI SDK                             | https://ai-sdk.dev/providers/ai-sdk-providers/baseten                        |
 | `@ai-sdk/provider`           | Provider interfaces/types                               | https://sdk.vercel.ai/docs/ai-sdk-core/providers                             |
 | `@mcpc-tech/acp-ai-provider` | ACP agents as AI SDK language models                    | https://ai-sdk.dev/providers/community-providers/acp                         |
 | `ai-sdk-ollama`              | Ollama provider (community)                             | https://www.npmjs.com/package/ai-sdk-ollama                                  |
@@ -100,7 +101,6 @@ This document maps `package.json` dependencies to their official documentation (
 | `@xyflow/react`            | Flow/graph UI                                   | https://reactflow.dev/                                                      |
 | `react-mentions`           | @mention UI                                     | https://github.com/signavio/react-mentions#readme                           |
 | `usehooks-ts`              | React hooks utilities                           | https://usehooks-ts.com/                                                    |
-| `use-stick-to-bottom`      | “Stick to bottom” scrolling helper              | https://www.npmjs.com/package/use-stick-to-bottom                           |
 | `streamdown`               | Streaming markdown utilities (if used)          | https://www.npmjs.com/package/streamdown                                    |
 | `tokenlens`                | Token counting/analysis (if used)               | https://www.npmjs.com/package/tokenlens                                     |
 | `geist`                    | Geist font/package                              | https://geist.vercel.app/                                                   |

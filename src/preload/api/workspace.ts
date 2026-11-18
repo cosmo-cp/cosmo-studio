@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import type { WorkspaceCreateInput, WorkspaceUpdateInput } from 'core/dto';
+import type { WorkspaceCreateInput, WorkspaceUpdateInput } from '../../../packages/core/dto';
 import type { WorkspaceApi } from '../contracts/workspace';
 
 export const workspaceApi: WorkspaceApi = {

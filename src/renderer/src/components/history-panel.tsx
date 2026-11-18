@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { Search } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Key, ReactNode } from 'react';
+import { useMemo } from 'react';
 
 interface HistoryPanelAction {
     ariaLabel: string;
@@ -31,6 +32,7 @@ interface HistoryPanelProps<TItem> {
     action: HistoryPanelAction;
     className?: string;
     emptyState?: ReactNode;
+    getItemGroup?: (item: TItem) => string;
     getItemKey: (item: TItem) => Key;
     items: TItem[];
     renderPreview: (item: TItem) => HistoryPanelPreview;
@@ -45,6 +47,7 @@ export function HistoryPanel<TItem>({
     action,
     className,
     emptyState,
+    getItemGroup,
     getItemKey,
     items,
     renderPreview,
@@ -53,6 +56,31 @@ export function HistoryPanel<TItem>({
     title,
     onSearch,
 }: HistoryPanelProps<TItem>) {
+    const uniqueItems = useMemo(() => {
+        const seen = new Set<Key>();
+        return items.filter((item) => {
+            const key = getItemKey(item);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }, [items, getItemKey]);
+
+    const groupedItems = useMemo(() => {
+        if (!getItemGroup) return null;
+        const groups: { group: string; items: TItem[] }[] = [];
+        for (const item of uniqueItems) {
+            const group = getItemGroup(item);
+            const existing = groups.find((g) => g.group === group);
+            if (existing) {
+                existing.items.push(item);
+            } else {
+                groups.push({ group, items: [item] });
+            }
+        }
+        return groups;
+    }, [uniqueItems, getItemGroup]);
+
     return (
         <TooltipProvider>
             <div className={cn('flex flex-col overflow-hidden', className)}>
@@ -62,10 +90,9 @@ export function HistoryPanel<TItem>({
                         <TooltipTrigger asChild>
                             <Button
                                 aria-label={action.ariaLabel}
-                                className="cursor-pointer"
+                                className="size-8 rounded-lg bg-[#0B6E99] hover:bg-[#095B7E] text-white p-0 flex items-center justify-center cursor-pointer shadow-xs transition-colors shrink-0"
                                 onClick={action.onClick}
                                 size="icon"
-                                variant="ghost"
                             >
                                 <action.icon className="h-4 w-4" />
                             </Button>
@@ -88,26 +115,52 @@ export function HistoryPanel<TItem>({
                     </div>
                 </div>
                 <ScrollArea className="max-h-[calc(100dvh-200px)] flex-1 border-r">
-                    <div className="p-2">
-                        {items.length > 0
-                            ? items.map((item) => {
-                                  const preview = renderPreview(item);
+                    <div className="p-2 space-y-1">
+                        {uniqueItems.length === 0
+                            ? emptyState
+                            : groupedItems
+                              ? groupedItems.map(({ group, items: groupItems }) => (
+                                    <div key={group} className="mb-3 last:mb-0">
+                                        <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
+                                            {group}
+                                        </div>
+                                        <div className="space-y-1">
+                                            {groupItems.map((item) => {
+                                                const preview = renderPreview(item);
+                                                return (
+                                                    <div key={getItemKey(item)}>
+                                                        <HistoryPreviewItem
+                                                            className={preview.className}
+                                                            footerTrailing={preview.footerTrailing}
+                                                            headerTrailing={preview.headerTrailing}
+                                                            onSelect={preview.onSelect}
+                                                            selected={preview.selected}
+                                                            summary={preview.summary}
+                                                            title={preview.title}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))
+                              : uniqueItems.map((item) => {
+                                    const preview = renderPreview(item);
 
-                                  return (
-                                      <div key={getItemKey(item)}>
-                                          <HistoryPreviewItem
-                                              className={preview.className}
-                                              footerTrailing={preview.footerTrailing}
-                                              headerTrailing={preview.headerTrailing}
-                                              onSelect={preview.onSelect}
-                                              selected={preview.selected}
-                                              summary={preview.summary}
-                                              title={preview.title}
-                                          />
-                                      </div>
-                                  );
-                              })
-                            : emptyState}
+                                    return (
+                                        <div key={getItemKey(item)}>
+                                            <HistoryPreviewItem
+                                                className={preview.className}
+                                                footerTrailing={preview.footerTrailing}
+                                                headerTrailing={preview.headerTrailing}
+                                                onSelect={preview.onSelect}
+                                                selected={preview.selected}
+                                                summary={preview.summary}
+                                                title={preview.title}
+                                            />
+                                        </div>
+                                    );
+                                })}
                     </div>
                 </ScrollArea>
             </div>

@@ -1,16 +1,24 @@
 'use client';
 
-import { Canvas } from '@/components/ai-elements/canvas';
-import { Controls } from '@/components/ai-elements/controls';
-import { Node as CanvasNodeCard } from '@/components/ai-elements/node';
-import { Panel } from '@/components/ai-elements/panel';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { WorkflowListItem } from '@/features/workflows/workflow-list-item';
 import { cn } from '@/lib/utils';
 import type { Connection, Edge, Node, NodeProps, OnNodesChange, ReactFlowInstance, XYPosition } from '@xyflow/react';
-import { addEdge, Handle, MarkerType, Position, useEdgesState, useNodesState } from '@xyflow/react';
+import {
+    addEdge,
+    Background,
+    Controls,
+    Handle,
+    MarkerType,
+    Panel,
+    Position,
+    ReactFlow,
+    useEdgesState,
+    useNodesState,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import {
     Bot,
     CircleStop,
@@ -407,12 +415,11 @@ function WorkflowCanvasNode({ data }: NodeProps<Node<WorkflowCanvasNodeData>>) {
     const palette = getNodePalette(data);
 
     return (
-        <CanvasNodeCard
+        <Card
             className={cn(
                 'relative h-[42px] w-[108px] rounded-[1rem] border p-0 shadow-[0_8px_18px_rgba(173,181,205,0.22)]',
                 palette.surfaceClassName,
             )}
-            handles={{ target: false, source: false }}
         >
             {hasTargetHandle ? (
                 <Handle
@@ -451,7 +458,7 @@ function WorkflowCanvasNode({ data }: NodeProps<Node<WorkflowCanvasNodeData>>) {
                     </p>
                 </div>
             </div>
-        </CanvasNodeCard>
+        </Card>
     );
 }
 
@@ -707,7 +714,7 @@ function WorkflowCanvasContent({
     onGraphChange?: (graph: { nodes: Record<string, unknown>[]; edges: Record<string, unknown>[] }) => void;
 }) {
     const canvasRef = useRef<HTMLDivElement | null>(null);
-    const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
+    const reactFlowInstanceRef = useRef<ReactFlowInstance<Node<WorkflowCanvasNodeData>, Edge> | null>(null);
     const [interactionMode, setInteractionMode] = useState<InteractionMode>('pointer');
     const [nodePickerState, setNodePickerState] = useState<NodePickerState | null>(null);
     const [nodes, setNodes, onNodesChange] = useNodesState<Node<WorkflowCanvasNodeData>>(buildInitialNodes(workflow));
@@ -906,7 +913,10 @@ function WorkflowCanvasContent({
 
     return (
         <div className="flex h-full flex-1 min-h-0 overflow-hidden bg-background" ref={canvasRef}>
-            <Canvas
+            <ReactFlow
+                fitView
+                panOnScroll
+                zoomOnDoubleClick={false}
                 className="h-full w-full"
                 connectOnClick={editable}
                 deleteKeyCode={editable ? ['Backspace', 'Delete'] : null}
@@ -929,6 +939,7 @@ function WorkflowCanvasContent({
                 proOptions={{ hideAttribution: true }}
                 selectionOnDrag={editable && interactionMode === 'pointer'}
             >
+                <Background bgColor="var(--sidebar)" />
                 {editable ? (
                     <WorkflowCanvasToolbar
                         onAddNode={handleAddNode}
@@ -943,8 +954,11 @@ function WorkflowCanvasContent({
                         onSelect={handleNodeTemplateSelect}
                     />
                 ) : null}
-                <Controls showInteractive={false} />
-            </Canvas>
+                <Controls
+                    className="gap-px overflow-hidden rounded-md border bg-card p-1 shadow-none! [&>button]:rounded-md [&>button]:border-none! [&>button]:bg-transparent! [&>button]:hover:bg-secondary!"
+                    showInteractive={false}
+                />
+            </ReactFlow>
         </div>
     );
 }

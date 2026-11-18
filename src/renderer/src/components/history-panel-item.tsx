@@ -24,8 +24,10 @@ export function HistoryPanelItem({ children, className, selected = false, onSele
     return (
         <div
             className={cn(
-                'group rounded-lg p-3 transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-                selected && 'bg-accent text-accent-foreground',
+                'group rounded-lg p-2.5 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer select-none',
+                selected
+                    ? 'bg-blue-100/70 text-blue-900 dark:bg-sky-950/40 dark:text-sky-100 font-medium'
+                    : 'text-foreground',
                 className,
             )}
             data-active={selected}

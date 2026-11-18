@@ -116,19 +116,19 @@ export const ProviderCatalog: ProviderCatalogEntry[] = [
         modelsDevKey: 'fireworks-ai',
     },
     {
+        type: ModelProviderTypeEnum.BASETEN,
+        name: 'Baseten',
+        description: 'Run frontier open models with Baseten inference.',
+        modelsSource: 'models-dev',
+        modelsDevKey: 'baseten',
+    },
+    {
         type: ModelProviderTypeEnum.VOYAGE,
         name: 'Voyage AI',
         description: 'State-of-the-art embedding and reranking models by Voyage AI.',
         modelsSource: 'voyage',
         modelsDevKey: 'voyage',
         hidden: true,
-    },
-    {
-        type: ModelProviderTypeEnum.BASETEN,
-        name: 'Baseten',
-        description: 'High-performance inference platform for open-source and custom AI models.',
-        modelsSource: 'models-dev',
-        modelsDevKey: 'baseten',
     },
     {
         type: ModelProviderTypeEnum.CUSTOM,

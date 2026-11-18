@@ -12,6 +12,7 @@ import {
     persona,
     task,
     taskComment,
+    userProfile,
     webSearchConfig,
     workflow,
     workflowRun,
@@ -286,4 +287,24 @@ export interface WorkspaceReachabilityResult {
     reachable: boolean;
     canonicalPath?: string;
     error?: string;
+}
+
+export type UserProfileRecord = InferSelectModel<typeof userProfile>;
+export type NewUserProfileRecord = InferInsertModel<typeof userProfile>;
+
+export interface UserProfile {
+    name: string;
+    initials: string;
+    photo?: string | null;
+    isConfigured: boolean;
+}
+
+export interface UserProfileSaveInput {
+    name: string;
+    photo?: string | null;
+}
+
+export interface ExperimentalFlags {
+    tasks: boolean;
+    workflow: boolean;
 }

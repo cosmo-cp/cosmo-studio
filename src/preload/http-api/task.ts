@@ -6,7 +6,7 @@ import type {
     TaskListFilter,
     TaskUpdateInput,
     TaskWithLinks,
-} from 'core/dto';
+} from '../../../packages/core/dto';
 import { callRpc } from '../api/common';
 import type { TaskApi } from '../contracts/task';
 

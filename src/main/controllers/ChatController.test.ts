@@ -11,11 +11,12 @@ describe('ChatController', () => {
         const chats: Chat[] = [{ id: 'c' } as Chat];
         const withMessages: ChatWithMessages = { id: 'c', messages: [] } as ChatWithMessages;
         const updated: Chat = { id: 'c' } as Chat;
+        const createdChat: Chat = { id: 'new-c', title: 'Hello' } as Chat;
 
         const service = {
             getAllChats: vi.fn().mockResolvedValue(chats),
             getChatById: vi.fn().mockResolvedValue(withMessages),
-            createChat: vi.fn().mockResolvedValue(undefined),
+            createChat: vi.fn().mockResolvedValue(createdChat),
             updateChat: vi.fn().mockResolvedValue(updated),
             deleteChat: vi.fn().mockResolvedValue(undefined),
             updatePinnedStatusForChat: vi.fn().mockResolvedValue(undefined),
@@ -34,7 +35,7 @@ describe('ChatController', () => {
         expect(service.getChatById).toHaveBeenCalledWith('c');
 
         const newChat: NewChat = { title: 'Hello' } as NewChat;
-        await controller.createChat(newChat);
+        await expect(controller.createChat(newChat)).resolves.toEqual(createdChat);
         expect(service.createChat).toHaveBeenCalledWith(newChat);
 
         await expect(controller.updateChat('c', { title: 'Updated' } as Partial<NewChat>)).resolves.toEqual(updated);

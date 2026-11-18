@@ -10,6 +10,7 @@ import { ModelProviderController } from '../src/main/controllers/ModelProviderCo
 import { PersonaController } from '../src/main/controllers/PersonaController';
 import { StreamingChatController } from '../src/main/controllers/StreamingChatController';
 import { TaskController } from '../src/main/controllers/TaskController';
+import { UserController } from '../src/main/controllers/UserController';
 import { WebSearchController } from '../src/main/controllers/WebSearchController';
 import { WorkflowController } from '../src/main/controllers/WorkflowController';
 import { WorkspaceController } from '../src/main/controllers/WorkspaceController';
@@ -30,6 +31,7 @@ const controllers = [
     AcpAgentController,
     TaskController,
     WorkspaceController,
+    UserController,
 ];
 
 const controllerPaths = {
@@ -45,6 +47,7 @@ const controllerPaths = {
     AcpAgentController: path.resolve(__dirname, '../src/main/controllers/AcpAgentController.ts'),
     TaskController: path.resolve(__dirname, '../src/main/controllers/TaskController.ts'),
     WorkspaceController: path.resolve(__dirname, '../src/main/controllers/WorkspaceController.ts'),
+    UserController: path.resolve(__dirname, '../src/main/controllers/UserController.ts'),
 };
 
 const controllerFileContents: { [key: string]: string } = {};

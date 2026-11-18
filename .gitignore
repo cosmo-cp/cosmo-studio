@@ -151,3 +151,4 @@ src/renderer/next-env.d.ts
 .next-docs/
 .cosmo-http/database/base/1/112
 /.cosmo-http
+/skills/*

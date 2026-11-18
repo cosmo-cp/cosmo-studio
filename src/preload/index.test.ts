@@ -50,6 +50,7 @@ describe('preload index', () => {
             'acpAgent',
             'task',
             'workspace',
+            'user',
             'streaming',
         ]);
         expect(rpcApi).not.toHaveProperty('ipcRenderer');

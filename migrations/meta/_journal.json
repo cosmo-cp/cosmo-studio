@@ -274,6 +274,27 @@
       "when": 1793865284621,
       "tag": "0038_unusual_puff_adder",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1794481727478,
+      "tag": "0039_flowery_the_call",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1794522794459,
+      "tag": "0040_strong_puck",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794896095128,
+      "tag": "0041_sour_satana",
+      "breakpoints": true
     }
   ]
 }
