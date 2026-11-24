@@ -6,12 +6,14 @@ import {
     stepCountIs,
     streamText,
     toUIMessageStream,
+    wrapLanguageModel,
     type ToolSet,
     type UIMessageChunk,
 } from 'ai';
 import type { ChatSendMessageArgs } from 'core/dto';
 import { getCoreLogger } from 'core/platform/CoreLogger';
 import { ChatService } from 'core/services/ChatService';
+import { GuardrailsService } from 'core/services/GuardrailsService';
 import { McpClientManager } from 'core/services/McpClientManager';
 import { MessageService } from 'core/services/MessageService';
 import { ModelProviderService } from 'core/services/ModelProviderService';
@@ -56,6 +58,8 @@ export class ChatStreamingService {
         private readonly workspaceLockService: WorkspaceExecutionLockService,
         @inject(CORETYPES.WorkspaceService)
         private readonly workspaceService: WorkspaceService,
+        @inject(CORETYPES.GuardrailsService)
+        private readonly guardrailsService: GuardrailsService,
     ) {}
 
     // Build the model response stream once so Electron IPC and HTTP can deliver it differently.
@@ -74,15 +78,8 @@ export class ChatStreamingService {
             throw new Error('agentId is required but was not provided');
         }
 
-        const modelMessages: ModelMessage[] = await convertToModelMessages(args.messages);
-        const persona = args.personaId
-            ? await this.personaService.getById(args.personaId)
-            : args.personaName
-              ? await this.personaService.getByName(args.personaName)
-              : undefined;
-
         const lastUserMsg = args.messages[args.messages.length - 1];
-        const txtMsg = lastUserMsg.parts.find((part) => {
+        const rawTxtMsg = lastUserMsg.parts.find((part) => {
             return part.type === 'text';
         })?.text;
         const rsnMsg = lastUserMsg.parts.find((part) => {
@@ -90,11 +87,36 @@ export class ChatStreamingService {
         })?.text;
         const persistedModelIdentifier = runtime === 'agent' ? `agent:${args.agentId}` : args.modelIdentifier;
 
+        let sanitizedText = rawTxtMsg;
+        if (rawTxtMsg) {
+            sanitizedText = await this.guardrailsService.sanitizeInput(rawTxtMsg);
+        }
+
+        const messagesToConvert =
+            sanitizedText && sanitizedText !== rawTxtMsg
+                ? args.messages.map((m, idx) => {
+                      if (idx !== args.messages.length - 1) return m;
+                      return {
+                          ...m,
+                          parts: m.parts.map((p) => {
+                              return p.type === 'text' ? { ...p, text: sanitizedText! } : p;
+                          }),
+                      };
+                  })
+                : args.messages;
+
+        const modelMessages: ModelMessage[] = await convertToModelMessages(messagesToConvert);
+        const persona = args.personaId
+            ? await this.personaService.getById(args.personaId)
+            : args.personaName
+              ? await this.personaService.getByName(args.personaName)
+              : undefined;
+
         abortSignal.throwIfAborted();
         await this.messageService.createMessage({
             chatId: args.chatId,
             role: lastUserMsg.role,
-            text: txtMsg ?? null,
+            text: sanitizedText ?? null,
             reasoning: rsnMsg ?? null,
             modelIdentifier: persistedModelIdentifier ?? null,
         });
@@ -122,9 +144,14 @@ export class ChatStreamingService {
                   )
                 : await this.buildModelStreamConfig(args.modelIdentifier!);
 
-        const result = streamText({
+        const guardedModel = wrapLanguageModel({
             // @ts-expect-error/type-does-not-exist
             model: streamConfig.model,
+            middleware: this.guardrailsService.createMiddleware(),
+        });
+
+        const result = streamText({
+            model: guardedModel,
             instructions: persona?.details || undefined,
             messages: modelMessages,
             tools: streamConfig.tools,
@@ -136,10 +163,17 @@ export class ChatStreamingService {
             },
             onFinish: async (result) => {
                 streamConfig.cleanup?.();
+                let assistantText = result.text ?? null;
+                if (assistantText) {
+                    const evalResult = await this.guardrailsService.evaluateText(assistantText, 'assistant');
+                    if (evalResult.redacted && evalResult.sanitizedText) {
+                        assistantText = evalResult.sanitizedText;
+                    }
+                }
                 await this.messageService.createMessage({
                     chatId: args.chatId,
                     role: 'assistant',
-                    text: result.text ?? null,
+                    text: assistantText,
                     reasoning: result.reasoningText ?? null,
                     modelIdentifier: persistedModelIdentifier ?? null,
                 });

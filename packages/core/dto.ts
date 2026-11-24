@@ -5,6 +5,7 @@ import {
     acpRegistryCache,
     chat,
     command,
+    guardrailsConfig,
     mcpServer,
     message,
     model,
@@ -307,4 +308,54 @@ export interface UserProfileSaveInput {
 export interface ExperimentalFlags {
     tasks: boolean;
     workflow: boolean;
+}
+
+export type GuardrailsConfig = InferSelectModel<typeof guardrailsConfig>;
+export type NewGuardrailsConfig = InferInsertModel<typeof guardrailsConfig>;
+
+export interface GuardrailsConfigView {
+    id: string;
+    createdAt: Date;
+    updatedAt?: Date | null;
+    enabled: boolean;
+    injectionEnabled: boolean;
+    injectionMode: 'heuristic' | 'pattern';
+    injectionThreshold: number;
+    leakageEnabled: boolean;
+    leakageMode: 'heuristic' | 'pattern';
+    leakageThreshold: number;
+    piiEnabled: boolean;
+    piiMode: 'redact' | 'block';
+    secretEnabled: boolean;
+    secretMode: 'block' | 'redact';
+}
+
+export interface GuardrailsConfigSaveInput {
+    enabled: boolean;
+    injectionEnabled: boolean;
+    injectionMode: 'heuristic' | 'pattern';
+    injectionThreshold: number;
+    leakageEnabled: boolean;
+    leakageMode: 'heuristic' | 'pattern';
+    leakageThreshold: number;
+    piiEnabled: boolean;
+    piiMode: 'redact' | 'block';
+    secretEnabled: boolean;
+    secretMode: 'block' | 'redact';
+}
+
+export interface GuardrailFinding {
+    guardId: string;
+    guardName: string;
+    passed: boolean;
+    reason?: string;
+}
+
+export interface GuardrailsEvaluateResult {
+    passed: boolean;
+    blocked: boolean;
+    redacted: boolean;
+    violations: GuardrailFinding[];
+    sanitizedText?: string;
+    originalText: string;
 }

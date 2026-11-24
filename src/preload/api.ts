@@ -1,6 +1,7 @@
 import type { AcpAgentApi } from './contracts/acpAgent';
 import type { ChatApi } from './contracts/chat';
 import type { CommandApi } from './contracts/command';
+import type { GuardrailsApi } from './contracts/guardrails';
 import type { McpServerApi } from './contracts/mcpServer';
 import type { MessageApi } from './contracts/message';
 import type { ModelProviderApi } from './contracts/modelProvider';
@@ -14,6 +15,7 @@ import type { WorkspaceApi } from './contracts/workspace';
 import { acpAgentHttpApi } from './http-api/acpAgent';
 import { chatHttpApi } from './http-api/chat';
 import { commandHttpApi } from './http-api/command';
+import { guardrailsHttpApi } from './http-api/guardrails';
 import { mcpServerHttpApi } from './http-api/mcpServer';
 import { messageHttpApi } from './http-api/message';
 import { modelProviderHttpApi } from './http-api/modelProvider';
@@ -37,6 +39,7 @@ export type { AcpAgentApi } from './contracts/acpAgent';
 export type { TaskApi } from './contracts/task';
 export type { WorkspaceApi } from './contracts/workspace';
 export type { UserApi } from './contracts/user';
+export type { GuardrailsApi } from './contracts/guardrails';
 export type { StreamingApi } from './contracts/streaming';
 
 export interface CosmoApi {
@@ -52,6 +55,7 @@ export interface CosmoApi {
     task: TaskApi;
     workspace: WorkspaceApi;
     user: UserApi;
+    guardrails: GuardrailsApi;
     streaming: StreamingApi;
 }
 
@@ -68,5 +72,6 @@ export const httpApi: CosmoApi = {
     task: taskHttpApi,
     workspace: workspaceHttpApi,
     user: userHttpApi,
+    guardrails: guardrailsHttpApi,
     streaming: streamingHttpApi,
 };

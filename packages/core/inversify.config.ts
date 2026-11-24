@@ -5,6 +5,7 @@ import { Base64SecretStore, type SecretStore } from './platform/SecretStore';
 import { AcpAgentRepository } from './repositories/AcpAgentRepository';
 import { ChatRepository } from './repositories/ChatRepository';
 import { CommandRepository } from './repositories/CommandRepository';
+import { GuardrailsConfigRepository } from './repositories/GuardrailsConfigRepository';
 import { McpServerRepository } from './repositories/McpServerRepository';
 import { MessageRepository } from './repositories/MessageRepository';
 import { ModelProviderRepository } from './repositories/ModelProviderRepository';
@@ -20,6 +21,7 @@ import { AcpAgentService } from './services/AcpAgentService';
 import { AcpRegistryService } from './services/AcpRegistryService';
 import { ChatService } from './services/ChatService';
 import { CommandService } from './services/CommandService';
+import { GuardrailsService } from './services/GuardrailsService';
 import { McpClientManager } from './services/McpClientManager';
 import { McpServerService } from './services/McpServerService';
 import { MessageService } from './services/MessageService';
@@ -61,6 +63,10 @@ coreContainer.bind<TaskRepository>(CORETYPES.TaskRepository).to(TaskRepository).
 coreContainer.bind<TaskCommentRepository>(CORETYPES.TaskCommentRepository).to(TaskCommentRepository).inSingletonScope();
 coreContainer.bind<WorkspaceRepository>(CORETYPES.WorkspaceRepository).to(WorkspaceRepository).inSingletonScope();
 coreContainer.bind<UserProfileRepository>(CORETYPES.UserProfileRepository).to(UserProfileRepository).inSingletonScope();
+coreContainer
+    .bind<GuardrailsConfigRepository>(CORETYPES.GuardrailsConfigRepository)
+    .to(GuardrailsConfigRepository)
+    .inSingletonScope();
 
 // Services
 coreContainer.bind<ChatService>(CORETYPES.ChatService).to(ChatService).inSingletonScope();
@@ -82,5 +88,6 @@ coreContainer.bind<TaskService>(CORETYPES.TaskService).to(TaskService).inSinglet
 coreContainer.bind<TaskCommentService>(CORETYPES.TaskCommentService).to(TaskCommentService).inSingletonScope();
 coreContainer.bind<WorkspaceService>(CORETYPES.WorkspaceService).to(WorkspaceService).inSingletonScope();
 coreContainer.bind<UserProfileService>(CORETYPES.UserProfileService).to(UserProfileService).inSingletonScope();
+coreContainer.bind<GuardrailsService>(CORETYPES.GuardrailsService).to(GuardrailsService).inSingletonScope();
 
 export { coreContainer };

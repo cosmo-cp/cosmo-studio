@@ -1,6 +1,7 @@
 import { AcpAgentController } from '../controllers/AcpAgentController';
 import { ChatController } from '../controllers/ChatController';
 import { CommandController } from '../controllers/CommandController';
+import { GuardrailsController } from '../controllers/GuardrailsController';
 import { McpServerController } from '../controllers/McpServerController';
 import { MessageController } from '../controllers/MessageController';
 import { ModelProviderController } from '../controllers/ModelProviderController';
@@ -24,4 +25,5 @@ export const rpcControllerConstructors = [
     TaskController,
     WorkspaceController,
     UserController,
+    GuardrailsController,
 ] as const;

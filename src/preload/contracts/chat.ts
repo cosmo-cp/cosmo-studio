@@ -5,7 +5,7 @@ import type {
     ModelIdentifier,
     NewChat,
     PersonaIdentifier,
-} from 'core/dto';
+} from '../../../packages/core/dto';
 
 export interface ChatApi {
     getAllChats(searchQuery: string | null): Promise<Chat[]>;

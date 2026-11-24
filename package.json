@@ -9,7 +9,7 @@
         "src/renderer"
     ],
     "scripts": {
-        "postinstall": "node scripts/patch-electron-forge-plugin-vite.mjs",
+        "postinstall": "node scripts/patch-electron-forge-plugin-vite.mjs && node scripts/patch-hai-guardrails.mjs",
         "generate-api": "ts-node -T -r tsconfig-paths/register scripts/generate-api.ts && npm run prettier",
         "download-provider-logos": "ts-node scripts/download-provider-logos.ts",
         "next:dev": "cd src/renderer && npm run dev",
@@ -104,6 +104,7 @@
         "@nestjs/core": "^12.3.2",
         "@nestjs/platform-express": "^12.3.2",
         "@nestjs/serve-static": "^12.1.1",
+        "@presidio-dev/hai-guardrails": "1.12.0",
         "@stepperize/react": "^8.0.1",
         "@types/express": "^5.0.6",
         "adm-zip": "^0.6.1",

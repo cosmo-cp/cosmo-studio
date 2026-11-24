@@ -97,6 +97,9 @@ const PRELOAD_TYPE_IMPORTS = [
     { name: 'ExperimentalFlags', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'UserProfile', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'UserProfileSaveInput', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'GuardrailsConfigView', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'GuardrailsConfigSaveInput', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'GuardrailsEvaluateResult', source: PRELOAD_CORE_DTO_IMPORT },
     {
         name: 'WebSearchProviderTypeEnum',
         source: PRELOAD_WEB_SEARCH_SCHEMA_IMPORT,

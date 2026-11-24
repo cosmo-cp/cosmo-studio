@@ -2,6 +2,13 @@
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant data-horizontal (&[data-orientation="horizontal"]);
+@custom-variant data-vertical (&[data-orientation="vertical"]);
+@custom-variant data-checked (&:where([data-state="checked"], [data-checked]:not([data-checked="false"])));
+@custom-variant data-unchecked (&:where([data-state="unchecked"], [data-unchecked]:not([data-unchecked="false"])));
+@custom-variant data-open (&:where([data-state="open"], [data-open]:not([data-open="false"])));
+@custom-variant data-closed (&:where([data-state="closed"], [data-closed]:not([data-closed="false"])));
+@custom-variant data-active (&:where([data-state="active"], [data-active]:not([data-active="false"])));
 
 @theme inline {
     --font-sans: var(--font-inter);
@@ -169,4 +176,25 @@ html {
 
 .animate-logo-scroll:hover {
     animation-play-state: paused;
+}
+
+/* Ensure switches have pointer cursor and distinct interactive contrast when unchecked */
+button[data-slot='switch'] {
+    cursor: pointer;
+}
+
+button[data-slot='switch'][data-state='unchecked'] {
+    background-color: color-mix(in oklch, var(--muted-foreground) 25%, var(--card));
+    border-color: color-mix(in oklch, var(--foreground) 20%, transparent);
+}
+
+button[data-slot='switch'][data-state='unchecked']:hover:not([data-disabled]):not(:disabled) {
+    background-color: color-mix(in oklch, var(--muted-foreground) 35%, var(--card));
+    border-color: color-mix(in oklch, var(--foreground) 35%, transparent);
+}
+
+button[data-slot='switch'][data-disabled],
+button[data-slot='switch']:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
