@@ -1,14 +1,7 @@
 'use client';
 
-import { SettingsPlaceholderPage } from '@/components/settings-placeholder-page';
-import { Shield } from 'lucide-react';
+import { GuardrailsManagement } from '@/components/guardrails-management';
 
 export default function GuardrailsSettingsPage() {
-    return (
-        <SettingsPlaceholderPage
-            title="Guardrails"
-            description="Set up content filtering, PII redaction policies, and prompt security controls."
-            icon={Shield}
-        />
-    );
+    return <GuardrailsManagement />;
 }

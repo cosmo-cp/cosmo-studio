@@ -158,6 +158,19 @@ Use this file as the quick feature index. For implementation details, follow the
 - Chat workspace locking ensures zero directory drift during active turns: `chat.workspaceId` is bound on the first turn touching a folder, disabling the workspace selector with a lock badge and explanatory tooltip until the next session.
 - Additive database evolution preserving `Task.workspacePath` as an immutable snapshot for permanent execution audit trails.
 
+## Guardrails & AI Safety
+
+- Multi-layer defense and safety controls powered by `packages/guardrails`.
+    - Design document: `docs/designs/guardrails.md`
+    - Guardrails package: `packages/guardrails`
+    - Schema/service: `packages/core/database/schema/guardrailsConfigSchema.ts`, `packages/core/repositories/GuardrailsConfigRepository.ts`, `packages/core/services/GuardrailsService.ts`
+    - Controller & RPC: `src/main/controllers/GuardrailsController.ts`, `src/preload/contracts/guardrails.ts`, `src/preload/api/guardrails.ts`, `src/preload/http-api/guardrails.ts`
+    - Chat streaming integration: `src/main/services/ChatStreamingService.ts`
+    - Settings UI & verification playground: `src/renderer/src/app/(main)/settings/guardrails/page.tsx`, `src/renderer/src/components/guardrails-management.tsx`
+    - Renderer SWR hooks & state: `src/renderer/src/features/guardrails/guardrails-api.ts`, `src/renderer/src/features/guardrails/use-guardrails-page-state.ts`
+- Protection layers include Prompt Injection Defense (heuristic & pattern modes with configurable sensitivity threshold), Prompt Leakage Defense (preventing extraction of system prompts), PII Privacy Protection (detecting and masking emails, phones, SSNs, credit cards as `[REDACTED-EMAIL]`, etc.), and Secret & Credential Shield (blocking or redacting API keys and high-entropy tokens).
+- Interactive Guardrails Playground in Settings allows developers to run live simulated prompts, test against active policies, and inspect detection verdicts and sanitized payload outputs in real time.
+
 ## Experimental Features
 
 - The user menu opens Experimental controls for Tasks and Workflow. Choices are stored in the runtime's database, default to enabled, and control sidebar visibility and direct page access. The Flags SDK evaluates these choices in bulk using a database adapter; SDK React metadata exposes the evaluated values.

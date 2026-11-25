@@ -2,6 +2,7 @@ import type { CosmoApi } from './api';
 import { acpAgentApi as acpAgentRpcApi } from './api/acpAgent';
 import { chatApi as chatRpcApi } from './api/chat';
 import { commandApi as commandRpcApi } from './api/command';
+import { guardrailsApi as guardrailsRpcApi } from './api/guardrails';
 import { mcpServerApi as mcpServerRpcApi } from './api/mcpServer';
 import { messageApi as messageRpcApi } from './api/message';
 import { modelProviderApi as modelProviderRpcApi } from './api/modelProvider';
@@ -26,5 +27,6 @@ export const rpcApi: CosmoApi = {
     task: taskRpcApi,
     workspace: workspaceRpcApi,
     user: userRpcApi,
+    guardrails: guardrailsRpcApi,
     streaming: streamingApi,
 };

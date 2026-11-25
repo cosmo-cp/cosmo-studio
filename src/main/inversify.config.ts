@@ -7,6 +7,7 @@ import { AcpAgentController } from './controllers/AcpAgentController';
 import { ChatController } from './controllers/ChatController';
 import { CommandController } from './controllers/CommandController';
 import { Controller } from './controllers/Controller';
+import { GuardrailsController } from './controllers/GuardrailsController';
 import { McpServerController } from './controllers/McpServerController';
 import { MessageController } from './controllers/MessageController';
 import { ModelProviderController } from './controllers/ModelProviderController';
@@ -67,5 +68,6 @@ container.bind<Controller>(TYPES.Controller).to(AcpAgentController).inSingletonS
 container.bind<Controller>(TYPES.Controller).to(TaskController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(WorkspaceController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(UserController).inSingletonScope();
+container.bind<Controller>(TYPES.Controller).to(GuardrailsController).inSingletonScope();
 
 export default container;

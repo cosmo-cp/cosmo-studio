@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 export type SettingsSectionSlug =
-    'provider' | 'persona' | 'command' | 'mcp-server' | 'web-search' | 'agents' | 'workspaces';
+    'provider' | 'persona' | 'command' | 'mcp-server' | 'web-search' | 'agents' | 'workspaces' | 'guardrails';
 
 type SettingsSection = {
     slug: SettingsSectionSlug;
@@ -69,6 +69,12 @@ export const settingsSections: readonly SettingsSection[] = [
         title: 'Workspaces',
         description: 'Manage registered project folders and default workspaces.',
         icon: FolderGit2,
+    },
+    {
+        slug: 'guardrails',
+        title: 'Guardrails',
+        description: 'Configure content filtering, PII redaction policies, and prompt security controls.',
+        icon: Shield,
     },
 ] as const;
 

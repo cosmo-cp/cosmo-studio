@@ -13,6 +13,7 @@ type AppDataSourceOverrides = {
     task?: Partial<AppDataSource['task']>;
     workspace?: Partial<AppDataSource['workspace']>;
     user?: Partial<AppDataSource['user']>;
+    guardrails?: Partial<AppDataSource['guardrails']>;
     streaming?: Partial<AppDataSource['streaming']>;
 };
 
@@ -259,6 +260,39 @@ export function createMockAppDataSource(overrides: AppDataSourceOverrides = {}):
                 isConfigured: true,
             }),
             ...overrides.user,
+        },
+        guardrails: {
+            getConfig: async () => ({
+                id: 'mock-guardrails-id',
+                createdAt: new Date(),
+                updatedAt: null,
+                enabled: true,
+                injectionEnabled: true,
+                injectionMode: 'heuristic',
+                injectionThreshold: 0.7,
+                leakageEnabled: true,
+                leakageMode: 'heuristic',
+                leakageThreshold: 0.7,
+                piiEnabled: true,
+                piiMode: 'redact',
+                secretEnabled: true,
+                secretMode: 'block',
+            }),
+            saveConfig: async (input) => ({
+                id: 'mock-guardrails-id',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                ...input,
+            }),
+            evaluate: async (text) => ({
+                passed: true,
+                blocked: false,
+                redacted: false,
+                violations: [],
+                sanitizedText: text,
+                originalText: text,
+            }),
+            ...overrides.guardrails,
         },
         streaming: {
             sendMessage: () => undefined,
