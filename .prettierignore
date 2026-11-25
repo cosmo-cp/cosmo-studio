@@ -14,5 +14,6 @@ package-lock.json
 Migrations
 migrations
 .devtools
+src/renderer/src/components/ui/**
 
 src/renderer/src/components/ui/**

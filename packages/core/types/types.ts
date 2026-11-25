@@ -16,6 +16,7 @@ const CORETYPES = {
     TaskCommentRepository: Symbol.for('TaskCommentRepository'),
     WorkspaceRepository: Symbol.for('WorkspaceRepository'),
     UserProfileRepository: Symbol.for('UserProfileRepository'),
+    GuardrailsConfigRepository: Symbol.for('GuardrailsConfigRepository'),
     // services
     ChatService: Symbol.for('ChatService'),
     MessageService: Symbol.for('MessageService'),
@@ -34,6 +35,7 @@ const CORETYPES = {
     WorkspaceService: Symbol.for('WorkspaceService'),
     UserProfileService: Symbol.for('UserProfileService'),
     FolderPickerService: Symbol.for('FolderPickerService'),
+    GuardrailsService: Symbol.for('GuardrailsService'),
     SkillService: Symbol.for('SkillService'),
 };
 

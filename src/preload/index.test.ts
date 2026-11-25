@@ -51,6 +51,7 @@ describe('preload index', () => {
             'task',
             'workspace',
             'user',
+            'guardrails',
             'streaming',
         ]);
         expect(rpcApi).not.toHaveProperty('ipcRenderer');

@@ -35,6 +35,9 @@ const ai = vi.hoisted(() => {
                 return false;
             }),
         },
+        wrapLanguageModel: vi.fn((opts: { model: unknown }) => {
+            return opts.model;
+        }),
     };
 });
 
@@ -60,6 +63,7 @@ vi.mock('ai', () => {
         streamText: ai.streamText,
         toUIMessageStream: ai.toUIMessageStream,
         RetryError: ai.RetryError,
+        wrapLanguageModel: ai.wrapLanguageModel,
     };
 });
 
@@ -148,6 +152,13 @@ function createControllerDependencies(
     const acpAgentRuntimeService = {
         createProvider: vi.fn(),
     } as unknown as AcpAgentRuntimeService;
+    const guardrailsService = {
+        sanitizeInput: vi.fn().mockImplementation(async (text: string) => {
+            return text;
+        }),
+        evaluateText: vi.fn().mockResolvedValue({ passed: true, blocked: false, redacted: false, violations: [] }),
+        createMiddleware: vi.fn().mockReturnValue({ specificationVersion: 'v4' }),
+    };
 
     const chatStreamingService = new ChatStreamingService(
         modelProviderService,
@@ -165,6 +176,7 @@ function createControllerDependencies(
             get: vi.fn().mockResolvedValue({ id: 'ws-1', canonicalPath: '/tmp' }),
             validateReachability: vi.fn().mockResolvedValue({ reachable: true, canonicalPath: '/tmp' }),
         } as never,
+        guardrailsService as never,
     );
     const controller = new StreamingChatController(chatStreamingService);
 

@@ -4,6 +4,7 @@ import * as path from 'path';
 import { AcpAgentController } from '../src/main/controllers/AcpAgentController';
 import { ChatController } from '../src/main/controllers/ChatController';
 import { CommandController } from '../src/main/controllers/CommandController';
+import { GuardrailsController } from '../src/main/controllers/GuardrailsController';
 import { McpServerController } from '../src/main/controllers/McpServerController';
 import { MessageController } from '../src/main/controllers/MessageController';
 import { ModelProviderController } from '../src/main/controllers/ModelProviderController';
@@ -34,6 +35,7 @@ const controllers = [
     TaskController,
     WorkspaceController,
     UserController,
+    GuardrailsController,
 ];
 
 const controllerPaths = {
@@ -51,6 +53,7 @@ const controllerPaths = {
     TaskController: path.resolve(__dirname, '../src/main/controllers/TaskController.ts'),
     WorkspaceController: path.resolve(__dirname, '../src/main/controllers/WorkspaceController.ts'),
     UserController: path.resolve(__dirname, '../src/main/controllers/UserController.ts'),
+    GuardrailsController: path.resolve(__dirname, '../src/main/controllers/GuardrailsController.ts'),
 };
 
 const controllerFileContents: { [key: string]: string } = {};
