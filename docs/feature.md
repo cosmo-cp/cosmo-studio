@@ -160,8 +160,9 @@ Use this file as the quick feature index. For implementation details, follow the
 
 ## Guardrails & AI Safety
 
-- Multi-layer defense and safety controls powered by `@presidio-dev/hai-guardrails`.
+- Multi-layer defense and safety controls powered by `packages/guardrails`.
     - Design document: `docs/designs/guardrails.md`
+    - Guardrails package: `packages/guardrails`
     - Schema/service: `packages/core/database/schema/guardrailsConfigSchema.ts`, `packages/core/repositories/GuardrailsConfigRepository.ts`, `packages/core/services/GuardrailsService.ts`
     - Controller & RPC: `src/main/controllers/GuardrailsController.ts`, `src/preload/contracts/guardrails.ts`, `src/preload/api/guardrails.ts`, `src/preload/http-api/guardrails.ts`
     - Chat streaming integration: `src/main/services/ChatStreamingService.ts`

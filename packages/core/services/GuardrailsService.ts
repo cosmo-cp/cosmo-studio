@@ -7,7 +7,7 @@ import {
     secretGuard,
     SelectionType,
     type Guard,
-} from '@presidio-dev/hai-guardrails';
+} from 'guardrails';
 import { inject, injectable } from 'inversify';
 import type {
     GuardrailFinding,
