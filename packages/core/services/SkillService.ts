@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { injectable } from 'inversify';
+import { injectable, unmanaged } from 'inversify';
 import * as jsYaml from 'js-yaml';
 import { SkillManifest } from '../dto';
 import { getCoreLogger } from '../platform/CoreLogger';
@@ -30,7 +30,7 @@ export interface RawSkillFrontmatter {
 export class SkillService {
     private defaultSearchDirs: string[];
 
-    constructor(customSearchDirs?: string[]) {
+    constructor(@unmanaged() customSearchDirs?: string[]) {
         this.defaultSearchDirs = customSearchDirs ?? [
             path.resolve(process.cwd(), 'skills'),
             path.resolve(__dirname, '../../../skills'),

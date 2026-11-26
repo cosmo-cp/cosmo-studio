@@ -2,6 +2,8 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { coreContainer } from '../inversify.config';
+import { CORETYPES } from '../types/types';
 import { SkillService } from './SkillService';
 
 describe('SkillService', () => {
@@ -119,5 +121,10 @@ Content 2`,
         const workflow = await repoService.getSkillByName('run-workflow');
         expect(workflow).toBeDefined();
         expect(workflow?.isBuiltIn).toBe(true);
+    });
+
+    it('resolves from coreContainer without injection error', () => {
+        const resolved = coreContainer.get(CORETYPES.SkillService);
+        expect(resolved).toBeInstanceOf(SkillService);
     });
 });

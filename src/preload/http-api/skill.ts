@@ -1,3 +1,4 @@
+import type { SkillManifest } from '../../../packages/core/dto';
 import { callRpc } from '../api/common';
 import type { SkillApi } from '../contracts/skill';
 

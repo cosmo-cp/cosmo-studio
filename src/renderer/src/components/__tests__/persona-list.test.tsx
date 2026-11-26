@@ -91,20 +91,23 @@ describe('PersonaList component', () => {
 
         // Switch to Intelligence tab
         const intelligenceTab = screen.getByRole('tab', { name: /intelligence/i });
-        fireEvent.pointerDown(intelligenceTab, { pointerId: 1 });
+        fireEvent.pointerDown(intelligenceTab, { button: 0, ctrlKey: false });
+        fireEvent.keyDown(intelligenceTab, { key: 'Enter' });
         fireEvent.click(intelligenceTab);
         expect(await screen.findByText(/temperature/i)).toBeInTheDocument();
         expect(screen.getByText(/reasoning effort/i)).toBeInTheDocument();
 
         // Switch to Skills tab
         const skillsTab = screen.getByRole('tab', { name: /skills/i });
-        fireEvent.pointerDown(skillsTab, { pointerId: 1 });
+        fireEvent.pointerDown(skillsTab, { button: 0, ctrlKey: false });
+        fireEvent.keyDown(skillsTab, { key: 'Enter' });
         fireEvent.click(skillsTab);
         expect(await screen.findByText('Specialized Agent Skills')).toBeInTheDocument();
 
         // Switch to Tools tab
         const toolsTab = screen.getByRole('tab', { name: /tools/i });
-        fireEvent.pointerDown(toolsTab, { pointerId: 1 });
+        fireEvent.pointerDown(toolsTab, { button: 0, ctrlKey: false });
+        fireEvent.keyDown(toolsTab, { key: 'Enter' });
         fireEvent.click(toolsTab);
         expect(await screen.findByText('Tool Access Mode')).toBeInTheDocument();
         expect(screen.getByText('Exa Web Search')).toBeInTheDocument();

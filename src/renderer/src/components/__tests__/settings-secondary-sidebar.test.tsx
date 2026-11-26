@@ -45,6 +45,7 @@ describe('SettingsSecondarySidebar', () => {
         expect(screen.getByRole('link', { name: /commands/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /mcp servers/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /persona/i })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /skills/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /projects/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /guardrails/i })).toBeInTheDocument();
 
@@ -93,5 +94,12 @@ describe('SettingsSecondarySidebar', () => {
 
         const guardrailsLink = screen.getByRole('link', { name: /guardrails/i });
         expect(guardrailsLink).toHaveAttribute('data-active', 'true');
+    });
+
+    it('marks skills active when on /settings/skills', () => {
+        renderSidebar('/settings/skills');
+
+        const skillsLink = screen.getByRole('link', { name: /skills/i });
+        expect(skillsLink).toHaveAttribute('data-active', 'true');
     });
 });

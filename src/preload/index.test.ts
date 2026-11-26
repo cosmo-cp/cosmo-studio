@@ -43,6 +43,7 @@ describe('preload index', () => {
             'modelProvider',
             'message',
             'persona',
+            'skill',
             'command',
             'mcpServer',
             'webSearch',

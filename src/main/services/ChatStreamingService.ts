@@ -78,16 +78,6 @@ export class ChatStreamingService {
             throw new Error('agentId is required but was not provided');
         }
 
-        // Interrupted tool calls have no result and cannot be sent as model history.
-        const modelMessages: ModelMessage[] = await convertToModelMessages(args.messages, {
-            ignoreIncompleteToolCalls: true,
-        });
-        const persona = args.personaId
-            ? await this.personaService.getById(args.personaId)
-            : args.personaName
-              ? await this.personaService.getByName(args.personaName)
-              : undefined;
-
         const lastUserMsg = args.messages[args.messages.length - 1];
         const rawTxtMsg = lastUserMsg.parts.find((part) => {
             return part.type === 'text';
@@ -115,7 +105,10 @@ export class ChatStreamingService {
                   })
                 : args.messages;
 
-        const modelMessages: ModelMessage[] = await convertToModelMessages(messagesToConvert);
+        // Interrupted tool calls have no result and cannot be sent as model history.
+        const modelMessages: ModelMessage[] = await convertToModelMessages(messagesToConvert, {
+            ignoreIncompleteToolCalls: true,
+        });
         const persona = args.personaId
             ? await this.personaService.getById(args.personaId)
             : args.personaName
