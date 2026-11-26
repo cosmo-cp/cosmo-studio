@@ -72,13 +72,26 @@ function buildProvider(): ProviderWithModels {
     };
 }
 
-function buildPersona(): Persona {
+function buildPersona(overrides: Partial<Persona> = {}): Persona {
     return {
         id: 'persona-1',
         name: 'Research Assistant',
+        role: null,
+        description: null,
+        avatarUrl: null,
         details: 'Focus on structured analysis.',
+        systemPrompt: null,
+        modelIdentifier: null,
+        temperature: null,
+        reasoningEffort: null,
+        skills: [],
+        toolAccessMode: 'all',
+        allowedMcpServers: [],
+        allowedTools: [],
+        webSearchEnabled: true,
         createdAt: new Date('2026-03-18T00:00:00.000Z'),
         updatedAt: new Date('2026-03-18T00:00:00.000Z'),
+        ...overrides,
     };
 }
 
