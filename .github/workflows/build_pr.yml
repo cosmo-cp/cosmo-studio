@@ -29,19 +29,19 @@ jobs:
               run: npm run lint
 
             - name: Run renderer lint
-              run: npm run lint --prefix src/renderer
+              run: npm run lint --prefix apps/cosmo-web
 
             - name: Run root tests
               run: npm run test
 
             - name: Run renderer tests
-              run: npm run test --prefix src/renderer
+              run: npm run test --prefix apps/cosmo-web
 
             - name: Run root tests (coverage)
               run: npm run test:coverage
 
             - name: Run renderer tests (coverage)
-              run: npm run test:coverage --prefix src/renderer
+              run: npm run test:coverage --prefix apps/cosmo-web
 
             - name: Upload coverage artifacts
               uses: actions/upload-artifact@v4
@@ -49,7 +49,7 @@ jobs:
                   name: coverage-ubuntu-latest
                   path: |
                       coverage
-                      src/renderer/coverage
+                      apps/cosmo-web/coverage
 
             - name: Package application
               env:

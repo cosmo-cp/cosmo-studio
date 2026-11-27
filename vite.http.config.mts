@@ -10,9 +10,9 @@ const copyRuntimeAssetsPlugin = () => {
         name: 'copy-http-runtime-assets',
         closeBundle: function () {
             const outDir = path.resolve(dirname, '.vite/http');
-            const migrationsSource = path.resolve(dirname, 'migrations');
-            const migrationsTarget = path.resolve(outDir, 'migrations');
-            const rendererSource = path.resolve(dirname, 'src/renderer/out');
+            const migrationsSource = path.resolve(dirname, 'migrations/core');
+            const migrationsTarget = path.resolve(outDir, 'migrations/core');
+            const rendererSource = path.resolve(dirname, 'apps/cosmo-web/out');
             const rendererTarget = path.resolve(outDir, 'public');
 
             fs.mkdirSync(migrationsTarget, { recursive: true });
@@ -26,15 +26,22 @@ const copyRuntimeAssetsPlugin = () => {
     };
 };
 
+const httpEeDir = fs.existsSync(path.resolve(dirname, './apps/cosmo-http/src/ee'))
+    ? path.resolve(dirname, './apps/cosmo-http/src/ee')
+    : path.resolve(dirname, './apps/cosmo-http/src/ee-stub');
+
 export default defineConfig({
     resolve: {
         tsconfigPaths: true,
+        alias: {
+            '@ee': httpEeDir,
+        },
     },
     ssr: {
-        noExternal: ['core'],
+        noExternal: ['core', 'guardrails', 'contracts', 'backend-common'],
     },
     build: {
-        ssr: './src/main/http/index.ts',
+        ssr: './apps/cosmo-http/src/index.ts',
         target: 'node20',
         rollupOptions: {
             external: ['@electric-sql/pglite'],

@@ -23,14 +23,15 @@ import {
 } from './database/schema/schema';
 
 type Optional<T, K extends keyof T> = Omit<T, K> & Pick<Partial<T>, K>;
+type TenantAuditFields = 'organizationId' | 'userId';
 
 //full entity based dto
 export type Message = InferSelectModel<typeof message>;
 export type Chat = InferSelectModel<typeof chat>;
 
 // DTOs for new database entry
-export type NewChat = InferInsertModel<typeof chat>;
-export type NewMessage = InferInsertModel<typeof message>;
+export type NewChat = Omit<InferInsertModel<typeof chat>, TenantAuditFields>;
+export type NewMessage = Omit<InferInsertModel<typeof message>, TenantAuditFields>;
 
 // The full model, retrieved from the database with a decrypted apiKey.
 export type ModelProvider = InferSelectModel<typeof modelProvider>;
@@ -38,7 +39,7 @@ export type ModelProvider = InferSelectModel<typeof modelProvider>;
 export type ModelProviderInsert = InferInsertModel<typeof modelProvider>;
 
 // New type for user input, omitting DB-managed fields.
-export type ModelProviderCreateInput = Omit<ModelProviderInsert, 'id' | 'createdAt' | 'updatedAt'>;
+export type ModelProviderCreateInput = Omit<ModelProviderInsert, 'id' | 'createdAt' | 'updatedAt' | TenantAuditFields>;
 
 // The safe model for sending to the renderer process (no API key).
 export type ModelProviderLite = Optional<ModelProvider, 'apiKey'>;
@@ -51,12 +52,12 @@ export type AgentIdentifier = Pick<Chat, 'selectedAgentId' | 'selectedRuntime'>;
 export type Model = InferSelectModel<typeof model>;
 export type ModelInsert = InferInsertModel<typeof model>;
 
-export type NewModel = Omit<Model, 'id' | 'createdAt' | 'updatedAt' | 'providerId'>;
+export type NewModel = Omit<Model, 'id' | 'createdAt' | 'updatedAt' | 'providerId' | TenantAuditFields>;
 export type ModelLite = Omit<Model, 'providerId'>;
 
 export type Persona = InferSelectModel<typeof persona>;
 export type NewPersona = InferInsertModel<typeof persona>;
-export type PersonaCreateInput = Omit<NewPersona, 'id' | 'createdAt' | 'updatedAt'>;
+export type PersonaCreateInput = Omit<NewPersona, 'id' | 'createdAt' | 'updatedAt' | TenantAuditFields>;
 export type PersonaUpdateInput = Partial<PersonaCreateInput>;
 
 export interface SkillManifest {
@@ -78,7 +79,7 @@ export interface SkillUploadInput {
 
 export type Command = InferSelectModel<typeof command>;
 export type NewCommand = InferInsertModel<typeof command>;
-export type CommandCreateInput = Omit<NewCommand, 'id' | 'createdAt' | 'updatedAt'>;
+export type CommandCreateInput = Omit<NewCommand, 'id' | 'createdAt' | 'updatedAt' | TenantAuditFields>;
 export type CommandUpdateInput = Partial<CommandCreateInput>;
 
 export interface CommandDefinition {
@@ -108,7 +109,10 @@ export type ProviderWithModels = ModelProviderLite & {
 
 export type WebSearchConfig = InferSelectModel<typeof webSearchConfig>;
 export type WebSearchConfigInsert = InferInsertModel<typeof webSearchConfig>;
-export type WebSearchConfigCreateInput = Omit<WebSearchConfigInsert, 'id' | 'createdAt' | 'updatedAt'>;
+export type WebSearchConfigCreateInput = Omit<
+    WebSearchConfigInsert,
+    'id' | 'createdAt' | 'updatedAt' | TenantAuditFields
+>;
 export interface WebSearchConfigView {
     id: string;
     createdAt: Date;
@@ -168,14 +172,14 @@ export type McpTransportConfig = SseTransportConfig | HttpTransportConfig | Stdi
 // MCP Server DTOs
 export type McpServer = InferSelectModel<typeof mcpServer>;
 export type McpServerInsert = InferInsertModel<typeof mcpServer>;
-export type McpServerCreateInput = Omit<McpServerInsert, 'id' | 'createdAt' | 'updatedAt'>;
-export type McpServerUpdateInput = Partial<Omit<McpServerInsert, 'id' | 'createdAt' | 'updatedAt'>>;
+export type McpServerCreateInput = Omit<McpServerInsert, 'id' | 'createdAt' | 'updatedAt' | TenantAuditFields>;
+export type McpServerUpdateInput = Partial<Omit<McpServerInsert, 'id' | 'createdAt' | 'updatedAt' | TenantAuditFields>>;
 
 export type AcpAgent = InferSelectModel<typeof acpAgent>;
 export type AcpAgentInsert = InferInsertModel<typeof acpAgent>;
 export type AcpRegistryCache = InferSelectModel<typeof acpRegistryCache>;
 export type AcpRegistryCacheInsert = InferInsertModel<typeof acpRegistryCache>;
-export type AcpAgentCreateInput = Omit<AcpAgentInsert, 'id' | 'createdAt' | 'updatedAt'>;
+export type AcpAgentCreateInput = Omit<AcpAgentInsert, 'id' | 'createdAt' | 'updatedAt' | TenantAuditFields>;
 export type AcpAgentUpdateInput = Partial<AcpAgentCreateInput>;
 
 export interface AcpAgentView extends Omit<AcpAgent, 'env'> {
@@ -229,13 +233,16 @@ export interface WorkflowGraph {
 
 export type Workflow = InferSelectModel<typeof workflow>;
 export type WorkflowInsert = InferInsertModel<typeof workflow>;
-export type WorkflowCreateInput = Omit<WorkflowInsert, 'id' | 'createdAt' | 'updatedAt' | 'latestVersion' | 'status'>;
+export type WorkflowCreateInput = Omit<
+    WorkflowInsert,
+    'id' | 'createdAt' | 'updatedAt' | 'latestVersion' | 'status' | TenantAuditFields
+>;
 
 export type WorkflowVersion = InferSelectModel<typeof workflowVersion>;
 export type WorkflowVersionInsert = InferInsertModel<typeof workflowVersion>;
 
 export type WorkflowRun = InferSelectModel<typeof workflowRun>;
-export type WorkflowRunInsert = InferInsertModel<typeof workflowRun>;
+export type WorkflowRunInsert = Omit<InferInsertModel<typeof workflowRun>, TenantAuditFields>;
 
 export type WorkflowRunEvent = InferSelectModel<typeof workflowRunEvent>;
 export type WorkflowRunEventInsert = InferInsertModel<typeof workflowRunEvent>;
@@ -266,8 +273,11 @@ export interface WorkflowRunStreamAbortArgs {
 // Task entity DTOs
 export type Task = InferSelectModel<typeof task>;
 export type TaskInsert = InferInsertModel<typeof task>;
-export type TaskCreateInput = Omit<TaskInsert, 'id' | 'createdAt' | 'updatedAt' | 'closedAt' | 'nextTaskId'>;
-export type TaskUpdateInput = Partial<Omit<TaskInsert, 'id' | 'createdAt' | 'updatedAt'>>;
+export type TaskCreateInput = Omit<
+    TaskInsert,
+    'id' | 'createdAt' | 'updatedAt' | 'closedAt' | 'nextTaskId' | TenantAuditFields
+>;
+export type TaskUpdateInput = Partial<Omit<TaskInsert, 'id' | 'createdAt' | 'updatedAt' | TenantAuditFields>>;
 
 export interface TaskWithLinks extends Task {
     nextTask?: Task | null;
@@ -283,7 +293,7 @@ export interface TaskListFilter {
 // TaskComment entity DTOs
 export type TaskComment = InferSelectModel<typeof taskComment>;
 export type TaskCommentInsert = InferInsertModel<typeof taskComment>;
-export type TaskCommentCreateInput = Omit<TaskCommentInsert, 'id' | 'createdAt'>;
+export type TaskCommentCreateInput = Omit<TaskCommentInsert, 'id' | 'createdAt' | TenantAuditFields>;
 export type TaskCommentInput = Omit<TaskCommentCreateInput, 'taskId'>;
 
 // Workspace entity DTOs

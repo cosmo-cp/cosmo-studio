@@ -1,7 +1,12 @@
 import 'reflect-metadata';
 import { Container } from 'inversify';
 import { DatabaseManager } from './database/DatabaseManager';
+import { SingleUserAuthContext, type AuthContext } from './platform/AuthContext';
+import type { ComputeRuntimeDriver } from './platform/ComputeRuntimeDriver';
+import { HostProcessComputeDriver } from './platform/HostProcessComputeDriver';
+import { CommunityLicenseService, type LicenseService } from './platform/LicenseService';
 import { Base64SecretStore, type SecretStore } from './platform/SecretStore';
+import { NoOpTelemetryEmitter, type TelemetryEmitter } from './platform/TelemetryEmitter';
 import { AcpAgentRepository } from './repositories/AcpAgentRepository';
 import { ChatRepository } from './repositories/ChatRepository';
 import { CommandRepository } from './repositories/CommandRepository';
@@ -39,9 +44,16 @@ import { CORETYPES } from './types/types';
 
 const coreContainer = new Container();
 
-// Database
+// Database & Platform SPIs
 coreContainer.bind<DatabaseManager>(CORETYPES.DatabaseManager).to(DatabaseManager).inSingletonScope();
 coreContainer.bind<SecretStore>(CORETYPES.SecretStore).to(Base64SecretStore).inSingletonScope();
+coreContainer
+    .bind<ComputeRuntimeDriver>(CORETYPES.ComputeRuntimeDriver)
+    .to(HostProcessComputeDriver)
+    .inSingletonScope();
+coreContainer.bind<LicenseService>(CORETYPES.LicenseService).to(CommunityLicenseService).inSingletonScope();
+coreContainer.bind<TelemetryEmitter>(CORETYPES.TelemetryEmitter).to(NoOpTelemetryEmitter).inSingletonScope();
+coreContainer.bind<AuthContext>(CORETYPES.AuthContext).to(SingleUserAuthContext).inSingletonScope();
 
 // Repositories
 coreContainer.bind<ChatRepository>(CORETYPES.ChatRepository).to(ChatRepository).inSingletonScope();

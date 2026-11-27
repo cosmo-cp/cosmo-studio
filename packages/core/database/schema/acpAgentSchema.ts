@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { boolean, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, index, jsonb, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 import { workspace } from './workspaceSchema';
 
 export enum AcpAgentSourceEnum {
@@ -13,36 +13,47 @@ export enum AcpAgentInstallStatusEnum {
     ERROR = 'error',
 }
 
-export const acpAgent = pgTable('AcpAgent', {
-    id: uuid('id').primaryKey().notNull().defaultRandom(),
-    name: text('name').notNull().unique(),
-    description: text('description'),
-    source: text('source').$type<AcpAgentSourceEnum>().notNull().default(AcpAgentSourceEnum.CUSTOM),
-    registryId: text('registryId'),
-    version: text('version'),
-    command: text('command').notNull(),
-    args: jsonb('args').$type<string[]>().notNull().default([]),
-    env: jsonb('env').$type<Record<string, string>>().notNull().default({}),
-    defaultCwd: text('defaultCwd'),
-    defaultWorkspaceId: uuid('defaultWorkspaceId').references(
-        () => {
-            return workspace.id;
-        },
-        {
-            onDelete: 'set null',
-        },
-    ),
-    authMethodId: text('authMethodId'),
-    enabled: boolean('enabled').notNull().default(true),
-    installStatus: text('installStatus')
-        .$type<AcpAgentInstallStatusEnum>()
-        .notNull()
-        .default(AcpAgentInstallStatusEnum.INSTALLED),
-    mcpServerIds: jsonb('mcpServerIds').$type<string[]>().notNull().default([]),
-    metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
-    createdAt: timestamp('createdAt').notNull().defaultNow(),
-    updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-});
+export const acpAgent = pgTable(
+    'AcpAgent',
+    {
+        id: uuid('id').primaryKey().notNull().defaultRandom(),
+        organizationId: uuid('organizationId'),
+        userId: uuid('userId'),
+        name: text('name').notNull(),
+        description: text('description'),
+        source: text('source').$type<AcpAgentSourceEnum>().notNull().default(AcpAgentSourceEnum.CUSTOM),
+        registryId: text('registryId'),
+        version: text('version'),
+        command: text('command').notNull(),
+        args: jsonb('args').$type<string[]>().notNull().default([]),
+        env: jsonb('env').$type<Record<string, string>>().notNull().default({}),
+        defaultCwd: text('defaultCwd'),
+        defaultWorkspaceId: uuid('defaultWorkspaceId').references(
+            () => {
+                return workspace.id;
+            },
+            {
+                onDelete: 'set null',
+            },
+        ),
+        authMethodId: text('authMethodId'),
+        enabled: boolean('enabled').notNull().default(true),
+        installStatus: text('installStatus')
+            .$type<AcpAgentInstallStatusEnum>()
+            .notNull()
+            .default(AcpAgentInstallStatusEnum.INSTALLED),
+        mcpServerIds: jsonb('mcpServerIds').$type<string[]>().notNull().default([]),
+        metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
+        createdAt: timestamp('createdAt').notNull().defaultNow(),
+        updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+    },
+    (table) => {
+        return {
+            organizationIdIdx: index('acp_agent_organization_id_idx').on(table.organizationId),
+            orgNameUnique: unique('acp_agent_org_name_unique').on(table.organizationId, table.name).nullsNotDistinct(),
+        };
+    },
+);
 
 export const acpRegistryCache = pgTable('AcpRegistryCache', {
     id: text('id').primaryKey().notNull(),

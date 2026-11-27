@@ -17,6 +17,8 @@ export const task = pgTable(
     'Task',
     {
         id: uuid('id').primaryKey().notNull().defaultRandom(),
+        organizationId: uuid('organizationId'),
+        userId: uuid('userId'),
         title: text('title').notNull(),
         description: text('description').notNull(),
         status: taskStatusEnum('status').notNull().default('not_started'),
@@ -48,6 +50,7 @@ export const task = pgTable(
             workspaceIdIdx: index('task_workspace_id_idx').on(table.workspaceId),
             updatedAtIdx: index('task_updated_at_idx').on(table.updatedAt),
             nextTaskIdIdx: index('task_next_task_id_idx').on(table.nextTaskId),
+            organizationIdIdx: index('task_organization_id_idx').on(table.organizationId),
         };
     },
 );
@@ -56,6 +59,8 @@ export const taskComment = pgTable(
     'TaskComment',
     {
         id: uuid('id').primaryKey().notNull().defaultRandom(),
+        organizationId: uuid('organizationId'),
+        userId: uuid('userId'),
         taskId: uuid('taskId')
             .notNull()
             .references(
@@ -74,6 +79,7 @@ export const taskComment = pgTable(
         return {
             taskIdIdx: index('task_comment_task_id_idx').on(table.taskId),
             createdAtIdx: index('task_comment_created_at_idx').on(table.createdAt),
+            organizationIdIdx: index('task_comment_organization_id_idx').on(table.organizationId),
         };
     },
 );

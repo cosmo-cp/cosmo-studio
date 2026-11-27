@@ -1,6 +1,10 @@
 const CORETYPES = {
     DatabaseManager: Symbol.for('DatabaseManager'),
     SecretStore: Symbol.for('SecretStore'),
+    ComputeRuntimeDriver: Symbol.for('ComputeRuntimeDriver'),
+    LicenseService: Symbol.for('LicenseService'),
+    TelemetryEmitter: Symbol.for('TelemetryEmitter'),
+    AuthContext: Symbol.for('AuthContext'),
     // repositories
     ChatRepository: Symbol.for('ChatRepository'),
     MessageRepository: Symbol.for('MessageRepository'),

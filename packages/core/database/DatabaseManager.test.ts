@@ -69,12 +69,6 @@ vi.mock('./migrator', () => {
     };
 });
 
-vi.mock('../../../src/main/logger', () => {
-    return {
-        logger: logger,
-    };
-});
-
 describe('DatabaseManager', () => {
     beforeEach(() => {
         vi.clearAllMocks();

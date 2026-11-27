@@ -10,39 +10,46 @@ For a quick product-capability index before planning or answering feature questi
 
 Cosmo Studio is a dual-runtime app with a static-exported Next.js UI. It builds as an Electron desktop app and as a local NestJS HTTP service.
 
-- **Electron main process**: `src/main/` (entry: `src/main/index.ts`)
-    - Owns windows, app lifecycle, database initialization, IPC registration.
-- **HTTP main process**: `src/main/http/` (entry: `src/main/http/index.ts`)
-    - Owns Nest bootstrap, static renderer serving, generated RPC dispatch, HTTP chat streaming.
-- **Preload (security boundary)**: `src/preload/` (entry: `src/preload/index.ts`)
+- **Electron main process**: `apps/cosmo-desktop/src/` (entry: `apps/cosmo-desktop/src/index.ts`)
+    - Owns windows, app lifecycle, desktop database initialization, IPC registration (`IpcHandlerRegistry`).
+- **HTTP service runtime**: `apps/cosmo-http/src/` (entry: `apps/cosmo-http/src/index.ts`)
+    - Owns Nest bootstrap, static renderer serving, generated RPC dispatch, HTTP chat streaming, and enterprise module loading (`@ee/enterprise-modules` -> `apps/cosmo-http/src/ee-stub/` or private `apps/cosmo-http/src/ee/`).
+- **Preload (security boundary)**: `apps/cosmo-desktop/preload/` (entry: `apps/cosmo-desktop/preload/index.ts`)
     - Exposes a minimal, typed `window.api` via `contextBridge`.
-    - `src/preload/api.ts`, `src/preload/rpc-api.ts`, and the generated `src/preload/contracts/*`, `src/preload/api/*`, `src/preload/http-api/*` modules are generated (see “IPC & API generation”).
-- **Renderer (Next.js UI)**: `src/renderer/` (Next app: `src/renderer/src/`)
+    - `apps/cosmo-desktop/preload/rpc-api.ts`, `packages/contracts/api.ts`, and `packages/contracts/{contracts,api,http-api}/*` are generated (see “IPC & API generation”).
+- **Shared contracts package**: `packages/contracts/` (workspace package name: `contracts`)
+    - Browser-safe API barrel (`packages/contracts/api.ts`), generated DTO interfaces (`packages/contracts/contracts/*`), Electron invoke wrappers (`packages/contracts/api/*`), and HTTP fetch clients (`packages/contracts/http-api/*`).
+- **Shared backend runtime package**: `packages/backend-common/` (workspace package name: `backend-common`)
+    - Shared IPC/HTTP controllers (`packages/backend-common/controllers/*`), decorators (`packages/backend-common/ipc/Decorators.ts`), feature flags, and runtime services (`ChatStreamingService`, `AcpAgentRuntimeService`, `WorkspaceExecutionLockService`, `WorkflowExecutionService`, `TaskExecutionService`, etc.) shared between Electron and HTTP runtimes.
+- **Renderer (Next.js UI)**: `apps/cosmo-web/` (Next app: `apps/cosmo-web/src/`)
     - Runs in the BrowserWindow or browser, talks to the active backend through a bounded Zustand store, feature SWR hooks, and chat transport adapters.
-    - Next config is `output: "export"` (static build to `src/renderer/out/`).
-    - Uses a single bounded Zustand store created in `src/renderer/src/lib/store/store.ts` and mounted in `src/renderer/src/app/store-provider.tsx`; `StoreProvider` also owns the renderer SWR cache.
-    - Request/response flows go through feature-owned SWR hooks under `src/renderer/src/features/*/*-api.ts`, all built on `src/renderer/src/lib/store/backend-hooks.ts`, while renderer-only state stays in focused slices.
-    - Feature orchestration belongs in `src/renderer/src/features/*/use-*-page-state.ts`; keep page/components presentational where possible.
-    - Reusable renderer UI components belong in `src/renderer/src/components/`; do not place shared components under `src/renderer/src/features/`.
-    - Backend resolution lives in `src/renderer/src/lib/store/app-data-source.ts`; user-facing toasts are queued in `src/renderer/src/lib/store/ui-feedback-store.ts` and rendered by `src/renderer/src/components/ui-feedback-host.tsx`.
-    - `NEXT_PUBLIC_COSMO_BACKEND=electron|http` selects `window.api` versus the browser-safe `httpApi` exported from `src/preload/api.ts`.
+    - Next config is `output: "export"` (static build to `apps/cosmo-web/out/`).
+    - Uses a single bounded Zustand store created in `apps/cosmo-web/src/lib/store/store.ts` and mounted in `apps/cosmo-web/src/app/store-provider.tsx`; `StoreProvider` also owns the renderer SWR cache.
+    - Request/response flows go through feature-owned SWR hooks under `apps/cosmo-web/src/features/*/*-api.ts`, all built on `apps/cosmo-web/src/lib/store/backend-hooks.ts`, while renderer-only state stays in focused slices.
+    - Feature orchestration belongs in `apps/cosmo-web/src/features/*/use-*-page-state.ts`; keep page/components presentational where possible.
+    - Reusable renderer UI components belong in `apps/cosmo-web/src/components/`; do not place shared components under `apps/cosmo-web/src/features/`.
+    - Backend resolution lives in `apps/cosmo-web/src/lib/store/app-data-source.ts`; user-facing toasts are queued in `apps/cosmo-web/src/lib/store/ui-feedback-store.ts` and rendered by `apps/cosmo-web/src/components/ui-feedback-host.tsx`.
+    - Enterprise UI extension seams live in `apps/cosmo-web/src/lib/extensions.ts` (wired via `@ee/*` to `apps/cosmo-web/src/ee-stub/` or private `ee/`).
+    - `NEXT_PUBLIC_COSMO_BACKEND=electron|http` selects `window.api` versus the browser-safe `httpApi` exported from `contracts/api`.
 - **Core package (domain + DB + AI)**: `packages/core/` (workspace package name: `core`)
-    - Drizzle schema, repositories/services, DTOs shared across processes.
-    - Imported as `core/...` from main/renderer/preload.
+    - Drizzle schema, repositories/services, DTOs, and Platform SPIs (`packages/core/platform/*`: `ComputeRuntimeDriver`, `LicenseService`, `TelemetryEmitter`, `AuthContext`) shared across processes.
+    - Imported as `core/...` from main/HTTP/renderer/preload/backend-common.
     - Platform concerns use injected interfaces such as `SecretStore` and `CoreLogger`.
-- **ACP agents**: `packages/core/services/AcpAgentService.ts`, `packages/core/services/AcpRegistryService.ts`, `src/main/services/AcpAgentRuntimeService.ts`
+- **Guardrails package**: `packages/guardrails/` (workspace package name: `guardrails`)
+    - Prompt injection, prompt leakage, PII redaction, and secret scanning engine.
+- **ACP agents**: `packages/core/services/AcpAgentService.ts`, `packages/core/services/AcpRegistryService.ts`, `packages/backend-common/services/AcpAgentRuntimeService.ts`
     - Agent definitions and registry cache are shared domain data; process spawning and ACP provider sessions stay in main/HTTP runtime.
     - Renderer receives redacted agent views only; env values are never returned.
-- **Workspaces & Execution Concurrency**: `packages/core/services/WorkspaceService.ts`, `src/main/services/WorkspaceExecutionLockService.ts`
+- **Workspaces & Execution Concurrency**: `packages/core/services/WorkspaceService.ts`, `packages/backend-common/services/WorkspaceExecutionLockService.ts`
     - Workspaces decouple coding agents from hardcoded paths; selectable across Chat and Tasks.
     - `WorkspaceExecutionLockService` enforces mutual exclusion across interactive chat turns and background tasks using hierarchical path overlap checking (`isPathOverlapping`).
     - Platform folder picking uses the injected `FolderPickerService` interface (`ElectronFolderPickerService` on desktop, `HttpFolderPickerService` in HTTP mode).
 - **Tooling/scripts**: `scripts/`
-    - `scripts/generate-api.ts` generates the preload RPC modules, browser-safe HTTP API modules, and HTTP RPC manifest from main IPC controllers.
+    - `scripts/generate-api.ts` generates `packages/contracts/*`, `apps/cosmo-desktop/preload/rpc-api.ts`, and `apps/cosmo-http/src/rpc-manifest.ts` from `packages/backend-common/controllers/*`.
     - `scripts/patch-electron-forge-plugin-vite.mjs` patches Electron Forge's preload Vite config after install for the current Vite compatibility issue.
 - **Database**: Drizzle ORM + PGlite
-    - Schema: `packages/core/database/schema/`
-    - Migrations output: `migrations/`
+    - Schema: `packages/core/database/schema/` (core tables include nullable `organizationId`/`userId` columns omitted from client input DTOs)
+    - Core migrations output: `migrations/core/`
     - Drizzle config: `drizzle.config.ts`
     - Electron and HTTP use separate default data directories.
 
@@ -68,33 +75,33 @@ Before coding, decide **where the feature belongs**. Default to keeping the rend
 ### Decision tree
 
 1. **Pure UI/UX change (layout, styling, components, interaction)**  
-   → `src/renderer/src/...`
-   → Reusable renderer components must live in `src/renderer/src/components/`.
-   → Keep feature-specific orchestration, hooks, and state in `src/renderer/src/features/*`.
+   → `apps/cosmo-web/src/...`
+   → Reusable renderer components must live in `apps/cosmo-web/src/components/`.
+   → Keep feature-specific orchestration, hooks, and state in `apps/cosmo-web/src/features/*`.
 
 2. **Needs OS access / Electron APIs / desktop app lifecycle**
-   → `src/main/...`
+   → `apps/cosmo-desktop/src/...`
    If the renderer needs it, expose a minimal IPC API via preload (see below).
 
 3. **Needs HTTP service behavior / Nest endpoint / static serving**
-   → `src/main/http/...`
-   Keep reusable business logic outside Nest controllers when Electron also needs it.
+   → `apps/cosmo-http/src/...`
+   Keep reusable business logic in `packages/backend-common` or `packages/core` when Electron also needs it.
 
 4. **Database work (schema/repository/service) or cross-process domain logic**
    → `packages/core/...`
-    - Schema changes → also create migrations (`npm run db:generate`) and validate (`npm run db:check`).
+    - Schema changes → also create migrations (`npm run db:generate`) under `migrations/core/` and validate (`npm run db:check`).
 
 5. **AI/model provider logic** (providers, streaming, prompt assembly, tool calls)
    → Prefer `packages/core/...` for provider registry + model selection logic.
-   → Keep shared chat streaming in `src/main/services/ChatStreamingService.ts`.
+   → Keep shared chat streaming in `packages/backend-common/services/ChatStreamingService.ts`.
    → Keep Electron delivery in `StreamingChatController`; keep HTTP delivery in `ChatHttpController`.
-   → ACP agent persistence/registry logic belongs in `packages/core`; ACP subprocess/session creation belongs in `src/main/services/AcpAgentRuntimeService.ts`.
+   → ACP agent persistence/registry logic belongs in `packages/core`; ACP subprocess/session creation belongs in `packages/backend-common/services/AcpAgentRuntimeService.ts`.
 
 6. **Shared types/DTOs**
    → `packages/core/dto.ts` (and types under `packages/core/types/`)
 
 7. **Anything crossing the process boundary** (renderer ⇄ main/backend)
-   → Add `@IpcHandler` in `src/main/controllers/*` with a zod tuple schema, then regenerate APIs.
+   → Add `@IpcHandler` in `packages/backend-common/controllers/*` with a zod tuple schema, then regenerate APIs.
    → Renderer components should use feature hooks/page-state hooks backed by `useBackendQuery()`, `useBackendMutation()`, or `createChatTransport()`.
 
 ### Non‑negotiables
@@ -102,34 +109,34 @@ Before coding, decide **where the feature belongs**. Default to keeping the rend
 - Renderer **must not** import Node/Electron APIs directly.
 - Preload is a security boundary: expose **capabilities**, not modules.
 - All IPC and HTTP RPC input is untrusted: validate/sanitize with `zod` at the boundary.
-- `packages/core` must not import Electron, `safeStorage`, or `src/main/logger`.
+- `packages/core`, `packages/contracts`, and `packages/backend-common` (runtime-agnostic parts) must not import Electron, `safeStorage`, or `apps/cosmo-desktop/src/logger`.
 
 ## 2) IPC & API generation (how `window.api` works)
 
 We use a declarative IPC pattern:
 
-- Decorators live in `src/main/ipc/Decorators.ts`
+- Decorators live in `packages/backend-common/ipc/Decorators.ts`
     - `@IpcController("prefix")` on controller classes
     - `@IpcHandler("method", z.tuple([...]))` for request/response APIs shared by Electron IPC and HTTP RPC
     - `@IpcOn("event", z.tuple([...]))` for Electron-only fire-and-forget events (used for streaming)
-- Controllers live in `src/main/controllers/*` and are bound in `src/main/inversify.config.ts`; HTTP imports reusable controller constructors through the generated manifest.
-- IPC registration happens in `src/main/ipc/index.ts` via `IpcHandlerRegistry`.
+- Controllers live in `packages/backend-common/controllers/*` and are bound in `apps/cosmo-desktop/src/inversify.config.ts`; HTTP imports reusable controller constructors through the generated manifest (`apps/cosmo-http/src/rpc-manifest.ts`).
+- IPC registration happens in `apps/cosmo-desktop/src/ipc/index.ts` via `IpcHandlerRegistry`.
 
 ### Adding a new IPC API (checklist)
 
 1. Add method to an existing controller (or create a new controller):
-    - File: `src/main/controllers/<Something>Controller.ts`
+    - File: `packages/backend-common/controllers/<Something>Controller.ts`
     - Add `@IpcHandler("...")` (for invoke) or `@IpcOn("...")` (for send).
 2. Add a `z.tuple([...])` schema to the decorator and keep any deeper domain validation in the controller/service.
-3. Bind every new controller in `src/main/inversify.config.ts` with the same ServiceIdentifier type `TYPES.Controller`.
-4. Run `npm run generate-api` (root) to regenerate `src/preload/api.ts`, `src/preload/rpc-api.ts`, `src/preload/contracts/*`, `src/preload/api/*`, `src/preload/http-api/*`, and `src/main/http/rpc-manifest.ts`.
-5. Ensure renderer components use the shared Zustand store plus feature backend/page-state hooks for request-response flows, and keep any direct transport calls isolated to `src/renderer/src/lib/store/app-data-source.ts` and `src/renderer/src/chat-transport.ts`.
+3. Bind every new controller in `apps/cosmo-desktop/src/inversify.config.ts` with the same ServiceIdentifier type `TYPES.Controller`.
+4. Run `npm run generate-api` (root) to regenerate `packages/contracts/api.ts`, `apps/cosmo-desktop/preload/rpc-api.ts`, `packages/contracts/contracts/*`, `packages/contracts/api/*`, `packages/contracts/http-api/*`, and `apps/cosmo-http/src/rpc-manifest.ts`.
+5. Ensure renderer components use the shared Zustand store plus feature backend/page-state hooks for request-response flows, and keep any direct transport calls isolated to `apps/cosmo-web/src/lib/store/app-data-source.ts` and `apps/cosmo-web/src/chat-transport.ts`.
 6. Add tests (unit + integration) for the new behavior.
 
 ### Generated files policy
 
-- `src/preload/api.ts`, `src/preload/rpc-api.ts`, and the generated `src/preload/contracts/*.ts`, `src/preload/api/*.ts`, `src/preload/http-api/*.ts` modules are generated by `scripts/generate-api.ts`. Prefer **not** editing them manually.
-- `src/main/http/rpc-manifest.ts` is generated by `scripts/generate-api.ts`. Prefer **not** editing it manually.
+- `packages/contracts/api.ts`, `apps/cosmo-desktop/preload/rpc-api.ts`, and the generated `packages/contracts/{contracts,api,http-api}/*.ts` modules are generated by `scripts/generate-api.ts`. Prefer **not** editing them manually.
+- `apps/cosmo-http/src/rpc-manifest.ts` is generated by `scripts/generate-api.ts`. Prefer **not** editing it manually.
 - If the generator can’t express a new shape, update the generator and regenerate.
 
 ## 3) Frontend design guidelines (intuitive, accessible, mobile‑first)
@@ -142,8 +149,8 @@ The current UI (see screenshots in the PR description / repository) establishes:
 
 ### Design system and branding
 
-- Use the existing Shadcn/Radix component primitives in `src/renderer/src/components/ui/`.
-- Styling is Tailwind v4 + CSS variables in `src/renderer/src/app/globals.css` (neutral base, light/dark).
+- Use the existing Shadcn/Radix component primitives in `apps/cosmo-web/src/components/ui/`.
+- Styling is Tailwind v4 + CSS variables in `apps/cosmo-web/src/app/globals.css` (neutral base, light/dark).
 - Prefer consistent spacing/radius:
     - Outer containers use `rounded-lg`, `border`, `bg-background`.
     - Content widths: follow existing patterns like `max-w-3xl mx-auto` for inputs.
@@ -164,45 +171,47 @@ The current UI (see screenshots in the PR description / repository) establishes:
 - Avoid fixed heights unless paired with `min-h-0`/`overflow-hidden` (see existing layout usage).
 - Prefer container queries and responsive utilities already in use.
 
-For renderer-specific implementation conventions, see `src/renderer/AGENTS.override.md`.
+For renderer-specific implementation conventions, see `apps/cosmo-web/AGENTS.override.md`.
 
 ## 4) Development workflow (commands + expectations)
 
 ### Installation
 
-- Root is an npm workspace: installs root + `packages/*` + `src/renderer`.
+- Root is an npm workspace managed with Turborepo (`turbo.json`): installs root + `apps/*` + `packages/*`.
 - Prefer running `npm install` once at the repo root.
 - Root `postinstall` applies a local compatibility patch to `@electron-forge/plugin-vite` so Electron preload packaging stays clean under the current Vite version.
 
 ### Day-to-day commands (root)
 
-- `npm run dev` / `npm run dev:electron` — Run Next dev server + Electron in development.
-- `npm run dev:http` — Run Nest HTTP service on `4000` + Next dev on `3000`.
+- `npm run dev` / `npm run dev:electron` (or `npx turbo run dev` / `npx turbo run dev:electron`) — Run Next dev server + Electron in development via Turborepo.
+- `npm run dev:http` (or `npx turbo run dev:http`) — Run Nest HTTP service on `4000` + Next dev on `3000` via Turborepo.
+- `npm run next:dev` / `npm run start:http:dev` — Run only `cosmo-web` or only `cosmo-http` via Turborepo (`--filter`).
 - `npm run start` — Start Electron (development). Note: currently runs `npm i` first.
-- `npm run generate-api` — Regenerate preload API, HTTP RPC manifest, and HTTP client from controllers.
+- `npm run generate-api` — Regenerate contracts (`packages/contracts`), preload barrel (`apps/cosmo-desktop/preload/rpc-api.ts`), and HTTP RPC manifest (`apps/cosmo-http/src/rpc-manifest.ts`) from controllers.
 - `npm run build:renderer:electron` — Static renderer export configured for Electron packaging using Webpack, avoiding Turbopack's local port requirement in restricted environments.
 - `npm run build:renderer:http` — Static renderer export configured for HTTP serving at `/`.
 - `npm run build:http` — Generate APIs, build HTTP renderer, build Nest entry, copy renderer output and migrations.
 - `npm run start:http` — Start the built HTTP service from `.vite/http/main.js`.
-- `npm run lint` / `npm run fix` — Google TypeScript style (`gts`) lint/fix for main/preload/core/scripts.
-- `npm run test` / `npm run test:watch` — Run Vitest suites for main/preload/core/scripts via `vitest.config.mts`.
-- `npm run db:generate` — Generate new migrations from schema changes.
-- `npm run db:migrate` — Apply migrations to the configured DB (see `drizzle.config.ts`).
+- `npm run lint` / `npm run fix` — Google TypeScript style (`gts`) lint/fix for main/HTTP/preload/core/contracts/backend-common/scripts.
+- `npm run test` / `npm run test:watch` — Run Vitest suites across root workspace targets via `vitest.config.mts`.
+- `npm run db:generate` — Generate new core migrations from schema changes into `migrations/core/`.
+- `npm run db:migrate` — Apply core migrations to the configured DB (see `drizzle.config.ts`).
 - `npm run db:studio` — Launch Drizzle Studio.
 - `npm run package` / `npm run make` / `npm run publish` — Build Electron renderer then package/make/publish via Electron Forge.
 
-### Renderer commands (`src/renderer`)
+### Renderer commands (`apps/cosmo-web`)
 
-- `npm run dev` — Next dev (Turbopack).
-- `npm run build` — Static export build (`output: "export"`) to `src/renderer/out/`.
+- `npm run dev` / `npm run dev:electron` — Next dev (Turbopack) configured for Electron (`NEXT_PUBLIC_COSMO_BACKEND=electron`).
+- `npm run dev:http` — Next dev (Turbopack) configured for local HTTP runtime (`NEXT_PUBLIC_COSMO_BACKEND=http`).
+- `npm run build` — Static export build (`output: "export"`) to `apps/cosmo-web/out/`.
 - `npm run lint` — Next lint for UI code.
-- `npm run test` / `npm run test:watch` — Run renderer component tests (Vitest + React Testing Library) via `src/renderer/vitest.config.mts`.
+- `npm run test` / `npm run test:watch` — Run renderer component tests (Vitest + React Testing Library) via `apps/cosmo-web/vitest.config.mts`.
 
 ### CI mindset (even locally)
 
 When you change code, always run:
 
-1. Lints: `npm run lint` (root) and `npm run lint` in `src/renderer`
+1. Lints: `npm run lint` (root) and `npm run lint --prefix apps/cosmo-web`
 2. Formatting: run `npm run prettier -- --write <changed files>` after every code change
 3. Tests: add/run targeted tests first, then full suite(`npm run test`) and Coverage(`npm run test:coverage`)
 4. Build check: HTTP build (`npm run build:http`) and Electron package (`npm run package`)
@@ -219,9 +228,12 @@ We target **100%+ meaningful coverage** (branch + line) for new/changed code. �
 ### What to test
 
 - `packages/core`: pure unit tests for services/repositories (mock DB boundary or use ephemeral PGlite).
-- `src/main`: integration tests for controllers + IPC registration (mock Electron pieces where needed).
-- `src/preload`: unit tests verifying the exposed API shape and argument validation.
-- `src/renderer`: component tests for UI logic; behavior tests for flows.
+- `packages/backend-common`: controller validation/streaming and shared service tests.
+- `packages/contracts`: contract generation & type alignment tests.
+- `apps/cosmo-desktop/src`: integration tests for IPC registration and Electron runtime adapters (mock Electron pieces where needed).
+- `apps/cosmo-desktop/preload`: unit tests verifying the exposed API shape and argument validation.
+- `apps/cosmo-http`: HTTP bootstrap/RPC/streaming runtime tests.
+- `apps/cosmo-web`: component tests for UI logic; behavior tests for flows.
 - **Automation/E2E**: use Playwright (Electron mode) to cover full user flows (chat, provider management, settings).
 
 If a test harness is missing for an area, create it as part of the change. If you can’t, stop and explain the blocker.
@@ -235,7 +247,7 @@ If a test harness is missing for an area, create it as part of the change. If yo
 - HTTP v1 is local single-user only; keep `COSMO_HTTP_HOST` defaulted to `127.0.0.1` unless an accepted auth/deployment spec says otherwise.
 - Run dependency audits regularly:
     - `npm audit` at repo root
-    - `npm audit` in `src/renderer`
+    - `npm audit` in `apps/cosmo-web`
 
 ## 7) Documentation policy (code + docs folder + README)
 
@@ -259,9 +271,9 @@ Follow these rules:
 Logging:
 
 - Use `electron-log` scopes:
-    - Electron main: `src/main/logger.ts` (`logger = log.scope("main")`)
-    - renderer: `src/renderer/logger.ts` (`logger = log.scope("renderer")`)
-- Core code uses `CoreLogger`; bind runtime-specific implementations at startup instead of importing runtime loggers from `packages/core`.
+    - Electron main: `apps/cosmo-desktop/src/logger.ts` (`logger = log.scope("main")`)
+    - renderer: `apps/cosmo-web/src/logger.ts` (`logger = log.scope("renderer")`)
+- Core and shared backend code use `CoreLogger` (`getCoreLogger()`); bind runtime-specific implementations at startup instead of importing runtime loggers from `packages/core` or `packages/backend-common`.
 - Log at critical steps (startup, DB init/migrations, IPC entry/exit, AI stream start/end/error).
 - Include stable identifiers (chatId, providerId) but never include secrets.
 

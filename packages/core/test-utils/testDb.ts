@@ -16,7 +16,10 @@ export async function createTestDb(): Promise<TestDb> {
     const connection = await PGlite.create('memory://');
     const db = drizzle(connection, { schema: schema });
 
-    await migrate(db, { migrationsFolder: path.resolve(__dirname, '../../../migrations') });
+    await migrate(db, {
+        migrationsFolder: path.resolve(__dirname, '../../../migrations/core'),
+        migrationsTable: '__drizzle_migrations_core',
+    });
 
     return {
         db: db,

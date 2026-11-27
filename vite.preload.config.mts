@@ -5,10 +5,13 @@ import { defineConfig } from 'vite';
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+    resolve: {
+        tsconfigPaths: true,
+    },
     build: {
         outDir: path.resolve(dirname, '.vite/preload'),
         lib: {
-            entry: './src/preload/index.ts',
+            entry: './apps/cosmo-desktop/preload/index.ts',
             formats: ['cjs'],
         },
         rollupOptions: {

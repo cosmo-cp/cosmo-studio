@@ -3,7 +3,7 @@ import {
     IPC_CONTROLLER_METADATA_KEY,
     IPC_HANDLE_METADATA_KEY,
     IPC_ON_METADATA_KEY,
-} from '../src/main/ipc/Decorators';
+} from '../packages/backend-common/ipc/Decorators';
 
 export type ControllerSource = {
     controller: { name: string };
@@ -37,8 +37,8 @@ type PreloadGroupDescriptor = {
     importNames: Set<string>;
 };
 
-const PRELOAD_CORE_DTO_IMPORT = '../../../packages/core/dto';
-const PRELOAD_WEB_SEARCH_SCHEMA_IMPORT = '../../../packages/core/database/schema/webSearchConfigSchema';
+const PRELOAD_CORE_DTO_IMPORT = 'core/dto';
+const PRELOAD_WEB_SEARCH_SCHEMA_IMPORT = 'core/database/schema/webSearchConfigSchema';
 
 const PRELOAD_TYPE_IMPORTS = [
     { name: 'NewChat', source: PRELOAD_CORE_DTO_IMPORT },
@@ -248,7 +248,7 @@ function renderRpcGroupFileContent(group: PreloadGroupDescriptor): string {
     const importLines = [
         `import { ipcRenderer } from 'electron';`,
         ...groupImportedTypeNames(importNames),
-        `import type { ${group.interfaceName} } from '../contracts/${group.constName.replace(/Api$/, '')}';`,
+        `import type { ${group.interfaceName} } from 'contracts/contracts/${group.constName.replace(/Api$/, '')}';`,
     ];
 
     const objectMembers = [
@@ -273,7 +273,7 @@ function renderHttpGroupFileContent(groupName: string, group: PreloadGroupDescri
     const importLines = [
         ...groupImportedTypeNames(importNames),
         `import type { ${group.interfaceName} } from '../contracts/${group.constName.replace(/Api$/, '')}';`,
-        `import { callRpc } from '../api/common';`,
+        `import { callRpc } from './common';`,
     ];
 
     const objectMembers = [
@@ -319,7 +319,7 @@ function renderRpcStreamingFileContent(group: PreloadGroupDescriptor): string {
     const importLines = [
         `import { ipcRenderer } from 'electron';`,
         ...groupImportedTypeNames(Array.from(importNames)),
-        `import type { StreamingApi } from '../contracts/streaming';`,
+        `import type { StreamingApi } from 'contracts/contracts/streaming';`,
     ];
 
     const objectMembers = [
@@ -467,13 +467,13 @@ export function generatePreloadApiFiles(controllers: ControllerSource[]): Record
     const httpRootImports: string[] = [];
     const httpRootTypeExports: string[] = [];
     const rpcRootObjectMembers: string[] = [];
-    const rpcRootImports = [`import type { CosmoApi } from './api';`];
+    const rpcRootImports = [`import type { CosmoApi } from 'contracts/api';`];
 
     for (const groupName of groupNames) {
         const group = groups[groupName];
-        fileContents[`src/preload/contracts/${groupName}.ts`] = renderContractGroupFileContent(group);
-        fileContents[`src/preload/api/${groupName}.ts`] = renderRpcGroupFileContent(group);
-        fileContents[`src/preload/http-api/${groupName}.ts`] = renderHttpGroupFileContent(groupName, group);
+        fileContents[`packages/contracts/contracts/${groupName}.ts`] = renderContractGroupFileContent(group);
+        fileContents[`apps/cosmo-desktop/preload/api/${groupName}.ts`] = renderRpcGroupFileContent(group);
+        fileContents[`packages/contracts/http-api/${groupName}.ts`] = renderHttpGroupFileContent(groupName, group);
         httpRootImports.push(`import { ${groupName}HttpApi } from './http-api/${groupName}';`);
         httpRootImports.push(`import type { ${group.interfaceName} } from './contracts/${groupName}';`);
         httpRootTypeExports.push(`export type { ${group.interfaceName} } from './contracts/${groupName}';`);
@@ -484,9 +484,9 @@ export function generatePreloadApiFiles(controllers: ControllerSource[]): Record
     }
 
     if (streamingGroup) {
-        fileContents['src/preload/contracts/streaming.ts'] = renderContractStreamingFileContent(streamingGroup);
-        fileContents['src/preload/api/streaming.ts'] = renderRpcStreamingFileContent(streamingGroup);
-        fileContents['src/preload/http-api/streaming.ts'] = renderHttpStreamingFileContent(streamingGroup);
+        fileContents['packages/contracts/contracts/streaming.ts'] = renderContractStreamingFileContent(streamingGroup);
+        fileContents['apps/cosmo-desktop/preload/api/streaming.ts'] = renderRpcStreamingFileContent(streamingGroup);
+        fileContents['packages/contracts/http-api/streaming.ts'] = renderHttpStreamingFileContent(streamingGroup);
         httpRootImports.push(`import { streamingHttpApi } from './http-api/streaming';`);
         httpRootImports.push(`import type { StreamingApi } from './contracts/streaming';`);
         httpRootTypeExports.push(`export type { StreamingApi } from './contracts/streaming';`);
@@ -496,7 +496,7 @@ export function generatePreloadApiFiles(controllers: ControllerSource[]): Record
         rpcRootObjectMembers.push('  streaming: streamingApi,');
     }
 
-    fileContents['src/preload/api.ts'] = `${httpRootImports.join('\n')}
+    fileContents['packages/contracts/api.ts'] = `${httpRootImports.join('\n')}
 
 ${httpRootTypeExports.join('\n')}
 
@@ -509,7 +509,7 @@ ${httpRootObjectMembers.join('\n')}
 };
 `;
 
-    fileContents['src/preload/rpc-api.ts'] = `${rpcRootImports.join('\n')}
+    fileContents['apps/cosmo-desktop/preload/rpc-api.ts'] = `${rpcRootImports.join('\n')}
 
 export const rpcApi: CosmoApi = {
 ${rpcRootObjectMembers.join('\n')}
@@ -521,7 +521,7 @@ ${rpcRootObjectMembers.join('\n')}
 
 // Builds the preload API string so existing callers can still generate the barrel file directly.
 export function generateApiContent(controllers: ControllerSource[]): string {
-    return generatePreloadApiFiles(controllers)['src/preload/api.ts'];
+    return generatePreloadApiFiles(controllers)['packages/contracts/api.ts'];
 }
 
 function getHandleDescriptors(controllers: ControllerSource[]): HandlerDescriptor[] {
@@ -573,7 +573,7 @@ export function generateHttpRpcManifestContent(controllers: ControllerSource[]):
     );
     const controllerImports = controllerNames
         .map((controllerName) => {
-            return `import {${controllerName}} from "../controllers/${controllerName}";`;
+            return `import {${controllerName}} from 'backend-common/controllers/${controllerName}';`;
         })
         .join('\n');
 

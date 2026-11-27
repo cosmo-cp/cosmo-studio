@@ -1,0 +1,388 @@
+import { StoreProvider } from '@/app/store-provider';
+import { AcpAgentManagement } from '@/components/acp-agent-management';
+import { createMockAppDataSource } from '@/test/mock-app-data-source';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { AcpAgentInstallStatusEnum, AcpAgentSourceEnum } from 'core/database/schema/acpAgentSchema';
+import type { AcpAgentUpdateInput, AcpAgentView, AcpRegistryView } from 'core/dto';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const now = new Date('2026-05-20T00:00:00.000Z');
+
+class ResizeObserverMock {
+    observe() {}
+
+    unobserve() {}
+
+    disconnect() {}
+}
+
+const registry: AcpRegistryView = {
+    version: 'test',
+    fetchedAt: now,
+    agents: [
+        {
+            id: 'codex-cli',
+            name: 'Codex CLI',
+            version: '0.14.0',
+            description: 'ACP adapter for OpenAI coding assistant',
+            distribution: {
+                npx: {
+                    package: '@openai/codex@0.14.0',
+                    args: ['--acp'],
+                },
+            },
+        },
+        {
+            id: 'binary-only',
+            name: 'Binary Only',
+            version: '1.0.0',
+            description: 'Binary distribution',
+            distribution: {
+                binary: {
+                    'darwin-aarch64': {
+                        archive: 'https://example.com/binary.zip',
+                        cmd: './binary',
+                    },
+                },
+            },
+        },
+    ],
+};
+
+function buildInstalledAgent(registryId: string): AcpAgentView {
+    return {
+        id: 'agent-1',
+        organizationId: null,
+        userId: null,
+        name: 'Codex CLI',
+        description: 'ACP adapter for OpenAI coding assistant',
+        source: AcpAgentSourceEnum.REGISTRY,
+        registryId,
+        version: '0.14.0',
+        command: 'npx',
+        args: ['-y', '@openai/codex@0.14.0', '--acp'],
+        defaultCwd: null,
+        defaultWorkspaceId: null,
+        authMethodId: null,
+        enabled: true,
+        installStatus: AcpAgentInstallStatusEnum.INSTALLED,
+        mcpServerIds: [],
+        metadata: {},
+        createdAt: now,
+        updatedAt: now,
+        envKeys: [],
+    };
+}
+
+function buildAgentWithEnvKeys(): AcpAgentView {
+    return {
+        ...buildInstalledAgent('codex-cli'),
+        envKeys: ['TOKEN'],
+    };
+}
+
+describe('AcpAgentManagement', () => {
+    beforeEach(() => {
+        vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+    });
+
+    it('shows installed agents without custom-agent controls or tabs', async () => {
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => [buildInstalledAgent('codex-cli')],
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+
+        expect(await screen.findByText('Codex CLI')).toBeInTheDocument();
+        expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /add agent/i })).not.toBeInTheDocument();
+        expect(screen.queryByPlaceholderText('Args JSON')).not.toBeInTheDocument();
+    });
+
+    it('shows a tooltip for testing installed agents', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => [buildInstalledAgent('codex-cli')],
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+
+        const testButton = await screen.findByRole('button', { name: /test codex cli/i });
+        await user.hover(testButton);
+        expect(await screen.findAllByText('Test connection')).not.toHaveLength(0);
+    });
+
+    it('shows a tooltip for deleting installed agents', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => [buildInstalledAgent('codex-cli')],
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+
+        const deleteButton = await screen.findByRole('button', { name: /delete codex cli/i });
+        await user.hover(deleteButton);
+        expect(await screen.findAllByText('Delete agent')).not.toHaveLength(0);
+    });
+
+    it('shows a tooltip for editing installed agents', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => [buildInstalledAgent('codex-cli')],
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+
+        const editButton = await screen.findByRole('button', { name: /edit codex cli/i });
+        await user.hover(editButton);
+        expect(await screen.findAllByText('Edit agent')).not.toHaveLength(0);
+    });
+
+    it('opens an edit dialog and preserves env secrets unless replacement env is entered', async () => {
+        const user = userEvent.setup();
+        const update = vi.fn(async (id: string, input: AcpAgentUpdateInput): Promise<AcpAgentView> => ({
+            ...buildAgentWithEnvKeys(),
+            ...input,
+            id,
+            updatedAt: new Date('2026-05-20T01:00:00.000Z'),
+        }));
+
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => [buildAgentWithEnvKeys()],
+                        update,
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+
+        await user.click(await screen.findByRole('button', { name: /edit codex cli/i }));
+
+        const dialog = await screen.findByRole('dialog');
+        expect(within(dialog).getByRole('heading', { name: /edit agent/i })).toBeInTheDocument();
+
+        await user.clear(within(dialog).getByLabelText(/^name$/i));
+        await user.type(within(dialog).getByLabelText(/^name$/i), 'Codex Edited');
+        await user.clear(within(dialog).getByLabelText(/^command$/i));
+        await user.type(within(dialog).getByLabelText(/^command$/i), 'uvx');
+        await user.clear(within(dialog).getByLabelText(/^workspace path$/i));
+        await user.type(within(dialog).getByLabelText(/^workspace path$/i), '/workspace');
+        await user.clear(within(dialog).getByLabelText(/^auth method id$/i));
+        await user.type(within(dialog).getByLabelText(/^auth method id$/i), 'oauth-test');
+        fireEvent.change(within(dialog).getByLabelText(/^args json$/i), {
+            target: { value: '["--acp","--verbose"]' },
+        });
+        await user.click(within(dialog).getByRole('button', { name: /save changes/i }));
+
+        await waitFor(() => {
+            expect(update).toHaveBeenCalledWith(
+                'agent-1',
+                expect.objectContaining({
+                    name: 'Codex Edited',
+                    command: 'uvx',
+                    args: ['--acp', '--verbose'],
+                    defaultCwd: '/workspace',
+                    authMethodId: 'oauth-test',
+                }),
+            );
+        });
+        expect(update.mock.calls[0][1]).not.toHaveProperty('env');
+    });
+
+    it('allows updating defaultWorkspaceId from registered workspaces', async () => {
+        const user = userEvent.setup();
+        const update = vi.fn(async (id: string, input: AcpAgentUpdateInput): Promise<AcpAgentView> => ({
+            ...buildAgentWithEnvKeys(),
+            ...input,
+            id,
+            updatedAt: new Date('2026-05-20T01:00:00.000Z'),
+        }));
+
+        const mockWs = {
+            id: 'ws-agent-default',
+            organizationId: null,
+            userId: null,
+            name: 'Agent Default WS',
+            canonicalPath: '/canonical/agent-ws',
+            rawPath: '/canonical/agent-ws',
+            createdAt: now,
+            updatedAt: now,
+        };
+
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => [buildAgentWithEnvKeys()],
+                        update,
+                    },
+                    workspace: {
+                        list: async () => [mockWs],
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+
+        await user.click(await screen.findByRole('button', { name: /edit codex cli/i }));
+        const dialog = await screen.findByRole('dialog');
+
+        await waitFor(() => {
+            expect(within(dialog).getByRole('button', { name: /select registered workspace/i })).toBeInTheDocument();
+        });
+
+        fireEvent.change(within(dialog).getByLabelText(/^workspace path$/i), {
+            target: { value: '/canonical/agent-ws' },
+        });
+
+        await user.click(within(dialog).getByRole('button', { name: /save changes/i }));
+
+        await waitFor(() => {
+            expect(update).toHaveBeenCalledWith(
+                'agent-1',
+                expect.objectContaining({
+                    defaultCwd: '/canonical/agent-ws',
+                    defaultWorkspaceId: 'ws-agent-default',
+                }),
+            );
+        });
+    });
+
+    it('opens the registry in a dialog and installs registry agents', async () => {
+        const user = userEvent.setup();
+        const getRegistry = vi.fn(async () => registry);
+        const installFromRegistry = vi.fn(async (input) => buildInstalledAgent(input.registryId));
+
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => [],
+                        getRegistry,
+                        installFromRegistry,
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+
+        expect(screen.queryByRole('tab', { name: /registry/i })).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', { name: /registry/i }));
+
+        const dialog = await screen.findByRole('dialog');
+        expect(dialog).toHaveClass('w-[calc(100vw-2rem)]', 'max-w-[900px]', 'overflow-hidden');
+        expect(await screen.findByRole('heading', { name: /acp registry/i })).toBeInTheDocument();
+        await waitFor(() => expect(getRegistry).toHaveBeenCalledTimes(1));
+        const registryScrollArea = screen.getByTestId('acp-registry-table-scroll');
+        expect(registryScrollArea).toHaveClass('min-h-0', 'flex-1', 'overflow-auto');
+        expect(within(registryScrollArea).getByRole('table')).toHaveClass('table-fixed');
+
+        const codexRow = within(registryScrollArea).getByText('Codex CLI').closest('tr');
+        expect(codexRow).not.toBeNull();
+        await user.click(within(codexRow as HTMLElement).getByRole('button', { name: /install/i }));
+
+        await waitFor(() => {
+            expect(installFromRegistry).toHaveBeenCalledWith({
+                registryId: 'codex-cli',
+                enabled: true,
+            });
+        });
+        const binaryRow = within(registryScrollArea).getByText('Binary Only').closest('tr') as HTMLElement;
+        const binaryInstall = within(binaryRow).getByRole('button', { name: /install/i });
+        await waitFor(() => expect(binaryInstall).toBeEnabled());
+        await user.click(binaryInstall);
+        await waitFor(() =>
+            expect(installFromRegistry).toHaveBeenCalledWith({ registryId: 'binary-only', enabled: true }),
+        );
+    });
+
+    it.each(['npx', 'uvx', 'binary'])('uninstalls an installed %s registry agent', async (distribution) => {
+        const user = userEvent.setup();
+        const entry = {
+            id: 'registry-agent',
+            name: 'Registry Agent',
+            version: '1',
+            distribution: { [distribution]: {} },
+        };
+        let agents = [buildInstalledAgent(entry.id)];
+        const remove = vi.fn(async () => {
+            agents = [];
+        });
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => agents,
+                        getRegistry: async () => ({ version: 'v1', fetchedAt: now, agents: [entry] }),
+                        delete: remove,
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+        await user.click(screen.getByRole('button', { name: /registry/i }));
+        const row = (await screen.findByText('Registry Agent')).closest('tr') as HTMLElement;
+        await user.click(within(row).getByRole('button', { name: /uninstall/i }));
+        await waitFor(() => expect(remove).toHaveBeenCalledWith('agent-1'));
+        await waitFor(() => expect(within(row).getByRole('button', { name: /^install$/i })).toBeEnabled());
+    });
+
+    it('shows a readable error when registry data fails validation', async () => {
+        const user = userEvent.setup();
+        render(
+            <StoreProvider
+                appDataSource={createMockAppDataSource({
+                    acpAgent: {
+                        getAll: async () => [],
+                        getRegistry: async () => ({
+                            version: '',
+                            fetchedAt: null,
+                            agents: [],
+                            error: 'The registry data is invalid.',
+                        }),
+                    },
+                })}
+            >
+                <AcpAgentManagement />
+            </StoreProvider>,
+        );
+
+        await user.click(screen.getByRole('button', { name: /registry/i }));
+        expect(await screen.findByText('The registry data is invalid.')).toBeInTheDocument();
+    });
+});

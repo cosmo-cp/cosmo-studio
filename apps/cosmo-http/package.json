@@ -1,0 +1,13 @@
+{
+    "name": "cosmo-http",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev:http": "cd ../.. && cross-env NODE_ENV=development COSMO_RUNTIME_TARGET=http ts-node -r tsconfig-paths/register apps/cosmo-http/src/index.ts"
+    },
+    "dependencies": {
+        "backend-common": "*",
+        "contracts": "*",
+        "core": "*"
+    }
+}

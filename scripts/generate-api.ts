@@ -1,24 +1,24 @@
 import 'reflect-metadata';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AcpAgentController } from '../src/main/controllers/AcpAgentController';
-import { ChatController } from '../src/main/controllers/ChatController';
-import { CommandController } from '../src/main/controllers/CommandController';
-import { GuardrailsController } from '../src/main/controllers/GuardrailsController';
-import { McpServerController } from '../src/main/controllers/McpServerController';
-import { MessageController } from '../src/main/controllers/MessageController';
-import { ModelProviderController } from '../src/main/controllers/ModelProviderController';
-import { PersonaController } from '../src/main/controllers/PersonaController';
-import { SkillController } from '../src/main/controllers/SkillController';
-import { StreamingChatController } from '../src/main/controllers/StreamingChatController';
-import { TaskController } from '../src/main/controllers/TaskController';
-import { UserController } from '../src/main/controllers/UserController';
-import { WebSearchController } from '../src/main/controllers/WebSearchController';
-import { WorkflowController } from '../src/main/controllers/WorkflowController';
-import { WorkspaceController } from '../src/main/controllers/WorkspaceController';
+import { AcpAgentController } from '../packages/backend-common/controllers/AcpAgentController';
+import { ChatController } from '../packages/backend-common/controllers/ChatController';
+import { CommandController } from '../packages/backend-common/controllers/CommandController';
+import { GuardrailsController } from '../packages/backend-common/controllers/GuardrailsController';
+import { McpServerController } from '../packages/backend-common/controllers/McpServerController';
+import { MessageController } from '../packages/backend-common/controllers/MessageController';
+import { ModelProviderController } from '../packages/backend-common/controllers/ModelProviderController';
+import { PersonaController } from '../packages/backend-common/controllers/PersonaController';
+import { SkillController } from '../packages/backend-common/controllers/SkillController';
+import { StreamingChatController } from '../packages/backend-common/controllers/StreamingChatController';
+import { TaskController } from '../packages/backend-common/controllers/TaskController';
+import { UserController } from '../packages/backend-common/controllers/UserController';
+import { WebSearchController } from '../packages/backend-common/controllers/WebSearchController';
+import { WorkflowController } from '../packages/backend-common/controllers/WorkflowController';
+import { WorkspaceController } from '../packages/backend-common/controllers/WorkspaceController';
 import { generateHttpRpcManifestContent, generatePreloadApiFiles, type ControllerSource } from './generate-api-lib';
 
-const httpManifestFilePath = path.resolve(__dirname, '../src/main/http/rpc-manifest.ts');
+const httpManifestFilePath = path.resolve(__dirname, '../apps/cosmo-http/src/rpc-manifest.ts');
 
 const controllers = [
     ChatController,
@@ -39,21 +39,27 @@ const controllers = [
 ];
 
 const controllerPaths = {
-    ChatController: path.resolve(__dirname, '../src/main/controllers/ChatController.ts'),
-    ModelProviderController: path.resolve(__dirname, '../src/main/controllers/ModelProviderController.ts'),
-    StreamingChatController: path.resolve(__dirname, '../src/main/controllers/StreamingChatController.ts'),
-    MessageController: path.resolve(__dirname, '../src/main/controllers/MessageController.ts'),
-    PersonaController: path.resolve(__dirname, '../src/main/controllers/PersonaController.ts'),
-    SkillController: path.resolve(__dirname, '../src/main/controllers/SkillController.ts'),
-    McpServerController: path.resolve(__dirname, '../src/main/controllers/McpServerController.ts'),
-    CommandController: path.resolve(__dirname, '../src/main/controllers/CommandController.ts'),
-    WebSearchController: path.resolve(__dirname, '../src/main/controllers/WebSearchController.ts'),
-    WorkflowController: path.resolve(__dirname, '../src/main/controllers/WorkflowController.ts'),
-    AcpAgentController: path.resolve(__dirname, '../src/main/controllers/AcpAgentController.ts'),
-    TaskController: path.resolve(__dirname, '../src/main/controllers/TaskController.ts'),
-    WorkspaceController: path.resolve(__dirname, '../src/main/controllers/WorkspaceController.ts'),
-    UserController: path.resolve(__dirname, '../src/main/controllers/UserController.ts'),
-    GuardrailsController: path.resolve(__dirname, '../src/main/controllers/GuardrailsController.ts'),
+    ChatController: path.resolve(__dirname, '../packages/backend-common/controllers/ChatController.ts'),
+    ModelProviderController: path.resolve(
+        __dirname,
+        '../packages/backend-common/controllers/ModelProviderController.ts',
+    ),
+    StreamingChatController: path.resolve(
+        __dirname,
+        '../packages/backend-common/controllers/StreamingChatController.ts',
+    ),
+    MessageController: path.resolve(__dirname, '../packages/backend-common/controllers/MessageController.ts'),
+    PersonaController: path.resolve(__dirname, '../packages/backend-common/controllers/PersonaController.ts'),
+    SkillController: path.resolve(__dirname, '../packages/backend-common/controllers/SkillController.ts'),
+    McpServerController: path.resolve(__dirname, '../packages/backend-common/controllers/McpServerController.ts'),
+    CommandController: path.resolve(__dirname, '../packages/backend-common/controllers/CommandController.ts'),
+    WebSearchController: path.resolve(__dirname, '../packages/backend-common/controllers/WebSearchController.ts'),
+    WorkflowController: path.resolve(__dirname, '../packages/backend-common/controllers/WorkflowController.ts'),
+    AcpAgentController: path.resolve(__dirname, '../packages/backend-common/controllers/AcpAgentController.ts'),
+    TaskController: path.resolve(__dirname, '../packages/backend-common/controllers/TaskController.ts'),
+    WorkspaceController: path.resolve(__dirname, '../packages/backend-common/controllers/WorkspaceController.ts'),
+    UserController: path.resolve(__dirname, '../packages/backend-common/controllers/UserController.ts'),
+    GuardrailsController: path.resolve(__dirname, '../packages/backend-common/controllers/GuardrailsController.ts'),
 };
 
 const controllerFileContents: { [key: string]: string } = {};

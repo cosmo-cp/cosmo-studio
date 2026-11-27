@@ -64,7 +64,12 @@ export class ChatRepository {
     }
 
     public async update(id: string, updates: Partial<NewChat>): Promise<Chat> {
-        const result = await this.db.update(chat).set(updates).where(eq(chat.id, id)).returning();
+        // Always set updatedAt so empty partial updates never fail with Drizzle "No values to set".
+        const result = await this.db
+            .update(chat)
+            .set({ ...updates, updatedAt: new Date() })
+            .where(eq(chat.id, id))
+            .returning();
         return result[0];
     }
 

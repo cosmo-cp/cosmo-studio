@@ -18,7 +18,7 @@ module.exports = [
             'dist/**',
             'eslint.config.js',
             'out/**',
-            'src/renderer/**',
+            'apps/cosmo-web/**',
             'package-lock.json',
             'yarn.lock',
             'pnpm-lock.yaml',

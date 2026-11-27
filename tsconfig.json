@@ -7,17 +7,24 @@
         "esModuleInterop": true,
         "noImplicitAny": true,
         "sourceMap": true,
-        "baseUrl": "./src",
+        "baseUrl": ".",
         "outDir": "dist",
         "moduleResolution": "node",
         "resolveJsonModule": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "paths": {
-            "@database/*": ["core/database/*"],
-            "@opencode-ai/models": ["../node_modules/@opencode-ai/models/dist/index"],
-            "@opencode-ai/models/snapshot": ["../node_modules/@opencode-ai/models/dist/snapshot"],
-            "inversify": ["../node_modules/inversify/lib/index"]
+            "@database/*": ["packages/core/database/*"],
+            "core/*": ["packages/core/*"],
+            "guardrails": ["packages/guardrails/index"],
+            "guardrails/*": ["packages/guardrails/*"],
+            "contracts": ["packages/contracts/api"],
+            "contracts/*": ["packages/contracts/*"],
+            "backend-common/*": ["packages/backend-common/*"],
+            "@ee/*": ["apps/cosmo-http/src/ee/*", "apps/cosmo-http/src/ee-stub/*"],
+            "@opencode-ai/models": ["node_modules/@opencode-ai/models/dist/index"],
+            "@opencode-ai/models/snapshot": ["node_modules/@opencode-ai/models/dist/snapshot"],
+            "inversify": ["node_modules/inversify/lib/index"]
         },
         "types": ["node"]
     }

@@ -39,11 +39,11 @@ jobs:
 
             - name: Run renderer tests (coverage)
               if: matrix.os == 'ubuntu-latest'
-              run: npm run test:coverage --prefix src/renderer
+              run: npm run test:coverage --prefix apps/cosmo-web
 
             - name: Run renderer tests
               if: matrix.os != 'ubuntu-latest'
-              run: npm run test --prefix src/renderer
+              run: npm run test --prefix apps/cosmo-web
 
             - name: Upload coverage artifacts
               if: matrix.os == 'ubuntu-latest'
@@ -52,7 +52,7 @@ jobs:
                   name: coverage-${{ matrix.os }}
                   path: |
                       coverage
-                      src/renderer/coverage
+                      apps/cosmo-web/coverage
 
             - name: Install the Apple certificate for Signing
               if: runner.os == 'macOS'

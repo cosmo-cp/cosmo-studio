@@ -195,6 +195,10 @@ describe('ChatRepository', () => {
         const updated = await repository.update(id, { title: 'After' } as Partial<NewChat>);
         expect(updated.title).toBe('After');
 
+        const untouched = await repository.update(id, {} as Partial<NewChat>);
+        expect(untouched.title).toBe('After');
+        expect(untouched.updatedAt).toBeInstanceOf(Date);
+
         await repository.delete(id);
         const remaining = await testDb.db.select().from(chat).where(eq(chat.id, id));
         expect(remaining).toEqual([]);

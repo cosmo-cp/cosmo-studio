@@ -16,7 +16,7 @@
     "settings": {
         "import/resolver": {
             "typescript": {
-                "project": ["src/renderer/tsconfig.json", "./tsconfig.json"],
+                "project": ["apps/cosmo-web/tsconfig.json", "./tsconfig.json"],
                 "noWarnOnMultipleProjects": true
             }
         }

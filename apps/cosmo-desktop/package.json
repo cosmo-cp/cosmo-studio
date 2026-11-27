@@ -1,0 +1,14 @@
+{
+    "name": "cosmo-desktop",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "npm run dev:electron",
+        "dev:electron": "cd ../.. && cross-env NODE_ENV=development COSMO_RUNTIME_TARGET=electron electron-forge start"
+    },
+    "dependencies": {
+        "backend-common": "*",
+        "contracts": "*",
+        "core": "*"
+    }
+}

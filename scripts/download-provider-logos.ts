@@ -135,7 +135,7 @@ async function main(): Promise<void> {
     const outputDirectoryArg = process.argv[2];
     const outputDirectory = outputDirectoryArg
         ? path.resolve(process.cwd(), outputDirectoryArg)
-        : path.resolve(process.cwd(), 'src/renderer/public/providers');
+        : path.resolve(process.cwd(), 'apps/cosmo-web/public/providers');
     const summary = await downloadProviderLogos({ outputDirectory: outputDirectory });
 
     if (summary.failed.length > 0) {

@@ -1,6 +1,20 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { defineConfig } from 'vitest/config';
 
+const dirname = path.dirname(fileURLToPath(import.meta.url));
+const httpEeDir = fs.existsSync(path.resolve(dirname, './apps/cosmo-http/src/ee'))
+    ? path.resolve(dirname, './apps/cosmo-http/src/ee')
+    : path.resolve(dirname, './apps/cosmo-http/src/ee-stub');
+
 export default defineConfig({
+    resolve: {
+        tsconfigPaths: true,
+        alias: {
+            '@ee': httpEeDir,
+        },
+    },
     test: {
         passWithNoTests: true,
         clearMocks: true,
@@ -15,11 +29,16 @@ export default defineConfig({
                 'coverage/**',
                 '**/out/**',
                 'out/**',
-                'src/renderer/**',
+                'apps/cosmo-web/**',
                 '**/.next/**',
                 '**/.vite/**',
             ],
         },
-        include: ['packages/**/*.test.ts', 'scripts/**/*.test.ts', 'src/main/**/*.test.ts', 'src/preload/**/*.test.ts'],
+        include: [
+            'packages/**/*.test.ts',
+            'scripts/**/*.test.ts',
+            'apps/cosmo-desktop/**/*.test.ts',
+            'apps/cosmo-http/**/*.test.ts',
+        ],
     },
 });

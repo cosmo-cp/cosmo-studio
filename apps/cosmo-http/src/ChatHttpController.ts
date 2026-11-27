@@ -1,0 +1,119 @@
+import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
+import { pipeUIMessageStreamToResponse, type UIMessage } from 'ai';
+import { ChatStreamingService } from 'backend-common/services/ChatStreamingService';
+import { TYPES } from 'backend-common/types';
+import type { ChatSendMessageArgs } from 'core/dto';
+import { ChatService } from 'core/services/ChatService';
+import { CORETYPES } from 'core/types/types';
+import type { Request, Response } from 'express';
+import { z } from 'zod';
+import { httpContainer } from './http-container';
+
+const chatRequestSchema = z
+    .object({
+        id: z.string().min(1),
+        messages: z.custom<UIMessage[]>(),
+        metadata: z
+            .object({
+                modelId: z.string().optional(),
+                runtime: z.enum(['model', 'agent']).optional(),
+                agentId: z.string().nullable().optional(),
+                agentCwd: z.string().nullable().optional(),
+                personaId: z.string().nullable().optional(),
+                personaName: z.string().optional(),
+                workspaceId: z.string().nullable().optional(),
+            })
+            .optional(),
+    })
+    .passthrough();
+
+@Controller('api/chat')
+export class ChatHttpController {
+    private readonly chatStreamingService = httpContainer.get<ChatStreamingService>(TYPES.ChatStreamingService);
+    private readonly chatService = httpContainer.get<ChatService>(CORETYPES.ChatService);
+
+    @Post()
+    public async sendMessage(
+        @Body() body: unknown,
+        @Req() _request: Request,
+        @Res() response: Response,
+    ): Promise<void> {
+        const parsed = chatRequestSchema.parse(body);
+        const chat = await this.chatService.getChatById(parsed.id);
+        const runtime = parsed.metadata?.runtime ?? chat?.selectedRuntime ?? 'model';
+        const modelIdentifier = parsed.metadata?.modelId ?? this.getModelIdentifierFromChatRecord(chat);
+        const agentId = parsed.metadata?.agentId ?? chat?.selectedAgentId ?? null;
+        if (runtime === 'model' && !modelIdentifier) {
+            response.status(400).json({ error: 'modelId is required' });
+            return;
+        }
+        if (runtime === 'agent' && !agentId) {
+            response.status(400).json({ error: 'agentId is required' });
+            return;
+        }
+
+        const abortController = this.chatStreamingService.runs.start(parsed.id);
+        if (!abortController) {
+            response.status(409).json({ error: 'A response is already running for this chat' });
+            return;
+        }
+        const cleanup = () => {
+            return this.chatStreamingService.runs.finish(parsed.id, abortController);
+        };
+        response.once('close', () => {
+            if (!response.writableFinished) abortController.abort();
+        });
+
+        const args: ChatSendMessageArgs = {
+            chatId: parsed.id,
+            messages: parsed.messages,
+            streamChannel: `http-chat-stream-${parsed.id}`,
+            modelIdentifier: modelIdentifier ?? undefined,
+            personaId: parsed.metadata?.personaId ?? undefined,
+            personaName: parsed.metadata?.personaName,
+            runtime: runtime,
+            agentId: agentId,
+            agentCwd: parsed.metadata?.agentCwd ?? null,
+            workspaceId: parsed.metadata?.workspaceId ?? chat?.workspaceId ?? null,
+        };
+
+        try {
+            const stream = await this.chatStreamingService.createMessageStream(args, abortController.signal);
+            await pipeUIMessageStreamToResponse({
+                response: response,
+                status: 200,
+                stream: stream,
+            });
+        } catch (error) {
+            if (!response.headersSent) {
+                const message = error instanceof Error ? error.message : String(error);
+                if (
+                    message.includes('busy') ||
+                    message.includes('Workspace') ||
+                    (error as { name?: string })?.name === 'WorkspaceBusyError'
+                ) {
+                    response.status(409).json({ error: message });
+                    return;
+                }
+                response.status(500).json({ error: message });
+                return;
+            }
+            throw error;
+        } finally {
+            cleanup();
+        }
+    }
+
+    @Get(':chatId/stream')
+    @HttpCode(204)
+    public reconnectToStream(): void {
+        return;
+    }
+
+    private getModelIdentifierFromChatRecord(chat: Awaited<ReturnType<ChatService['getChatById']>>): string | null {
+        if (!chat?.selectedProvider || !chat.selectedModelId) {
+            return null;
+        }
+        return `${chat.selectedProvider}:${chat.selectedModelId}`;
+    }
+}

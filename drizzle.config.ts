@@ -8,5 +8,5 @@ export default defineConfig({
         //database folder
         url: './cosmodb/',
     },
-    out: './migrations',
+    out: './migrations/core',
 });

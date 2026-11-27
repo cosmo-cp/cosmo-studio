@@ -74,6 +74,9 @@ web_modules/
 .cache
 .parcel-cache
 
+# Turborepo cache
+.turbo
+
 # Next.js build output
 .next
 out
@@ -140,8 +143,8 @@ vite.config.ts.timestamp-*
 
 # npm lockfiles
 # Keep the workspace lockfile committed so CI can use `npm ci`.
-src/renderer/package-lock.json
-src/renderer/next-env.d.ts
+apps/cosmo-web/package-lock.json
+apps/cosmo-web/next-env.d.ts
 /.idea
 .DS_Store
 /database

@@ -443,5 +443,220 @@ describe('GuardrailsMiddleware', () => {
                 { type: 'text-end', id: '1' },
             ]);
         });
+
+        it('flushes buffered redacted text and emits text-end before finish when provider omits text-end (ACP)', async () => {
+            mockGuardrailsService.getConfig.mockResolvedValueOnce({
+                enabled: true,
+                piiEnabled: true,
+                piiMode: 'redact',
+                secretEnabled: false,
+            });
+            mockGuardrailsService.evaluateText.mockResolvedValueOnce({
+                passed: true,
+                blocked: false,
+                redacted: true,
+                violations: [],
+                sanitizedText: 'ACP answer with [REDACTED-EMAIL]',
+                originalText: 'ACP answer with user@example.com',
+            });
+
+            const finishPart = {
+                type: 'finish',
+                finishReason: { unified: 'stop', raw: 'end_turn' },
+                usage: {
+                    inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
+                    outputTokens: { total: 1, text: 1, reasoning: 0 },
+                },
+            } as LanguageModelV4StreamPart;
+
+            const middleware = createGuardrailsMiddleware(mockGuardrailsService as unknown as GuardrailsService);
+            const inputStream = new ReadableStream<LanguageModelV4StreamPart>({
+                start: function (controller) {
+                    controller.enqueue({ type: 'text-start', id: 'text - 0 ' });
+                    controller.enqueue({ type: 'text-delta', id: 'text - 0 ', delta: 'ACP answer with ' });
+                    controller.enqueue({ type: 'text-delta', id: 'text - 0 ', delta: 'user@example.com' });
+                    controller.enqueue(finishPart);
+                    controller.close();
+                },
+            });
+
+            const { stream } = await middleware.wrapStream!({
+                doStream: vi.fn().mockResolvedValue({ stream: inputStream }),
+                doGenerate: vi.fn(),
+                params: emptyParams,
+                model: mockModel,
+            });
+
+            const chunks = await readStream(stream);
+            expect(mockGuardrailsService.evaluateText).toHaveBeenCalledWith(
+                'ACP answer with user@example.com',
+                'assistant',
+            );
+            expect(chunks).toEqual([
+                { type: 'text-start', id: 'text - 0 ' },
+                { type: 'text-delta', id: 'text - 0 ', delta: 'ACP answer with [REDACTED-EMAIL]' },
+                { type: 'text-end', id: 'text - 0 ' },
+                finishPart,
+            ]);
+        });
+
+        it('blocks buffered text on finish when provider omits text-end', async () => {
+            mockGuardrailsService.getConfig.mockResolvedValueOnce({
+                enabled: true,
+                piiEnabled: false,
+                secretEnabled: true,
+                secretMode: 'block',
+            });
+            mockGuardrailsService.evaluateText.mockResolvedValueOnce({
+                passed: false,
+                blocked: true,
+                redacted: false,
+                violations: [
+                    {
+                        guardId: 'secret',
+                        guardName: 'Secret Guard',
+                        passed: false,
+                        reason: 'Exposed secret key',
+                    },
+                ],
+                sanitizedText: 'sk-live-999',
+                originalText: 'sk-live-999',
+            });
+
+            const finishPart = {
+                type: 'finish',
+                finishReason: { unified: 'stop', raw: 'end_turn' },
+                usage: {
+                    inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
+                    outputTokens: { total: 1, text: 1, reasoning: 0 },
+                },
+            } as LanguageModelV4StreamPart;
+
+            const middleware = createGuardrailsMiddleware(mockGuardrailsService as unknown as GuardrailsService);
+            const inputStream = new ReadableStream<LanguageModelV4StreamPart>({
+                start: function (controller) {
+                    controller.enqueue({ type: 'text-start', id: 'text-0' });
+                    controller.enqueue({ type: 'text-delta', id: 'text-0', delta: 'sk-live-999' });
+                    controller.enqueue(finishPart);
+                    controller.close();
+                },
+            });
+
+            const { stream } = await middleware.wrapStream!({
+                doStream: vi.fn().mockResolvedValue({ stream: inputStream }),
+                doGenerate: vi.fn(),
+                params: emptyParams,
+                model: mockModel,
+            });
+
+            await expect(readStream(stream)).rejects.toThrow(GuardrailViolationError);
+        });
+
+        it('resets accumulated text between separate text blocks and flushes on stream close', async () => {
+            mockGuardrailsService.getConfig.mockResolvedValueOnce({
+                enabled: true,
+                piiEnabled: true,
+                piiMode: 'redact',
+                secretEnabled: false,
+            });
+            mockGuardrailsService.evaluateText
+                .mockResolvedValueOnce({
+                    passed: true,
+                    blocked: false,
+                    redacted: false,
+                    violations: [],
+                    sanitizedText: 'First block',
+                    originalText: 'First block',
+                })
+                .mockResolvedValueOnce({
+                    passed: true,
+                    blocked: false,
+                    redacted: false,
+                    violations: [],
+                    sanitizedText: 'Second block',
+                    originalText: 'Second block',
+                });
+
+            const middleware = createGuardrailsMiddleware(mockGuardrailsService as unknown as GuardrailsService);
+            const inputStream = new ReadableStream<LanguageModelV4StreamPart>({
+                start: function (controller) {
+                    controller.enqueue({ type: 'text-start', id: '1' });
+                    controller.enqueue({ type: 'text-delta', id: '1', delta: 'First block' });
+                    controller.enqueue({ type: 'text-end', id: '1' });
+                    controller.enqueue({ type: 'text-start', id: '2' });
+                    controller.enqueue({ type: 'text-delta', id: '2', delta: 'Second block' });
+                    controller.close();
+                },
+            });
+
+            const { stream } = await middleware.wrapStream!({
+                doStream: vi.fn().mockResolvedValue({ stream: inputStream }),
+                doGenerate: vi.fn(),
+                params: emptyParams,
+                model: mockModel,
+            });
+
+            const chunks = await readStream(stream);
+            expect(mockGuardrailsService.evaluateText).toHaveBeenNthCalledWith(1, 'First block', 'assistant');
+            expect(mockGuardrailsService.evaluateText).toHaveBeenNthCalledWith(2, 'Second block', 'assistant');
+            expect(chunks).toEqual([
+                { type: 'text-start', id: '1' },
+                { type: 'text-delta', id: '1', delta: 'First block' },
+                { type: 'text-end', id: '1' },
+                { type: 'text-start', id: '2' },
+                { type: 'text-delta', id: '2', delta: 'Second block' },
+                { type: 'text-end', id: '2' },
+            ]);
+        });
+
+        it('flushes an unclosed text block if another text-start arrives and clears state on error chunks', async () => {
+            mockGuardrailsService.getConfig.mockResolvedValueOnce({
+                enabled: true,
+                piiEnabled: true,
+                piiMode: 'redact',
+                secretEnabled: false,
+            });
+            mockGuardrailsService.evaluateText.mockResolvedValueOnce({
+                passed: true,
+                blocked: false,
+                redacted: false,
+                violations: [],
+                sanitizedText: 'Block A',
+                originalText: 'Block A',
+            });
+
+            const errorPart = {
+                type: 'error',
+                error: new Error('stream failed'),
+            } as LanguageModelV4StreamPart;
+
+            const middleware = createGuardrailsMiddleware(mockGuardrailsService as unknown as GuardrailsService);
+            const inputStream = new ReadableStream<LanguageModelV4StreamPart>({
+                start: function (controller) {
+                    controller.enqueue({ type: 'text-start', id: '1' });
+                    controller.enqueue({ type: 'text-delta', id: '1', delta: 'Block A' });
+                    controller.enqueue({ type: 'text-start', id: '2' });
+                    controller.enqueue({ type: 'text-delta', id: '2', delta: 'Partial' });
+                    controller.enqueue(errorPart);
+                    controller.close();
+                },
+            });
+
+            const { stream } = await middleware.wrapStream!({
+                doStream: vi.fn().mockResolvedValue({ stream: inputStream }),
+                doGenerate: vi.fn(),
+                params: emptyParams,
+                model: mockModel,
+            });
+
+            const chunks = await readStream(stream);
+            expect(chunks).toEqual([
+                { type: 'text-start', id: '1' },
+                { type: 'text-delta', id: '1', delta: 'Block A' },
+                { type: 'text-end', id: '1' },
+                { type: 'text-start', id: '2' },
+                errorPart,
+            ]);
+        });
     });
 });

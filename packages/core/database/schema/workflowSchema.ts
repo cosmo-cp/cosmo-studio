@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 export const workflowStatus = pgEnum('workflow_status', ['active', 'archived']);
 export const workflowRunStatus = pgEnum('workflow_run_status', [
@@ -21,20 +21,32 @@ export const workflowRunEventType = pgEnum('workflow_run_event_type', [
     'cancelled',
 ]);
 
-export const workflow = pgTable('Workflow', {
-    id: uuid('id').primaryKey().notNull().defaultRandom(),
-    title: text('title').notNull(),
-    summary: text('summary'),
-    status: workflowStatus('status').notNull().default('active'),
-    latestVersion: integer('latestVersion').notNull().default(1),
-    createdAt: timestamp('createdAt').notNull().defaultNow(),
-    updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-});
+export const workflow = pgTable(
+    'Workflow',
+    {
+        id: uuid('id').primaryKey().notNull().defaultRandom(),
+        organizationId: uuid('organizationId'),
+        userId: uuid('userId'),
+        title: text('title').notNull(),
+        summary: text('summary'),
+        status: workflowStatus('status').notNull().default('active'),
+        latestVersion: integer('latestVersion').notNull().default(1),
+        createdAt: timestamp('createdAt').notNull().defaultNow(),
+        updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+    },
+    (table) => {
+        return {
+            organizationIdIdx: index('workflow_organization_id_idx').on(table.organizationId),
+        };
+    },
+);
 
 export const workflowVersion = pgTable(
     'WorkflowVersion',
     {
         id: uuid('id').primaryKey().notNull().defaultRandom(),
+        organizationId: uuid('organizationId'),
+        userId: uuid('userId'),
         workflowId: uuid('workflowId')
             .notNull()
             .references(
@@ -60,6 +72,8 @@ export const workflowVersion = pgTable(
 
 export const workflowRun = pgTable('WorkflowRun', {
     id: uuid('id').primaryKey().notNull().defaultRandom(),
+    organizationId: uuid('organizationId'),
+    userId: uuid('userId'),
     workflowId: uuid('workflowId')
         .notNull()
         .references(
@@ -86,6 +100,8 @@ export const workflowRun = pgTable('WorkflowRun', {
 
 export const workflowRunEvent = pgTable('WorkflowRunEvent', {
     id: uuid('id').primaryKey().notNull().defaultRandom(),
+    organizationId: uuid('organizationId'),
+    userId: uuid('userId'),
     workflowRunId: uuid('workflowRunId')
         .notNull()
         .references(

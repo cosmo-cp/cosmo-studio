@@ -6,7 +6,10 @@ export const chat = pgTable(
     'Chat',
     {
         id: uuid('id').primaryKey().notNull().defaultRandom(),
+        organizationId: uuid('organizationId'),
+        userId: uuid('userId'),
         createdAt: timestamp('createdAt').notNull().defaultNow(),
+        updatedAt: timestamp('updatedAt').notNull().defaultNow(),
         title: text('title').notNull(),
         pinned: boolean('pinned').default(false),
         pinnedAt: timestamp('pinnedAt'),
@@ -28,6 +31,7 @@ export const chat = pgTable(
     (table) => {
         return {
             workspaceIdIdx: index('chat_workspace_id_idx').on(table.workspaceId),
+            orgUpdatedAtIdx: index('chat_org_updated_at_idx').on(table.organizationId, table.updatedAt),
         };
     },
 );
@@ -44,22 +48,32 @@ export const chatRelations = relations(chat, ({ one, many }) => {
 
 export const messageRole = pgEnum('message_role', ['user', 'assistant', 'system']);
 
-export const message = pgTable('Message', {
-    id: uuid('id').primaryKey().notNull().defaultRandom(),
-    chatId: uuid('chatId')
-        .notNull()
-        .references(
-            () => {
-                return chat.id;
-            },
-            { onDelete: 'cascade' },
-        ),
-    role: messageRole('role'),
-    text: text('text'),
-    reasoning: text('reasoning'),
-    modelIdentifier: text('modelIdentifier'),
-    createdAt: timestamp('createdAt').notNull().defaultNow(),
-});
+export const message = pgTable(
+    'Message',
+    {
+        id: uuid('id').primaryKey().notNull().defaultRandom(),
+        organizationId: uuid('organizationId'),
+        userId: uuid('userId'),
+        chatId: uuid('chatId')
+            .notNull()
+            .references(
+                () => {
+                    return chat.id;
+                },
+                { onDelete: 'cascade' },
+            ),
+        role: messageRole('role'),
+        text: text('text'),
+        reasoning: text('reasoning'),
+        modelIdentifier: text('modelIdentifier'),
+        createdAt: timestamp('createdAt').notNull().defaultNow(),
+    },
+    (table) => {
+        return {
+            organizationIdIdx: index('message_organization_id_idx').on(table.organizationId),
+        };
+    },
+);
 
 export const messageRelations = relations(message, ({ one }) => {
     return {

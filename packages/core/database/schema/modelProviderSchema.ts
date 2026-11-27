@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { boolean, integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 
 // --- ENUM and Base Fields ---
 export enum ModelProviderTypeEnum {
@@ -28,22 +28,35 @@ export enum ModelProviderTypeEnum {
 // This means new providers never require an ALTER TYPE migration.
 // The TypeScript enum above still enforces type-safety at the application level.
 
-export const modelProvider = pgTable('ModelProvider', {
-    // Service-set fields
-    id: uuid('id').primaryKey().notNull().defaultRandom(),
-    createdAt: timestamp('createdAt').notNull().defaultNow(),
-    updatedAt: timestamp('updatedAt'),
+export const modelProvider = pgTable(
+    'ModelProvider',
+    {
+        // Service-set fields
+        id: uuid('id').primaryKey().notNull().defaultRandom(),
+        organizationId: uuid('organizationId'),
+        userId: uuid('userId'),
+        createdAt: timestamp('createdAt').notNull().defaultNow(),
+        updatedAt: timestamp('updatedAt'),
 
-    // Discriminator
-    type: text('type').$type<ModelProviderTypeEnum>().notNull(),
+        // Discriminator
+        type: text('type').$type<ModelProviderTypeEnum>().notNull(),
 
-    // User-editable fields
-    name: text('name').notNull().unique(),
-    apiKey: text('apiKey').notNull(),
+        // User-editable fields
+        name: text('name').notNull(),
+        apiKey: text('apiKey').notNull(),
 
-    // Optional for Predefined, required for Custom
-    apiUrl: text('apiUrl'),
-});
+        // Optional for Predefined, required for Custom
+        apiUrl: text('apiUrl'),
+    },
+    (table) => {
+        return {
+            organizationIdIdx: index('model_provider_organization_id_idx').on(table.organizationId),
+            orgNameUnique: unique('model_provider_org_name_unique')
+                .on(table.organizationId, table.name)
+                .nullsNotDistinct(),
+        };
+    },
+);
 
 export enum ModelStatusEnum {
     NOT_DEFINED = `not_defined`,
@@ -68,30 +81,40 @@ export const modelModalityEnum = pgEnum('model_modality', [
     ModelModalityEnum.PDF,
 ]);
 
-export const model = pgTable('Model', {
-    id: uuid('id').primaryKey().notNull().defaultRandom(),
-    createdAt: timestamp('createdAt').notNull().defaultNow(),
-    updatedAt: timestamp('updatedAt'),
-    name: text('name').notNull(),
-    modelId: text('modelId').notNull(),
-    description: text('description'),
-    providerId: uuid('providerId').references(
-        () => {
-            return modelProvider.id;
-        },
-        { onDelete: 'cascade' },
-    ),
-    reasoning: boolean('reasoning').default(false),
-    attachment: boolean('attachment').default(false),
-    toolCall: boolean('toolCall').default(false),
-    status: modelStatusEnum('status').default(ModelStatusEnum.NOT_DEFINED),
-    inputModalities: modelModalityEnum('input_modalities').array().notNull().default([]),
-    outputModalities: modelModalityEnum('output_modalities').array().notNull().default([]),
-    releaseDate: timestamp('releaseDate'),
-    lastUpdatedByProvider: timestamp('lastUpdatedByProvider'),
-    contextWindow: integer('contextWindow').default(128000),
-    maxOutputWindow: integer('maxOutputWindow').default(4096),
-});
+export const model = pgTable(
+    'Model',
+    {
+        id: uuid('id').primaryKey().notNull().defaultRandom(),
+        organizationId: uuid('organizationId'),
+        userId: uuid('userId'),
+        createdAt: timestamp('createdAt').notNull().defaultNow(),
+        updatedAt: timestamp('updatedAt'),
+        name: text('name').notNull(),
+        modelId: text('modelId').notNull(),
+        description: text('description'),
+        providerId: uuid('providerId').references(
+            () => {
+                return modelProvider.id;
+            },
+            { onDelete: 'cascade' },
+        ),
+        reasoning: boolean('reasoning').default(false),
+        attachment: boolean('attachment').default(false),
+        toolCall: boolean('toolCall').default(false),
+        status: modelStatusEnum('status').default(ModelStatusEnum.NOT_DEFINED),
+        inputModalities: modelModalityEnum('input_modalities').array().notNull().default([]),
+        outputModalities: modelModalityEnum('output_modalities').array().notNull().default([]),
+        releaseDate: timestamp('releaseDate'),
+        lastUpdatedByProvider: timestamp('lastUpdatedByProvider'),
+        contextWindow: integer('contextWindow').default(128000),
+        maxOutputWindow: integer('maxOutputWindow').default(4096),
+    },
+    (table) => {
+        return {
+            organizationIdIdx: index('model_organization_id_idx').on(table.organizationId),
+        };
+    },
+);
 
 export const modelProviderRelations = relations(modelProvider, ({ many }) => {
     return {

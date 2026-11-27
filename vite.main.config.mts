@@ -12,8 +12,8 @@ const copyMigrationsPlugin = () => {
         // Hook into the build process after all modules are bundled but before the final output
         closeBundle: function () {
             // Define source and destination paths relative to the project root
-            const sourceDir = path.resolve(dirname, 'migrations');
-            const targetDir = path.resolve(dirname, '.vite/build', 'migrations');
+            const sourceDir = path.resolve(dirname, 'migrations/core');
+            const targetDir = path.resolve(dirname, '.vite/build', 'migrations/core');
 
             console.log(`[Vite Plugin] Copying migrations from ${sourceDir} to ${targetDir}`);
 
@@ -44,7 +44,7 @@ export default defineConfig({
         },
         outDir: path.resolve(dirname, '.vite/build'),
         lib: {
-            entry: './src/main/index.ts',
+            entry: './apps/cosmo-desktop/src/index.ts',
             formats: ['cjs'],
             fileName: 'main',
         },

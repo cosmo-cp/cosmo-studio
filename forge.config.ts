@@ -8,7 +8,7 @@ import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
-import NextPlugin from './src/NextPlugin';
+import NextPlugin from './apps/cosmo-desktop/src/NextPlugin';
 
 const isMacSigning = process.env.ENABLE_MAC_SIGNING === 'true';
 
@@ -58,12 +58,12 @@ const config: ForgeConfig = {
             build: [
                 {
                     // `entry` is just an alias for `build.lib.entry` in the corresponding file of `config`.
-                    entry: 'src/main/index.ts',
+                    entry: 'apps/cosmo-desktop/src/index.ts',
                     config: 'vite.main.config.mts',
                     target: 'main',
                 },
                 {
-                    entry: 'src/preload/index.ts',
+                    entry: 'apps/cosmo-desktop/preload/index.ts',
                     config: 'vite.preload.config.mts',
                     target: 'preload',
                 },
@@ -73,8 +73,8 @@ const config: ForgeConfig = {
         //this plugin copies files already build next.js frontend app
         //next.js frontend app is build part of `make/packages` script
         new NextPlugin({
-            outDir: '../.vite/renderer/main_window',
-            sourceDir: './renderer/out',
+            outDir: './.vite/renderer/main_window',
+            sourceDir: './apps/cosmo-web/out',
         }),
         // Fuses are used to enable/disable various Electron functionality
         // at packages time, before code signing the application

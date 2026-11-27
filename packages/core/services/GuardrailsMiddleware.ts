@@ -124,51 +124,91 @@ export function createGuardrailsMiddleware(guardrailsService: GuardrailsService)
 
             const { stream, ...rest } = await doStream();
             let accumulatedText = '';
+            let activeTextId: string | null = null;
+            let lastTextId = 'text-0';
+
+            // Evaluates buffered text and flushes pending deltas/text-end when a provider omits text-end (e.g. ACP).
+            const flushBufferedText = async (
+                controller: TransformStreamDefaultController<LanguageModelV4StreamPart>,
+                textId: string,
+                emitTextEnd: boolean,
+            ): Promise<boolean> => {
+                const buffered = accumulatedText;
+                const hadOpenText = activeTextId !== null;
+                accumulatedText = '';
+                activeTextId = null;
+
+                if (buffered) {
+                    const evalResult = await guardrailsService.evaluateText(buffered, 'assistant');
+                    if (evalResult.blocked) {
+                        const reasons = evalResult.violations
+                            .map((v) => {
+                                return `${v.guardName}: ${v.reason}`;
+                            })
+                            .join('; ');
+                        controller.error(
+                            new GuardrailViolationError(
+                                `Guardrail violation detected in output stream: ${reasons}`,
+                                evalResult.violations,
+                            ),
+                        );
+                        return false;
+                    }
+
+                    if (requiresRedaction) {
+                        controller.enqueue({
+                            type: 'text-delta',
+                            id: textId,
+                            delta:
+                                evalResult.redacted && evalResult.sanitizedText ? evalResult.sanitizedText : buffered,
+                        });
+                    }
+                }
+
+                if (emitTextEnd && hadOpenText) {
+                    controller.enqueue({ type: 'text-end', id: textId });
+                }
+                return true;
+            };
 
             const transformStream = new TransformStream<LanguageModelV4StreamPart, LanguageModelV4StreamPart>({
                 transform: async function (chunk, controller) {
-                    if (chunk.type === 'text-delta') {
+                    if (chunk.type === 'text-start') {
+                        if (activeTextId !== null || accumulatedText) {
+                            const ok = await flushBufferedText(controller, activeTextId ?? lastTextId, true);
+                            if (!ok) return;
+                        }
+                        activeTextId = chunk.id;
+                        lastTextId = chunk.id;
+                        accumulatedText = '';
+                        controller.enqueue(chunk);
+                    } else if (chunk.type === 'text-delta') {
+                        lastTextId = chunk.id;
                         accumulatedText += chunk.delta;
                         if (!requiresRedaction) {
                             controller.enqueue(chunk);
                         }
                     } else if (chunk.type === 'text-end') {
-                        if (accumulatedText) {
-                            const evalResult = await guardrailsService.evaluateText(accumulatedText, 'assistant');
-                            if (evalResult.blocked) {
-                                const reasons = evalResult.violations
-                                    .map((v) => {
-                                        return `${v.guardName}: ${v.reason}`;
-                                    })
-                                    .join('; ');
-                                controller.error(
-                                    new GuardrailViolationError(
-                                        `Guardrail violation detected in output stream: ${reasons}`,
-                                        evalResult.violations,
-                                    ),
-                                );
-                                return;
-                            }
-
-                            if (requiresRedaction) {
-                                if (evalResult.redacted && evalResult.sanitizedText) {
-                                    controller.enqueue({
-                                        type: 'text-delta',
-                                        id: chunk.id,
-                                        delta: evalResult.sanitizedText,
-                                    });
-                                } else {
-                                    controller.enqueue({
-                                        type: 'text-delta',
-                                        id: chunk.id,
-                                        delta: accumulatedText,
-                                    });
-                                }
-                            }
+                        const ok = await flushBufferedText(controller, chunk.id, false);
+                        if (!ok) return;
+                        controller.enqueue(chunk);
+                    } else if (chunk.type === 'finish') {
+                        if (activeTextId !== null || accumulatedText) {
+                            const ok = await flushBufferedText(controller, activeTextId ?? lastTextId, true);
+                            if (!ok) return;
                         }
+                        controller.enqueue(chunk);
+                    } else if (chunk.type === 'error') {
+                        accumulatedText = '';
+                        activeTextId = null;
                         controller.enqueue(chunk);
                     } else {
                         controller.enqueue(chunk);
+                    }
+                },
+                flush: async function (controller) {
+                    if (activeTextId !== null || accumulatedText) {
+                        await flushBufferedText(controller, activeTextId ?? lastTextId, true);
                     }
                 },
             });

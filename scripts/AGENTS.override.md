@@ -8,7 +8,7 @@ Scripts are developer tools run from the repo root (usually via `npm run ...`).
 
 Current scripts:
 
-- `scripts/generate-api.ts` — regenerates the generated preload API files under `src/preload/api.ts` and `src/preload/api/*` based on IPC controller decorators in `src/main/controllers/*`.
+- `scripts/generate-api.ts` — regenerates the generated contracts (`packages/contracts/api.ts`, `packages/contracts/contracts/*`, `packages/contracts/api/*`, `packages/contracts/http-api/*`), Electron preload barrel (`apps/cosmo-desktop/preload/rpc-api.ts`), and HTTP RPC manifest (`apps/cosmo-http/src/rpc-manifest.ts`) from IPC controller decorators in `packages/backend-common/controllers/*`.
 
 ## Rules for scripts
 
@@ -23,7 +23,7 @@ Current scripts:
 
 When adding/changing IPC controllers:
 
-- Update controllers and decorators first (`src/main/controllers/*`).
+- Update controllers and decorators first (`packages/backend-common/controllers/*`).
 - Run `npm run generate-api`.
-- If generation fails or produces incorrect imports/types, fix `scripts/generate-api.ts` rather than hand-editing the generated preload API files.
-- No need to add test for `scripts/generate-api.ts`
+- If generation fails or produces incorrect imports/types, fix `scripts/generate-api.ts` / `scripts/generate-api-lib.ts` rather than hand-editing the generated files.
+- Keep unit tests in `scripts/generate-api-lib.test.ts` updated alongside generator changes.

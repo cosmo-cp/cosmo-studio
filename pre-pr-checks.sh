@@ -24,11 +24,11 @@ if [[ "$install_dependencies" == true ]]; then
 fi
 
 run_step npm run lint
-run_step npm run lint --prefix src/renderer
+run_step npm run lint --prefix apps/cosmo-web
 run_step npm run test
-run_step npm run test --prefix src/renderer
+run_step npm run test --prefix apps/cosmo-web
 run_step npm run test:coverage
-run_step npm run test:coverage --prefix src/renderer
+run_step npm run test:coverage --prefix apps/cosmo-web
 
 echo
 echo "==> Build PR package"

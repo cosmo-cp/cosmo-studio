@@ -1,0 +1,38 @@
+{
+    "$schema": "https://turbo.build/schema.json",
+    "globalPassThroughEnv": [
+        "DATABASE_NAME",
+        "COSMO_HTTP_HOST",
+        "COSMO_HTTP_PORT",
+        "COSMO_HTTP_DATA_DIR",
+        "COSMO_RUNTIME_TARGET",
+        "NEXT_PUBLIC_COSMO_BACKEND",
+        "NEXT_PUBLIC_COSMO_API_BASE",
+        "NODE_ENV"
+    ],
+    "tasks": {
+        "build": {
+            "dependsOn": ["^build"],
+            "outputs": ["dist/**", "out/**", ".vite/**"]
+        },
+        "test": {
+            "dependsOn": ["^build"],
+            "outputs": ["coverage/**"]
+        },
+        "lint": {
+            "dependsOn": []
+        },
+        "dev": {
+            "cache": false,
+            "persistent": true
+        },
+        "dev:electron": {
+            "cache": false,
+            "persistent": true
+        },
+        "dev:http": {
+            "cache": false,
+            "persistent": true
+        }
+    }
+}
