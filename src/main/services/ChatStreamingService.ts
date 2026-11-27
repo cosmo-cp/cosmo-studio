@@ -105,7 +105,10 @@ export class ChatStreamingService {
                   })
                 : args.messages;
 
-        const modelMessages: ModelMessage[] = await convertToModelMessages(messagesToConvert);
+        // Interrupted tool calls have no result and cannot be sent as model history.
+        const modelMessages: ModelMessage[] = await convertToModelMessages(messagesToConvert, {
+            ignoreIncompleteToolCalls: true,
+        });
         const persona = args.personaId
             ? await this.personaService.getById(args.personaId)
             : args.personaName

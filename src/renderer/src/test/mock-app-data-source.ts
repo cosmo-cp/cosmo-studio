@@ -15,6 +15,7 @@ type AppDataSourceOverrides = {
     user?: Partial<AppDataSource['user']>;
     guardrails?: Partial<AppDataSource['guardrails']>;
     streaming?: Partial<AppDataSource['streaming']>;
+    skill?: Partial<AppDataSource['skill']>;
 };
 
 export function createMockAppDataSource(overrides: AppDataSourceOverrides = {}): AppDataSource {
@@ -304,6 +305,19 @@ export function createMockAppDataSource(overrides: AppDataSourceOverrides = {}):
             onError: () => undefined,
             removeListeners: () => undefined,
             ...overrides.streaming,
+        },
+        skill: {
+            getAll: async () => [],
+            getByName: async () => undefined,
+            getContent: async () => undefined,
+            upload: async (input) => ({
+                name: input.name ?? 'uploaded-skill',
+                description: 'Mock uploaded skill',
+                path: `/mock/skills/${input.name ?? 'uploaded-skill'}`,
+                isBuiltIn: false,
+            }),
+            delete: async () => true,
+            ...overrides.skill,
         },
     };
 }

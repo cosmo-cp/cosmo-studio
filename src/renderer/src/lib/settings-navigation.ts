@@ -10,13 +10,22 @@ import {
     PlugZap,
     Share2,
     Shield,
+    Sparkles,
     Wrench,
     Zap,
     type LucideIcon,
 } from 'lucide-react';
 
 export type SettingsSectionSlug =
-    'provider' | 'persona' | 'command' | 'mcp-server' | 'web-search' | 'agents' | 'workspaces' | 'guardrails';
+    | 'provider'
+    | 'persona'
+    | 'command'
+    | 'mcp-server'
+    | 'web-search'
+    | 'agents'
+    | 'workspaces'
+    | 'guardrails'
+    | 'skills';
 
 type SettingsSection = {
     slug: SettingsSectionSlug;
@@ -76,6 +85,12 @@ export const settingsSections: readonly SettingsSection[] = [
         description: 'Configure content filtering, PII redaction policies, and prompt security controls.',
         icon: Shield,
     },
+    {
+        slug: 'skills',
+        title: 'Skills',
+        description: 'Modular agent capabilities, architectural guidelines, and workflows.',
+        icon: Sparkles,
+    },
 ] as const;
 
 export interface NavSettingsSection {
@@ -92,6 +107,7 @@ export const workspaceSettingsSections: readonly NavSettingsSection[] = [
     { slug: 'command', title: 'Commands', icon: Wrench, href: '/settings/command' },
     { slug: 'mcp-server', title: 'MCP Servers', icon: Share2, href: '/settings/mcp-server' },
     { slug: 'persona', title: 'Persona', icon: CircleUserRound, href: '/settings/persona' },
+    { slug: 'skills', title: 'Skills', icon: Sparkles, href: '/settings/skills' },
     { slug: 'projects', title: 'Projects', icon: Folder, href: '/settings/projects' },
     { slug: 'guardrails', title: 'Guardrails', icon: Shield, href: '/settings/guardrails' },
 ] as const;

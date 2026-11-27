@@ -55,7 +55,19 @@ export class TaskExecutionService {
             throw new Error(`Workspace path does not exist: ${workspacePath}`);
         }
 
-        const canonicalPath = fs.realpathSync(path.resolve(workspacePath));
+        const resolvedPath = path.resolve(workspacePath);
+        if (isProtectedRoot(resolvedPath)) {
+            throw new Error(
+                `Targeting sensitive system directory or credential root is not permitted: ${workspacePath}`,
+            );
+        }
+
+        let canonicalPath: string;
+        try {
+            canonicalPath = fs.realpathSync(resolvedPath);
+        } catch {
+            canonicalPath = resolvedPath;
+        }
 
         if (isProtectedRoot(canonicalPath)) {
             throw new Error(

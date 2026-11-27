@@ -9,6 +9,7 @@ import { McpServerController } from '../src/main/controllers/McpServerController
 import { MessageController } from '../src/main/controllers/MessageController';
 import { ModelProviderController } from '../src/main/controllers/ModelProviderController';
 import { PersonaController } from '../src/main/controllers/PersonaController';
+import { SkillController } from '../src/main/controllers/SkillController';
 import { StreamingChatController } from '../src/main/controllers/StreamingChatController';
 import { TaskController } from '../src/main/controllers/TaskController';
 import { UserController } from '../src/main/controllers/UserController';
@@ -25,6 +26,7 @@ const controllers = [
     StreamingChatController,
     MessageController,
     PersonaController,
+    SkillController,
     CommandController,
     McpServerController,
     WebSearchController,
@@ -42,6 +44,7 @@ const controllerPaths = {
     StreamingChatController: path.resolve(__dirname, '../src/main/controllers/StreamingChatController.ts'),
     MessageController: path.resolve(__dirname, '../src/main/controllers/MessageController.ts'),
     PersonaController: path.resolve(__dirname, '../src/main/controllers/PersonaController.ts'),
+    SkillController: path.resolve(__dirname, '../src/main/controllers/SkillController.ts'),
     McpServerController: path.resolve(__dirname, '../src/main/controllers/McpServerController.ts'),
     CommandController: path.resolve(__dirname, '../src/main/controllers/CommandController.ts'),
     WebSearchController: path.resolve(__dirname, '../src/main/controllers/WebSearchController.ts'),

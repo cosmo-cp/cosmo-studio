@@ -57,6 +57,24 @@ export type ModelLite = Omit<Model, 'providerId'>;
 export type Persona = InferSelectModel<typeof persona>;
 export type NewPersona = InferInsertModel<typeof persona>;
 export type PersonaCreateInput = Omit<NewPersona, 'id' | 'createdAt' | 'updatedAt'>;
+export type PersonaUpdateInput = Partial<PersonaCreateInput>;
+
+export interface SkillManifest {
+    name: string;
+    description: string;
+    path: string;
+    license?: string;
+    disableModelInvocation?: boolean;
+    metadata?: Record<string, unknown>;
+    content?: string;
+    isBuiltIn: boolean;
+}
+
+export interface SkillUploadInput {
+    name?: string;
+    content?: string;
+    archiveBase64?: string;
+}
 
 export type Command = InferSelectModel<typeof command>;
 export type NewCommand = InferInsertModel<typeof command>;

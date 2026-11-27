@@ -36,6 +36,7 @@ const CORETYPES = {
     UserProfileService: Symbol.for('UserProfileService'),
     FolderPickerService: Symbol.for('FolderPickerService'),
     GuardrailsService: Symbol.for('GuardrailsService'),
+    SkillService: Symbol.for('SkillService'),
 };
 
 export { CORETYPES };

@@ -32,6 +32,28 @@ describe('Messages', () => {
         expect(await screen.findByText('Start a conversation')).toBeInTheDocument();
     });
 
+    it('keeps new user messages in the bottom-following flow while responses stream', async () => {
+        vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+        const user: UIMessage = { id: 'user-1', role: 'user', parts: [{ type: 'text', text: 'Hello' }] };
+        const view = (messages: UIMessage[], status: 'submitted' | 'streaming') => (
+            <StoreProvider appDataSource={createMockAppDataSource()}>
+                <Messages chatId="chat-1" messages={messages} status={status} />
+            </StoreProvider>
+        );
+        const { rerender } = render(view([], 'submitted'));
+        rerender(view([user], 'submitted'));
+        const item = (await screen.findByText('Hello')).closest('[data-message-id]');
+        expect(item).toHaveAttribute('data-scroll-anchor', 'false');
+        rerender(
+            view(
+                [user, { id: 'assistant-1', role: 'assistant', parts: [{ type: 'text', text: 'Response' }] }],
+                'streaming',
+            ),
+        );
+        expect(await screen.findByText('Response')).toBeInTheDocument();
+        expect(item).toHaveAttribute('data-scroll-anchor', 'false');
+    });
+
     it('shows a tool approval request and sends the selected response', async () => {
         vi.stubGlobal('ResizeObserver', ResizeObserverMock);
         const respond = vi.fn();
@@ -61,5 +83,39 @@ describe('Messages', () => {
         expect(respond).toHaveBeenCalledWith({ id: 'approval-1', approved: false, reason: 'User denied tool call' });
         fireEvent.click(screen.getByRole('button', { name: 'Allow' }));
         expect(respond).toHaveBeenCalledWith({ id: 'approval-1', approved: true });
+    });
+    it('closes finished tool calls and lets readers reopen them', async () => {
+        vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+        const message = (state: string) =>
+            [
+                {
+                    id: 'message-1',
+                    role: 'assistant',
+                    parts: [
+                        {
+                            type: 'dynamic-tool',
+                            toolCallId: 'call-1',
+                            toolName: 'readFile',
+                            state,
+                            input: { path: 'file.txt' },
+                            output: 'contents',
+                        },
+                    ],
+                },
+            ] as UIMessage[];
+        const view = (state: string) => (
+            <StoreProvider appDataSource={createMockAppDataSource()}>
+                <Messages chatId="chat-1" messages={message(state)} status="ready" />
+            </StoreProvider>
+        );
+        const { rerender } = render(view('input-available'));
+        const trigger = await screen.findByRole('button', { name: /readFile.*Running/ });
+        expect(trigger).toHaveAttribute('aria-expanded', 'true');
+        rerender(view('output-available'));
+        const completed = screen.getByRole('button', { name: /readFile.*Completed/ });
+        expect(completed).toHaveAttribute('aria-expanded', 'false');
+        fireEvent.click(completed);
+        expect(completed).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByText('contents')).toBeInTheDocument();
     });
 });

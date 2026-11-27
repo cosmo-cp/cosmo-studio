@@ -6,6 +6,7 @@ import type { McpServerApi } from './contracts/mcpServer';
 import type { MessageApi } from './contracts/message';
 import type { ModelProviderApi } from './contracts/modelProvider';
 import type { PersonaApi } from './contracts/persona';
+import type { SkillApi } from './contracts/skill';
 import type { StreamingApi } from './contracts/streaming';
 import type { TaskApi } from './contracts/task';
 import type { UserApi } from './contracts/user';
@@ -20,6 +21,7 @@ import { mcpServerHttpApi } from './http-api/mcpServer';
 import { messageHttpApi } from './http-api/message';
 import { modelProviderHttpApi } from './http-api/modelProvider';
 import { personaHttpApi } from './http-api/persona';
+import { skillHttpApi } from './http-api/skill';
 import { streamingHttpApi } from './http-api/streaming';
 import { taskHttpApi } from './http-api/task';
 import { userHttpApi } from './http-api/user';
@@ -31,6 +33,7 @@ export type { ChatApi } from './contracts/chat';
 export type { ModelProviderApi } from './contracts/modelProvider';
 export type { MessageApi } from './contracts/message';
 export type { PersonaApi } from './contracts/persona';
+export type { SkillApi } from './contracts/skill';
 export type { CommandApi } from './contracts/command';
 export type { McpServerApi } from './contracts/mcpServer';
 export type { WebSearchApi } from './contracts/webSearch';
@@ -47,6 +50,7 @@ export interface CosmoApi {
     modelProvider: ModelProviderApi;
     message: MessageApi;
     persona: PersonaApi;
+    skill: SkillApi;
     command: CommandApi;
     mcpServer: McpServerApi;
     webSearch: WebSearchApi;
@@ -64,6 +68,7 @@ export const httpApi: CosmoApi = {
     modelProvider: modelProviderHttpApi,
     message: messageHttpApi,
     persona: personaHttpApi,
+    skill: skillHttpApi,
     command: commandHttpApi,
     mcpServer: mcpServerHttpApi,
     webSearch: webSearchHttpApi,

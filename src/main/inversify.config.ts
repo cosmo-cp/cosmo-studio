@@ -12,6 +12,7 @@ import { McpServerController } from './controllers/McpServerController';
 import { MessageController } from './controllers/MessageController';
 import { ModelProviderController } from './controllers/ModelProviderController';
 import { PersonaController } from './controllers/PersonaController';
+import { SkillController } from './controllers/SkillController';
 import { StreamingChatController } from './controllers/StreamingChatController';
 import { TaskController } from './controllers/TaskController';
 import { UserController } from './controllers/UserController';
@@ -69,5 +70,6 @@ container.bind<Controller>(TYPES.Controller).to(TaskController).inSingletonScope
 container.bind<Controller>(TYPES.Controller).to(WorkspaceController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(UserController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(GuardrailsController).inSingletonScope();
+container.bind<Controller>(TYPES.Controller).to(SkillController).inSingletonScope();
 
 export default container;

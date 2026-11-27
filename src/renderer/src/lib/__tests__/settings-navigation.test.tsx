@@ -17,6 +17,7 @@ describe('settings navigation', () => {
             'agents',
             'workspaces',
             'guardrails',
+            'skills',
         ]);
         expect(settingsSections.find((section) => section.slug === 'web-search')?.hidden).toBe(true);
     });
@@ -35,6 +36,7 @@ describe('settings navigation', () => {
             'command',
             'mcp-server',
             'persona',
+            'skills',
             'projects',
             'guardrails',
         ]);

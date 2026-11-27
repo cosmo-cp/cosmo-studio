@@ -16,7 +16,7 @@ This file applies to changes under `src/renderer/`.
 
 ## Development constraints (important)
 
-- The files under the folders `src/renderer/src/components/ui` should never be changed. These files are downloaded using npm. If the files are changed then at the next version upgrade for these files will either have conflict or override content.
+- The files under the folders `src/renderer/src/components/ui` should never be changed. These files are downloaded using npm. If the files are changed then at the next version upgrade for these files will either have conflict or override content. ESLint and Prettier both ignore this directory.
 
 ## Process boundary rules
 
