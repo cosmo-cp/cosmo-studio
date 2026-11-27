@@ -30,7 +30,9 @@ export function useGetSkillContentQuery(name: string | null | undefined) {
 export function useUploadSkillMutation() {
     return useBackendMutation<SkillUploadInput, SkillManifest>({
         run: (appDataSource, input) => appDataSource.skill.upload(input),
-        invalidateKeys: [skillKeys.list],
+        revalidate: async (_input, result, { revalidateKeys }) => {
+            await revalidateKeys([skillKeys.list, skillKeys.detail(result.name), skillKeys.content(result.name)]);
+        },
         successMessage: 'Skill uploaded successfully',
         errorMessage: 'Failed to upload skill',
     });
@@ -39,7 +41,9 @@ export function useUploadSkillMutation() {
 export function useDeleteSkillMutation() {
     return useBackendMutation<string, boolean>({
         run: (appDataSource, name) => appDataSource.skill.delete(name),
-        invalidateKeys: [skillKeys.list],
+        revalidate: async (name, _result, { revalidateKeys }) => {
+            await revalidateKeys([skillKeys.list, skillKeys.detail(name), skillKeys.content(name)]);
+        },
         successMessage: 'Skill deleted successfully',
         errorMessage: 'Failed to delete skill',
     });
