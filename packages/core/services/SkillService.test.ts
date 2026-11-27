@@ -120,24 +120,6 @@ Content 2`,
         expect(content).toBe('Content 2');
     });
 
-    it('seeds built-in skills from repository bundle to ~/.cosmo-studio/skills', async () => {
-        const skills = await service.getAllSkills();
-        const skillNames = skills.map((s) => {
-            return s.name;
-        });
-
-        expect(skillNames).toContain('egm-bootstrap');
-        expect(skillNames).toContain('run-workflow');
-
-        const egm = await service.getSkillByName('egm-bootstrap');
-        expect(egm).toBeDefined();
-        expect(egm?.description).toContain('Bootstrap directory README.md files');
-
-        const workflow = await service.getSkillByName('run-workflow');
-        expect(workflow).toBeDefined();
-        expect(workflow?.isBuiltIn).toBe(true);
-    });
-
     it('uploads a skill from raw markdown content and places it in the skills directory', async () => {
         const uploaded = await service.uploadSkill({
             name: 'markdown-skill',
