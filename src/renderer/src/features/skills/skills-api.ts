@@ -1,4 +1,5 @@
-import { useBackendQuery } from '@/lib/store/backend-hooks';
+import { useBackendMutation, useBackendQuery } from '@/lib/store/backend-hooks';
+import type { SkillManifest, SkillUploadInput } from 'core/dto';
 
 const skillKeys = {
     list: ['skills', 'list'] as const,
@@ -24,4 +25,22 @@ export function useGetSkillContentQuery(name: string | null | undefined) {
         (appDataSource) => appDataSource.skill.getContent(name ?? ''),
         { skip: !name },
     );
+}
+
+export function useUploadSkillMutation() {
+    return useBackendMutation<SkillUploadInput, SkillManifest>({
+        run: (appDataSource, input) => appDataSource.skill.upload(input),
+        invalidateKeys: [skillKeys.list],
+        successMessage: 'Skill uploaded successfully',
+        errorMessage: 'Failed to upload skill',
+    });
+}
+
+export function useDeleteSkillMutation() {
+    return useBackendMutation<string, boolean>({
+        run: (appDataSource, name) => appDataSource.skill.delete(name),
+        invalidateKeys: [skillKeys.list],
+        successMessage: 'Skill deleted successfully',
+        errorMessage: 'Failed to delete skill',
+    });
 }

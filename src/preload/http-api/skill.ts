@@ -1,4 +1,4 @@
-import type { SkillManifest } from '../../../packages/core/dto';
+import type { SkillManifest, SkillUploadInput } from '../../../packages/core/dto';
 import { callRpc } from '../api/common';
 import type { SkillApi } from '../contracts/skill';
 
@@ -11,5 +11,11 @@ export const skillHttpApi: SkillApi = {
     },
     getContent: (name: string) => {
         return callRpc<string | undefined>('skill', 'getContent', [name]);
+    },
+    upload: (input: SkillUploadInput) => {
+        return callRpc<SkillManifest>('skill', 'upload', [input]);
+    },
+    delete: (name: string) => {
+        return callRpc<boolean>('skill', 'delete', [name]);
     },
 };

@@ -1,4 +1,5 @@
 import { ipcRenderer } from 'electron';
+import type { SkillUploadInput } from '../../../packages/core/dto';
 import type { SkillApi } from '../contracts/skill';
 
 export const skillApi: SkillApi = {
@@ -10,5 +11,11 @@ export const skillApi: SkillApi = {
     },
     getContent: (name: string) => {
         return ipcRenderer.invoke('skill:getContent', name);
+    },
+    upload: (input: SkillUploadInput) => {
+        return ipcRenderer.invoke('skill:upload', input);
+    },
+    delete: (name: string) => {
+        return ipcRenderer.invoke('skill:delete', name);
     },
 };

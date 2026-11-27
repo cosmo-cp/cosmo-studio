@@ -101,6 +101,7 @@ const PRELOAD_TYPE_IMPORTS = [
     { name: 'GuardrailsConfigSaveInput', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'GuardrailsEvaluateResult', source: PRELOAD_CORE_DTO_IMPORT },
     { name: 'SkillManifest', source: PRELOAD_CORE_DTO_IMPORT },
+    { name: 'SkillUploadInput', source: PRELOAD_CORE_DTO_IMPORT },
     {
         name: 'WebSearchProviderTypeEnum',
         source: PRELOAD_WEB_SEARCH_SCHEMA_IMPORT,

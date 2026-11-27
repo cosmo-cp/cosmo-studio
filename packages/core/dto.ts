@@ -70,6 +70,12 @@ export interface SkillManifest {
     isBuiltIn: boolean;
 }
 
+export interface SkillUploadInput {
+    name?: string;
+    content?: string;
+    archiveBase64?: string;
+}
+
 export type Command = InferSelectModel<typeof command>;
 export type NewCommand = InferInsertModel<typeof command>;
 export type CommandCreateInput = Omit<NewCommand, 'id' | 'createdAt' | 'updatedAt'>;

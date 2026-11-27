@@ -308,13 +308,13 @@ export function PersonaList() {
                             <div>
                                 <h5 className="font-semibold text-sm">Specialized Agent Skills</h5>
                                 <p className="text-xs text-muted-foreground mt-0.5">
-                                    Modular skills and workflows discovered from <code>./skills/</code> directories.
+                                    Modular skills and workflows that personas can use.
                                 </p>
                             </div>
                             <div className="space-y-2 max-h-56 overflow-y-auto">
                                 {availableSkills.length === 0 ? (
                                     <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">
-                                        No skills discovered in ./skills/ directory.
+                                        No skills available.
                                     </div>
                                 ) : (
                                     availableSkills.map((s) => {

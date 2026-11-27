@@ -310,6 +310,13 @@ export function createMockAppDataSource(overrides: AppDataSourceOverrides = {}):
             getAll: async () => [],
             getByName: async () => undefined,
             getContent: async () => undefined,
+            upload: async (input) => ({
+                name: input.name ?? 'uploaded-skill',
+                description: 'Mock uploaded skill',
+                path: `/mock/skills/${input.name ?? 'uploaded-skill'}`,
+                isBuiltIn: false,
+            }),
+            delete: async () => true,
             ...overrides.skill,
         },
     };
